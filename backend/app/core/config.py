@@ -1,0 +1,54 @@
+"""
+Configuración global — BAGFM Backend
+Carga variables de entorno via Pydantic Settings.
+"""
+from pydantic_settings import BaseSettings, SettingsConfigDict
+from functools import lru_cache
+
+
+class Configuracion(BaseSettings):
+    model_config = SettingsConfigDict(
+        env_file=".env",
+        env_file_encoding="utf-8",
+        case_sensitive=False,
+        extra="ignore",
+    )
+
+    # Aplicación
+    app_nombre: str = "BAGFM"
+    app_version: str = "0.1.0"
+    app_dominio: str = "localhost"
+    app_env: str = "development"
+
+    # Base de datos
+    database_url: str
+    supabase_url: str = ""
+    supabase_service_key: str = ""
+
+    # JWT
+    jwt_secret: str
+    jwt_algoritmo: str = "HS256"
+    jwt_expiracion_minutos: int = 480  # 8 horas
+
+    # VAPID Push (opcional en fase 1)
+    vapid_public_key: str = ""
+    vapid_private_key: str = ""
+    vapid_email: str = "admin@bagfm.mil.ve"
+
+    # CORS
+    cors_origins: str = "http://localhost:5173"
+
+    @property
+    def cors_lista(self) -> list[str]:
+        """Retorna la lista de orígenes CORS permitidos."""
+        return [orig.strip() for orig in self.cors_origins.split(",")]
+
+    @property
+    def en_produccion(self) -> bool:
+        return self.app_env == "production"
+
+
+@lru_cache
+def obtener_config() -> Configuracion:
+    """Retorna la instancia única de configuración (singleton)."""
+    return Configuracion()
