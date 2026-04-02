@@ -30,7 +30,7 @@ export default function Entidades() {
   const fetchEntidades = async () => {
     setLoading(true);
     try {
-      const res = await api.get('/entidades/');
+      const res = await api.get('/entidades');
       setEntidades(res.data);
     } catch (err) {
       console.error("Error cargando entidades", err);
@@ -58,7 +58,7 @@ export default function Entidades() {
         delete payload.codigo_slug;
       }
       
-      await api.post('/entidades/', payload);
+      await api.post('/entidades', payload);
       setIsModalOpen(false);
       setNuevaEntidad({ 
         nombre: '', 

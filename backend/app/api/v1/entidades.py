@@ -17,7 +17,7 @@ router = APIRouter()
 DEPENDENCY_ADMIN_BASE = Depends(require_rol([RolTipo.COMANDANTE, RolTipo.ADMIN_BASE]))
 
 
-@router.get("/", response_model=List[EntidadCivilSalida])
+@router.get("", response_model=List[EntidadCivilSalida])
 async def listar_entidades(
     activas_solo: bool = False,
     db: AsyncSession = Depends(obtener_db),
@@ -30,7 +30,7 @@ async def listar_entidades(
     return await entidad_service.obtener_todas(db, activas_solo)
 
 
-@router.post("/", response_model=EntidadCivilSalida, status_code=status.HTTP_201_CREATED)
+@router.post("", response_model=EntidadCivilSalida, status_code=status.HTTP_201_CREATED)
 async def crear_entidad(
     datos: EntidadCivilCrear,
     db: AsyncSession = Depends(obtener_db),

@@ -1,5 +1,5 @@
-import logging
-from fastapi import FastAPI
+from fastapi import FastAPI, Request, status
+from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from app.core.config import obtener_config
 
@@ -22,6 +22,19 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Capturador de Errores Globales (Anti-500/CORS)
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    # Loguear el error exacto para verlo en Railway
+    print(f">>> [ERROR] {type(exc).__name__}: {str(exc)}")
+    return JSONResponse(
+        status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        content={"detail": f"Error interno: {type(exc).__name__}"},
+        headers={
+            "Access-Control-Allow-Origin": "*", # Forzar CORS en error
+        }
+    )
 
 # Endpoint de salud / status
 @app.get("/api/health", tags=["Sistema"])
