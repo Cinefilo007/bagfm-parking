@@ -1,6 +1,6 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
-import { ShieldCheck, Users, Menu, ClipboardList } from 'lucide-react';
+import { ShieldCheck, Users, Menu, ClipboardList, CalendarRange, Camera } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import { useAuthStore } from '../../store/auth.store';
 
@@ -14,14 +14,16 @@ export const BottomNav = () => {
     navItems.push(
       { to: '/comando/dashboard', label: 'Centro', icon: ShieldCheck },
       { to: '/comando/entidades', label: 'Entidades', icon: Users },
-      { to: '/comando/infracciones', label: 'Infracción', icon: ClipboardList },
-      { to: '/ajustes', label: 'Ajustes', icon: Menu }
+      { to: '/comando/alcabalas', label: 'Alcabalas', icon: ClipboardList },
+      { to: '/comando/eventos', label: 'Eventos', icon: CalendarRange },
+      { to: '/ajustes', label: 'Más', icon: Menu }
     );
   } else if (user?.rol === 'ADMIN_ENTIDAD') {
     navItems.push(
        { to: '/entidad/dashboard', label: 'Panel', icon: ShieldCheck },
        { to: '/entidad/socios', label: 'Socios', icon: Users },
-       { to: '/ajustes', label: 'Ajustes', icon: Menu }
+       { to: '/entidad/eventos', label: 'Eventos', icon: CalendarRange },
+       { to: '/ajustes', label: 'Más', icon: Menu }
     );
   } else if (user?.rol === 'ALCABALA') {
     navItems.push(

@@ -29,6 +29,7 @@ class Usuario(Base):
     activo = Column(Boolean, default=True, nullable=False)
     foto_url = Column(Text, nullable=True)
     password_hash = Column(Text, nullable=False)
+    expira_at = Column(DateTime(timezone=True), nullable=True) # Para guardias temporales de 24h
     
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False)

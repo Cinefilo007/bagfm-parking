@@ -57,3 +57,15 @@ def crear_token_qr(usuario_id: str, vehiculo_id: str | None = None) -> str:
     if vehiculo_id:
         payload["vehiculo_id"] = vehiculo_id
     return jwt.encode(payload, config.jwt_secret, algorithm=config.jwt_algoritmo)
+
+
+def crear_token_evento(solicitud_id: str, expira_at: datetime) -> str:
+    """
+    Crea un JWT para pases de eventos masivos.
+    """
+    payload = {
+        "sub": solicitud_id,
+        "tipo": "pase_evento",
+        "exp": expira_at
+    }
+    return jwt.encode(payload, config.jwt_secret, algorithm=config.jwt_algoritmo)

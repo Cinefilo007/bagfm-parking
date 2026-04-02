@@ -9,6 +9,9 @@ import DashboardEntidad from '../pages/entidad/Dashboard';
 import SociosEntidad from '../pages/entidad/Socios';
 import DashboardAlcabala from '../pages/alcabala/Dashboard';
 import ScannerAlcabala from '../pages/alcabala/Scanner';
+import Alcabalas from '../pages/comandante/Alcabalas';
+import EventosMando from '../pages/comandante/EventosMando';
+import EventosEntidad from '../pages/entidad/Eventos';
 import { RolTipo } from '../store/auth.store'; // Or wherever RolTipo is defined, wait, I saw it in models. In frontend it's a string.
 
 const TemporaryPlaceholder = ({ name }) => (
@@ -39,6 +42,8 @@ export const router = createBrowserRouter([
           { path: 'dashboard', element: <DashboardComando /> },
           { path: 'entidades', element: <Entidades /> },
           { path: 'entidades/:id', element: <EntidadDetalle /> },
+          { path: 'alcabalas', element: <Alcabalas /> },
+          { path: 'eventos', element: <EventosMando /> },
           { path: 'infracciones', element: <TemporaryPlaceholder name="Infracciones" /> }
         ],
       },
@@ -47,7 +52,8 @@ export const router = createBrowserRouter([
         element: <RutaProtegida rolesPermitidos={['ADMIN_ENTIDAD']} />,
         children: [
           { path: 'dashboard', element: <DashboardEntidad /> },
-          { path: 'socios', element: <SociosEntidad /> }
+          { path: 'socios', element: <SociosEntidad /> },
+          { path: 'eventos', element: <EventosEntidad /> }
         ]
       },
       // ====== ALCABALA ======

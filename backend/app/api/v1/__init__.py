@@ -4,3 +4,5 @@ from . import socios
 from . import accesos
 from . import infracciones
 from . import websocket
+from . import comando
+from . import eventos

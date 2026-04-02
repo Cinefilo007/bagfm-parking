@@ -25,6 +25,7 @@ class CodigoQR(Base):
     fecha_expiracion = Column(DateTime(timezone=True), nullable=True)
     
     activo = Column(Boolean, default=True, nullable=False)
+    solicitud_id = Column(UUID(as_uuid=True), ForeignKey("solicitudes_evento.id", ondelete="CASCADE"), nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     created_by = Column(UUID(as_uuid=True), ForeignKey("usuarios.id", ondelete="RESTRICT"), nullable=True)
 
