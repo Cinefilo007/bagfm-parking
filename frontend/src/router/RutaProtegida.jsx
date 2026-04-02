@@ -1,6 +1,7 @@
 import { Navigate, Outlet } from 'react-router-dom';
 import { useAuthStore } from '../store/auth.store';
 import { BottomNav } from '../components/layout/BottomNav';
+import { CambiarPasswordModal } from '../components/auth/CambiarPasswordModal';
 
 export const RutaProtegida = ({ rolesPermitidos = [], hideNav = false }) => {
   const { isAuthenticated, isLoading, user } = useAuthStore();
@@ -26,6 +27,18 @@ export const RutaProtegida = ({ rolesPermitidos = [], hideNav = false }) => {
     
     // Fallback seguro
     return <Navigate to="/login" replace />;
+  }
+
+  // Intercepción de Seguridad: Cambio de Contraseña Obligatorio
+  if (user?.debe_cambiar_password) {
+    return (
+      <div className="min-h-screen bg-bg-app flex flex-col">
+        <CambiarPasswordModal />
+        <div className="flex-1 filter blur-sm pointer-events-none select-none">
+          <Outlet />
+        </div>
+      </div>
+    );
   }
 
   return (

@@ -24,7 +24,8 @@ class AuthService:
         token_data = {
             "sub": str(usuario.id),
             "rol": usuario.rol.value,
-            "entidad_id": str(usuario.entidad_id) if usuario.entidad_id else None
+            "entidad_id": str(usuario.entidad_id) if usuario.entidad_id else None,
+            "debe_cambiar_password": usuario.debe_cambiar_password
         }
         
         token = crear_token_acceso(token_data)
@@ -35,5 +36,17 @@ class AuthService:
         query = select(Usuario).where(Usuario.id == usuario_id)
         resultado = await db.execute(query)
         return resultado.scalar_one_or_none()
+
+    async def actualizar_password(self, db: AsyncSession, usuario_id: str, nueva_password: str) -> bool:
+        usuario = await self.obtener_usuario_por_id(db, usuario_id)
+        if not usuario:
+            return False
+        
+        from app.core.security import hashear_password
+        usuario.password_hash = hashear_password(nueva_password)
+        usuario.debe_cambiar_password = False
+        
+        await db.commit()
+        return True
 
 auth_service = AuthService()

@@ -29,10 +29,15 @@ class Usuario(Base):
     activo = Column(Boolean, default=True, nullable=False)
     foto_url = Column(Text, nullable=True)
     password_hash = Column(Text, nullable=False)
+    debe_cambiar_password = Column(Boolean, default=False, nullable=False)
     expira_at = Column(DateTime(timezone=True), nullable=True) # Para guardias temporales de 24h
     
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False)
+
+    @property
+    def nombre_completo(self) -> str:
+        return f"{self.nombre} {self.apellido}"
 
     # Relaciones - a definir según los modelos estén construidos
     # entidad_pertenece = relationship("EntidadCivil", foreign_keys=[entidad_id], back_populates="socios")

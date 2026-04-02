@@ -17,7 +17,7 @@ export const SocioCard = ({ socio }) => {
           </div>
           <div>
             <h4 className="text-sm font-bold text-text-main leading-none mb-1">
-              {socio.nombre_completo}
+              {socio.nombre_completo || `${socio.nombre} ${socio.apellido}`}
             </h4>
             <p className="text-[10px] text-text-muted font-mono uppercase tracking-widest">
               ID: {socio.cedula}

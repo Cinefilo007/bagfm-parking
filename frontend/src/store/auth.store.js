@@ -65,6 +65,16 @@ export const useAuthStore = create((set) => ({
     window.location.href = '/login';
   },
 
+  setDebeCambiarPassword: (valor) => {
+    const userString = localStorage.getItem('user');
+    if (userString) {
+      const user = JSON.parse(userString);
+      user.debe_cambiar_password = valor;
+      localStorage.setItem('user', JSON.stringify(user));
+      set({ user });
+    }
+  },
+
   checkSession: () => {
     const token = localStorage.getItem('token');
     const user = localStorage.getItem('user');

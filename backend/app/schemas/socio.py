@@ -23,6 +23,8 @@ class SocioSalida(SocioBase):
     id: UUID
     entidad_id: Optional[UUID] = None
     rol: RolTipo
+    nombre_completo: str
+    debe_cambiar_password: bool
     created_at: datetime
     vehiculos: List[VehiculoSalida] = []
     

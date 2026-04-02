@@ -4,7 +4,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import obtener_db
 from app.core.excepciones import CredencialesInvalidas, UsuarioInactivo
-from app.schemas.auth import LoginEntrada, Token
+from app.core.dependencias import obtener_usuario_actual
+from app.models.usuario import Usuario
+from app.schemas.auth import LoginEntrada, Token, CambioPasswordEntrada
 from app.services.auth_service import auth_service
 
 router = APIRouter()
@@ -28,3 +30,30 @@ async def login(
             detail=str(e),
             headers={"WWW-Authenticate": "Bearer"},
         )
+
+@router.patch("/cambiar-password")
+async def cambiar_password(
+    datos: CambioPasswordEntrada,
+    db: AsyncSession = Depends(obtener_db),
+    usuario_actual: Usuario = Depends(obtener_usuario_actual)
+):
+    """
+    Permite al usuario cambiar su contraseña. 
+    Limpia el flag 'debe_cambiar_password'.
+    """
+    # Validación simple: que no sea igual a su cédula (password por defecto)
+    if datos.nueva_password == usuario_actual.cedula:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="La nueva contraseña debe ser diferente a su número de cédula"
+        )
+    
+    exito = await auth_service.actualizar_password(db, str(usuario_actual.id), datos.nueva_password)
+    
+    if not exito:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Usuario no encontrado"
+        )
+        
+    return {"mensaje": "Contraseña actualizada exitosamente"}

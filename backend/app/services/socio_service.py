@@ -31,7 +31,8 @@ class SocioService:
             telefono=datos.telefono,
             rol=RolTipo.SOCIO,
             entidad_id=datos.entidad_id,
-            password_hash=hashear_password(datos.password)
+            password_hash=hashear_password(datos.password if datos.password else datos.cedula),
+            debe_cambiar_password=True
         )
         db.add(nuevo_socio)
         await db.flush() # Para obtener el ID del nuevo_socio
