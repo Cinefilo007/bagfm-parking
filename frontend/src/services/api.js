@@ -8,6 +8,9 @@ const api = axios.create({
   },
 });
 
+console.log(`>>> [SISTEMA] BAGFM Frontend v0.3.1`);
+console.log(`>>> [SISTEMA] Conectando a API: ${api.defaults.baseURL}`);
+
 // Request Interceptor: Inyectar token JWT
 api.interceptors.request.use(
   (config) => {
