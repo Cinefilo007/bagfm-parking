@@ -11,8 +11,9 @@ Este documento detalla las medidas de emergencia y estabilidad aplicadas para re
 - Fallos en la etapa de migración (`alembic`) que detenían el arranque del servidor.
 
 **Solución aplicada:**
-- Reducción de workers de `uvicorn` de **4 a 1** en `backend/entrypoint.sh`.
-- Optimización del comando de inicio para entornos con recursos limitados.
+- Reducción de workers de `uvicorn` de **4 a 1**.
+- **Eliminación de `entrypoint.sh`**: Se detectó que el archivo creado en Windows usaba finales de línea `CRLF`, lo que impedía su ejecución en los servidores Linux de Railway, resultando en un error 502 inmediato.
+- **Migración a CMD**: El comando de inicio se movió directamente al `Dockerfile` para garantizar compatibilidad universal.
 
 ---
 

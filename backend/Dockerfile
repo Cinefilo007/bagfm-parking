@@ -28,5 +28,5 @@ RUN chmod +x /app/entrypoint.sh
 # Exponer el puerto que usará Railway (vía variable PORT)
 EXPOSE 8000
 
-# Usar el entrypoint para correr migraciones y luego iniciar la app
-ENTRYPOINT ["/app/entrypoint.sh"]
+# Iniciar la aplicación directamente para evitar problemas de CRLF en scripts
+CMD ["sh", "-c", "alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000} --workers 1"]

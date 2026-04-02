@@ -27,8 +27,8 @@
 
 ## [0.3.0] — 2026-04-02
 
-### Corregido (Parche de Estabilidad Railway)
-- **Infraestructura**: Reducción de workers de `uvicorn` de 4 a 1 para prevenir errores **502 Bad Gateway** por límites de memoria en Railway.
+### Corregido (Parche de Estabilidad Railway v2)
+- **Infraestructura**: Se eliminó `entrypoint.sh` y se movió el comando de inicio a `Dockerfile` (CMD) para evitar errores de ejecución por finales de línea CRLF en Linux/Railway.
 - **Conectividad (CORS)**: 
   - Se eliminó el hardcoding de `localhost:8000` en el frontend, sustituyéndolo por la URL de producción de Railway como fallback seguro.
   - Se actualizó el valor por defecto de `cors_origins` en el backend para permitir el dominio de producción del frontend.
