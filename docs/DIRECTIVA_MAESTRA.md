@@ -14,7 +14,7 @@ Base Aérea Generalísimo Francisco de Miranda
 | Campo | Valor |
 |-------|-------|
 | **Nombre** | BAGFM — Control de Acceso Vehicular |
-| **Versión** | 0.5.0 (Gestión Operativa) |
+| **Versión** | 0.6.0 (PWA & Navigation Stability) |
 | **Dominio** | Configurable via `APP_DOMAIN` (`.env`) |
 | **Idioma** | Español (código, comentarios, variables, UI) |
 | **Metodología** | Mejora Infinita — SOPs vs Ejecución |
@@ -152,8 +152,9 @@ Definidas en `backend/.env` y `frontend/.env`. Ver `.env.example` en cada carpet
 - Las llamadas a la API van en `services/`. **Nunca** directamente en componentes.
 - El estado global (usuario, sesión, notificaciones) va en `store/`.
 - Las páginas son tontas: solo muestran, llaman services, manejan estados locales simples.
+- Navigation Layout: El menú inferior (BottomNav) se inyecta globalmente vía RutaProtegida.
 - Mobile-first siempre. Probar en 375px de ancho como base.
-- El sistema es PWA: todos los íconos críticos deben funcionar offline si es posible.
+- El sistema es PWA: Instalable en iOS/Android con Service Worker y Manifiesto.
 
 ### Base de Datos
 - Ninguna migración elimina columnas sin deprecación previa.
@@ -196,10 +197,10 @@ Definidas en `backend/.env` y `frontend/.env`. Ver `.env.example` en cada carpet
 | QR engine | ⏳ Pendiente |
 | Importación Excel | ⏳ Pendiente |
 | Push Notifications | ⏳ Pendiente |
-| PWA completa | ⏳ Pendiente |
-| Deploy Railway | 🏗️ En progreso |
+| PWA completa | ✅ Completo |
+| Deploy Railway | ✅ Completo |
 
 ---
 
-*Última actualización: 2026-03-30 | Autor: Sistema*  
+*Última actualización: 2026-04-02 | Autor: Antigravity*  
 *Guía Visual: Design System Aegis Tactical generado y validado en Google Stitch · Proyecto `4512440937494164528`*

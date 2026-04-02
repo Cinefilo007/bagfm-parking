@@ -1,6 +1,6 @@
 # 📚 DOCUMENTACIÓN COMPLETA DEL SISTEMA BAGFM
-**Versión**: 0.5.0 (Gestión Operativa)  
-**Fecha de unificación**: 2026-04-02 01:12
+**Versión**: 0.6.0 (PWA & Navigation Stability)  
+**Fecha de unificación**: 2026-04-02 12:54
 
 Este documento consolida todas las directivas del sistema. **Fuente Única de Verdad**.
 
@@ -20,7 +20,7 @@ Base Aérea Generalísimo Francisco de Miranda
 | Campo | Valor |
 |-------|-------|
 | **Nombre** | BAGFM — Control de Acceso Vehicular |
-| **Versión** | 0.5.0 (Gestión Operativa) |
+| **Versión** | 0.6.0 (PWA & Navigation Stability) |
 | **Dominio** | Configurable via `APP_DOMAIN` (`.env`) |
 | **Idioma** | Español (código, comentarios, variables, UI) |
 | **Metodología** | Mejora Infinita — SOPs vs Ejecución |
@@ -69,7 +69,7 @@ El sistema está diseñado para **evolucionar continuamente** sin romper lo exis
 | Excel import | `openpyxl` (Python) | 3.x |
 | Push | Web Push API (VAPID) | — |
 | Deploy | Railway | — |
-| PWA | Vite PWA Plugin | 0.19.x |
+| PWA | Vite PWA Plugin | 0.21.x |
 
 ---
 
@@ -148,9 +148,13 @@ Guardia de turno. Personal con **cuenta temporal** (24h) creada por el Comandant
 
 ## 6. REGISTRO DE CAMBIOS
 
+### [0.6.0] — 2026-04-02
+- **Implementado**: Conversión a PWA (Service Worker + Manifest).
+- **Estabilidad**: Solución de bucles de redirección, Layout Global y corrección `ERESOLVE` en Dockerfile para Railway.
+- **Iconografía**: Despliegue de iconos táctiles para móviles.
+
 ### [0.5.0] — 2026-04-02
 - **Implementado**: Mando táctico, Alcabalas con guardias 24h, Eventos masivos (FL-08).
-- **Estabilidad**: Solución final de errores 502 y CORS en Railway.
 
 ---
 

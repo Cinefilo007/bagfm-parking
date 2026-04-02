@@ -5,15 +5,27 @@
 
 ---
 
-## [0.5.1] — 2026-04-02
+## [0.6.0] — 2026-04-02
+
+### Añadido
+- **PWA (Mobile First)**: Conversión total a Aplicación Web Progresiva instalable.
+- **Iconografía Táctica**: Generación y despliegue de iconos 192/512 adaptativos con estética nativa.
+- **Service Worker**: Implementación de caché para carga inmediata y actualizaciones automáticas.
+- **Guía de Usuario**: Nueva directiva de instalación paso a paso para iOS y Android.
+
+### Modificado
+- **Arquitectura de Navegación**: Migración a Layout Global centralizado en `RutaProtegida`.
+- **BottomNav**: Menú inferior ahora persistente en todas las rutas protegidas a través de inyección de componentes.
+- **HomeRedirect**: Nuevo motor de redirección inteligente basado en roles operativos (Alcabala, Comandante, Entidad).
 
 ### Corregido
-- **Backend (Despliegue)**: Reparación de `ImportError` crítico que impedía el inicio del servidor en producción.
-- **Backend (Arquitectura)**: Consolidación de módulos `comando` y `eventos` en la raíz de `api/v1/`, eliminando subdirectorios inconsistentes.
-- **Backend (Core)**: Normalización de dependencias de núcleo (`obtener_db`, `obtener_usuario_actual`) en módulos operativos.
-- **Backend (Schemas)**: Restauración del esquema `CodigoQR` faltante requerido para el flujo de eventos masivos.
+- **Bucle de login (Alcabala)**: Eliminada la redirección circular que impedía el acceso a cuentas de guardia.
+- **Navegación Discreta**: Implementado flag `hideNav` para ocultar menús en pantallas de escaneado (Scanner QR).
+- **Despliegue (Railway)**: Corregido error `ERESOLVE` en Dockerfile mediante el uso de `--legacy-peer-deps` para compatibilidad con Vite 8.
 
-## [0.5.0] — 2026-04-02
+---
+
+## [0.5.1] — 2026-04-02
 
 ### Añadido
 - **Gestión Operativa de Mando**: Implementación del Dashboard del Comandante para supervisión de accesos.
