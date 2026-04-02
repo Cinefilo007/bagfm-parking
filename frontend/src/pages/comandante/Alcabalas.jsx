@@ -9,6 +9,7 @@ import { toast } from 'react-hot-toast';
 
 export default function Alcabalas() {
   const [puntos, setPuntos] = useState([]);
+  const [guardias, setGuardias] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showModalPunto, setShowModalPunto] = useState(false);
   const [showModalGuardia, setShowModalGuardia] = useState(false);
@@ -18,8 +19,14 @@ export default function Alcabalas() {
   const [formGuardia, setFormGuardia] = useState({ cedula: '', nombre: '', apellido: '' });
 
   useEffect(() => {
-    fetchPuntos();
+    fetchData();
   }, []);
+
+  const fetchData = async () => {
+    setLoading(true);
+    await Promise.all([fetchPuntos(), fetchGuardias()]);
+    setLoading(false);
+  };
 
   const fetchPuntos = async () => {
     try {
@@ -27,8 +34,15 @@ export default function Alcabalas() {
       setPuntos(data);
     } catch (error) {
       toast.error('Error al cargar alcabalas');
-    } finally {
-      setLoading(false);
+    }
+  };
+
+  const fetchGuardias = async () => {
+    try {
+      const data = await comandoService.getGuardiasActivos();
+      setGuardias(data);
+    } catch (error) {
+      toast.error('Error al cargar personal de turno');
     }
   };
 
@@ -52,6 +66,7 @@ export default function Alcabalas() {
       setCredencialTemp(res);
       setShowModalGuardia(false);
       setFormGuardia({ cedula: '', nombre: '', apellido: '' });
+      fetchGuardias();
     } catch (error) {
       toast.error(error.response?.data?.detail || 'Error al crear guardia');
     }
@@ -90,8 +105,8 @@ export default function Alcabalas() {
               <MapPin size={20} className="text-primary" />
               Alcabalas Activas
             </CardTitle>
-            <Boton size="sm" onClick={() => setShowModalPunto(true)}>
-              <Plus size={16} />
+            <Boton variant="ghost" size="icon" className="h-8 w-8 rounded-full hover:bg-primary/20 hover:text-primary" onClick={() => setShowModalPunto(true)}>
+              <Plus size={18} />
             </Boton>
           </CardHeader>
           <CardContent className="pt-4">
@@ -136,6 +151,60 @@ export default function Alcabalas() {
           </CardContent>
         </Card>
       </div>
+
+      {/* ESTADÍSTICAS DE GUARDIAS ACTIIOS */}
+      <section className="space-y-4">
+        <div className="flex items-center justify-between px-2">
+           <h2 className="text-lg font-bold text-white flex items-center gap-2">
+              <Key size={20} className="text-primary" />
+              Personal en Turno
+           </h2>
+           <span className="px-2 py-1 bg-primary/10 text-primary text-[10px] font-bold rounded-lg border border-primary/20">
+              GUARDIA ACTIVA
+           </span>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+           {guardias.map(g => (
+             <Card key={g.id} className="bg-bg-low border-white/5 hover:border-primary/30 transition-all group">
+               <CardContent className="p-4">
+                  <div className="flex items-start justify-between">
+                     <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary group-hover:bg-primary group-hover:text-white transition-colors">
+                           <Shield size={20} />
+                        </div>
+                        <div>
+                           <p className="font-bold text-white leading-tight">{g.nombre_completo}</p>
+                           <p className="text-[10px] text-text-muted font-mono">{g.cedula}</p>
+                        </div>
+                     </div>
+                     <div className="text-right">
+                        <p className="text-2xl font-black text-white group-hover:text-primary transition-colors">{g.total_escaneos}</p>
+                        <p className="text-[8px] text-text-muted uppercase font-bold tracking-widest">ESCANEOS</p>
+                     </div>
+                  </div>
+                  
+                  <div className="mt-4 pt-3 border-t border-white/5 flex items-center justify-between">
+                     <div className="flex items-center gap-1.5 text-success">
+                        <div className="w-1.5 h-1.5 rounded-full bg-success animate-pulse" />
+                        <span className="text-[10px] font-bold uppercase">En línea</span>
+                     </div>
+                     <div className="flex items-center gap-1 text-text-muted">
+                        <Clock size={12} />
+                        <span className="text-[10px]">Expira: {new Date(g.expira_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                     </div>
+                  </div>
+               </CardContent>
+             </Card>
+           ))}
+
+           {guardias.length === 0 && (
+             <div className="col-span-full p-8 border-2 border-dashed border-white/5 rounded-2xl text-center">
+                <p className="text-text-muted italic text-sm">No hay personal de guardia registrado actualmente</p>
+             </div>
+           )}
+        </div>
+      </section>
 
       {/* MODAL CREAR PUNTO */}
       <Modal isOpen={showModalPunto} onClose={() => setShowModalPunto(false)} title="Nueva Alcabala">

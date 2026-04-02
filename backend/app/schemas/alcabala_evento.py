@@ -32,6 +32,14 @@ class GuardiaTemporalSalida(BaseModel):
     expira_at: datetime
     model_config = ConfigDict(from_attributes=True)
 
+class GuardiaActivoSalida(BaseModel):
+    id: UUID
+    nombre_completo: str
+    cedula: str
+    total_escaneos: int
+    expira_at: datetime
+    model_config = ConfigDict(from_attributes=True)
+
 # --- Solicitud de Evento (Pases Masivos) ---
 class SolicitudEventoBase(BaseModel):
     nombre_evento: str

@@ -14,7 +14,8 @@ from app.models.enums import RolTipo
 # Importar esquemas locales para evitar circulares
 from app.schemas.alcabala_evento import (
     PuntoAccesoCrear, PuntoAccesoSalida, 
-    GuardiaTemporalCrear, GuardiaTemporalSalida
+    GuardiaTemporalCrear, GuardiaTemporalSalida,
+    GuardiaActivoSalida
 )
 from app.services.alcabala_mgmt_service import alcabala_mgmt_service
 
@@ -66,6 +67,14 @@ async def crear_guardia(
         password_temporal=res["password_temporal"],
         expira_at=res["expira_at"]
     )
+
+@router.get("/guardias-activos", response_model=List[GuardiaActivoSalida])
+async def listar_guardias_activos(
+    db: AsyncSession = Depends(obtener_db),
+    _ = Depends(verificar_comandante)
+):
+    """Lista el personal de guardia actualmente en turno y sus estadísticas."""
+    return await alcabala_mgmt_service.listar_guardias_activos_con_stats(db)
 
 @router.post("/limpiar-guardias")
 async def limpiar_guardias(

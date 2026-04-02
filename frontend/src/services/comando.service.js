@@ -28,6 +28,11 @@ export const comandoService = {
   async limpiarGuardias() {
     const res = await api.post('/comando/limpiar-guardias');
     return res.data;
+  },
+
+  async getGuardiasActivos() {
+    const res = await api.get('/comando/guardias-activos');
+    return res.data;
   }
 };
 

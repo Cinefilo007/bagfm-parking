@@ -12,6 +12,7 @@ import ScannerAlcabala from '../pages/alcabala/Scanner';
 import Alcabalas from '../pages/comandante/Alcabalas';
 import EventosMando from '../pages/comandante/EventosMando';
 import EventosEntidad from '../pages/entidad/Eventos';
+import Ajustes from '../pages/Ajustes';
 import { useAuthStore } from '../store/auth.store';
 
 const TemporaryPlaceholder = ({ name }) => (
@@ -79,10 +80,10 @@ export const router = createBrowserRouter([
           }
         ]
       },
-      // ====== RUTAS COMPARTIDAS O INACTIVAS ======
+      // ====== RUTAS COMPARTIDAS ======
       {
          path: 'ajustes',
-         element: <TemporaryPlaceholder name="Ajustes de Perfil" />
+         element: <Ajustes />
       }
     ],
   },

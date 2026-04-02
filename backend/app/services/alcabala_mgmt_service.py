@@ -8,8 +8,10 @@ from sqlalchemy.future import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.models.alcabala_evento import PuntoAcceso
 from app.models.usuario import Usuario
+from app.models.acceso import Acceso
 from app.models.enums import RolTipo
 from app.core.security import hashear_password
+from sqlalchemy import func
 
 class AlcabalaMgmtService:
     @staticmethod
@@ -63,6 +65,40 @@ class AlcabalaMgmtService:
             "password_temporal": password_temp,
             "expira_at": expira
         }
+
+    @staticmethod
+    async def listar_guardias_activos_con_stats(db: AsyncSession):
+        """
+        Lista usuarios con rol ALCABALA que están activos y no han expirado.
+        Incluye el conteo de accesos registrados por cada uno.
+        """
+        now = datetime.now()
+        
+        # Query para obtener usuarios activos
+        query = select(
+            Usuario,
+            func.count(Acceso.id).label("total_escaneos")
+        ).outerjoin(
+            Acceso, Usuario.id == Acceso.registrado_por
+        ).where(
+            Usuario.rol == RolTipo.ALCABALA,
+            Usuario.activo == True,
+            Usuario.expira_at > now
+        ).group_by(Usuario.id)
+        
+        result = await db.execute(query)
+        rows = result.all()
+        
+        return [
+            {
+                "id": u.id,
+                "nombre_completo": f"{u.nombre} {u.apellido}",
+                "cedula": u.cedula,
+                "total_escaneos": total,
+                "expira_at": u.expira_at
+            }
+            for u, total in rows
+        ]
 
     @staticmethod
     async def limpiar_guardias_expirados(db: AsyncSession):
