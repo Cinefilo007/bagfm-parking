@@ -14,7 +14,7 @@ export const useAuthStore = create((set) => ({
       formData.append('username', cedula);
       formData.append('password', password);
 
-      const response = await api.post('/auth/login', formData, {
+      const response = await api.post('auth/login', formData, {
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded',
         },
