@@ -1,7 +1,6 @@
 import React from 'react';
 import { Header } from '../../components/layout/Header';
 import { Card } from '../../components/ui/Card';
-import { BottomNav } from '../../components/layout/BottomNav';
 import { Target, CarFront, ShieldAlert, AlertTriangle } from 'lucide-react';
 
 export default function DashboardComando() {
@@ -71,8 +70,6 @@ export default function DashboardComando() {
         </div>
 
       </main>
-
-      <BottomNav />
     </div>
   );
 }

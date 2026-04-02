@@ -5,6 +5,10 @@ import './index.css'
 import { RouterProvider } from 'react-router-dom'
 import { router } from './router'
 import { useAuthStore } from './store/auth.store'
+import { registerSW } from 'virtual:pwa-register'
+
+// Registrar Service Worker para PWA
+registerSW({ immediate: true })
 
 // Hidratar sesión local al iniciar la app
 useAuthStore.getState().checkSession()

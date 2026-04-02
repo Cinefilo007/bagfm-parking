@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { Header } from '../../components/layout/Header';
-import { BottomNav } from '../../components/layout/BottomNav';
 import { Card } from '../../components/ui/Card';
 import { useAuthStore } from '../../store/auth.store';
 import { Users, CarFront, AlertCircle, ShieldCheck } from 'lucide-react';
@@ -89,8 +88,6 @@ export default function DashboardEntidad() {
            </button>
         </div>
       </main>
-
-      <BottomNav />
     </div>
   );
 }

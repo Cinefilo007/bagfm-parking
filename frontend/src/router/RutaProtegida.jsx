@@ -1,8 +1,8 @@
-import React from 'react';
 import { Navigate, Outlet } from 'react-router-dom';
 import { useAuthStore } from '../store/auth.store';
+import { BottomNav } from '../components/layout/BottomNav';
 
-export const RutaProtegida = ({ rolesPermitidos = [] }) => {
+export const RutaProtegida = ({ rolesPermitidos = [], hideNav = false }) => {
   const { isAuthenticated, isLoading, user } = useAuthStore();
 
   if (isLoading) {
@@ -19,11 +19,21 @@ export const RutaProtegida = ({ rolesPermitidos = [] }) => {
 
   // Si se pasaron roles, validar
   if (rolesPermitidos.length > 0 && !rolesPermitidos.includes(user.rol)) {
-    // Usuario no autorizado para esta ruta, mandarlo a su inicio natural
+    // Redirección inteligente fundamentada en el rol
     if (user.rol === 'COMANDANTE' || user.rol === 'ADMIN_BASE') return <Navigate to="/comando/dashboard" replace />;
     if (user.rol === 'ADMIN_ENTIDAD') return <Navigate to="/entidad/dashboard" replace />;
-    return <Navigate to="/inicio" replace />;
+    if (user.rol === 'ALCABALA') return <Navigate to="/alcabala/dashboard" replace />;
+    
+    // Fallback seguro
+    return <Navigate to="/login" replace />;
   }
 
-  return <Outlet />;
+  return (
+    <div className="min-h-screen bg-bg-app flex flex-col">
+       <div className="flex-1">
+          <Outlet />
+       </div>
+       {!hideNav && <BottomNav />}
+    </div>
+  );
 };

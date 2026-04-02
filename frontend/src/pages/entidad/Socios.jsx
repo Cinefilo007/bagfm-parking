@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { Header } from '../../components/layout/Header';
-import { BottomNav } from '../../components/layout/BottomNav';
 import { Boton } from '../../components/ui/Boton';
 import { Modal } from '../../components/ui/Modal';
 import { Input } from '../../components/ui/Input';
@@ -231,7 +230,6 @@ export default function SociosEntidad() {
         )}
       </main>
 
-      <BottomNav />
 
       {/* Modal Registro */}
       <Modal 

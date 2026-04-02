@@ -12,13 +12,22 @@ import ScannerAlcabala from '../pages/alcabala/Scanner';
 import Alcabalas from '../pages/comandante/Alcabalas';
 import EventosMando from '../pages/comandante/EventosMando';
 import EventosEntidad from '../pages/entidad/Eventos';
-import { RolTipo } from '../store/auth.store'; // Or wherever RolTipo is defined, wait, I saw it in models. In frontend it's a string.
+import { useAuthStore } from '../store/auth.store';
 
 const TemporaryPlaceholder = ({ name }) => (
   <div className="flex h-screen items-center justify-center bg-bg-app text-white">
      <h1>App: {name}</h1>
   </div>
 );
+
+const HomeRedirect = () => {
+  const { user } = useAuthStore();
+  if (!user) return <Navigate to="/login" replace />;
+  if (user.rol === 'COMANDANTE' || user.rol === 'ADMIN_BASE') return <Navigate to="/comando/dashboard" replace />;
+  if (user.rol === 'ADMIN_ENTIDAD') return <Navigate to="/entidad/dashboard" replace />;
+  if (user.rol === 'ALCABALA') return <Navigate to="/alcabala/dashboard" replace />;
+  return <Navigate to="/ajustes" replace />;
+};
 
 export const router = createBrowserRouter([
   {
@@ -27,12 +36,11 @@ export const router = createBrowserRouter([
   },
   {
     path: '/',
-    // Protected base route
     element: <RutaProtegida />,
     children: [
       {
         path: '',
-        element: <Navigate to="/comando/dashboard" replace />
+        element: <HomeRedirect />
       },
       // ====== COMANDO ======
       {
@@ -62,7 +70,13 @@ export const router = createBrowserRouter([
         element: <RutaProtegida rolesPermitidos={['ALCABALA', 'ADMIN_BASE', 'COMANDANTE']} />,
         children: [
           { path: 'dashboard', element: <DashboardAlcabala /> },
-          { path: 'scanner', element: <ScannerAlcabala /> }
+          { 
+            path: 'scanner', 
+            element: <RutaProtegida hideNav={true} rolesPermitidos={['ALCABALA']} />,
+            children: [
+               { path: '', element: <ScannerAlcabala /> }
+            ]
+          }
         ]
       },
       // ====== RUTAS COMPARTIDAS O INACTIVAS ======
