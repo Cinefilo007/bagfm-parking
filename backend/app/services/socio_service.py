@@ -6,6 +6,7 @@ from typing import List, Optional
 from app.models.usuario import Usuario
 from app.models.entidad_civil import EntidadCivil
 from app.models.membresia import Membresia
+from app.models.vehiculo import Vehiculo
 from app.models.enums import RolTipo, MembresiaEstado
 from app.schemas.socio import SocioCrear, MembresiaBase
 from app.core.security import hashear_password
@@ -44,6 +45,20 @@ class SocioService:
             created_by=creador_id
         )
         db.add(nueva_membresia)
+
+        # 4. Crear Vehículos (Opcional)
+        if datos.vehiculos:
+            for v_data in datos.vehiculos:
+                nuevo_v = Vehiculo(
+                    placa=v_data.placa.upper(),
+                    marca=v_data.marca.upper(),
+                    modelo=v_data.modelo.upper(),
+                    color=v_data.color.upper(),
+                    año=v_data.año,
+                    tipo=v_data.tipo,
+                    socio_id=nuevo_socio.id
+                )
+                db.add(nuevo_v)
         
         await db.commit()
         await db.refresh(nuevo_socio)

@@ -4,6 +4,7 @@ from typing import List, Dict, Any
 from uuid import UUID
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.schemas.socio import SocioCrear
+from app.schemas.vehiculo import VehiculoCrear
 from app.services.socio_service import socio_service
 from app.core.security import hashear_password
 from app.core.excepciones import EntidadNoEncontrada
@@ -44,7 +45,14 @@ class ImportService:
                     continue
                 
                 try:
+                    # Columnas: A=cedula, B=nombre, C=apellido, D=email, E=telefono, F=placa, G=marca, H=modelo, I=color
                     cedula, nombre, apellido, email, telefono = row[:5]
+                    
+                    # Datos de vehículo (opcionales)
+                    placa = row[5] if len(row) > 5 else None
+                    marca = row[6] if len(row) > 6 else None
+                    modelo = row[7] if len(row) > 7 else None
+                    color = row[8] if len(row) > 8 else None
                     
                     if not cedula or not nombre or not apellido:
                         resumen["errores"].append({
@@ -68,8 +76,18 @@ class ImportService:
                         email=email,
                         telefono=telefono,
                         entidad_id=entidad_id,
-                        password=cedula 
+                        password=cedula,
+                        vehiculos=[]
                     )
+                    
+                    # Si hay datos de vehículo, añadirlo
+                    if placa and marca:
+                        datos_socio.vehiculos.append(VehiculoCrear(
+                            placa=str(placa).strip().upper(),
+                            marca=str(marca).strip().upper(),
+                            modelo=str(modelo).strip().upper() if modelo else "S/M",
+                            color=str(color).strip().upper() if color else "S/C"
+                        ))
                     
                     await socio_service.crear_socio_con_membresia(db, datos_socio, creador_id)
                     resumen["exitosos"] += 1

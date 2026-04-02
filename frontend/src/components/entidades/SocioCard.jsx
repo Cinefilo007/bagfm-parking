@@ -4,11 +4,12 @@ import { Badge } from '../ui/Badge';
 import { User, Car, ShieldAlert, CheckCircle2 } from 'lucide-react';
 
 export const SocioCard = ({ socio }) => {
-  const tieneMembresia = socio.membresias && socio.membresias.length > 0;
-  const membresiaActual = tieneMembresia ? socio.membresias[0] : null;
+  const tieneVehiculos = socio.vehiculos && socio.vehiculos.length > 0;
+  const membresiaActual = socio.membresias && socio.membresias.length > 0 ? socio.membresias[0] : null;
+  const esActivo = membresiaActual?.estado?.toLowerCase() === 'activa';
   
   return (
-    <Card elevation={1} className="relative overflow-hidden border-white/5 hover:border-primary/30 transition-all">
+    <Card elevation={1} className={`relative overflow-hidden border-white/5 transition-all duration-300 hover:scale-[1.01] ${esActivo ? 'hover:border-primary/40' : 'hover:border-danger/40'}`}>
       <div className="flex justify-between items-start mb-4">
         <div className="flex items-center gap-3">
           <div className="h-10 w-10 rounded-full bg-white/5 flex items-center justify-center border border-white/10 text-text-muted">
@@ -33,33 +34,40 @@ export const SocioCard = ({ socio }) => {
         )}
       </div>
 
-      {membresiaActual && (
-        <div className="mt-4 grid grid-cols-2 gap-3 p-3 bg-black/20 rounded-xl border border-white/5">
-          <div className="space-y-1">
-            <span className="text-[8px] uppercase tracking-widest text-text-muted block">Vehículo</span>
-            <div className="flex items-center gap-1.5 text-text-sec">
-               <Car size={14} className="text-primary/60" />
-               <span className="text-xs font-bold font-mono">{membresiaActual.vehiculo_placa}</span>
-            </div>
+      {/* Resumen de Acceso y Vehículos */}
+      <div className="mt-4 grid grid-cols-2 gap-3">
+        <div className="p-3 bg-white/5 rounded-xl border border-white/5 space-y-1">
+          <span className="text-[8px] uppercase tracking-widest text-text-muted block font-bold">Vehículos</span>
+          <div className="flex items-center gap-1.5">
+             <Car size={14} className={tieneVehiculos ? "text-primary" : "text-text-muted/30"} />
+             <span className={`text-[11px] font-bold font-mono ${tieneVehiculos ? "text-text-main" : "text-text-muted"}`}>
+               {tieneVehiculos ? `${socio.vehiculos.length} AUTORIZADOS` : 'SIN REGISTRO'}
+             </span>
           </div>
-          <div className="space-y-1">
-            <span className="text-[8px] uppercase tracking-widest text-text-muted block">Vence</span>
-            <div className="flex items-center gap-1.5 text-text-sec">
-               <ShieldAlert size={14} className="text-warning/60" />
-               <span className="text-xs font-medium">
-                 {new Date(membresiaActual.fecha_vencimiento).toLocaleDateString()}
-               </span>
-            </div>
+          {tieneVehiculos && (
+            <p className="text-[9px] text-text-muted truncate font-mono">
+              {socio.vehiculos.map(v => v.placa).join(', ')}
+            </p>
+          )}
+        </div>
+
+        <div className="p-3 bg-white/5 rounded-xl border border-white/5 space-y-1">
+          <span className="text-[8px] uppercase tracking-widest text-text-muted block font-bold">Estado</span>
+          <div className="flex items-center gap-1.5">
+             {esActivo ? (
+               <CheckCircle2 size={14} className="text-primary" />
+             ) : (
+               <ShieldAlert size={14} className="text-danger" />
+             )}
+             <span className={`text-[11px] font-bold uppercase tracking-widest ${esActivo ? "text-primary" : "text-danger"}`}>
+               {esActivo ? 'VIGENTE' : 'CADUCADO'}
+             </span>
           </div>
+          <p className="text-[9px] text-text-muted truncate">
+             {membresiaActual ? `VENCE: ${new Date(membresiaActual.fecha_vencimiento).toLocaleDateString()}` : 'REVISAR ACCESO'}
+          </p>
         </div>
-      )}
-      
-      {!membresiaActual && (
-        <div className="mt-4 p-3 bg-danger/5 rounded-xl border border-danger/10 flex items-center justify-center gap-2">
-           <ShieldAlert size={14} className="text-danger" />
-           <span className="text-[10px] text-danger uppercase font-bold tracking-widest">Requiere Regularización</span>
-        </div>
-      )}
+      </div>
     </Card>
   );
 };

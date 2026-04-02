@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status, File, UploadFile
+from fastapi import APIRouter, Depends, HTTPException, status, File, UploadFile, Response
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import List, Dict, Any
 from uuid import UUID
@@ -10,6 +10,7 @@ from app.models.usuario import Usuario
 from app.schemas.socio import SocioCrear, SocioSalida
 from app.services.socio_service import socio_service
 from app.services.import_service import import_service
+from app.services.template_service import template_service
 
 router = APIRouter()
 
@@ -82,3 +83,19 @@ async def importar_socios_excel(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=str(e)
         )
+
+@router.get("/template", status_code=status.HTTP_200_OK)
+async def descargar_plantilla_socios(
+    usuario_actual: Usuario = Depends(require_rol(GESTORES_SOCIOS))
+):
+    """
+    Descarga la plantilla Excel (.xlsx) con los encabezados para importar socios.
+    """
+    excel_data = template_service.generar_excel_socios_template()
+    return Response(
+        content=excel_data,
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={
+            "Content-Disposition": "attachment; filename=TEMPLATE_SOCIOS_BAGFM.xlsx"
+        }
+    )

@@ -3,6 +3,7 @@ from uuid import UUID
 from datetime import date, datetime
 from pydantic import BaseModel, ConfigDict, EmailStr
 from app.models.enums import RolTipo, MembresiaEstado
+from app.schemas.vehiculo import VehiculoCrear, VehiculoSalida
 
 class SocioBase(BaseModel):
     cedula: str
@@ -16,12 +17,14 @@ class SocioBase(BaseModel):
 class SocioCrear(SocioBase):
     password: Optional[str] = "123456" # Default para socios autogenerados
     entidad_id: UUID
+    vehiculos: Optional[List[VehiculoCrear]] = []
 
 class SocioSalida(SocioBase):
     id: UUID
     entidad_id: Optional[UUID] = None
     rol: RolTipo
     created_at: datetime
+    vehiculos: List[VehiculoSalida] = []
     
     model_config = ConfigDict(from_attributes=True)
 
