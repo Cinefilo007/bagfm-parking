@@ -36,7 +36,7 @@ class Configuracion(BaseSettings):
     vapid_email: str = "admin@bagfm.mil.ve"
 
     # CORS
-    cors_origins: str = "http://localhost:5173"
+    cors_origins: str = "https://bagfm-frontend-production.up.railway.app"
 
     @property
     def cors_lista(self) -> list[str]:

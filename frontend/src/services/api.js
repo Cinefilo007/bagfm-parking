@@ -2,7 +2,7 @@ import axios from 'axios';
 
 const api = axios.create({
   // Se asume Railway API por defecto conectando a través de VITE_API_URL
-  baseURL: import.meta.env.VITE_API_URL || 'http://localhost:8000/api/v1',
+  baseURL: import.meta.env.VITE_API_URL || 'https://bagfm-backend-production.up.railway.app/api/v1',
   headers: {
     'Content-Type': 'application/json',
   },
