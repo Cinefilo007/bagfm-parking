@@ -223,49 +223,60 @@ Resultado:
 
 ---
 
-## FL-08 — Solicitud de Acceso para Evento
+## FL-08 — Solicitud de Acceso para Evento (Masivo)
 
 **Actor principal**: Admin Entidad → Comandante  
-**Resultado**: QR temporales generados para los visitantes del evento.
+**Resultado**: QR temporales generados y limitados por aprobación parcial.
 
 ```
-1. Admin Entidad abre formulario "Solicitar Acceso para Evento"
-   - Nombre del evento
-   - Fecha y hora del evento
-   - Número de vehículos requeridos
-   - Motivo/descripción
-   - Lista de vehículos (opcional, puede agregarse después)
-
-2. Sistema crea solicitud con estado: pendiente
-
-3. Comandante recibe notificación push en su PWA
-
-4. Comandante revisa la solicitud:
-   - Ve todos los detalles
-   - Tiene tres opciones:
-     a. Aprobar todo → cantidad_aprobada = cantidad_solicitada
-     b. Aprobar parcial → ingresa número menor
-     c. Denegar → ingresa motivo_rechazo
-
-5. Sistema notifica al Admin Entidad (push notification)
-
-6. Si aprobada (total o parcial):
-   - Sistema genera N QR temporales (N = cantidad_aprobada)
-   - Tipo: temporal
-   - Expiración: fecha del evento + qr_expiracion_temporal_horas (config)
-   - Admin Entidad puede descargar QR como PDF o lista de links
-   - Distribuye QR a los visitantes del evento
-
-7. El día del evento:
-   - Visitantes llegan con su QR temporal
-   - Alcabala escanea → el sistema verifica que no haya expirado
-   - Registra entrada como acceso_temporal = true
-   - El QR puede marcarse como "usado" tras el primer escaneo (configurable)
-
-8. Al vencer la fecha/hora:
-   - QR expiran automáticamente
-   - Si intentan usar QR vencido → pantalla roja ❌
+1. Admin Entidad solicita evento: nombre, fecha, cantidad, motivo.
+2. Sistema crea solicitud: estado = 'pendiente'.
+3. Comandante revisa y decide:
+   a. Aprobar total.
+   b. Aprobar parcial (ej: solicita 50, aprueba 30).
+   c. Denegar (con motivo).
+4. Sistema genera automáticamente N tokens JWT 'pase_evento'.
+5. Admin Entidad descarga los QR para distribución.
+6. Guardia escanea en alcabala: 
+   - El sistema valida tipo de token y vigencia del evento.
+   - Registra acceso vinculado a la solicitud_id.
 ```
+
+---
+
+## FL-11 — Gestión de Alcabalas y Guardias Temporales
+
+**Actor principal**: Comandante
+**Resultado**: Puntos de acceso controlados por personal con cuentas desechables.
+
+```
+1. Comandante registra Punto de Acceso (ej: "Alcabala 1 - Entrada Táctica").
+2. Comandante crea Guardia Temporal para ese punto:
+   - Sistema solicita nombre del guardia.
+   - Calcula expira_at: 08:30 AM del día siguiente (Ciclo de 24h).
+3. Sistema genera cedula/clave temporal.
+4. Guardia ingresa con su dispositivo personal:
+   - Al expirar el tiempo, el token JWT de sesión se invalida.
+   - La cuenta se marca como inactiva/expirada.
+```
+
+---
+
+## FL-12 — Notificación de Infracción en Red
+
+**Actor principal**: Supervisor → Sistema
+**Resultado**: Bloqueo inmediato y alerta a todos los puntos de control.
+
+```
+1. Supervisor registra infracción a un vehículo (FL-06).
+2. Sistema detecta flag 'bloquea_salida' o gravedad.
+3. Emisión de Alerta (Push/Realtime):
+   - Notificación al Comandante.
+   - Alerta visual en Dashboard de todas las Alcabalas ACTIVAS.
+4. El vehículo es interceptado en el próximo intento de salida.
+```
+
+---
 
 ---
 

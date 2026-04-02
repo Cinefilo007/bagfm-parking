@@ -5,6 +5,15 @@
 
 ---
 
+## [0.5.0] — 2026-04-02
+
+### Añadido
+- **Gestión Operativa de Mando**: Implementación del Dashboard del Comandante para supervisión de accesos.
+- **Módulo de Alcabalas**: Registro de puntos físicos y creación de guardias temporales de 24h.
+- **Control de Expiración**: Lógica de caducidad automática de cuentas a las 08:30 AM (VET).
+- **Pases Masivos (FL-08)**: Flujo completo de solicitud, aprobación parcial y generación masiva de QRs genéricos.
+- **Seguridad**: Validación de tokens `pase_evento` y alertas en tiempo real de infracciones.
+
 ## [Sin lanzar] — En desarrollo
 
 ### Planificado

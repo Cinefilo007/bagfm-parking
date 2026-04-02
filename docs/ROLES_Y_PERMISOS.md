@@ -33,12 +33,12 @@ Personal de ronda que recorre la base.
 
 ### `ALCABALA`
 Guardia de turno en los puntos de entrada de la base.  
+- Personal con **cuenta temporal** (24h) creada por el Comandante.
 - Escanea QR para verificar autorización de entrada.
-- Registra entradas (obligatorio).
-- Registra salidas (**opcional**, configurable en `configuracion.salida_requerida`).
-- Acceso al **buscador maestro** para confirmar acceso manual o verificar vehículos.
-- Ve alertas de infracciones activas que bloquean salida.
-- **No puede** crear infracciones.
+- Registra entradas (obligatorio) y salidas (según configuración).
+- Recibe alertas en tiempo real de infracciones activas.
+- Acceso al **buscador maestro** para confirmación manual.
+- **No puede** crear infracciones ni gestionar socios.
 
 ### `ADMIN_ENTIDAD`
 Administrador de una entidad civil (Parque Miranda, Club Fútbol, etc.).  
@@ -137,6 +137,10 @@ Acceso temporal aprobado para un evento.
 | Solicitar evento | ❌ | ❌ | ❌ | ❌ | ✅ | ❌ | ❌ |
 | Aprobar/Denegar evento | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ |
 | Ver solicitudes | ✅ | ✅ | ❌ | ❌ | ✅ (propias) | ❌ | ❌ |
+| **ALCABALAS Y GUARDIAS** |
+| Registrar punto de acceso | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ |
+| Crear guardia temporal | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ |
+| Ver alcabalas activas | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ |
 
 ---
 

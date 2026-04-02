@@ -34,6 +34,7 @@ Todos los usuarios del sistema (todos los roles).
 | `activo` | BOOLEAN | DEFAULT true | Soft delete |
 | `foto_url` | TEXT | NULL | URL de foto de perfil |
 | `password_hash` | TEXT | NOT NULL | bcrypt |
+| `expira_at` | TIMESTAMPTZ | NULL | Caducidad para guardias temporales |
 | `created_at` | TIMESTAMPTZ | DEFAULT now() | — |
 | `updated_at` | TIMESTAMPTZ | DEFAULT now() | — |
 
@@ -125,6 +126,7 @@ QR de identificación por socio/vehículo.
 | `membresia_id` | UUID | FK → membresias, NULL | Membresía asociada |
 | `tipo` | ENUM | NOT NULL | Ver enum `qr_tipo` |
 | `token` | TEXT | UNIQUE, NOT NULL | JWT firmado |
+| `solicitud_id` | UUID | FK → solicitudes_evento, NULL | Asocia pases masivos a evento |
 | `fecha_expiracion` | TIMESTAMPTZ | NULL | NULL = permanente |
 | `activo` | BOOLEAN | DEFAULT true | Revocable |
 | `created_at` | TIMESTAMPTZ | DEFAULT now() | — |
@@ -215,6 +217,18 @@ Solicitudes de acceso temporal masivo para eventos.
 | `revisado_at` | TIMESTAMPTZ | NULL | — |
 
 **Enum `solicitud_estado`**: `pendiente`, `aprobada`, `aprobada_parcial`, `denegada`
+
+---
+
+### `puntos_acceso`
+Puntos físicos de control (alcabalas).
+
+| Campo | Tipo | Restricción | Notas |
+|-------|------|-------------|-------|
+| `id` | UUID | PK | — |
+| `nombre` | VARCHAR(100) | NOT NULL | Ej: "Alcabala Norte" |
+| `ubicacion` | TEXT | NULL | Coordenadas o referencia |
+| `activo` | BOOLEAN | DEFAULT true | — |
 
 ---
 

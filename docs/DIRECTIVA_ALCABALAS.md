@@ -10,15 +10,24 @@ El módulo de Alcabala es la interfaz principal del Guardia Alcabala. Su funció
 ## 2. Lógica de Negocio (SOP)
 
 ### FL-04 — Flujo de Validación
-1. **Escaneo**: Captura del token JWT desde el código QR.
+1. **Escaneo**: Captura del token JWT desde el código QR (Permanente o Pase de Evento).
 2. **Validación de Identidad**: Verificación de la firma del JWT y vigencia del token.
-3. **Validación de Estado (Membresía)**:
+3. **Pases de Evento (FL-08)**: 
+   - El sistema reconoce el tipo `pase_evento`.
+   - Verifica que el evento sea hoy y en horario permitido.
+4. **Validación de Estado (Membresía)**:
    - Debe estar en estado `activa`.
    - Fecha de fin (si existe) debe ser >= hoy.
-4. **Validación de Sanciones**:
+5. **Validación de Sanciones**:
    - Si es **entrada**: Solo informativo.
    - Si es **salida**: Si existe infracción con `bloquea_salida = true`, el sistema impide la confirmación del egreso.
-5. **Registro**: Creación de registro en la tabla `accesos`.
+6. **Registro**: Creación de registro en la tabla `accesos`.
+
+### FL-11 — Normativa de Guardias Temporales
+- **Duración**: Ciclos de 24 horas.
+- **Horario**: Inicio/Fin a las **08:30 AM (VET)**.
+- **Dispositivos**: Uso de teléfonos personales mediante PWA segura.
+- **Expiración**: Las cuentas se bloquean automáticamente al finalizar el turno para evitar accesos residuales al sistema.
 
 ## 3. Arquitectura Técnica
 

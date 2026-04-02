@@ -61,4 +61,34 @@ Carga masiva de socios desde un archivo Excel (.xlsx).
 
 ---
 
+## 🛡️ Comando y Alcabalas
+`Base URL: /api/v1/comando`
+
+### `GET /alcabalas`
+Lista los puntos de acceso/alcabalas registradas.
+- **Permisos**: `COMANDANTE`, `ADMIN_BASE`.
+
+### `POST /registrar-guardia`
+Crea un usuario temporal con rol `ALCABALA` para un punto específico.
+- **Horario**: Expira a las 08:30 AM (VET).
+- **Permisos**: `COMANDANTE`, `ADMIN_BASE`.
+
+---
+
+## 🎟️ Eventos y Pases Masivos
+`Base URL: /api/v1/eventos`
+
+### `POST /solicitar`
+La entidad solicita acceso masivo temporal.
+- **Permisos**: `ADMIN_ENTIDAD`.
+
+### `POST /procesar/{solicitud_id}`
+El mando aprueba (total/parcial) o deniega la solicitud.
+- **Permisos**: `COMANDANTE`.
+
+### `GET /solicitudes`
+Lista historial de solicitudes según el rol del solicitante.
+
+---
+
 *Última actualización: 2026-04-02 | Ver: DIRECTIVA_MAESTRA.md para contexto*

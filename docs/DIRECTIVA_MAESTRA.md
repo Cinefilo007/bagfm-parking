@@ -14,7 +14,7 @@ Base Aérea Generalísimo Francisco de Miranda
 | Campo | Valor |
 |-------|-------|
 | **Nombre** | BAGFM — Control de Acceso Vehicular |
-| **Versión** | 0.1.0 (en desarrollo) |
+| **Versión** | 0.5.0 (Gestión Operativa) |
 | **Dominio** | Configurable via `APP_DOMAIN` (`.env`) |
 | **Idioma** | Español (código, comentarios, variables, UI) |
 | **Metodología** | Mejora Infinita — SOPs vs Ejecución |
