@@ -6,8 +6,8 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.database import get_db
-from app.core.auth import obtener_usuario_actual
+from app.core.database import obtener_db
+from app.core.dependencias import obtener_usuario_actual
 from app.models.usuario import Usuario
 from app.models.enums import RolTipo
 from app.schemas.alcabala_evento import (
@@ -21,7 +21,7 @@ router = APIRouter()
 @router.post("/solicitudes", response_model=SolicitudEventoSalida)
 async def crear_solicitud_evento(
     datos: SolicitudEventoCrear,
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = Depends(obtener_db),
     usuario: Usuario = Depends(obtener_usuario_actual)
 ):
     """Permite que un ADMIN_ENTIDAD solicite pases masivos para un evento."""
@@ -32,7 +32,7 @@ async def crear_solicitud_evento(
 
 @router.get("/solicitudes", response_model=List[SolicitudEventoSalida])
 async def listar_solicitudes_evento(
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = Depends(obtener_db),
     usuario: Usuario = Depends(obtener_usuario_actual)
 ):
     """Lista las solicitudes (Filtrado por entidad si es ADMIN_ENTIDAD)."""
@@ -43,7 +43,7 @@ async def listar_solicitudes_evento(
 async def procesar_solicitud_evento(
     solicitud_id: UUID,
     datos: SolicitudEventoProcesar,
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = Depends(obtener_db),
     usuario: Usuario = Depends(obtener_usuario_actual)
 ):
     """El Comandante procesa la solicitud (Aprobación Total/Parcial/Denegación)."""
@@ -59,7 +59,7 @@ async def procesar_solicitud_evento(
 @router.get("/solicitudes/{solicitud_id}/qrs", response_model=List[CodigoQRSalida])
 async def obtener_qrs_evento(
     solicitud_id: UUID,
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = Depends(obtener_db),
     usuario: Usuario = Depends(obtener_usuario_actual)
 ):
     """Obtiene la lista de QRs genéricos aprobados para descargar."""

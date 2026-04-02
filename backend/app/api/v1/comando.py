@@ -7,8 +7,8 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.database import get_db
-from app.core.auth import obtener_usuario_actual
+from app.core.database import obtener_db
+from app.core.dependencias import obtener_usuario_actual
 from app.models.usuario import Usuario
 from app.models.enums import RolTipo
 # Importar esquemas locales para evitar circulares
@@ -31,7 +31,7 @@ def verificar_comandante(usuario: Usuario = Depends(obtener_usuario_actual)):
 @router.post("/puntos-acceso", response_model=PuntoAccesoSalida)
 async def crear_punto(
     datos: PuntoAccesoCrear,
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = Depends(obtener_db),
     _ = Depends(verificar_comandante)
 ):
     """Registra una nueva alcabala física en el sistema."""
@@ -39,7 +39,7 @@ async def crear_punto(
 
 @router.get("/puntos-acceso", response_model=List[PuntoAccesoSalida])
 async def listar_puntos(
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = Depends(obtener_db),
     _ = Depends(obtener_usuario_actual)
 ):
     """Lista todos los puntos de acceso activos."""
@@ -48,7 +48,7 @@ async def listar_puntos(
 @router.post("/guardias-temporales", response_model=GuardiaTemporalSalida)
 async def crear_guardia(
     datos: GuardiaTemporalCrear,
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = Depends(obtener_db),
     _ = Depends(verificar_comandante)
 ):
     """
@@ -69,7 +69,7 @@ async def crear_guardia(
 
 @router.post("/limpiar-guardias")
 async def limpiar_guardias(
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = Depends(obtener_db),
     _ = Depends(verificar_comandante)
 ):
     """Endpoint manual para forzar la desactivación de guardias pasados."""

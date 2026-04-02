@@ -5,6 +5,14 @@
 
 ---
 
+## [0.5.1] — 2026-04-02
+
+### Corregido
+- **Backend (Despliegue)**: Reparación de `ImportError` crítico que impedía el inicio del servidor en producción.
+- **Backend (Arquitectura)**: Consolidación de módulos `comando` y `eventos` en la raíz de `api/v1/`, eliminando subdirectorios inconsistentes.
+- **Backend (Core)**: Normalización de dependencias de núcleo (`obtener_db`, `obtener_usuario_actual`) en módulos operativos.
+- **Backend (Schemas)**: Restauración del esquema `CodigoQR` faltante requerido para el flujo de eventos masivos.
+
 ## [0.5.0] — 2026-04-02
 
 ### Añadido
