@@ -45,6 +45,9 @@ async def health_check():
         "entorno": config.app_env
     }
 
+# Importar modelos para asegurar que se registren en el metadata de Base
+from app.models import base
+
 from app.api.v1 import auth, entidades, socios
 
 app.include_router(auth.router, prefix="/api/v1/auth", tags=["Autenticación"])
