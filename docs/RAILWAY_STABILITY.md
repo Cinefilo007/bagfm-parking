@@ -12,8 +12,9 @@ Este documento detalla las medidas de emergencia y estabilidad aplicadas para re
 
 **Solución aplicada:**
 - Reducción de workers de `uvicorn` de **4 a 1**.
-- **Eliminación de `entrypoint.sh`**: Se detectó que el archivo creado en Windows usaba finales de línea `CRLF`, lo que impedía su ejecución en los servidores Linux de Railway, resultando en un error 502 inmediato.
-- **Migración a CMD**: El comando de inicio se movió directamente al `Dockerfile` para garantizar compatibilidad universal.
+- **Eliminación de `entrypoint.sh`**: Se detectó que el archivo creado en Windows usaba finales de línea `CRLF`, lo que impedía su ejecución en los servidores Linux de Railway.
+- **Migración a CMD**: Comando de inicio movido directamente al `Dockerfile`.
+- **Resolución de Puerto**: Se identificó que Railway asigna el puerto **8080** dinámicamente, requiriendo su configuración manual en el panel de "Public Networking" para eliminar el error 502.
 
 ---
 

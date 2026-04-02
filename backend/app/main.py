@@ -1,41 +1,23 @@
-"""
-Punto de entrada principal — BAGFM Backend
-Configuración de FastAPI, CORS, y registro de routers.
-"""
-import os
-from fastapi import FastAPI, Request
+import logging
+from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.core.config import obtener_config
 
 config = obtener_config()
 
-print("\n" + "="*50)
-print(">>> [SISTEMA] BAGFM BACKEND v0.3.2")
-print(f">>> [SISTEMA] PUERTO DETECTADO: {os.getenv('PORT', '8000')}")
-print(">>> [SISTEMA] CORS: MODO DIAGNÓSTICO ABIERTO (*)")
-print("="*50 + "\n")
-
 # Crear instancia principal de FastAPI
 app = FastAPI(
     title=config.app_nombre,
-    version="0.3.1",
+    version="0.4.0",
     description="API para el Sistema de Control de Acceso Vehicular - BAGFM",
-    docs_url="/api/docs" if not config.en_produccion else None,  # Ocultar docs en produccion
+    docs_url="/api/docs" if not config.en_produccion else None,
     redoc_url="/api/redoc" if not config.en_produccion else None,
 )
 
-# Middleware de registro de peticiones (DIAGNÓSTICO)
-@app.middleware("http")
-async def log_requests(request: Request, call_next):
-    print(f">>> [PETICIÓN] {request.method} {request.url.path}")
-    response = await call_next(request)
-    print(f">>> [RESPUESTA] Status: {response.status_code}")
-    return response
-
-# Configuración de CORS - ABIERTO PARA DIAGNÓSTICO
+# Configuración de CORS basada en variables de entorno
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=config.cors_lista,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

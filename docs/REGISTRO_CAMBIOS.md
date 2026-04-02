@@ -25,14 +25,19 @@
 - PWA completa (manifest + Service Worker)
 - Deploy en Railway
 
+## [0.4.0] — 2026-04-02
+
+### Añadido
+- **Producción**: Milestone de estabilidad alcanzado. El sistema es totalmente funcional en Railway.
+
+### Corregido
+- **Infraestructura**: Resolución final del error 502 mediante el mapeo correcto del puerto dinámico de Railway (`8080`).
+- **Limpieza**: Eliminación de todos los logs de diagnóstico y middlewares de depuración v0.3.x.
+- **Seguridad**: Restauración de la configuración CORS restrictiva basada en variables de entorno.
+
 ## [0.3.0] — 2026-04-02
 
-### Corregido (Parche de Estabilidad Railway v2)
-- **Infraestructura**: Se eliminó `entrypoint.sh` y se movió el comando de inicio a `Dockerfile` (CMD) para evitar errores de ejecución por finales de línea CRLF en Linux/Railway.
-- **Conectividad (CORS)**: 
-  - Se eliminó el hardcoding de `localhost:8000` en el frontend, sustituyéndolo por la URL de producción de Railway como fallback seguro.
-  - Se actualizó el valor por defecto de `cors_origins` en el backend para permitir el dominio de producción del frontend.
-- **Frontend**: Se eliminó el slash inicial en la ruta `/auth/login` para asegurar compatibilidad absoluta con el `baseURL` de la API en producción.
+### Corregido (Parche de Estabilidad Railway)
 
 ## [0.2.0] — 2026-03-31
 

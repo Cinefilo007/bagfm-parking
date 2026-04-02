@@ -28,5 +28,5 @@ RUN chmod +x /app/entrypoint.sh
 # Exponer el puerto que usará Railway (vía variable PORT)
 EXPOSE 8000
 
-# Iniciar la aplicación directamente con logs visibles en Railway
-CMD ["sh", "-c", "echo '>>> [DOCKER] Iniciando Fase 1: Migraciones' && alembic upgrade head && echo '>>> [DOCKER] Fase 1 completada' && echo '>>> [DOCKER] Iniciando Fase 2: Uvicorn v0.3.1' && uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000} --workers 1"]
+# Iniciar la aplicación y correr migraciones (Arranque robusto v0.4.0)
+CMD ["sh", "-c", "alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000} --workers 1"]

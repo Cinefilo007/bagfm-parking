@@ -1,15 +1,12 @@
 import axios from 'axios';
 
+// Axios Instance Configuration
 const api = axios.create({
-  // Se asume Railway API por defecto conectando a través de VITE_API_URL
   baseURL: import.meta.env.VITE_API_URL || 'https://bagfm-backend-production.up.railway.app/api/v1',
   headers: {
     'Content-Type': 'application/json',
   },
 });
-
-console.log(`>>> [SISTEMA] BAGFM Frontend v0.3.2`);
-console.log(`>>> [SISTEMA] Conectando a API: ${api.defaults.baseURL}`);
 
 // Request Interceptor: Inyectar token JWT
 api.interceptors.request.use(
