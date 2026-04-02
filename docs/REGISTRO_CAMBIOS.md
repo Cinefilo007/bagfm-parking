@@ -25,6 +25,15 @@
 - PWA completa (manifest + Service Worker)
 - Deploy en Railway
 
+## [0.3.0] — 2026-04-02
+
+### Corregido (Parche de Estabilidad Railway)
+- **Infraestructura**: Reducción de workers de `uvicorn` de 4 a 1 para prevenir errores **502 Bad Gateway** por límites de memoria en Railway.
+- **Conectividad (CORS)**: 
+  - Se eliminó el hardcoding de `localhost:8000` en el frontend, sustituyéndolo por la URL de producción de Railway como fallback seguro.
+  - Se actualizó el valor por defecto de `cors_origins` en el backend para permitir el dominio de producción del frontend.
+- **Frontend**: Se eliminó el slash inicial en la ruta `/auth/login` para asegurar compatibilidad absoluta con el `baseURL` de la API en producción.
+
 ## [0.2.0] — 2026-03-31
 
 ### Agregado

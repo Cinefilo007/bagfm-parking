@@ -174,7 +174,8 @@ Definidas en `backend/.env` y `frontend/.env`. Ver `.env.example` en cada carpet
 | [CONVENCIONES_CODIGO.md](./CONVENCIONES_CODIGO.md) | Nombres, estructura, estilo de código |
 | [API_REFERENCE.md](./API_REFERENCE.md) | Endpoints disponibles y contratos |
 | [DEPLOYMENT.md](./DEPLOYMENT.md) | 🚀 Guía de despliegue para GitHub y Railway |
-| [REGISTRO_CAMBIOS.md](./REGISTRO_CAMBIOS.md) | Log de cambios mayor por versión |
+| [REGISTRO_CAMBIOS.md](./docs/REGISTRO_CAMBIOS.md) | Log de cambios mayor por versión |
+| [RAILWAY_STABILITY.md](./docs/RAILWAY_STABILITY.md) | 🛡️ Notas técnicas sobre el parche de estabilidad en producción |
 
 ---
 
