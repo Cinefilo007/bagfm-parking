@@ -14,7 +14,6 @@ import {
   Mail, 
   Phone,
   Search,
-  Search,
   FileUp,
   Car,
   Plus,
