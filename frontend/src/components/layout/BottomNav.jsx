@@ -23,11 +23,16 @@ export const BottomNav = () => {
        { to: '/entidad/socios', label: 'Socios', icon: Users },
        { to: '/ajustes', label: 'Ajustes', icon: Menu }
     );
-  } else {
-    // Alcabala, parquero o socio (se ajustará mas adelante)
+  } else if (user?.rol === 'ALCABALA') {
     navItems.push(
-      { to: '/inicio', label: 'Inicio', icon: ShieldCheck },
-      { to: '/perfil', label: 'Perfil', icon: Menu }
+      { to: '/alcabala/dashboard', label: 'Panel', icon: ShieldCheck },
+      { to: '/alcabala/scanner', label: 'Scanner', icon: Camera },
+      { to: '/ajustes', label: 'Ajustes', icon: Menu }
+    );
+  } else {
+    // Parquero o socio (se ajustará mas adelante)
+    navItems.push(
+      { to: '/ajustes', label: 'Perfil', icon: Menu }
     );
   }
 

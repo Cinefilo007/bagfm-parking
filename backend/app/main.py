@@ -48,8 +48,11 @@ async def health_check():
 # Importar modelos para asegurar que se registren en el metadata de Base
 from app.models import base
 
-from app.api.v1 import auth, entidades, socios
+from app.api.v1 import auth, entidades, socios, accesos, infracciones, websocket
 
 app.include_router(auth.router, prefix="/api/v1/auth", tags=["Autenticación"])
 app.include_router(entidades.router, prefix="/api/v1/entidades", tags=["Entidades Civiles"])
 app.include_router(socios.router, prefix="/api/v1/socios", tags=["Gestión de Socios"])
+app.include_router(accesos.router, prefix="/api/v1/accesos", tags=["Control de Accesos"])
+app.include_router(infracciones.router, prefix="/api/v1/infracciones", tags=["Gestión de Infracciones"])
+app.include_router(websocket.router, prefix="/api/v1", tags=["Tiempo Real"])

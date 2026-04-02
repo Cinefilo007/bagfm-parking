@@ -7,6 +7,9 @@ import Entidades from '../pages/comandante/Entidades';
 import EntidadDetalle from '../pages/comandante/EntidadDetalle';
 import DashboardEntidad from '../pages/entidad/Dashboard';
 import SociosEntidad from '../pages/entidad/Socios';
+import DashboardAlcabala from '../pages/alcabala/Dashboard';
+import ScannerAlcabala from '../pages/alcabala/Scanner';
+import { RolTipo } from '../store/auth.store'; // Or wherever RolTipo is defined, wait, I saw it in models. In frontend it's a string.
 
 const TemporaryPlaceholder = ({ name }) => (
   <div className="flex h-screen items-center justify-center bg-bg-app text-white">
@@ -39,13 +42,21 @@ export const router = createBrowserRouter([
           { path: 'infracciones', element: <TemporaryPlaceholder name="Infracciones" /> }
         ],
       },
-      // ====== ENTIDAD ======
       {
         path: 'entidad',
         element: <RutaProtegida rolesPermitidos={['ADMIN_ENTIDAD']} />,
         children: [
           { path: 'dashboard', element: <DashboardEntidad /> },
           { path: 'socios', element: <SociosEntidad /> }
+        ]
+      },
+      // ====== ALCABALA ======
+      {
+        path: 'alcabala',
+        element: <RutaProtegida rolesPermitidos={['ALCABALA', 'ADMIN_BASE', 'COMANDANTE']} />,
+        children: [
+          { path: 'dashboard', element: <DashboardAlcabala /> },
+          { path: 'scanner', element: <ScannerAlcabala /> }
         ]
       },
       // ====== RUTAS COMPARTIDAS O INACTIVAS ======
