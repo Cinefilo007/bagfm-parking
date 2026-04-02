@@ -154,7 +154,7 @@ export default function Entidades() {
         onClose={() => !creando && setIsModalOpen(false)} 
         title="Nueva Entidad Civil"
       >
-        <form onSubmit={handleCrearEntidad} className="space-y-4 max-h-[70vh] overflow-y-auto px-1">
+        <form onSubmit={handleCrearEntidad} className="space-y-4 max-h-[70vh] overflow-y-auto px-1 no-scrollbar">
            <div className="space-y-3">
              <h3 className="text-[10px] uppercase font-bold text-primary tracking-[0.2em] mb-2 border-b border-primary/20 pb-1">
                Datos de la Concesión

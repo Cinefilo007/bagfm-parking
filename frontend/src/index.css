@@ -97,11 +97,19 @@
     background: rgba(147, 0, 10, 0.10);
   }
 
-  /* Glassmorphism Cards */
   .glass-card {
     background: rgba(26, 31, 47, 0.60);
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
+  }
+
+  /* Utilidad para ocultar scrollbar manteniendo funcionalidad */
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
   }
 }
 
