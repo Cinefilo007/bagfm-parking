@@ -1,6 +1,16 @@
 import { create } from 'zustand';
 import api from '../services/api';
 
+export const RolTipo = {
+  COMANDANTE: "COMANDANTE",
+  ADMIN_BASE: "ADMIN_BASE",
+  SUPERVISOR: "SUPERVISOR",
+  ALCABALA: "ALCABALA",
+  ADMIN_ENTIDAD: "ADMIN_ENTIDAD",
+  PARQUERO: "PARQUERO",
+  SOCIO: "SOCIO"
+};
+
 export const useAuthStore = create((set) => ({
   user: null,
   token: null,

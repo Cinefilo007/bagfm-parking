@@ -24,3 +24,15 @@ export const Card = ({ children, className, elevation = 2, hoverable = false, ..
     </div>
   );
 };
+
+export const CardHeader = ({ children, className, ...props }) => (
+  <div className={cn("mb-4", className)} {...props}>{children}</div>
+);
+
+export const CardTitle = ({ children, className, ...props }) => (
+  <h3 className={cn("text-lg font-bold text-text-main leading-none tracking-tight", className)} {...props}>{children}</h3>
+);
+
+export const CardContent = ({ children, className, ...props }) => (
+  <div className={cn("", className)} {...props}>{children}</div>
+);
