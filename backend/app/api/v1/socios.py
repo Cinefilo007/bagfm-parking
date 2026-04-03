@@ -5,7 +5,7 @@ from uuid import UUID
 
 from app.core.database import obtener_db
 from app.core.dependencias import obtener_usuario_actual, require_rol
-from app.models.enums import RolTipo
+from app.models.enums import RolTipo, MembresiaEstado
 from app.models.usuario import Usuario
 from app.schemas.socio import SocioCrear, SocioSalida, SocioPortal
 from app.services.socio_service import socio_service
