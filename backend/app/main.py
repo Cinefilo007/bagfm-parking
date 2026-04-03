@@ -1,6 +1,7 @@
 from fastapi import FastAPI, Request, status
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
+from app.core.excepciones import BagfmError, EntidadNoEncontrada, EntidadDuplicada, AccesoDenegado
 from app.core.config import obtener_config
 
 config = obtener_config()
@@ -22,6 +23,27 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Capturador de Errores de Negocio (BagfmError -> 400/404/403)
+@app.exception_handler(BagfmError)
+async def bagfm_exception_handler(request: Request, exc: BagfmError):
+    # Loguear el error para depuración
+    print(f">> [NEGOCIO] {type(exc).__name__}: {str(exc)}")
+    
+    # Determinar el status code
+    status_code = status.HTTP_400_BAD_REQUEST
+    if isinstance(exc, EntidadNoEncontrada):
+        status_code = status.HTTP_404_NOT_FOUND
+    elif isinstance(exc, AccesoDenegado):
+        status_code = status.HTTP_403_FORBIDDEN
+    elif isinstance(exc, EntidadDuplicada):
+        status_code = status.HTTP_400_BAD_REQUEST
+        
+    return JSONResponse(
+        status_code=status_code,
+        content={"detail": str(exc)},
+        headers={"Access-Control-Allow-Origin": "*"}
+    )
 
 # Capturador de Errores Globales (Anti-500/CORS)
 @app.exception_handler(Exception)

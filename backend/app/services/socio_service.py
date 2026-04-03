@@ -10,7 +10,7 @@ from app.models.vehiculo import Vehiculo
 from app.models.enums import RolTipo, MembresiaEstado
 from app.schemas.socio import SocioCrear, MembresiaBase
 from app.core.security import hashear_password
-from app.core.excepciones import EntidadNoEncontrada
+from app.core.excepciones import EntidadNoEncontrada, EntidadDuplicada
 
 class SocioService:
     async def crear_socio_con_membresia(self, db: AsyncSession, datos: SocioCrear, creador_id: UUID) -> Usuario:
@@ -22,7 +22,13 @@ class SocioService:
         if not entidad:
             raise EntidadNoEncontrada(f"La entidad con ID {datos.entidad_id} no existe")
 
-        # 2. Crear el Usuario (Socio)
+        # 2. Verificar si el usuario ya existe por cédula
+        query_usuario = select(Usuario).where(Usuario.cedula == datos.cedula)
+        res_usuario = await db.execute(query_usuario)
+        if res_usuario.scalar_one_or_none():
+            raise EntidadDuplicada(f"Ya existe un usuario registrado con la cédula {datos.cedula}")
+
+        # 3. Crear el Usuario (Socio)
         nuevo_socio = Usuario(
             cedula=datos.cedula,
             nombre=datos.nombre,
@@ -37,7 +43,7 @@ class SocioService:
         db.add(nuevo_socio)
         await db.flush() # Para obtener el ID del nuevo_socio
 
-        # 3. Crear la Membresia
+        # 4. Crear la Membresia
         nueva_membresia = Membresia(
             socio_id=nuevo_socio.id,
             entidad_id=datos.entidad_id,
