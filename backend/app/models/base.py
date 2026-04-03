@@ -15,3 +15,4 @@ from app.models.membresia import Membresia
 from app.models.codigo_qr import CodigoQR
 from app.models.acceso import Acceso
 from app.models.infraccion import Infraccion
+from app.models.alcabala_evento import PuntoAcceso, SolicitudEvento
