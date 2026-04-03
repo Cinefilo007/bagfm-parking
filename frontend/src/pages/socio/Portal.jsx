@@ -52,8 +52,9 @@ export default function PortalSocio() {
     );
   }
 
-  const p = data?.perfil;
-  const m = p?.membresia;
+  // Desestructuración segura de datos
+  const p = data?.perfil || {};
+  const m = p?.membresia || {};
   const esActivo = m?.estado === 'activa' || m?.estado === 'exonerada';
   const esVencido = m?.progreso?.vencida;
   const esSuspendido = m?.estado === 'suspendida';
@@ -68,7 +69,6 @@ export default function PortalSocio() {
       <main className="px-5 py-6 max-w-md mx-auto space-y-6">
         {/* Card Principal de Identidad */}
         <Card elevation={2} className="relative overflow-hidden border-white/5 py-8">
-          {/* Fondo decorativo táctico */}
           <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-full -mr-16 -mt-16 blur-3xl" />
           
           <div className="flex flex-col items-center text-center">
@@ -97,28 +97,29 @@ export default function PortalSocio() {
               </div>
             </div>
 
+            {/* Datos del Socio */}
             <div className="space-y-1">
               <h2 className="text-xl font-display font-black text-text-main tracking-tight uppercase">
-                {String(p?.nombre_completo || '')}
+                {String(p?.nombre_completo || 'SIN NOMBRE')}
               </h2>
               <p className="text-xs font-mono text-text-muted tracking-[0.2em] font-bold">
-                CÉDULA: {String(p?.cedula || '')}
+                CÉDULA: {String(p?.cedula || 'N/A')}
               </p>
             </div>
           </div>
 
           {/* Información de Membresía */}
           <div className="mt-8 grid grid-cols-2 gap-px bg-white/5 border-t border-white/5">
-             <div className="p-4 text-center group transition-colors hover:bg-white/5">
+             <div className="p-4 text-center">
                 <p className="text-[9px] uppercase font-bold text-text-muted mb-1 tracking-widest">Estado</p>
                 <div className="flex items-center justify-center gap-1.5">
                    {esActivo ? <ShieldCheck size={14} className="text-primary" /> : <ShieldAlert size={14} className="text-danger" />}
                    <p className={`text-[11px] font-black uppercase ${esActivo ? 'text-primary' : 'text-danger'}`}>
-                      {String(m?.estado || '')}
+                      {String(m?.estado || 'DESCONOCIDO')}
                    </p>
                 </div>
              </div>
-             <div className="p-4 text-center group transition-colors hover:bg-white/5 border-l border-white/5">
+             <div className="p-4 text-center border-l border-white/5">
                 <p className="text-[9px] uppercase font-bold text-text-muted mb-1 tracking-widest">Vencimiento</p>
                 <div className="flex items-center justify-center gap-1.5">
                    <Clock size={14} className="text-text-muted" />
@@ -136,21 +137,21 @@ export default function PortalSocio() {
              <Car size={12} /> Vehículos Vinculados
            </h3>
            <div className="grid grid-cols-1 gap-3">
-              {data?.perfil?.vehiculos?.map((v, i) => (
+              {p?.vehiculos?.map((v, i) => (
                 <div key={i} className="p-4 bg-white/5 border border-white/5 rounded-2xl flex items-center justify-between group hover:border-primary/20 transition-all">
                   <div className="flex items-center gap-4">
                     <div className="h-10 w-10 bg-black/40 rounded-xl flex items-center justify-center border border-white/5 text-text-muted group-hover:text-primary transition-colors">
                       <Car size={20} />
                     </div>
                     <div>
-                      <p className="text-[10px] font-bold text-text-muted uppercase tracking-widest leading-none mb-1">{v.marca} {v.modelo}</p>
-                      <p className="text-lg font-mono font-black text-text-main leading-none">{v.placa}</p>
+                      <p className="text-[10px] font-bold text-text-muted uppercase tracking-widest leading-none mb-1">{String(v.marca)} {String(v.modelo)}</p>
+                      <p className="text-lg font-mono font-black text-text-main leading-none">{String(v.placa)}</p>
                     </div>
                   </div>
                   <Badge variant="activa" className="bg-primary/10 text-primary border-none text-[8px]">AUTORIZADO</Badge>
                 </div>
               ))}
-              {(!data?.perfil?.vehiculos || data.perfil.vehiculos.length === 0) && (
+              {(!p?.vehiculos || p.vehiculos.length === 0) && (
                 <p className="text-center py-4 text-text-muted text-[10px] font-bold uppercase tracking-widest italic border border-dashed border-white/10 rounded-2xl">
                   Sin vehículos registrados
                 </p>
@@ -160,7 +161,7 @@ export default function PortalSocio() {
 
         {/* Acciones e Información de contacto */}
         <div className="space-y-3 pt-4">
-           {esSuspendido || esVencido ? (
+           {(esSuspendido || esVencido) && (
              <div className="p-4 bg-danger/5 border border-danger/20 rounded-2xl space-y-3">
                 <div className="flex items-start gap-3">
                   <ShieldAlert className="text-danger shrink-0" size={20} />
@@ -176,7 +177,7 @@ export default function PortalSocio() {
                   <Phone size={14} className="mr-2" /> CONTACTAR SOPORTE
                 </Boton>
              </div>
-           ) : null}
+           )}
 
            <Boton 
              variant="ghost" 
