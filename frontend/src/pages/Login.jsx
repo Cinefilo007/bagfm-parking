@@ -2,7 +2,10 @@ import React, { useState } from 'react';
 import { useAuthStore } from '../store/auth.store';
 import { Boton } from '../components/ui/Boton';
 import { Input } from '../components/ui/Input';
-import { ShieldCheck } from 'lucide-react';
+import { 
+  ShieldCheck, 
+  Info 
+} from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-hot-toast';
 
