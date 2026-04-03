@@ -15,7 +15,7 @@ class SocioBase(BaseModel):
     foto_url: Optional[str] = None
 
 class SocioCrear(SocioBase):
-    password: Optional[str] = "123456" # Default para socios autogenerados
+    password: Optional[str] = None # Si es None, el servicio usará la cédula
     entidad_id: UUID
     vehiculos: Optional[List[VehiculoCrear]] = []
 
