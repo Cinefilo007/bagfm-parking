@@ -7,13 +7,15 @@ from app.core.database import obtener_db
 from app.core.dependencias import obtener_usuario_actual, require_rol
 from app.models.enums import RolTipo, MembresiaEstado
 from app.models.usuario import Usuario
-from app.schemas.socio import SocioCrear, SocioSalida, SocioPortal
+from app.schemas.socio import SocioCrear, SocioSalida, SocioPortal, SocioResumen
+from app.schemas.vehiculo import VehiculoCrear, VehiculoSalida
 from app.services.socio_service import socio_service
 from app.services.membresia_service import membresia_service
 from app.services.import_service import import_service
 from app.services.template_service import template_service
 from app.models.entidad_civil import EntidadCivil
 from app.models.membresia import Membresia
+from app.models.vehiculo import Vehiculo
 from sqlalchemy import select
 
 router = APIRouter()
@@ -138,6 +140,11 @@ async def obtener_portal_socio(
     # Construir perfil
     progreso = membresia_service.calcular_progreso(membresia)
     
+    # Obtener vehículos
+    query_veh = select(Vehiculo).where(Vehiculo.socio_id == usuario_actual.id, Vehiculo.activo == True)
+    res_veh = await db.execute(query_veh)
+    vehiculos = res_veh.scalars().all()
+
     return {
         "perfil": {
             "id": usuario_actual.id,
@@ -158,7 +165,8 @@ async def obtener_portal_socio(
                 "fecha_inicio": membresia.fecha_inicio,
                 "fecha_fin": membresia.fecha_fin,
                 "progreso": progreso
-            }
+            },
+            "vehiculos": vehiculos
         },
         "qr_token": qr.token,
         "nombre_entidad": nombre_entidad
@@ -187,3 +195,20 @@ async def cambiar_estado_socio(
     Cambia el estado de la membresía (suspender, exonerar, activar).
     """
     return await membresia_service.cambiar_estado(db, socio_id, estado)
+
+@router.post("/me/vehiculos", response_model=VehiculoSalida, status_code=status.HTTP_201_CREATED)
+async def vincular_vehiculo_socio(
+    vehiculo: VehiculoCrear,
+    db: AsyncSession = Depends(obtener_db),
+    usuario_actual: Usuario = Depends(require_rol([RolTipo.SOCIO]))
+):
+    """
+    Permite a un socio registrar un vehículo para su propio uso.
+    """
+    try:
+        return await socio_service.vincular_vehiculo(db, usuario_actual.id, vehiculo.model_dump())
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(e)
+        )

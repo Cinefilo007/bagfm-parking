@@ -45,6 +45,12 @@ const socioService = {
   descargarTemplate: async () => {
     const response = await api.get('/socios/template', { responseType: 'blob' });
     return response.data;
+  },
+
+  // Vincular vehículo propio (para el Socio)
+  vincularVehiculo: async (datos) => {
+    const response = await api.post('/socios/me/vehiculos', datos);
+    return response.data;
   }
 };
 

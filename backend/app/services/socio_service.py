@@ -113,4 +113,26 @@ class SocioService:
             
         return lista_final
 
+    async def vincular_vehiculo(self, db: AsyncSession, socio_id: UUID, datos: dict) -> Vehiculo:
+        # Verificar si la placa ya existe
+        placa = datos.get("placa", "").upper()
+        query_v = select(Vehiculo).where(Vehiculo.placa == placa)
+        res_v = await db.execute(query_v)
+        if res_v.scalars().first():
+             raise EntidadDuplicada(f"La placa {placa} ya está registrada en el sistema")
+
+        nuevo_v = Vehiculo(
+            placa=placa,
+            marca=datos.get("marca", "").upper(),
+            modelo=datos.get("modelo", "").upper(),
+            color=datos.get("color", "").upper(),
+            año=datos.get("año"),
+            tipo=datos.get("tipo"),
+            socio_id=socio_id
+        )
+        db.add(nuevo_v)
+        await db.commit()
+        await db.refresh(nuevo_v)
+        return nuevo_v
+
 socio_service = SocioService()
