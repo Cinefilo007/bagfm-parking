@@ -1,7 +1,7 @@
 import React, { forwardRef } from 'react';
 import { cn } from '../../lib/utils';
 
-export const Input = forwardRef(({ className, type = "text", error, label, ...props }, ref) => {
+export const Input = forwardRef(({ className, type = "text", error, label, icon, ...props }, ref) => {
   return (
     <div className="w-full mb-4">
       {label && (
@@ -9,16 +9,24 @@ export const Input = forwardRef(({ className, type = "text", error, label, ...pr
           {label}
         </label>
       )}
-      <input
-        type={type}
-        className={cn(
-          "input-field",
-          error && "error",
-          className
+      <div className="relative">
+        {icon && (
+          <div className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted pointer-events-none">
+            {icon}
+          </div>
         )}
-        ref={ref}
-        {...props}
-      />
+        <input
+          type={type}
+          className={cn(
+            "input-field",
+            icon && "pl-10", // Aumentar padding si hay icono
+            error && "error",
+            className
+          )}
+          ref={ref}
+          {...props}
+        />
+      </div>
       {error && (
         <p className="mt-1 text-xs text-danger">{error}</p>
       )}
