@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useAuthStore } from '../../store/auth.store';
 import socioService from '../../services/socioService';
-import QRCode from "react-qr-code";
+import QRCodeLib from "react-qr-code";
+const QRCode = QRCodeLib.default || QRCodeLib;
 import { 
   User, 
   Car, 
