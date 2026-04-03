@@ -33,8 +33,7 @@ export const RutaProtegida = ({ rolesPermitidos = [], hideNav = false }) => {
   if (user?.debe_cambiar_password) {
     return (
       <div className="min-h-screen bg-bg-app flex flex-col">
-        <h1 className="text-white p-20">DEBE CAMBIAR PASSWORD (DEBUG)</h1>
-        {/* <CambiarPasswordModal /> */}
+        <CambiarPasswordModal />
         <div className="flex-1 filter blur-sm pointer-events-none select-none">
           <Outlet />
         </div>
