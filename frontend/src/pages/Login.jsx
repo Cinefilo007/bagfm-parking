@@ -93,6 +93,14 @@ export default function Login() {
             >
               Iniciar Sesión
             </Boton>
+            
+            {errorLocal && (
+              <div className="mt-4 p-3 bg-red-500/10 border border-red-500/20 rounded-xl animate-fade-in">
+                <p className="text-[10px] text-red-500 font-bold uppercase tracking-widest text-center leading-tight">
+                  {errorLocal}
+                </p>
+              </div>
+            )}
           </form>
         </div>
         
