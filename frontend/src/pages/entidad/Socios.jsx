@@ -102,6 +102,30 @@ export default function SociosEntidad() {
     }
   };
 
+  const handleImportExcel = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const formData = new FormData();
+    formData.append('file', file);
+
+    try {
+      setLoading(true);
+      await api.post(`/socios/importar?entidad_id=${user.entidad_id}`, formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data'
+        }
+      });
+      fetchSocios();
+    } catch (err) {
+      console.error("Error importando excel", err);
+    } finally {
+      setLoading(false);
+      // Reset input para permitir subir el mismo archivo si es necesario
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  };
+
   const addVehiculo = () => {
     setNuevoSocio({
       ...nuevoSocio,
