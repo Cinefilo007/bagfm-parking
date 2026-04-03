@@ -34,7 +34,7 @@ createRoot(document.getElementById('root')).render(
           },
         },
         error: {
-          duration: 10000, // Los errores duran 10 segundos
+          duration: 20000,
           iconTheme: {
             primary: '#FFAB4B',
             secondary: '#93000A',

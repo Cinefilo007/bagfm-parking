@@ -30,6 +30,8 @@ export default function Login() {
     const cedulaLimpia = cedula.trim();
     const passwordLimpia = password.trim();
 
+    console.log("INTENTO LOGIN:", { usuario: cedulaLimpia, pass_len: passwordLimpia.length });
+
     try {
       await login(cedulaLimpia, passwordLimpia);
       // Redirigir basado en el rol (lo lee del store hidratado)
@@ -39,7 +41,7 @@ export default function Login() {
       console.error("Error en login:", err);
       const msg = err.response?.data?.detail || 'Error de credenciales o red.';
       setErrorLocal(msg);
-      toast.error(msg);
+      toast.error(msg, { duration: 20000 });
     } finally {
       setLoading(false);
     }
@@ -62,16 +64,9 @@ export default function Login() {
           {/* Acento decorativo */}
           <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-primary to-transparent opacity-50"></div>
           
-          <h2 className="font-display font-semibold text-text-main text-lg mb-4 text-center">Acceso al Sistema</h2>
+          <h2 className="font-display font-semibold text-text-main text-lg mb-6 text-center underline decoration-primary/20 decoration-2 underline-offset-8">Acceso de Seguridad</h2>
           
-          <div className="mb-6 p-4 bg-primary/5 border border-primary/10 rounded-2xl flex gap-3 shadow-inner">
-             <Info size={18} className="text-primary shrink-0 mt-0.5" />
-             <p className="text-[10px] text-text-muted leading-relaxed uppercase font-bold tracking-wider">
-               Socio: Use su Cédula como Usuario y Contraseña (ej: 12345678).
-             </p>
-          </div>
-          
-          <form onSubmit={handleLogin}>
+          <form onSubmit={handleLogin} className="mt-8">
             <Input 
               label="Cédula de Identidad" 
               placeholder="V-12345678"
