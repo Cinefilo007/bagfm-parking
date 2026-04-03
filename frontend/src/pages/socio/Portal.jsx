@@ -52,7 +52,8 @@ export default function PortalSocio() {
     );
   }
 
-  const m = data?.membresia;
+  const p = data?.perfil;
+  const m = p?.membresia;
   const esActivo = m?.estado === 'activa' || m?.estado === 'exonerada';
   const esVencido = m?.progreso?.vencida;
   const esSuspendido = m?.estado === 'suspendida';
@@ -61,7 +62,7 @@ export default function PortalSocio() {
     <div className="min-h-screen bg-bg-app pb-20">
       <Header 
         titulo="Portal del Socio" 
-        subtitle={data?.entidad_nombre || 'SISTEMA BAGFM'} 
+        subtitle={data?.nombre_entidad || 'SISTEMA BAGFM'} 
       />
 
       <main className="px-5 py-6 max-w-md mx-auto space-y-6">
@@ -81,9 +82,9 @@ export default function PortalSocio() {
             {/* QR Code */}
             <div className={`p-4 bg-white rounded-3xl mb-6 shadow-2xl transition-all duration-500 scale-100 ring-4 ${esActivo && !esVencido ? 'ring-primary/20' : 'ring-danger/20'}`}>
               <div className="bg-white p-1">
-                {data?.qr?.token ? (
+                {data?.qr_token ? (
                   <QRCode 
-                    value={data.qr.token} 
+                    value={data.qr_token} 
                     size={180}
                     level="H"
                     style={{ height: "auto", maxWidth: "100%", width: "100%" }}
@@ -99,10 +100,10 @@ export default function PortalSocio() {
             {/* Datos del Socio */}
             <div className="space-y-1">
               <h2 className="text-xl font-display font-black text-text-main tracking-tight uppercase">
-                {data?.socio?.nombre_completo}
+                {data?.perfil?.nombre_completo}
               </h2>
               <p className="text-xs font-mono text-text-muted tracking-[0.2em] font-bold">
-                CÉDULA: {data?.socio?.cedula}
+                CÉDULA: {data?.perfil?.cedula}
               </p>
             </div>
           </div>
@@ -136,7 +137,7 @@ export default function PortalSocio() {
              <Car size={12} /> Vehículos Vinculados
            </h3>
            <div className="grid grid-cols-1 gap-3">
-              {data?.socio?.vehiculos?.map((v, i) => (
+              {data?.perfil?.vehiculos?.map((v, i) => (
                 <div key={i} className="p-4 bg-white/5 border border-white/5 rounded-2xl flex items-center justify-between group hover:border-primary/20 transition-all">
                   <div className="flex items-center gap-4">
                     <div className="h-10 w-10 bg-black/40 rounded-xl flex items-center justify-center border border-white/5 text-text-muted group-hover:text-primary transition-colors">
@@ -150,7 +151,7 @@ export default function PortalSocio() {
                   <Badge variant="activa" className="bg-primary/10 text-primary border-none text-[8px]">AUTORIZADO</Badge>
                 </div>
               ))}
-              {(!data?.socio?.vehiculos || data.socio.vehiculos.length === 0) && (
+              {(!data?.perfil?.vehiculos || data.perfil.vehiculos.length === 0) && (
                 <p className="text-center py-4 text-text-muted text-[10px] font-bold uppercase tracking-widest italic border border-dashed border-white/10 rounded-2xl">
                   Sin vehículos registrados
                 </p>
