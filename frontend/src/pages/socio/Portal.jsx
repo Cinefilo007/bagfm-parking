@@ -62,7 +62,7 @@ export default function PortalSocio() {
     <div className="min-h-screen bg-bg-app pb-20">
       <Header 
         titulo="Portal del Socio" 
-        subtitle={data?.nombre_entidad || 'SISTEMA BAGFM'} 
+        subtitle={String(data?.nombre_entidad || 'SISTEMA BAGFM')} 
       />
 
       <main className="px-5 py-6 max-w-md mx-auto space-y-6">
@@ -84,7 +84,7 @@ export default function PortalSocio() {
               <div className="bg-white p-1">
                 {data?.qr_token ? (
                   <QRCode 
-                    value={data.qr_token} 
+                    value={String(data.qr_token)} 
                     size={180}
                     level="H"
                     style={{ height: "auto", maxWidth: "100%", width: "100%" }}
@@ -97,13 +97,12 @@ export default function PortalSocio() {
               </div>
             </div>
 
-            {/* Datos del Socio */}
             <div className="space-y-1">
               <h2 className="text-xl font-display font-black text-text-main tracking-tight uppercase">
-                {data?.perfil?.nombre_completo}
+                {String(p?.nombre_completo || '')}
               </h2>
               <p className="text-xs font-mono text-text-muted tracking-[0.2em] font-bold">
-                CÉDULA: {data?.perfil?.cedula}
+                CÉDULA: {String(p?.cedula || '')}
               </p>
             </div>
           </div>
@@ -115,7 +114,7 @@ export default function PortalSocio() {
                 <div className="flex items-center justify-center gap-1.5">
                    {esActivo ? <ShieldCheck size={14} className="text-primary" /> : <ShieldAlert size={14} className="text-danger" />}
                    <p className={`text-[11px] font-black uppercase ${esActivo ? 'text-primary' : 'text-danger'}`}>
-                      {m?.estado}
+                      {String(m?.estado || '')}
                    </p>
                 </div>
              </div>
