@@ -102,7 +102,7 @@ export const CambiarPasswordModal = () => {
               <Boton 
                 type="submit" 
                 className="w-full h-12 gap-2" 
-                loading={loading}
+                isLoading={loading}
               >
                 ACTUALIZAR CREDENCIALES
                 <ArrowRight size={18} />

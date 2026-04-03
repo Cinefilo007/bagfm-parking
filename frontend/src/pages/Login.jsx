@@ -4,6 +4,7 @@ import { Boton } from '../components/ui/Boton';
 import { Input } from '../components/ui/Input';
 import { ShieldCheck } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { toast } from 'react-hot-toast';
 
 export default function Login() {
   const [cedula, setCedula] = useState('');
@@ -23,13 +24,19 @@ export default function Login() {
     }
 
     setLoading(true);
+    const cedulaLimpia = cedula.trim();
+    const passwordLimpia = password.trim();
+
     try {
-      await login(cedula, password);
+      await login(cedulaLimpia, passwordLimpia);
       // Redirigir basado en el rol (lo lee del store hidratado)
       // Como RutaProtegida se encarga de esto si vas a "/", lo enviamos al base
       navigate('/');
     } catch (err) {
-      setErrorLocal(err.response?.data?.detail || 'Error de credenciales o red.');
+      console.error("Error en login:", err);
+      const msg = err.response?.data?.detail || 'Error de credenciales o red.';
+      setErrorLocal(msg);
+      toast.error(msg);
     } finally {
       setLoading(false);
     }
@@ -52,7 +59,14 @@ export default function Login() {
           {/* Acento decorativo */}
           <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-primary to-transparent opacity-50"></div>
           
-          <h2 className="font-display font-semibold text-text-main text-lg mb-6">Autenticación</h2>
+          <h2 className="font-display font-semibold text-text-main text-lg mb-4 text-center">Acceso al Sistema</h2>
+          
+          <div className="mb-6 p-4 bg-primary/5 border border-primary/10 rounded-2xl flex gap-3 shadow-inner">
+             <Info size={18} className="text-primary shrink-0 mt-0.5" />
+             <p className="text-[10px] text-text-muted leading-relaxed uppercase font-bold tracking-wider">
+               Socio: Use su Cédula como Usuario y Contraseña (ej: 12345678).
+             </p>
+          </div>
           
           <form onSubmit={handleLogin}>
             <Input 

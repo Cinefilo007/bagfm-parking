@@ -18,7 +18,7 @@ createRoot(document.getElementById('root')).render(
     <Toaster 
       position="top-center"
       toastOptions={{
-        duration: 4000,
+        duration: 5000,
         style: {
           background: '#1A1F2F',
           color: '#DEE1F7',
@@ -34,6 +34,7 @@ createRoot(document.getElementById('root')).render(
           },
         },
         error: {
+          duration: 10000, // Los errores duran 10 segundos
           iconTheme: {
             primary: '#FFAB4B',
             secondary: '#93000A',

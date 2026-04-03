@@ -24,6 +24,7 @@ import {
 import { useRef } from 'react';
 import api from '../../services/api';
 import socioService from '../../services/socioService';
+import { toast } from 'react-hot-toast';
 
 export default function SociosEntidad() {
   const { user } = useAuthStore();
@@ -83,8 +84,10 @@ export default function SociosEntidad() {
         vehiculos: []
       });
       fetchSocios();
+      toast.success('Miembro registrado exitosamente');
     } catch (err) {
       console.error("Error creando socio", err);
+      toast.error(err.response?.data?.detail || 'Error al registrar miembro');
     }
   };
 
@@ -118,8 +121,10 @@ export default function SociosEntidad() {
         }
       });
       fetchSocios();
+      toast.success('Importación completada correctamente');
     } catch (err) {
       console.error("Error importando excel", err);
+      toast.error(err.response?.data?.detail || 'Fallo en la importación');
     } finally {
       setLoading(false);
       // Reset input para permitir subir el mismo archivo si es necesario
