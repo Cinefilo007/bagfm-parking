@@ -22,6 +22,7 @@ import {
 } from 'lucide-react';
 import { useRef } from 'react';
 import api from '../../services/api';
+import socioService from '../../services/socioService';
 
 export default function SociosEntidad() {
   const { user } = useAuthStore();
@@ -41,12 +42,17 @@ export default function SociosEntidad() {
     vehiculos: []
   });
 
+  // Estados para Renovación
+  const [isRenovarModalOpen, setIsRenovarModalOpen] = useState(false);
+  const [socioSeleccionado, setSocioSeleccionado] = useState(null);
+  const [mesesRenovacion, setMesesRenovacion] = useState(1);
+
   const fetchSocios = async () => {
     if (!user?.entidad_id) return;
     setLoading(true);
     try {
-      const res = await api.get(`/socios/entidad/${user.entidad_id}`);
-      setSocios(res.data);
+      const data = await socioService.listarPorEntidad(user.entidad_id);
+      setSocios(data);
     } catch (err) {
       console.error("Error cargando socios", err);
     } finally {
@@ -115,35 +121,29 @@ export default function SociosEntidad() {
     setNuevoSocio({ ...nuevoSocio, vehiculos: updated });
   };
 
-  const handleImportExcel = async (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-
-    const formData = new FormData();
-    formData.append('file', file);
-
-    setLoading(true);
+  const handleAction = async (type, payload) => {
     try {
-      const res = await api.post(`/socios/importar?entidad_id=${user.entidad_id}`, formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data'
-        }
-      });
-      
-      const { exitosos, errores, total } = res.data;
-      alert(`IMPORTACIÓN FINALIZADA:\n- Total: ${total}\n- Exitosos: ${exitosos}\n- Errores: ${errores.length}`);
-      
-      if (errores.length > 0) {
-        console.table(errores);
+      if (type === 'renovacion') {
+        setSocioSeleccionado(payload);
+        setIsRenovarModalOpen(true);
+      } else if (type === 'estado') {
+        const { socio, nuevoEstado } = payload;
+        await socioService.cambiarEstado(socio.id, nuevoEstado);
+        fetchSocios();
       }
-      
+    } catch (err) {
+      console.error(`Error en acción ${type}`, err);
+    }
+  };
+
+  const confirmarRenovacion = async () => {
+    try {
+      await socioService.renovar(socioSeleccionado.id, mesesRenovacion);
+      setIsRenovarModalOpen(false);
+      setMesesRenovacion(1);
       fetchSocios();
     } catch (err) {
-        console.error("Error importando excel", err);
-        alert("Error crítico al procesar el archivo. Verifique el formato.");
-    } finally {
-        setLoading(false);
-        if (fileInputRef.current) fileInputRef.current.value = '';
+      console.error("Error renovando", err);
     }
   };
 
@@ -215,7 +215,11 @@ export default function SociosEntidad() {
         ) : (
           <div className="space-y-4">
             {sociosFiltrados.map(socio => (
-              <SocioCard key={socio.id} socio={socio} />
+              <SocioCard 
+                key={socio.id} 
+                socio={socio} 
+                onAction={handleAction}
+              />
             ))}
 
             {sociosFiltrados.length === 0 && (
@@ -357,6 +361,59 @@ export default function SociosEntidad() {
             </Boton>
           </div>
         </form>
+      </Modal>
+      {/* Modal Renovación */}
+      <Modal
+        isOpen={isRenovarModalOpen}
+        onClose={() => setIsRenovarModalOpen(false)}
+        title="Renovación de Membresía"
+      >
+        <div className="space-y-6">
+          <div className="p-4 bg-primary/5 border border-primary/10 rounded-2xl flex items-center gap-4">
+             <div className="h-12 w-12 rounded-xl bg-primary/10 flex items-center justify-center text-primary">
+                <RefreshCw size={24} />
+             </div>
+             <div>
+                <p className="text-[10px] uppercase font-bold text-primary tracking-widest">Socio Seleccionado</p>
+                <h4 className="text-sm font-bold text-text-main">{socioSeleccionado?.nombre_completo}</h4>
+             </div>
+          </div>
+
+          <div className="space-y-3">
+             <label className="text-[10px] uppercase font-bold text-text-muted tracking-widest px-1">Duración de Renovación</label>
+             <div className="grid grid-cols-2 gap-3">
+                {[1, 3, 6, 12].map(num => (
+                  <button
+                    key={num}
+                    onClick={() => setMesesRenovacion(num)}
+                    className={`p-3 rounded-xl border transition-all ${
+                      mesesRenovacion === num 
+                      ? 'bg-primary border-primary text-black font-bold' 
+                      : 'bg-white/5 border-white/5 text-text-muted hover:border-white/20'
+                    }`}
+                  >
+                    <span className="block text-sm">{num}</span>
+                    <span className="block text-[8px] uppercase tracking-widest">{num === 1 ? 'MES' : 'MESES'}</span>
+                  </button>
+                ))}
+             </div>
+          </div>
+
+          <div className="p-3 bg-white/5 rounded-xl border border-white/5 space-y-2">
+             <div className="flex justify-between text-[10px] uppercase tracking-widest font-bold">
+                <span className="text-text-muted">Tipo:</span>
+                <span className="text-text-main">Membrecía Mensual</span>
+             </div>
+             <div className="flex justify-between text-[10px] uppercase tracking-widest font-bold">
+                <span className="text-text-muted">Día de Cobro:</span>
+                <span className="text-primary">MISMO DÍA CADA MES</span>
+             </div>
+          </div>
+
+          <Boton onClick={confirmarRenovacion} className="w-full h-12">
+            CONFIRMAR RENOVACIÓN
+          </Boton>
+        </div>
       </Modal>
     </div>
   );

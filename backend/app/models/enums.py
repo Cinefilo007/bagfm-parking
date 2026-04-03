@@ -17,6 +17,7 @@ class MembresiaEstado(str, enum.Enum):
     activa = "activa"
     suspendida = "suspendida"
     vencida = "vencida"
+    exonerada = "exonerada"
 
 class QRTipo(str, enum.Enum):
     permanente = "permanente"

@@ -13,6 +13,7 @@ import Alcabalas from '../pages/comandante/Alcabalas';
 import EventosMando from '../pages/comandante/EventosMando';
 import EventosEntidad from '../pages/entidad/Eventos';
 import Ajustes from '../pages/Ajustes';
+import PortalSocio from '../pages/socio/Portal';
 import { useAuthStore } from '../store/auth.store';
 
 const TemporaryPlaceholder = ({ name }) => (
@@ -27,6 +28,7 @@ const HomeRedirect = () => {
   if (user.rol === 'COMANDANTE' || user.rol === 'ADMIN_BASE') return <Navigate to="/comando/dashboard" replace />;
   if (user.rol === 'ADMIN_ENTIDAD') return <Navigate to="/entidad/dashboard" replace />;
   if (user.rol === 'ALCABALA') return <Navigate to="/alcabala/dashboard" replace />;
+  if (user.rol === 'SOCIO') return <Navigate to="/socio/portal" replace />;
   return <Navigate to="/ajustes" replace />;
 };
 
@@ -78,6 +80,14 @@ export const router = createBrowserRouter([
                { path: '', element: <ScannerAlcabala /> }
             ]
           }
+        ]
+      },
+      // ====== SOCIO ======
+      {
+        path: 'socio',
+        element: <RutaProtegida rolesPermitidos={['SOCIO']} />,
+        children: [
+          { path: 'portal', element: <PortalSocio /> }
         ]
       },
       // ====== RUTAS COMPARTIDAS ======

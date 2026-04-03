@@ -19,6 +19,19 @@ class SocioCrear(SocioBase):
     entidad_id: UUID
     vehiculos: Optional[List[VehiculoCrear]] = []
 
+class MembresiaProgreso(BaseModel):
+    dias_restantes: int
+    porcentaje: int
+    vencida: bool = False
+    label: Optional[str] = None
+
+class MembresiaInfo(BaseModel):
+    id: UUID
+    estado: MembresiaEstado
+    fecha_inicio: date
+    fecha_fin: Optional[date]
+    progreso: MembresiaProgreso
+
 class SocioSalida(SocioBase):
     id: UUID
     entidad_id: Optional[UUID] = None
@@ -27,6 +40,7 @@ class SocioSalida(SocioBase):
     debe_cambiar_password: bool
     created_at: datetime
     vehiculos: List[VehiculoSalida] = []
+    membresia: Optional[MembresiaInfo] = None
     
     model_config = ConfigDict(from_attributes=True)
 
@@ -55,3 +69,8 @@ class MembresiaSalida(MembresiaBase):
 
 class SocioDetalle(SocioSalida):
     membresia_activa: Optional[MembresiaSalida] = None
+
+class SocioPortal(BaseModel):
+    perfil: SocioSalida
+    qr_token: str
+    nombre_entidad: str

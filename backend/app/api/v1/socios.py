@@ -7,10 +7,14 @@ from app.core.database import obtener_db
 from app.core.dependencias import obtener_usuario_actual, require_rol
 from app.models.enums import RolTipo
 from app.models.usuario import Usuario
-from app.schemas.socio import SocioCrear, SocioSalida
+from app.schemas.socio import SocioCrear, SocioSalida, SocioPortal
 from app.services.socio_service import socio_service
+from app.services.membresia_service import membresia_service
 from app.services.import_service import import_service
 from app.services.template_service import template_service
+from app.models.entidad_civil import EntidadCivil
+from app.models.membresia import Membresia
+from sqlalchemy import select
 
 router = APIRouter()
 
@@ -99,3 +103,87 @@ async def descargar_plantilla_socios(
             "Content-Disposition": "attachment; filename=TEMPLATE_SOCIOS_BAGFM.xlsx"
         }
     )
+@router.get("/me/portal", response_model=SocioPortal)
+async def obtener_portal_socio(
+    db: AsyncSession = Depends(obtener_db),
+    usuario_actual: Usuario = Depends(require_rol([RolTipo.SOCIO]))
+):
+    """
+    Obtiene los datos para el portal del socio logueado.
+    """
+    # Buscar su membresía activa y QR
+    query_mem = select(Membresia).where(Membresia.socio_id == usuario_actual.id).order_by(Membresia.created_at.desc())
+    res_mem = await db.execute(query_mem)
+    membresia = res_mem.scalars().first()
+    
+    if not membresia:
+        raise HTTPException(status_code=404, detail="Membresía no encontrada")
+        
+    # Buscar su QR activo
+    from app.models.codigo_qr import CodigoQR
+    query_qr = select(CodigoQR).where(CodigoQR.usuario_id == usuario_actual.id, CodigoQR.activo == True)
+    res_qr = await db.execute(query_qr)
+    qr = res_qr.scalars().first()
+    
+    if not qr:
+        # Generar uno al vuelo si no existe
+        qr = await membresia_service.refrescar_qr_socio(db, usuario_actual.id, membresia.id, usuario_actual.id)
+        await db.commit()
+
+    # Obtener nombre de la entidad
+    query_ent = select(EntidadCivil.nombre).where(EntidadCivil.id == usuario_actual.entidad_id)
+    res_ent = await db.execute(query_ent)
+    nombre_entidad = res_ent.scalar() or "BAGFM"
+
+    # Construir perfil
+    progreso = membresia_service.calcular_progreso(membresia)
+    
+    return {
+        "perfil": {
+            "id": usuario_actual.id,
+            "cedula": usuario_actual.cedula,
+            "nombre": usuario_actual.nombre,
+            "apellido": usuario_actual.apellido,
+            "nombre_completo": usuario_actual.nombre_completo,
+            "email": usuario_actual.email,
+            "telefono": usuario_actual.telefono,
+            "activo": usuario_actual.activo,
+            "rol": usuario_actual.rol,
+            "entidad_id": usuario_actual.entidad_id,
+            "debe_cambiar_password": usuario_actual.debe_cambiar_password,
+            "created_at": usuario_actual.created_at,
+            "membresia": {
+                "id": membresia.id,
+                "estado": membresia.estado,
+                "fecha_inicio": membresia.fecha_inicio,
+                "fecha_fin": membresia.fecha_fin,
+                "progreso": progreso
+            }
+        },
+        "qr_token": qr.token,
+        "nombre_entidad": nombre_entidad
+    }
+
+@router.post("/{socio_id}/renovar", status_code=status.HTTP_200_OK)
+async def renovar_membresia_socio(
+    socio_id: UUID,
+    meses: int = 1,
+    db: AsyncSession = Depends(obtener_db),
+    usuario_actual: Usuario = Depends(require_rol(GESTORES_SOCIOS))
+):
+    """
+    Renueva la membresía de un socio por N meses.
+    """
+    return await membresia_service.renovar_membresia(db, socio_id, meses, usuario_actual.id)
+
+@router.post("/{socio_id}/estado", status_code=status.HTTP_200_OK)
+async def cambiar_estado_socio(
+    socio_id: UUID,
+    estado: MembresiaEstado,
+    db: AsyncSession = Depends(obtener_db),
+    usuario_actual: Usuario = Depends(require_rol(GESTORES_SOCIOS))
+):
+    """
+    Cambia el estado de la membresía (suspender, exonerar, activar).
+    """
+    return await membresia_service.cambiar_estado(db, socio_id, estado)

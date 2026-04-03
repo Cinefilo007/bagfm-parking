@@ -13,6 +13,7 @@ from app.models.codigo_qr import CodigoQR
 from app.models.entidad_civil import EntidadCivil
 from app.models.enums import AccesoTipo, MembresiaEstado, InfraccionEstado
 from app.schemas.acceso import AccesoValidar, AccesoRegistrar, ResultadoValidacion
+from app.services.membresia_service import membresia_service
 from app.core.security import decodificar_token
 
 class AccesoService:
@@ -51,13 +52,28 @@ class AccesoService:
             if not socio:
                 return ResultadoValidacion(permitido=False, mensaje="Socio no encontrado o inactivo", tipo_alerta="error")
 
-            # 4. Verificar Membresía
-            query_mem = select(Membresia).where(Membresia.socio_id == socio.id, Membresia.estado == MembresiaEstado.activa)
+            # 4. Verificar Membresía (Activa o Exonerada)
+            query_mem = select(Membresia).where(
+                Membresia.socio_id == socio.id, 
+                Membresia.estado.in_([MembresiaEstado.activa, MembresiaEstado.exonerada])
+            )
             res_mem = await db.execute(query_mem)
             membresia = res_mem.scalar_one_or_none()
 
             if not membresia:
-                return ResultadoValidacion(permitido=False, mensaje="Socio sin membresía activa", tipo_alerta="error")
+                # Buscar por qué no tiene membresía para dar mensaje claro
+                query_any_mem = select(Membresia).where(Membresia.socio_id == socio.id)
+                res_any = await db.execute(query_any_mem)
+                any_mem = res_any.scalar_one_or_none()
+                
+                msg = "Socio sin registro de membresía"
+                if any_mem:
+                    if any_mem.estado == MembresiaEstado.suspendida:
+                        msg = "MEMBRESÍA SUSPENDIDA ADMIN."
+                    elif any_mem.estado == MembresiaEstado.vencida:
+                        msg = "MEMBRESÍA VENCIDA (PAGO PENDIENTE)"
+                
+                return ResultadoValidacion(permitido=False, mensaje=msg, tipo_alerta="error")
 
             # 5. Buscar Vehículo (si viene en el QR)
             vehiculo = None
@@ -101,7 +117,8 @@ class AccesoService:
                 qr_id = qr_db.id,
                 usuario_id = socio.id,
                 vehiculo_id = vehiculo.id if vehiculo else None,
-                infracciones_activas = [{"tipo": i.tipo, "descripcion": i.descripcion, "bloquea": i.bloquea_salida} for i in infracciones]
+                infracciones_activas = [{"tipo": i.tipo, "descripcion": i.descripcion, "bloquea": i.bloquea_salida} for i in infracciones],
+                membresia_info = membresia_service.calcular_progreso(membresia) if membresia else None
             )
 
         except JWTError:

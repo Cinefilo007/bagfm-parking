@@ -122,9 +122,16 @@ const ScannerAlcabala = () => {
                                     </div>
                                     
                                     <div className="flex flex-col gap-2 pt-2 border-t border-white/5">
-                                        <div className="flex items-center gap-3 text-text-muted">
-                                             <Shield size={14} className="text-primary" />
-                                             <span className="text-xs font-bold text-white/80">{resultado.socio.cedula}</span>
+                                        <div className="flex items-center justify-between text-text-muted">
+                                             <div className="flex items-center gap-3">
+                                                 <Shield size={14} className="text-primary" />
+                                                 <span className="text-xs font-bold text-white/80">{resultado.socio.cedula}</span>
+                                             </div>
+                                             {resultado.membresia_info && (
+                                                 <p className={`text-[10px] font-mono font-bold ${resultado.membresia_info.dias_restantes < 5 ? 'text-danger' : 'text-primary/60'}`}>
+                                                     {resultado.membresia_info.dias_restantes} DÍAS RESTANTES
+                                                 </p>
+                                             )}
                                         </div>
                                         {resultado.vehiculo && (
                                             <div className="flex items-center gap-3 text-text-muted">

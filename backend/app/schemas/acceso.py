@@ -5,6 +5,7 @@ from pydantic import BaseModel, ConfigDict
 from app.models.enums import AccesoTipo
 from app.schemas.usuario import UsuarioSalida
 from app.schemas.vehiculo import VehiculoSalida
+from app.schemas.socio import MembresiaInfo
 
 class AccesoBase(BaseModel):
     tipo: AccesoTipo
@@ -52,4 +53,5 @@ class ResultadoValidacion(BaseModel):
     
     # Si hay infracciones relevantes
     infracciones_activas: List[dict] = []
+    membresia_info: Optional[MembresiaInfo] = None
     mensaje_adicional: Optional[str] = None
