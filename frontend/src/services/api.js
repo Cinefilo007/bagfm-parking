@@ -26,8 +26,14 @@ api.interceptors.response.use(
   (error) => {
     // Si el error es 401 Unauthorized y no estamos en la página de login
     if (error.response && error.response.status === 401) {
-      const isLoginRequest = error.config.url.includes('/auth/login');
+      // Intentar detectar si es la petición de login para NO refrescar
+      const url = error.config.url || '';
+      const isLoginRequest = url.includes('auth/login');
+      
+      console.log(">> Interceptor 401:", { url, isLoginRequest });
+
       if (!isLoginRequest) {
+        console.warn(">> 401 en ruta protegida, cerrando sesión...");
         localStorage.removeItem('token');
         localStorage.removeItem('user');
         window.location.href = '/login';
