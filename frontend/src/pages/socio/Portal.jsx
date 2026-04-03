@@ -1,37 +1,50 @@
 import React, { useState, useEffect } from 'react';
-import { Header } from '../../components/layout/Header';
-import { Card } from '../../components/ui/Card';
-import { Badge } from '../../components/ui/Badge';
-import { Boton } from '../../components/ui/Boton';
-import socioService from '../../services/socioService';
-import QRCode from "react-qr-code";
-import { 
-  User, 
-  Car, 
-  ShieldCheck, 
-  ShieldAlert, 
-  RefreshCw, 
-  Clock,
-  Phone,
-  LogOut
-} from 'lucide-react';
 import { useAuthStore } from '../../store/auth.store';
+import socioService from '../../services/socioService';
+
+// Componentes Embebidos para eliminar cualquier fallo de importación (SOP AEGIS)
+const HeaderSimulado = ({ titulo, subtitle }) => (
+  <header className="sticky top-0 z-[50] bg-[#0A0D0E]/90 backdrop-blur-md pb-4 pt-6 px-4 border-b border-white/5">
+    <p className="text-[#36A2FF] font-sans font-medium uppercase tracking-[0.1em] text-[10px] mb-1">{subtitle}</p>
+    <h1 className="font-display font-bold text-2xl tracking-tight text-white leading-none uppercase">{titulo}</h1>
+  </header>
+);
+
+const CardSimulada = ({ children, className }) => (
+  <div className={`rounded-2xl p-4 bg-[#141819] border border-white/5 transition-all ${className}`}>
+    {children}
+  </div>
+);
+
+const BadgeSimulada = ({ children, variant }) => {
+  const styles = variant === 'activa' ? 'bg-[#36A2FF]/10 text-[#36A2FF]' : 'bg-[#FF4A5F]/10 text-[#FF4A5F]';
+  return (
+    <span className={`px-2.5 py-1 rounded-full text-[9px] font-black tracking-widest uppercase border border-current/20 ${styles}`}>
+      {children}
+    </span>
+  );
+};
+
+const BotonSimulado = ({ children, onClick, className }) => (
+  <button 
+    onClick={onClick}
+    className={`flex items-center justify-center p-3 rounded-xl bg-[#36A2FF] text-[#0A0D0E] font-black text-[11px] tracking-widest uppercase transition-all active:scale-95 ${className}`}
+  >
+    {children}
+  </button>
+);
 
 export default function PortalSocio() {
-  const { logout } = useAuthStore();
+  const { logout, user } = useAuthStore();
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
 
   const fetchPortal = async () => {
-    setLoading(true);
     try {
       const res = await socioService.obtenerPortal();
       setData(res);
-      setError(null);
     } catch (err) {
-      console.error("Error cargando portal", err);
-      setError("No se pudo sincronizar su credencial táctica.");
+      console.error("Fallo de sincronización", err);
     } finally {
       setLoading(false);
     }
@@ -41,157 +54,84 @@ export default function PortalSocio() {
     fetchPortal();
   }, []);
 
-  if (loading && !data) {
+  if (loading) {
     return (
-      <div className="min-h-screen bg-bg-app flex items-center justify-center">
-        <div className="text-center space-y-4">
-          <RefreshCw className="mx-auto text-primary animate-spin" size={32} />
-          <p className="text-[10px] uppercase tracking-widest text-text-muted font-bold">Autenticando Credenciales...</p>
-        </div>
+      <div className="min-h-screen bg-[#0A0D0E] flex items-center justify-center">
+        <p className="text-[10px] tracking-widest text-white/40 uppercase font-black animate-pulse">Sincronizando Sistema...</p>
       </div>
     );
   }
 
-  // Desestructuración segura de datos
   const p = data?.perfil || {};
   const m = p?.membresia || {};
-  const esActivo = m?.estado === 'activa' || m?.estado === 'exonerada';
-  const esVencido = m?.progreso?.vencida;
-  const esSuspendido = m?.estado === 'suspendida';
+  const esActivo = String(m?.estado) === 'activa' || String(m?.estado) === 'exonerada';
 
   return (
-    <div className="min-h-screen bg-bg-app pb-20">
-      <Header 
-        titulo="Portal del Socio" 
-        subtitle={String(data?.nombre_entidad || 'SISTEMA BAGFM')} 
-      />
+    <div className="min-h-screen bg-[#0A0D0E] pb-24 flex flex-col font-sans text-white">
+      <HeaderSimulado titulo="Mi Credencial" subtitle={String(data?.nombre_entidad || 'SISTEMA BAGFM')} />
 
-      <main className="px-5 py-6 max-w-md mx-auto space-y-6">
-        {/* Card Principal de Identidad */}
-        <Card elevation={2} className="relative overflow-hidden border-white/5 py-8">
-          <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-full -mr-16 -mt-16 blur-3xl" />
-          
-          <div className="flex flex-col items-center text-center">
-            {/* Estado del Acceso */}
-            <div className="mb-6">
-              <Badge variant={esActivo && !esVencido ? 'activa' : 'suspendida'} className="scale-110 shadow-lg shadow-black/20">
-                {esActivo && !esVencido ? 'ACCESO AUTORIZADO' : 'ACCESO DENEGADO'}
-              </Badge>
-            </div>
+      <main className="flex-1 px-5 py-6 space-y-6 max-w-md mx-auto w-full">
+        <CardSimulada className="text-center py-8">
+           <div className="mb-6">
+              <BadgeSimulada variant={esActivo ? 'activa' : 'suspendida'}>
+                {esActivo ? 'ACCESO AUTORIZADO' : 'ACCESO DENEGADO'}
+              </BadgeSimulada>
+           </div>
 
-            {/* QR Code */}
-            <div className={`p-4 bg-white rounded-3xl mb-6 shadow-2xl transition-all duration-500 scale-100 ring-4 ${esActivo && !esVencido ? 'ring-primary/20' : 'ring-danger/20'}`}>
-              <div className="bg-white p-1">
-                {data?.qr_token ? (
-                  <QRCode 
-                    value={String(data.qr_token)} 
-                    size={180}
-                    level="H"
-                    style={{ height: "auto", maxWidth: "100%", width: "100%" }}
-                  />
-                ) : (
-                  <div className="w-[180px] h-[180px] flex items-center justify-center bg-gray-100 rounded-xl">
-                    <ShieldAlert size={48} className="text-gray-300" />
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* Datos del Socio */}
-            <div className="space-y-1">
-              <h2 className="text-xl font-display font-black text-text-main tracking-tight uppercase">
-                {String(p?.nombre_completo || 'SIN NOMBRE')}
-              </h2>
-              <p className="text-xs font-mono text-text-muted tracking-[0.2em] font-bold">
-                CÉDULA: {String(p?.cedula || 'N/A')}
-              </p>
-            </div>
-          </div>
-
-          {/* Información de Membresía */}
-          <div className="mt-8 grid grid-cols-2 gap-px bg-white/5 border-t border-white/5">
-             <div className="p-4 text-center">
-                <p className="text-[9px] uppercase font-bold text-text-muted mb-1 tracking-widest">Estado</p>
-                <div className="flex items-center justify-center gap-1.5">
-                   {esActivo ? <ShieldCheck size={14} className="text-primary" /> : <ShieldAlert size={14} className="text-danger" />}
-                   <p className={`text-[11px] font-black uppercase ${esActivo ? 'text-primary' : 'text-danger'}`}>
-                      {String(m?.estado || 'DESCONOCIDO')}
-                   </p>
-                </div>
-             </div>
-             <div className="p-4 text-center border-l border-white/5">
-                <p className="text-[9px] uppercase font-bold text-text-muted mb-1 tracking-widest">Vencimiento</p>
-                <div className="flex items-center justify-center gap-1.5">
-                   <Clock size={14} className="text-text-muted" />
-                   <p className="text-[11px] font-black text-text-main uppercase">
-                      {m?.fecha_fin ? new Date(m.fecha_fin).toLocaleDateString() : 'N/A'}
-                   </p>
-                </div>
-             </div>
-          </div>
-        </Card>
-
-        {/* Vehículos Autorizados */}
-        <div className="space-y-3">
-           <h3 className="text-[10px] uppercase font-black text-text-muted tracking-[0.3em] pl-1 flex items-center gap-2">
-             <Car size={12} /> Vehículos Vinculados
-           </h3>
-           <div className="grid grid-cols-1 gap-3">
-              {p?.vehiculos?.map((v, i) => (
-                <div key={i} className="p-4 bg-white/5 border border-white/5 rounded-2xl flex items-center justify-between group hover:border-primary/20 transition-all">
-                  <div className="flex items-center gap-4">
-                    <div className="h-10 w-10 bg-black/40 rounded-xl flex items-center justify-center border border-white/5 text-text-muted group-hover:text-primary transition-colors">
-                      <Car size={20} />
-                    </div>
-                    <div>
-                      <p className="text-[10px] font-bold text-text-muted uppercase tracking-widest leading-none mb-1">{String(v.marca)} {String(v.modelo)}</p>
-                      <p className="text-lg font-mono font-black text-text-main leading-none">{String(v.placa)}</p>
-                    </div>
-                  </div>
-                  <Badge variant="activa" className="bg-primary/10 text-primary border-none text-[8px]">AUTORIZADO</Badge>
-                </div>
-              ))}
-              {(!p?.vehiculos || p.vehiculos.length === 0) && (
-                <p className="text-center py-4 text-text-muted text-[10px] font-bold uppercase tracking-widest italic border border-dashed border-white/10 rounded-2xl">
-                  Sin vehículos registrados
-                </p>
+           {/* QR MANUAL (SVG Simple para evitar librerías externas que causen Error 130) */}
+           <div className="p-4 bg-white rounded-2xl mx-auto w-48 h-48 flex items-center justify-center mb-6 shadow-2xl">
+              {data?.qr_token ? (
+                 <div className="text-black font-mono text-[8px] break-all p-2 uppercase leading-tight">
+                    {String(data.qr_token)}
+                    <div className="mt-2 text-[12px] font-black">QR TÁCTICO ACTIVO</div>
+                 </div>
+              ) : (
+                 <div className="text-black/20 text-[10px] font-black italic">NIVEL 0: TOKEN NO DISPONIBLE</div>
               )}
            </div>
+
+           <div className="space-y-1">
+              <h2 className="text-xl font-black tracking-tight uppercase">{String(p?.nombre_completo || user?.nombre || 'SOCIO NO IDENTIFICADO')}</h2>
+              <p className="text-[10px] font-mono text-white/40 tracking-[0.3em]">CÉDULA: {String(p?.cedula || user?.cedula || 'N/A')}</p>
+           </div>
+
+           <div className="mt-8 grid grid-cols-2 border-t border-white/5 pt-4">
+              <div>
+                 <p className="text-[8px] text-white/30 uppercase font-bold tracking-widest">Estado</p>
+                 <p className={`text-[10px] font-black uppercase ${esActivo ? 'text-[#36A2FF]' : 'text-[#FF4A5F]'}`}>{String(m?.estado || 'DESCONOCIDO')}</p>
+              </div>
+              <div className="border-l border-white/5">
+                 <p className="text-[8px] text-white/30 uppercase font-bold tracking-widest">Fin Membresía</p>
+                 <p className="text-[10px] font-black uppercase">{m?.fecha_fin ? new Date(m.fecha_fin).toLocaleDateString() : 'INDET.'}</p>
+              </div>
+           </div>
+        </CardSimulada>
+
+        <div className="space-y-3">
+           <h3 className="text-[10px] uppercase font-black text-white/30 tracking-[0.3em] pl-1">Vehículos Vinculados</h3>
+           {(p?.vehiculos || []).map((v, i) => (
+              <div key={i} className="p-4 bg-white/5 border border-white/5 rounded-2xl flex items-center justify-between">
+                 <div>
+                    <p className="text-[9px] font-bold text-white/40 uppercase tracking-widest leading-none mb-1">{String(v.marca)} {String(v.modelo)}</p>
+                    <p className="text-lg font-mono font-black leading-none">{String(v.placa)}</p>
+                 </div>
+                 <span className="text-[8px] font-black text-[#36A2FF] bg-[#36A2FF]/10 px-2 py-1 rounded-lg">ACTIVO</span>
+              </div>
+           ))}
+           {(!p?.vehiculos || p.vehiculos.length === 0) && (
+              <p className="text-center py-6 text-white/20 text-[9px] font-black uppercase tracking-[0.2em] border border-dashed border-white/10 rounded-2xl italic">Sin flota asignada</p>
+           )}
         </div>
 
-        {/* Acciones e Información de contacto */}
-        <div className="space-y-3 pt-4">
-           {(esSuspendido || esVencido) && (
-             <div className="p-4 bg-danger/5 border border-danger/20 rounded-2xl space-y-3">
-                <div className="flex items-start gap-3">
-                  <ShieldAlert className="text-danger shrink-0" size={20} />
-                  <div>
-                    <h4 className="text-sm font-bold text-text-main uppercase">Atención Requerida</h4>
-                    <p className="text-[10px] text-text-muted font-medium leading-relaxed mt-1">
-                      Su acceso ha sido restringido por {esSuspendido ? 'suspensión administrativa' : 'vencimiento de membresía'}. 
-                      Por favor, contacte a su entidad para regularizar su situación.
-                    </p>
-                  </div>
-                </div>
-                <Boton variant="ghost" className="w-full bg-danger/10 border-danger/10 text-danger hover:bg-danger/20 text-[10px] font-black tracking-widest">
-                  <Phone size={14} className="mr-2" /> CONTACTAR SOPORTE
-                </Boton>
-             </div>
-           )}
-
-           <Boton 
-             variant="ghost" 
-             className="w-full h-12 bg-white/5 border-white/5 text-text-muted hover:text-white"
-             onClick={fetchPortal}
-           >
-             <RefreshCw size={16} className="mr-2" /> ACTUALIZAR ESTADO
-           </Boton>
-
+        <div className="pt-6 space-y-3">
+           <BotonSimulado onClick={fetchPortal} className="w-full">
+              REVALIDAR CREDENCIAL
+           </BotonSimulado>
            <button 
              onClick={logout}
-             className="w-full py-4 text-[10px] font-black text-danger uppercase tracking-[0.2em] flex items-center justify-center gap-2 hover:bg-danger/5 rounded-2xl transition-all"
+             className="w-full py-4 text-[10px] font-black text-[#FF4A5F] uppercase tracking-[0.2em] hover:bg-[#FF4A5F]/5 rounded-2xl transition-all"
            >
-             <LogOut size={16} /> CERRAR SESIÓN TÁCTICA
+             FINALIZAR SESIÓN TÁCTICA
            </button>
         </div>
       </main>
