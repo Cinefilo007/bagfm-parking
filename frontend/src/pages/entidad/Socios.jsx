@@ -18,7 +18,8 @@ import {
   Plus,
   Trash2,
   Download,
-  Info
+  Info,
+  RefreshCw
 } from 'lucide-react';
 import { useRef } from 'react';
 import api from '../../services/api';
