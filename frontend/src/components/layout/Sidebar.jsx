@@ -1,0 +1,117 @@
+import React from 'react';
+import { NavLink } from 'react-router-dom';
+import { 
+  ShieldCheck, Users, Menu, ClipboardList, 
+  CalendarRange, LogOut, Settings, HelpCircle,
+  LayoutDashboard, UserCircle, Map as MapIcon,
+  Camera
+} from 'lucide-react';
+import { cn } from '../../lib/utils';
+import { useAuthStore } from '../../store/auth.store';
+
+export const Sidebar = () => {
+  const { user, logout } = useAuthStore();
+  
+  const navItems = [];
+  
+  if (user?.rol === 'COMANDANTE' || user?.rol === 'ADMIN_BASE' || user?.rol === 'SUPERVISOR') {
+    navItems.push(
+      { to: '/comando/dashboard', label: 'Monitor Táctico', icon: ShieldCheck },
+      { to: '/comando/entidades', label: 'Entidades Civiles', icon: Users },
+      { to: '/comando/alcabalas', label: 'Gestión Alcabalas', icon: ClipboardList },
+      { to: '/comando/eventos', label: 'Eventos Masivos', icon: CalendarRange },
+      { to: '/comando/dashboard', label: 'Mapa Situacional', icon: MapIcon },
+    );
+  } else if (user?.rol === 'ADMIN_ENTIDAD') {
+    navItems.push(
+       { to: '/entidad/dashboard', label: 'Panel Control', icon: LayoutDashboard },
+       { to: '/entidad/socios', label: 'Socios & Socios', icon: Users },
+       { to: '/entidad/eventos', label: 'Mis Eventos', icon: CalendarRange },
+    );
+  } else if (user?.rol === 'ALCABALA') {
+    navItems.push(
+      { to: '/alcabala/dashboard', label: 'Resumen Turno', icon: ShieldCheck },
+      { to: '/alcabala/scanner', label: 'Escanear QR', icon: Camera },
+    );
+  }
+
+  return (
+    <aside className="w-72 bg-bg-low h-screen sticky top-0 hidden lg:flex flex-col border-r border-white/5 shadow-2xl z-[1000]">
+      {/* Brand Header */}
+      <div className="p-8 border-b border-white/5 bg-bg-app/40 backdrop-blur-sm">
+        <div className="flex items-center gap-4">
+           <div className="w-10 h-10 bg-gradient-to-br from-primary to-primary-dark rounded-xl flex items-center justify-center shadow-[0_0_15px_rgba(78,222,163,0.3)]">
+              <ShieldCheck className="text-on-primary" size={24} strokeWidth={2.5} />
+           </div>
+           <div className="flex flex-col">
+              <span className="text-sm font-display font-black text-white tracking-widest uppercase">BAGFM ACCESS</span>
+              <span className="text-[9px] font-mono text-primary font-bold tracking-[0.2em]">SISTEMA TÁCTICO</span>
+           </div>
+        </div>
+      </div>
+
+      {/* User Info Brief */}
+      <div className="px-6 py-4 flex items-center gap-3">
+         <div className="w-8 h-8 rounded-full bg-surface-variant flex items-center justify-center border border-white/10">
+            <UserCircle size={20} className="text-text-muted" />
+         </div>
+         <div className="flex flex-col overflow-hidden">
+            <span className="text-xs font-bold text-text-main truncate uppercase">{user?.nombre || 'Usuario'}</span>
+            <span className="text-[10px] text-text-muted font-medium">{user?.rol}</span>
+         </div>
+      </div>
+
+      {/* Navigation Space */}
+      <nav className="flex-1 px-4 py-6 flex flex-col gap-1.5 overflow-y-auto no-scrollbar">
+         <span className="px-3 text-[9px] font-black uppercase text-text-muted tracking-[0.2em] mb-2 opacity-50">Navegación Principal</span>
+         {navItems.map((item) => {
+            const Icon = item.icon;
+            return (
+               <NavLink
+                 key={item.to}
+                 to={item.to}
+                 className={({ isActive }) =>
+                   cn(
+                     "flex items-center gap-4 px-4 py-3.5 rounded-xl transition-all duration-300 group",
+                     isActive 
+                       ? "bg-primary/10 text-primary shadow-[inset_0_0_0_1px_rgba(78,222,163,0.15)] shadow-tactica/10" 
+                       : "text-text-muted hover:bg-white/5 hover:text-text-sec"
+                   )
+                 }
+               >
+                 <Icon size={20} strokeWidth={isActive ? 2.5 : 2} className="group-hover:scale-110 transition-transform" />
+                 <span className="text-xs font-bold tracking-wide uppercase">
+                   {item.label}
+                 </span>
+                 {item.to.includes('dashboard') && (
+                    <div className="ml-auto w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
+                 )}
+               </NavLink>
+            );
+         })}
+      </nav>
+
+      {/* Bottom Actions */}
+      <div className="p-6 border-t border-white/5 flex flex-col gap-2">
+         <NavLink to="/ajustes" className="flex items-center gap-3 px-4 py-2.5 rounded-lg text-text-muted hover:bg-white/5 hover:text-text-sec transition-all">
+            <Settings size={18} />
+            <span className="text-xs font-bold uppercase tracking-tight">Ajustes</span>
+         </NavLink>
+         <button 
+           onClick={logout}
+           className="flex items-center gap-3 px-4 py-2.5 rounded-lg text-danger/70 hover:bg-danger/10 hover:text-danger transition-all text-left"
+         >
+            <LogOut size={18} />
+            <span className="text-xs font-bold uppercase tracking-tight">Cerrar Sesión</span>
+         </button>
+      </div>
+
+      {/* Footer Branding */}
+      <div className="px-8 pb-6 pt-2">
+         <p className="text-[7px] font-mono text-text-muted/40 uppercase tracking-widest text-center">
+            Aegis Tactical Design System // v4.2.1
+         </p>
+      </div>
+    </aside>
+  );
+};

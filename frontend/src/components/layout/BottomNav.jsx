@@ -39,7 +39,7 @@ export const BottomNav = () => {
   }
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 bg-bg-low h-16 flex items-center justify-around px-2 z-[100] pb-env-safe border-t border-white/5">
+    <nav className="fixed bottom-0 left-0 right-0 bg-bg-low h-16 flex items-center justify-around px-2 z-[100] pb-env-safe border-t border-white/5 lg:hidden shadow-[0_-10px_40px_rgba(0,0,0,0.4)]">
       {navItems.map((item) => {
         const Icon = item.icon;
         return (
