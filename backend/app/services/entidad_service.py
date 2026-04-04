@@ -89,7 +89,7 @@ class EntidadCivilService:
         vehiculos_sub = select(
             Usuario.entidad_id,
             func.count(Vehiculo.id).label("total_vehiculos")
-        ).join(Vehiculo, Vehiculo.propietario_id == Usuario.id
+        ).join(Vehiculo, Vehiculo.socio_id == Usuario.id
         ).group_by(Usuario.entidad_id).subquery()
 
         # Consulta principal con JOINS externos
@@ -138,7 +138,7 @@ class EntidadCivilService:
         entidad.total_usuarios = (await db.execute(q_u)).scalar() or 0
         
         q_v = select(func.count(Vehiculo.id)).join(
-            Usuario, Vehiculo.propietario_id == Usuario.id
+            Usuario, Vehiculo.socio_id == Usuario.id
         ).where(Usuario.entidad_id == entidad_id)
         entidad.total_vehiculos = (await db.execute(q_v)).scalar() or 0
         
