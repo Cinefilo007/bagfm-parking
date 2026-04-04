@@ -150,7 +150,17 @@ const MapaBaseReal = ({ situacion, onSelectEntity, assignmentMode, onMapClick, s
                     <Popup className="tactical-popup">
                       <div className="p-1">
                           <div className="text-[10px] font-black uppercase tracking-widest text-primary mb-1">Cuerpos de Seguridad</div>
-                          <div className="text-sm font-bold uppercase text-white">{alcabala.nombre}</div>
+                          <div className="text-sm font-bold uppercase text-white mb-2">{alcabala.nombre}</div>
+                          <div className="grid grid-cols-2 gap-2 border-t border-white/10 pt-2">
+                             <div className="flex flex-col">
+                                <span className="text-[8px] text-text-muted uppercase">Entradas Hoy</span>
+                                <span className="text-xs font-mono font-bold text-white">{alcabala.entradas_hoy || 0}</span>
+                             </div>
+                             <div className="flex flex-col">
+                                <span className="text-[8px] text-text-muted uppercase">Salidas Hoy</span>
+                                <span className="text-xs font-mono font-bold text-white">{alcabala.salidas_hoy || 0}</span>
+                             </div>
+                          </div>
                       </div>
                     </Popup>
                   </Marker>
@@ -166,7 +176,11 @@ const MapaBaseReal = ({ situacion, onSelectEntity, assignmentMode, onMapClick, s
                     <Popup className="tactical-popup">
                         <div className="p-1">
                             <div className="text-[10px] font-black uppercase tracking-widest text-text-muted mb-1">Sede Administrativa</div>
-                            <div className="text-sm font-bold uppercase text-white">{entidad.nombre}</div>
+                            <div className="text-sm font-bold uppercase text-white mb-2">{entidad.nombre}</div>
+                            <div className="flex justify-between items-center text-[11px] font-mono border-t border-white/10 pt-2">
+                               <span className="text-text-sec">OCUPACIÓN:</span>
+                               <span className="text-white font-bold">{entidad.ocupacion_actual || 0} / {entidad.capacidad_total || 0}</span>
+                            </div>
                         </div>
                     </Popup>
                   </Marker>

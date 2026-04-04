@@ -164,11 +164,11 @@ const MapaTactico = () => {
                      <div className="space-y-3">
                         <div className="grid grid-cols-2 gap-4">
                            <div className="p-3 rounded-xl bg-white/5 border border-white/5">
-                              <span className="text-[9px] uppercase font-bold text-text-muted">Ocupación</span>
-                              <div className="text-lg font-display text-white font-black">{selected.ocupacion_actual} / {selected.capacidad_total}</div>
+                              <span className="text-[9px] uppercase font-bold text-text-muted">Ocupación Actual</span>
+                              <div className="text-lg font-display text-white font-black">{selected.ocupacion_actual || 0} / {selected.capacidad_total}</div>
                            </div>
                            <div className="p-3 rounded-xl bg-white/5 border border-white/5">
-                              <span className="text-[9px] uppercase font-bold text-text-muted">Estado</span>
+                              <span className="text-[9px] uppercase font-bold text-text-muted">Estado de Sede</span>
                               <div className={`text-lg font-display font-black uppercase ${ (selected.ocupacion_actual / selected.capacidad_total) > 0.8 ? 'text-danger' : 'text-primary' }`}>
                                  { (selected.ocupacion_actual / selected.capacidad_total) > 0.8 ? 'Saturado' : 'Nominal' }
                               </div>
@@ -176,7 +176,16 @@ const MapaTactico = () => {
                         </div>
                      </div>
                   ) : (
-                     <p className="text-[11px] text-text-muted italic bg-white/5 p-3 rounded-lg">Analizando patrones de acceso perimetral en tiempo real...</p>
+                     <div className="grid grid-cols-2 gap-4">
+                        <div className="p-3 rounded-xl bg-white/5 border border-white/5">
+                           <span className="text-[9px] uppercase font-bold text-text-muted">Entradas Hoy</span>
+                           <div className="text-xl font-display text-primary font-black">{selected.entradas_hoy || 0}</div>
+                        </div>
+                        <div className="p-3 rounded-xl bg-white/5 border border-white/5">
+                           <span className="text-[9px] uppercase font-bold text-text-muted">Salidas Hoy</span>
+                           <div className="text-xl font-display text-white font-black">{selected.salidas_hoy || 0}</div>
+                        </div>
+                     </div>
                   )}
                </div>
             )}
