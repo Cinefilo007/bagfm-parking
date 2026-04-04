@@ -24,10 +24,7 @@ export default function DashboardComando() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 items-start">
           
           {/* Columna Izquierda: Stats */}
-          <div className="flex flex-col gap-6">
-            <h3 className="font-display font-semibold text-sm text-text-main uppercase tracking-widest border-b border-white/5 pb-2">
-               Métricas de la Base
-            </h3>
+          <div className="flex flex-col gap-6 pt-2">
             <div className="grid grid-cols-2 gap-4">
               {stats.map((stat, i) => {
                 const Icono = stat.icon;
@@ -70,10 +67,7 @@ export default function DashboardComando() {
           </div>
 
           {/* Columna Derecha: Mapa Táctico (Ahora ocupa el 50%) */}
-          <div className="flex flex-col h-full">
-            <h3 className="font-display font-semibold text-sm text-text-main uppercase tracking-widest border-b border-white/5 pb-2 mb-6 opacity-70">
-               Situación Táctica en Tiempo Real
-            </h3>
+          <div className="flex flex-col h-full pt-2">
             <div className="flex-1 min-h-[450px]">
                <MapaTactico />
             </div>

@@ -118,13 +118,13 @@ const MapaTactico = () => {
                      </div>
                      
                      <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-3 no-scrollbar">
-                        <span className="text-[9px] font-black text-primary uppercase tracking-widest mb-1 px-2">Entidades sin ubicación (Prioridad)</span>
+                        <span className="text-[9px] font-black text-primary uppercase tracking-widest mb-1 px-2">Entidades para Ubicar</span>
                         
-                        {/* Grupos de Entidades a Seleccionar */}
+                        {/* Grupos de Entidades a Seleccionar (Seguridad anti-null) */}
                         {[
-                           ...situacion.entidades.map(e => ({...e, tipo_label: 'Entidad Civil', tipo: 'entidad', color: 'text-text-muted'})),
-                           ...situacion.alcabalas.map(a => ({...a, tipo_label: 'Control Acceso', tipo: 'alcabala', color: 'text-primary'})),
-                           ...situacion.zonas_estacionamiento.map(z => ({...z, tipo_label: 'Zona Logística', tipo: 'zona', color: 'text-warning'}))
+                           ...(situacion?.entidades || []).map(e => ({...e, tipo_label: 'Entidad Civil', tipo: 'entidad', color: 'text-text-muted'})),
+                           ...(situacion?.alcabalas || []).map(a => ({...a, tipo_label: 'Control Acceso', tipo: 'alcabala', color: 'text-primary'})),
+                           ...(situacion?.zonas_estacionamiento || []).map(z => ({...z, tipo_label: 'Zona Logística', tipo: 'zona', color: 'text-warning'}))
                         ].map(item => (
                            <button 
                               key={`${item.tipo}-${item.id}`}
