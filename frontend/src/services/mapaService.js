@@ -2,14 +2,15 @@ import api from './api';
 
 export const mapaService = {
   getSituacion: async () => {
-    const response = await api.get('/v1/mapa/situacion');
+    // baseURL ya incluye /api/v1, no duplicar
+    const response = await api.get('/mapa/situacion');
     return response.data;
   },
 
   actualizarUbicacion: async (tipo, id, lat, lng) => {
-    const response = await api.put('/v1/mapa/georreferenciar', {
+    const response = await api.put('/mapa/georreferenciar', {
        tipo,
-       id: id.toString(), // Asegurar que sea string
+       id: id.toString(),
        lat,
        lng
     });
