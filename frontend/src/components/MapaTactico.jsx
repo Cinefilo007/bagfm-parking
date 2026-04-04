@@ -75,18 +75,14 @@ const MapaTactico = () => {
                 />
 
                 {/* BOTÓN FLOTANTE: Georreferenciar (Esquina Inferior Izquierda) */}
-                <div className="absolute bottom-6 left-6 z-[1000] flex items-center gap-3">
+                <div className="absolute bottom-6 left-6 z-[1000]">
                     {!isAssigning ? (
                         <button 
                            onClick={() => setShowSelectionModal(true)}
-                           className="w-12 h-12 bg-primary text-bg-app rounded-full flex items-center justify-center shadow-[0_0_20px_rgba(78,222,163,0.4)] hover:scale-110 active:scale-95 transition-all group"
+                           className="w-12 h-12 bg-primary text-bg-app rounded-full flex items-center justify-center shadow-[0_0_20px_rgba(78,222,163,0.4)] hover:scale-110 active:scale-95 transition-all outline-none border-none group"
                            title="Georreferenciar Entidad"
                         >
-                           <div className="flex items-center gap-2">
-                              <span className="max-w-0 overflow-hidden group-hover:max-w-[150px] transition-all duration-300 text-[10px] font-black uppercase whitespace-nowrap pl-0 group-hover:pl-4">Georreferenciar</span>
-                              <span className="text-2xl font-bold">+</span>
-                              <span className="w-2"></span>
-                           </div>
+                           <span className="text-3xl font-light leading-none mb-1">+</span>
                         </button>
                     ) : (
                         <div className="flex items-center gap-4 bg-warning/90 backdrop-blur-md border border-warning px-4 py-2 rounded-2xl shadow-xl animate-pulse">
