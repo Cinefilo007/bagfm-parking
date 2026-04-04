@@ -14,8 +14,11 @@ export default function Entidades() {
   const navigate = useNavigate();
   const [entidades, setEntidades] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [page, setPage] = useState(0);
+  const limit = 5;
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [creando, setCreando] = useState(false);
+  const [hasMore, setHasMore] = useState(true);
   const [nuevaEntidad, setNuevaEntidad] = useState({
     nombre: '',
     capacidad_vehiculos: 20,
@@ -27,11 +30,13 @@ export default function Entidades() {
     admin_password: ''
   });
 
-  const fetchEntidades = async () => {
+  const fetchEntidades = async (p = page) => {
     setLoading(true);
     try {
-      const res = await api.get('/entidades');
+      const skip = p * limit;
+      const res = await api.get(`/entidades?skip=${skip}&limit=${limit}`);
       setEntidades(res.data);
+      setHasMore(res.data.length === limit);
     } catch (err) {
       console.error("Error cargando entidades", err);
     } finally {
@@ -41,7 +46,7 @@ export default function Entidades() {
 
   useEffect(() => {
     fetchEntidades();
-  }, []);
+  }, [page]);
 
   const handleCrearEntidad = async (e) => {
     e.preventDefault();
@@ -101,46 +106,94 @@ export default function Entidades() {
         ) : (
           <div className="space-y-4">
             {entidades.map(ent => (
-               <Card key={ent.id} hoverable elevation={2} className="relative overflow-hidden group">
-                  <div className="absolute top-0 left-0 w-1 bg-primary/50 h-full group-hover:bg-primary transition-colors"></div>
-                  <div className="flex justify-between items-start pl-2">
-                     <div>
-                        <h4 className="font-sans font-semibold text-lg text-text-main leading-tight mb-1">
-                          {ent.nombre}
-                        </h4>
-                        <p className="text-text-muted text-xs tracking-wider uppercase flex items-center gap-1.5">
-                           <Network size={12} />
-                           {ent.codigo_slug}
-                        </p>
-                     </div>
-                     <Badge variant={ent.activo ? 'activa' : 'suspendida'}>
-                       {ent.activo ? 'ACTIVO' : 'BAJA'}
-                     </Badge>
-                  </div>
+                <Card key={ent.id} hoverable elevation={2} className="relative overflow-hidden group border-white/5 bg-bg-card/40 backdrop-blur-sm">
+                   <div className="absolute top-0 left-0 w-1 bg-primary/30 h-full group-hover:bg-primary transition-all duration-500"></div>
+                   
+                   <div className="flex justify-between items-start mb-4">
+                      <div className="flex gap-4">
+                         <div className="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center text-primary border border-primary/20">
+                            <Database size={24} />
+                         </div>
+                         <div>
+                            <h4 className="font-display font-black text-xl text-white uppercase tracking-tight">
+                              {ent.nombre}
+                            </h4>
+                            <div className="flex items-center gap-3 mt-0.5">
+                               <p className="text-text-muted text-[10px] font-mono tracking-widest uppercase flex items-center gap-1.5 opacity-70">
+                                  ID: {ent.codigo_slug}
+                               </p>
+                               <span className="w-1 h-1 rounded-full bg-white/20"></span>
+                               <Badge variant={ent.activo ? 'activa' : 'suspendida'} className="text-[9px] h-4">
+                                 {ent.activo ? 'OPERATIVO' : 'FUERA DE LÍNEA'}
+                               </Badge>
+                            </div>
+                         </div>
+                      </div>
+                      <Boton variant="ghost" className="p-2 min-h-0 w-auto rounded-full hover:bg-white/5" onClick={() => navigate(`/comando/entidades/${ent.id}`)}>
+                         <Plus size={18} className="rotate-45 opacity-50 hover:opacity-100 transition-opacity" />
+                      </Boton>
+                   </div>
 
-                  <div className="mt-4 pt-4 border-t border-white/5 flex items-center justify-between pl-2">
-                     <div className="flex flex-col">
-                        <span className="text-[10px] uppercase font-bold text-text-muted tracking-widest mb-0.5">
-                          Capacidad
-                        </span>
-                        <span className="text-text-main font-semibold text-sm">
-                          {ent.capacidad_vehiculos} Vehículos
-                        </span>
-                     </div>
-                     <Boton variant="ghost" className="px-3 min-h-[32px] text-xs py-1 rounded-md text-primary" onClick={() => navigate(`/comando/entidades/${ent.id}`)}>
-                        GESTIÓN
-                     </Boton>
-                  </div>
-               </Card>
+                   <div className="grid grid-cols-3 gap-4 border-t border-white/5 pt-4">
+                      <div className="flex flex-col">
+                         <span className="text-[9px] uppercase font-bold text-text-muted tracking-widest mb-1">
+                           Capacidad
+                         </span>
+                         <span className="text-white font-mono font-bold text-base">
+                           {ent.capacidad_vehiculos} <span className="text-[10px] text-text-muted">VEH</span>
+                         </span>
+                      </div>
+                      <div className="flex flex-col">
+                         <span className="text-[9px] uppercase font-bold text-text-muted tracking-widest mb-1">
+                           Socios
+                         </span>
+                         <span className="text-white font-mono font-bold text-base">
+                           {ent.total_usuarios || 0} <span className="text-[10px] text-text-muted">UFS</span>
+                         </span>
+                      </div>
+                      <div className="flex flex-col">
+                         <span className="text-[9px] uppercase font-bold text-text-muted tracking-widest mb-1">
+                           Parque
+                         </span>
+                         <span className="text-white font-mono font-bold text-base">
+                           {ent.total_vehiculos || 0} <span className="text-[10px] text-text-muted">UNI</span>
+                         </span>
+                      </div>
+                   </div>
+
+                   <div className="mt-4 flex justify-end">
+                      <button 
+                        onClick={() => navigate(`/comando/entidades/${ent.id}`)}
+                        className="text-[10px] font-black uppercase text-primary tracking-widest hover:underline underline-offset-4 flex items-center gap-2 group"
+                      >
+                         GESTIONAR CONCESIÓN
+                         <ShieldCheck size={12} className="group-hover:scale-125 transition-transform" />
+                      </button>
+                   </div>
+                </Card>
             ))}
 
-            {entidades.length === 0 && (
-              <div className="text-center p-8 border border-text-muted/20 border-dashed rounded-xl mt-8">
-                <ShieldCheck size={32} className="mx-auto text-text-muted/50 mb-4" />
-                <p className="text-text-sec text-xs font-medium tracking-widest uppercase">
-                  No hay entidades registradas
-                </p>
-              </div>
+            {/* Controles de Paginación */}
+            {(entidades.length > 0 || page > 0) && (
+               <div className="flex items-center justify-between pt-6 border-t border-white/5 mt-4">
+                  <button
+                    disabled={page === 0}
+                    onClick={() => setPage(p => p - 1)}
+                    className="flex items-center gap-2 text-[10px] font-black uppercase text-white disabled:opacity-30 disabled:pointer-events-none hover:text-primary transition-colors"
+                  >
+                     ← Anterior
+                  </button>
+                  <span className="text-[11px] font-mono font-bold text-text-muted uppercase">
+                    Página {page + 1}
+                  </span>
+                  <button
+                    disabled={!hasMore}
+                    onClick={() => setPage(p => p + 1)}
+                    className="flex items-center gap-2 text-[10px] font-black uppercase text-white disabled:opacity-30 disabled:pointer-events-none hover:text-primary transition-colors"
+                  >
+                     Siguiente →
+                  </button>
+               </div>
             )}
           </div>
         )}

@@ -72,23 +72,76 @@ class EntidadCivilService:
                 raise EntidadDuplicada(f"La cédula '{datos.admin_cedula}' ya está registrada.")
             raise EntidadDuplicada("Error de integridad al crear la entidad o el administrador.")
 
-    async def obtener_todas(self, db: AsyncSession, activas_solo: bool = False) -> list[EntidadCivil]:
-        """SOP: Obtiene lista de entidades civiles."""
-        query = select(EntidadCivil)
+    async def obtener_todas(
+        self, db: AsyncSession, activas_solo: bool = False, skip: int = 0, limit: int = 100
+    ) -> list[EntidadCivil]:
+        """SOP: Obtiene lista de entidades civiles, con métricas de población y vehículos."""
+        from sqlalchemy import func
+        from app.models.vehiculo import Vehiculo
+
+        # Subconsulta para contar usuarios por entidad
+        usuarios_sub = select(
+            Usuario.entidad_id,
+            func.count(Usuario.id).label("total_usuarios")
+        ).group_by(Usuario.entidad_id).subquery()
+
+        # Subconsulta para contar vehículos por entidad
+        vehiculos_sub = select(
+            Usuario.entidad_id,
+            func.count(Vehiculo.id).label("total_vehiculos")
+        ).join(Vehiculo, Vehiculo.propietario_id == Usuario.id
+        ).group_by(Usuario.entidad_id).subquery()
+
+        # Consulta principal con JOINS externos
+        query = select(
+            EntidadCivil,
+            func.coalesce(usuarios_sub.c.total_usuarios, 0).label("total_usuarios"),
+            func.coalesce(vehiculos_sub.c.total_vehiculos, 0).label("total_vehiculos")
+        ).outerjoin(
+            usuarios_sub, EntidadCivil.id == usuarios_sub.c.entidad_id
+        ).outerjoin(
+            vehiculos_sub, EntidadCivil.id == vehiculos_sub.c.entidad_id
+        )
+
         if activas_solo:
             query = query.where(EntidadCivil.activo == True)
             
         # Ordenadas por nombre
-        query = query.order_by(EntidadCivil.nombre)
+        query = query.order_by(EntidadCivil.nombre).offset(skip).limit(limit)
         
         resultado = await db.execute(query)
-        return list(resultado.scalars().all())
+        rows = resultado.all()
+        
+        entidades = []
+        for row in rows:
+            ent = row.EntidadCivil
+            ent.total_usuarios = row.total_usuarios
+            ent.total_vehiculos = row.total_vehiculos
+            entidades.append(ent)
+            
+        return entidades
 
     async def obtener_por_id(self, db: AsyncSession, entidad_id: UUID) -> EntidadCivil:
-        """SOP: Obtiene entidad específica."""
-        entidad = await db.get(EntidadCivil, entidad_id)
+        """SOP: Obtiene entidad específica con sus métricas actualizadas."""
+        from sqlalchemy import func
+        from app.models.vehiculo import Vehiculo
+
+        query = select(EntidadCivil).where(EntidadCivil.id == entidad_id)
+        res = await db.execute(query)
+        entidad = res.scalar_one_or_none()
+        
         if not entidad:
             raise EntidadNoEncontrada("La entidad solicitada no existe.")
+            
+        # Obtener métricas rápidas
+        q_u = select(func.count(Usuario.id)).where(Usuario.entidad_id == entidad_id)
+        entidad.total_usuarios = (await db.execute(q_u)).scalar() or 0
+        
+        q_v = select(func.count(Vehiculo.id)).join(
+            Usuario, Vehiculo.propietario_id == Usuario.id
+        ).where(Usuario.entidad_id == entidad_id)
+        entidad.total_vehiculos = (await db.execute(q_v)).scalar() or 0
+        
         return entidad
 
     async def actualizar(

@@ -20,14 +20,16 @@ DEPENDENCY_ADMIN_BASE = Depends(require_rol([RolTipo.COMANDANTE, RolTipo.ADMIN_B
 @router.get("", response_model=List[EntidadCivilSalida])
 async def listar_entidades(
     activas_solo: bool = False,
+    skip: int = 0,
+    limit: int = 100,
     db: AsyncSession = Depends(obtener_db),
     usuario_actual: Usuario = Depends(obtener_usuario_actual),
 ):
     """
-    Lista todas las entidades civiles. 
-    Cualquier usuario autenticado puede verlas (lectura).
+    Lista todas las entidades civiles con soporte para paginación. 
+    Cualquier usuario autenticado puede verlas.
     """
-    return await entidad_service.obtener_todas(db, activas_solo)
+    return await entidad_service.obtener_todas(db, activas_solo, skip=skip, limit=limit)
 
 
 @router.post("", response_model=EntidadCivilSalida, status_code=status.HTTP_201_CREATED)

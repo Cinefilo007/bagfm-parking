@@ -27,4 +27,8 @@ class EntidadCivilSalida(EntidadCivilBase):
     created_at: datetime
     created_by: Optional[UUID] = None
     
+    # Métricas Operativas (Opcionales dependiendo del endpoint)
+    total_usuarios: Optional[int] = 0
+    total_vehiculos: Optional[int] = 0
+    
     model_config = ConfigDict(from_attributes=True)
