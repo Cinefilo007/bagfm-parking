@@ -1,6 +1,7 @@
 import React from 'react';
 import { createBrowserRouter, Navigate } from 'react-router-dom';
 import { RutaProtegida } from './RutaProtegida';
+import { MainLayout } from '../components/layout/MainLayout';
 import Login from '../pages/Login';
 import DashboardComando from '../pages/comandante/Dashboard';
 import Entidades from '../pages/comandante/Entidades';
@@ -45,55 +46,64 @@ export const router = createBrowserRouter([
         path: '',
         element: <HomeRedirect />
       },
-      // ====== COMANDO ======
+      // ====== RUTAS CON NAVEGACIÓN (LAYOUT PRINCIPAL) ======
       {
-        path: 'comando',
-        element: <RutaProtegida rolesPermitidos={['COMANDANTE', 'ADMIN_BASE', 'SUPERVISOR']} />,
+        element: <MainLayout />, 
         children: [
-          { path: 'dashboard', element: <DashboardComando /> },
-          { path: 'entidades', element: <Entidades /> },
-          { path: 'entidades/:id', element: <EntidadDetalle /> },
-          { path: 'alcabalas', element: <Alcabalas /> },
-          { path: 'eventos', element: <EventosMando /> },
-          { path: 'infracciones', element: <TemporaryPlaceholder name="Infracciones" /> }
-        ],
-      },
-      {
-        path: 'entidad',
-        element: <RutaProtegida rolesPermitidos={['ADMIN_ENTIDAD']} />,
-        children: [
-          { path: 'dashboard', element: <DashboardEntidad /> },
-          { path: 'socios', element: <SociosEntidad /> },
-          { path: 'eventos', element: <EventosEntidad /> }
-        ]
-      },
-      // ====== ALCABALA ======
-      {
-        path: 'alcabala',
-        element: <RutaProtegida rolesPermitidos={['ALCABALA', 'ADMIN_BASE', 'COMANDANTE']} />,
-        children: [
-          { path: 'dashboard', element: <DashboardAlcabala /> },
-          { 
-            path: 'scanner', 
-            element: <RutaProtegida hideNav={true} rolesPermitidos={['ALCABALA']} />,
+          // COMANDO
+          {
+            path: 'comando',
+            element: <RutaProtegida rolesPermitidos={['COMANDANTE', 'ADMIN_BASE', 'SUPERVISOR']} />,
             children: [
-               { path: '', element: <ScannerAlcabala /> }
+              { path: 'dashboard', element: <DashboardComando /> },
+              { path: 'entidades', element: <Entidades /> },
+              { path: 'entidades/:id', element: <EntidadDetalle /> },
+              { path: 'alcabalas', element: <Alcabalas /> },
+              { path: 'eventos', element: <EventosMando /> },
+              { path: 'infracciones', element: <TemporaryPlaceholder name="Infracciones" /> }
+            ],
+          },
+          // ENTIDAD
+          {
+            path: 'entidad',
+            element: <RutaProtegida rolesPermitidos={['ADMIN_ENTIDAD']} />,
+            children: [
+              { path: 'dashboard', element: <DashboardEntidad /> },
+              { path: 'socios', element: <SociosEntidad /> },
+              { path: 'eventos', element: <EventosEntidad /> }
             ]
+          },
+          // ALCABALA (SIN SCANNER AQUÍ)
+          {
+            path: 'alcabala',
+            element: <RutaProtegida rolesPermitidos={['ALCABALA', 'ADMIN_BASE', 'COMANDANTE']} />,
+            children: [
+              { path: 'dashboard', element: <DashboardAlcabala /> }
+            ]
+          },
+          // SOCIO
+          {
+            path: 'socio',
+            element: <RutaProtegida rolesPermitidos={['SOCIO']} />,
+            children: [
+              { path: 'portal', element: <PortalSocio /> }
+            ]
+          },
+          // AJUSTES
+          {
+            path: 'ajustes',
+            element: <Ajustes />
           }
         ]
       },
-      // ====== SOCIO ======
+
+      // ====== RUTAS SIN NAVEGACIÓN (PANTALLA COMPLETA) ======
       {
-        path: 'socio',
-        element: <RutaProtegida rolesPermitidos={['SOCIO']} />,
+        path: 'alcabala/scanner',
+        element: <RutaProtegida rolesPermitidos={['ALCABALA', 'ADMIN_BASE', 'COMANDANTE']} />,
         children: [
-          { path: 'portal', element: <PortalSocio /> }
+          { path: '', element: <ScannerAlcabala /> }
         ]
-      },
-      // ====== RUTAS COMPARTIDAS ======
-      {
-         path: 'ajustes',
-         element: <Ajustes />
       }
     ],
   },
