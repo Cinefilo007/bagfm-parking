@@ -7,7 +7,8 @@ from app.models.enums import SolicitudEstado
 # --- Punto de Acceso (Alcabala) ---
 class PuntoAccesoBase(BaseModel):
     nombre: str
-    ubicacion: Optional[str] = None
+    latitud: Optional[float] = None
+    longitud: Optional[float] = None
 
 class PuntoAccesoCrear(PuntoAccesoBase):
     pass

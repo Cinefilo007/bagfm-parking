@@ -2,6 +2,7 @@ import React from 'react';
 import { Header } from '../../components/layout/Header';
 import { Card } from '../../components/ui/Card';
 import { Target, CarFront, ShieldAlert, AlertTriangle } from 'lucide-react';
+import MapaTactico from '../../components/MapaTactico';
 
 export default function DashboardComando() {
   // Stats quemados por ahora, en futura iteración se sacan de react-query/axios
@@ -60,6 +61,9 @@ export default function DashboardComando() {
           <h3 className="font-display font-semibold text-lg text-text-main uppercase tracking-widest border-b border-text-muted/20 pb-2 mb-4">
              Registro Táctico (Últimas Entradas)
           </h3>
+          <div className="mb-6 h-[400px]">
+            <MapaTactico />
+          </div>
           <div className="space-y-3">
              <Card elevation={1} className="flex items-center justify-between opacity-70">
                 <div className="text-text-sec text-xs italic tracking-widest text-center w-full">

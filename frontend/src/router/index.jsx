@@ -25,7 +25,7 @@ const TemporaryPlaceholder = ({ name }) => (
 const HomeRedirect = () => {
   const { user } = useAuthStore();
   if (!user) return <Navigate to="/login" replace />;
-  if (user.rol === 'COMANDANTE' || user.rol === 'ADMIN_BASE') return <Navigate to="/comando/dashboard" replace />;
+  if (user.rol === 'COMANDANTE' || user.rol === 'ADMIN_BASE' || user.rol === 'SUPERVISOR') return <Navigate to="/comando/dashboard" replace />;
   if (user.rol === 'ADMIN_ENTIDAD') return <Navigate to="/entidad/dashboard" replace />;
   if (user.rol === 'ALCABALA') return <Navigate to="/alcabala/dashboard" replace />;
   if (user.rol === 'SOCIO') return <Navigate to="/socio/portal" replace />;
@@ -48,7 +48,7 @@ export const router = createBrowserRouter([
       // ====== COMANDO ======
       {
         path: 'comando',
-        element: <RutaProtegida rolesPermitidos={['COMANDANTE', 'ADMIN_BASE']} />,
+        element: <RutaProtegida rolesPermitidos={['COMANDANTE', 'ADMIN_BASE', 'SUPERVISOR']} />,
         children: [
           { path: 'dashboard', element: <DashboardComando /> },
           { path: 'entidades', element: <Entidades /> },

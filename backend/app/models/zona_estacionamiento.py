@@ -3,7 +3,7 @@ Modelo ZonaEstacionamiento.
 Áreas físicas de la base.
 """
 import uuid
-from sqlalchemy import Column, String, Integer, Boolean, Text, DateTime
+from sqlalchemy import Column, String, Integer, Boolean, Text, DateTime, Numeric
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.sql import func
 from sqlalchemy.orm import relationship
@@ -18,6 +18,9 @@ class ZonaEstacionamiento(Base):
     capacidad_total = Column(Integer, nullable=False)
     ocupacion_actual = Column(Integer, default=0, nullable=False)
     descripcion_ubicacion = Column(Text, nullable=True)
+    latitud = Column(Numeric(10, 8), nullable=True)
+    longitud = Column(Numeric(11, 8), nullable=True)
+    radio_cobertura = Column(Integer, default=50, nullable=False)
     activo = Column(Boolean, default=True, nullable=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
 

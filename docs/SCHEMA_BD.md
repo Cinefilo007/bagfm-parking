@@ -54,6 +54,8 @@ Organizaciones civiles con acceso a la base.
 | `capacidad_vehiculos` | INTEGER | NOT NULL, > 0 | Cupos máximos |
 | `descripcion` | TEXT | NULL | — |
 | `activo` | BOOLEAN | DEFAULT true | — |
+| `latitud` | NUMERIC | NULL | — |
+| `longitud` | NUMERIC | NULL | — |
 | `created_at` | TIMESTAMPTZ | DEFAULT now() | — |
 | `created_by` | UUID | FK → usuarios | Comandante que creó |
 
@@ -69,6 +71,9 @@ Organizaciones civiles con acceso a la base.
 | `capacidad_total` | INTEGER | NOT NULL | Cupos físicos totales |
 | `ocupacion_actual` | INTEGER | DEFAULT 0 | Calculado por accesos |
 | `descripcion_ubicacion` | TEXT | NULL | — |
+| `latitud` | NUMERIC | NULL | — |
+| `longitud` | NUMERIC | NULL | — |
+| `radio_cobertura` | INTEGER | DEFAULT 50 | Radio en metros |
 | `activo` | BOOLEAN | DEFAULT true | — |
 | `created_at` | TIMESTAMPTZ | DEFAULT now() | — |
 
@@ -227,7 +232,8 @@ Puntos físicos de control (alcabalas).
 |-------|------|-------------|-------|
 | `id` | UUID | PK | — |
 | `nombre` | VARCHAR(100) | NOT NULL | Ej: "Alcabala Norte" |
-| `ubicacion` | TEXT | NULL | Coordenadas o referencia |
+| `latitud` | NUMERIC | NULL | — |
+| `longitud` | NUMERIC | NULL | — |
 | `activo` | BOOLEAN | DEFAULT true | — |
 
 ---
@@ -303,6 +309,7 @@ CREATE INDEX idx_codigos_qr_token ON codigos_qr(token) WHERE activo = true;
 | Versión | Fecha | Cambio |
 |---------|-------|--------|
 | 0.1.0 | 2026-03-30 | Schema inicial definido |
+| 0.6.1 | 2026-04-04 | Agregados campos de geoposicionamiento para Mapa Táctico |
 
 ---
 

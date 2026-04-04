@@ -21,7 +21,7 @@ export const RutaProtegida = ({ rolesPermitidos = [], hideNav = false }) => {
   // Si se pasaron roles, validar
   if (rolesPermitidos.length > 0 && !rolesPermitidos.includes(user.rol)) {
     // Redirección inteligente fundamentada en el rol
-    if (user.rol === 'COMANDANTE' || user.rol === 'ADMIN_BASE') return <Navigate to="/comando/dashboard" replace />;
+    if (user.rol === 'COMANDANTE' || user.rol === 'ADMIN_BASE' || user.rol === 'SUPERVISOR') return <Navigate to="/comando/dashboard" replace />;
     if (user.rol === 'ADMIN_ENTIDAD') return <Navigate to="/entidad/dashboard" replace />;
     if (user.rol === 'ALCABALA') return <Navigate to="/alcabala/dashboard" replace />;
     

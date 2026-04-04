@@ -9,6 +9,8 @@ class EntidadCivilBase(BaseModel):
     zona_id: Optional[UUID] = None
     capacidad_vehiculos: int = 1
     descripcion: Optional[str] = None
+    latitud: Optional[float] = None
+    longitud: Optional[float] = None
     activo: bool = True
 
 class EntidadCivilCrear(EntidadCivilBase):

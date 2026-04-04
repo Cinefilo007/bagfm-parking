@@ -3,7 +3,7 @@ Modelos para Gestión de Alcabalas y Eventos.
 Sigue la directiva FL-08 para pases masivos.
 """
 import uuid
-from sqlalchemy import Column, String, Boolean, Text, DateTime, Date, ForeignKey, Integer, Enum as SQLEnum
+from sqlalchemy import Column, String, Boolean, Text, DateTime, Date, ForeignKey, Integer, Numeric, Enum as SQLEnum
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.sql import func
 from app.core.database import Base
@@ -14,7 +14,8 @@ class PuntoAcceso(Base):
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     nombre = Column(String(200), nullable=False)
-    ubicacion = Column(Text, nullable=True)
+    latitud = Column(Numeric(10, 8), nullable=True)
+    longitud = Column(Numeric(11, 8), nullable=True)
     activo = Column(Boolean, default=True, nullable=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 

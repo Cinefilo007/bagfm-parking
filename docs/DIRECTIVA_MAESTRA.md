@@ -175,6 +175,7 @@ Definidas en `backend/.env` y `frontend/.env`. Ver `.env.example` en cada carpet
 | [CONVENCIONES_CODIGO.md](./CONVENCIONES_CODIGO.md) | Nombres, estructura, estilo de código |
 | [API_REFERENCE.md](./API_REFERENCE.md) | Endpoints disponibles y contratos |
 | [DEPLOYMENT.md](./DEPLOYMENT.md) | 🚀 Guía de despliegue para GitHub y Railway |
+| [DIRECTIVA_MAPA_TACTICO.md](./DIRECTIVA_MAPA_TACTICO.md) | 🗺️ Módulo de Mapa Táctico Táctico de la Base |
 | [REGISTRO_CAMBIOS.md](./REGISTRO_CAMBIOS.md) | Log de cambios mayor por versión |
 
 ---

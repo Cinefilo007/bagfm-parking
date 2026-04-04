@@ -3,7 +3,7 @@ Modelo EntidadCivil.
 Las organizaciones civiles que operan dentro de la base (Club de Pádel, Parque Miranda, etc).
 """
 import uuid
-from sqlalchemy import Column, String, Integer, Boolean, Text, DateTime, ForeignKey
+from sqlalchemy import Column, String, Integer, Boolean, Text, DateTime, ForeignKey, Numeric
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.sql import func
 from sqlalchemy.orm import relationship
@@ -20,6 +20,8 @@ class EntidadCivil(Base):
     capacidad_vehiculos = Column(Integer, nullable=False, default=1)
     descripcion = Column(Text, nullable=True)
     activo = Column(Boolean, default=True, nullable=False)
+    latitud = Column(Numeric(10, 8), nullable=True)
+    longitud = Column(Numeric(11, 8), nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     created_by = Column(UUID(as_uuid=True), ForeignKey("usuarios.id", ondelete="RESTRICT"), nullable=True)
 

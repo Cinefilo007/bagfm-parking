@@ -72,7 +72,7 @@ from app.models import base
 
 from app.api.v1 import (
     auth, entidades, socios, accesos, 
-    infracciones, websocket, comando, eventos
+    infracciones, websocket, comando, eventos, mapa
 )
 
 app.include_router(auth.router, prefix="/api/v1/auth", tags=["Autenticación"])
@@ -82,4 +82,5 @@ app.include_router(comando.router, prefix="/api/v1/comando", tags=["Comando y Al
 app.include_router(eventos.router, prefix="/api/v1/eventos", tags=["Eventos y Pases Masivos"])
 app.include_router(accesos.router, prefix="/api/v1/accesos", tags=["Control de Accesos"])
 app.include_router(infracciones.router, prefix="/api/v1/infracciones", tags=["Gestión de Infracciones"])
+app.include_router(mapa.router, prefix="/api/v1/mapa", tags=["Mapa Táctico"])
 app.include_router(websocket.router, prefix="/api/v1", tags=["Tiempo Real"])
