@@ -101,10 +101,17 @@ class AccesoService:
                         msg_bloqueo = f"SALIDA BLOQUEADA: {inf.descripcion}"
                         break
 
-            # 8. Obtener nombre de la entidad
+            # 8. Obtener nombre de la entidad y VERIFICAR ESTADO
             query_ent = select(EntidadCivil).where(EntidadCivil.id == socio.entidad_id)
             res_ent = await db.execute(query_ent)
             entidad = res_ent.scalar_one_or_none()
+
+            if entidad and not entidad.activo:
+                return ResultadoValidacion(
+                    permitido=False, 
+                    mensaje=f"CESE DE SERVICIOS: CONCESIÓN {entidad.nombre} SUSPENDIDA", 
+                    tipo_alerta="error"
+                )
 
             # 9. Construir respuesta
             return ResultadoValidacion(

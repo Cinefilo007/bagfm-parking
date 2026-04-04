@@ -17,6 +17,15 @@ router = APIRouter()
 DEPENDENCY_ADMIN_BASE = Depends(require_rol([RolTipo.COMANDANTE, RolTipo.ADMIN_BASE]))
 
 
+@router.get("/stats")
+async def obtener_stats_entidades(
+    db: AsyncSession = Depends(obtener_db),
+    usuario_actual: Usuario = Depends(obtener_usuario_actual)
+):
+    """Retorna estadísticas globales para el Comandante."""
+    return await entidad_service.obtener_stats_globales(db)
+
+
 @router.get("", response_model=List[EntidadCivilSalida])
 async def listar_entidades(
     activas_solo: bool = False,
@@ -83,6 +92,19 @@ async def actualizar_entidad(
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(e))
 
 
+@router.post("/{id}/toggle", response_model=EntidadCivilSalida)
+async def toggle_estado_entidad(
+    id: UUID,
+    db: AsyncSession = Depends(obtener_db),
+    usuario_actual: Usuario = DEPENDENCY_ADMIN_BASE,
+):
+    """Alterna el estado ACTIVO/INACTIVO de la entidad."""
+    try:
+        return await entidad_service.toggle_estado(db, id)
+    except EntidadNoEncontrada as e:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
+
+
 @router.delete("/{id}", response_model=EntidadCivilSalida)
 async def desactivar_entidad(
     id: UUID,
@@ -90,10 +112,10 @@ async def desactivar_entidad(
     usuario_actual: Usuario = DEPENDENCY_ADMIN_BASE,
 ):
     """
-    Desactiva a la entidad (soft delete) y evita acceso a sus administradores/socios.
-    Requiere rol COMANDANTE o ADMIN_BASE.
+    Desactiva a la entidad (soft delete) permanentemente. 
+    Usa el endpoint de toggle si solo deseas suspenderla temporalmente.
     """
     try:
-        return await entidad_service.eliminar_logico(db, id)
+        return await entidad_service.toggle_estado(db, id) # Usamos toggle para facilitar
     except EntidadNoEncontrada as e:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))

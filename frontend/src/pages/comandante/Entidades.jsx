@@ -7,13 +7,14 @@ import { Card } from '../../components/ui/Card';
 import { Badge } from '../../components/ui/Badge';
 import { Modal } from '../../components/ui/Modal';
 import { Input } from '../../components/ui/Input';
-import { Network, Plus, ShieldCheck, Database } from 'lucide-react';
+import { Network, Plus, ShieldCheck, Database, Power, Activity, Users, Car, AlertTriangle } from 'lucide-react';
 import api from '../../services/api';
 
 export default function Entidades() {
   const navigate = useNavigate();
   const [entidades, setEntidades] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [stats, setStats] = useState({ total_entidades: 0, total_vehiculos: 0, total_usuarios: 0 });
   const [page, setPage] = useState(0);
   const limit = 5;
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -30,6 +31,15 @@ export default function Entidades() {
     admin_password: ''
   });
 
+  const fetchStats = async () => {
+    try {
+      const res = await api.get('/entidades/stats');
+      setStats(res.data);
+    } catch (err) {
+      console.error("Error cargando stats", err);
+    }
+  };
+
   const fetchEntidades = async (p = page) => {
     setLoading(true);
     try {
@@ -37,6 +47,7 @@ export default function Entidades() {
       const res = await api.get(`/entidades?skip=${skip}&limit=${limit}`);
       setEntidades(res.data);
       setHasMore(res.data.length === limit);
+      fetchStats();
     } catch (err) {
       console.error("Error cargando entidades", err);
     } finally {
@@ -47,6 +58,15 @@ export default function Entidades() {
   useEffect(() => {
     fetchEntidades();
   }, [page]);
+
+  const handleToggleEstado = async (id) => {
+    try {
+      await api.post(`/entidades/${id}/toggle`);
+      fetchEntidades();
+    } catch (err) {
+      console.error("Error al cambiar estado", err);
+    }
+  };
 
   const handleCrearEntidad = async (e) => {
     e.preventDefault();
@@ -100,7 +120,37 @@ export default function Entidades() {
         }
       />
       
-      <main className="px-4 py-6 max-w-lg mx-auto pb-24">
+      <main className="px-4 py-6 max-w-4xl mx-auto pb-24">
+        {/* Barra de Estadísticas Globales */}
+        <div className="grid grid-cols-3 gap-4 mb-8">
+           <Card className="bg-bg-card/20 border-white/5 p-4 py-3 flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary border border-primary/20">
+                 <Activity size={20} />
+              </div>
+              <div>
+                 <p className="text-[10px] text-text-muted font-bold uppercase tracking-widest leading-none mb-1">Entidades</p>
+                 <p className="text-xl font-display font-black text-white leading-none">{stats.total_entidades}</p>
+              </div>
+           </Card>
+           <Card className="bg-bg-card/20 border-white/5 p-4 py-3 flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-blue-500/10 flex items-center justify-center text-blue-400 border border-blue-500/20">
+                 <Users size={20} />
+              </div>
+              <div>
+                 <p className="text-[10px] text-text-muted font-bold uppercase tracking-widest leading-none mb-1">Socios</p>
+                 <p className="text-xl font-display font-black text-white leading-none">{stats.total_usuarios}</p>
+              </div>
+           </Card>
+           <Card className="bg-bg-card/20 border-white/5 p-4 py-3 flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-emerald-500/10 flex items-center justify-center text-emerald-400 border border-emerald-500/20">
+                 <Car size={20} />
+              </div>
+              <div>
+                 <p className="text-[10px] text-text-muted font-bold uppercase tracking-widest leading-none mb-1">Parque</p>
+                 <p className="text-xl font-display font-black text-white leading-none">{stats.total_vehiculos}</p>
+              </div>
+           </Card>
+        </div>
         {loading ? (
            <p className="text-center text-text-muted text-sm tracking-widest uppercase">Cargando Tácticas...</p>
         ) : (
@@ -124,14 +174,24 @@ export default function Entidades() {
                                </p>
                                <span className="w-1 h-1 rounded-full bg-white/20"></span>
                                <Badge variant={ent.activo ? 'activa' : 'suspendida'} className="text-[9px] h-4">
-                                 {ent.activo ? 'OPERATIVO' : 'FUERA DE LÍNEA'}
+                                 {ent.activo ? 'OPERATIVO' : 'SUSPENDIDA'}
                                </Badge>
                             </div>
                          </div>
                       </div>
-                      <Boton variant="ghost" className="p-2 min-h-0 w-auto rounded-full hover:bg-white/5" onClick={() => navigate(`/comando/entidades/${ent.id}`)}>
-                         <Plus size={18} className="rotate-45 opacity-50 hover:opacity-100 transition-opacity" />
-                      </Boton>
+                      <div className="flex gap-2">
+                        <Boton 
+                          variant="ghost" 
+                          className={`p-2 min-h-0 w-auto rounded-full ${ent.activo ? 'text-emerald-500 hover:bg-emerald-500/10' : 'text-red-500 hover:bg-red-500/10'}`}
+                          onClick={() => handleToggleEstado(ent.id)}
+                          title={ent.activo ? "Suspender Entidad" : "Reactivar Entidad"}
+                        >
+                           <Power size={18} />
+                        </Boton>
+                        <Boton variant="ghost" className="p-2 min-h-0 w-auto rounded-full hover:bg-white/5" onClick={() => navigate(`/comando/entidades/${ent.id}`)}>
+                           <ShieldCheck size={18} className="opacity-50 hover:opacity-100 transition-opacity" />
+                        </Boton>
+                      </div>
                    </div>
 
                    <div className="grid grid-cols-3 gap-4 border-t border-white/5 pt-4">

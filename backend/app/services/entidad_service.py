@@ -161,10 +161,29 @@ class EntidadCivilService:
             await db.rollback()
             raise EntidadDuplicada("Los datos generan conflicto con otra entidad.")
 
-    async def eliminar_logico(self, db: AsyncSession, entidad_id: UUID) -> EntidadCivil:
-        """SOP: Desactiva entidad, no la borra (soft delete)."""
+    async def obtener_stats_globales(self, db: AsyncSession) -> dict:
+        """SOP: Obtiene estadísticas globales del inventario civil de la base."""
+        from sqlalchemy import func
+        from app.models.vehiculo import Vehiculo
+        
+        # Ejecutar en paralelo (conceptualmente, aunque aquí es secuencial en await por simplicidad)
+        total_e = (await db.execute(select(func.count(EntidadCivil.id)))).scalar() or 0
+        total_v = (await db.execute(select(func.count(Vehiculo.id)))).scalar() or 0
+        total_u = (await db.execute(select(func.count(Usuario.id)))).scalar() or 0
+        
+        return {
+            "total_entidades": total_e,
+            "total_vehiculos": total_v,
+            "total_usuarios": total_u
+        }
+
+    async def toggle_estado(self, db: AsyncSession, entidad_id: UUID) -> EntidadCivil:
+        """
+        SOP: Cambia el estado de activación de la concesión civil.
+        Nota: El motor de accesos verificará este estado antes de permitir entradas.
+        """
         entidad = await self.obtener_por_id(db, entidad_id)
-        entidad.activo = False
+        entidad.activo = not entidad.activo
         await db.commit()
         await db.refresh(entidad)
         return entidad
