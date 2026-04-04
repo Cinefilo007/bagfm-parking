@@ -11,7 +11,7 @@ export const MainLayout = ({ hideNav = false }) => {
 
        {/* Contenedor Principal Adaptativo */}
        <main className={`flex-1 flex flex-col ${!hideNav ? 'pb-20 lg:pb-0' : ''} h-screen overflow-hidden`}>
-          <div className="flex-1 overflow-y-auto w-full p-4 md:p-8 no-scrollbar bg-bg-app relative z-0">
+          <div className="flex-1 overflow-y-auto w-full no-scrollbar bg-bg-app relative z-0">
              {/* Renderizado de la Página */}
              <Outlet />
           </div>
