@@ -226,31 +226,6 @@ const MapaBaseReal = ({ situacion, onSelectEntity, assignmentMode, onMapClick, s
             )}
           </MapContainer>
       </div>
-
-      {/* LEYENDA (Debajo del mapa) */}
-      <div className="p-4 grid grid-cols-1 md:grid-cols-3 gap-6 bg-bg-card/30 rounded-2xl border border-white/5 backdrop-blur-md">
-          <div className="flex items-center gap-3 px-2">
-             <div className="w-4 h-4 rounded-full border-2 border-primary bg-primary/20 shadow-[0_0_12px_#4EDEA3]"></div>
-             <div className="flex flex-col">
-                <span className="text-[10px] font-black uppercase text-text-sec tracking-wider">Alcabalas</span>
-                <span className="text-[8px] font-mono text-text-muted uppercase opacity-60">Control Perimetral</span>
-             </div>
-          </div>
-          <div className="flex items-center gap-3 px-2">
-             <div className="w-4 h-4 rounded-full border-2 border-warning bg-warning/20 shadow-[0_0_12px_#F59E0B]"></div>
-             <div className="flex flex-col">
-                <span className="text-[10px] font-black uppercase text-text-sec tracking-wider">Parkings</span>
-                <span className="text-[8px] font-mono text-text-muted uppercase opacity-60">Estacionamientos</span>
-             </div>
-          </div>
-          <div className="flex items-center gap-3 px-2">
-             <div className="w-4 h-4 rounded-full border-2 border-white bg-white/20 shadow-[0_0_12px_#DEE1F7]"></div>
-             <div className="flex flex-col">
-                <span className="text-[10px] font-black uppercase text-text-sec tracking-wider">Civiles</span>
-                <span className="text-[8px] font-mono text-text-muted uppercase opacity-60">Sedes Entidades</span>
-             </div>
-          </div>
-      </div>
     </div>
   );
 };

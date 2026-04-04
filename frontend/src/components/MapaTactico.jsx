@@ -62,33 +62,10 @@ const MapaTactico = () => {
     );
 
     return (
-        <div className="flex flex-col gap-6">
+        <div className="flex flex-col gap-6 h-full relative">
             
-            {/* HERRAMIENTAS DE GEORREFERENCIA */}
-            <div className="flex items-center justify-between">
-                {!isAssigning ? (
-                    <button 
-                       onClick={() => setShowSelectionModal(true)}
-                       className="flex items-center gap-2 px-4 py-2 bg-primary/10 border border-primary/20 text-primary rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-primary/20 transition-all shadow-[0_0_15px_rgba(78,222,163,0.1)]"
-                    >
-                       <MapPin size={14} />
-                       Georreferenciar Entidad
-                    </button>
-                ) : (
-                    <div className="flex items-center gap-4 bg-warning/10 border border-warning/30 p-2 rounded-xl">
-                       <span className="text-[10px] font-black text-warning uppercase px-2">Modo Asignación: {selectedEntityToMove?.nombre}</span>
-                       <button 
-                          onClick={() => { setIsAssigning(false); setSelectedEntityToMove(null); }}
-                          className="p-1 px-3 bg-danger/20 text-danger rounded-lg text-[9px] font-bold uppercase"
-                       >
-                          Cancelar
-                       </button>
-                    </div>
-                )}
-            </div>
-
             {/* Mapa de Situación Real */}
-            <div className="h-[450px] relative z-0">
+            <div className="flex-1 min-h-[450px] relative z-0 border border-white/5 rounded-3xl overflow-hidden shadow-2xl">
                 <MapaBaseReal 
                     situacion={situacion} 
                     onSelectEntity={(e) => setSelected(e)} 
@@ -96,16 +73,45 @@ const MapaTactico = () => {
                     onMapClick={handleMapClick}
                     selectedForMove={selectedEntityToMove}
                 />
+
+                {/* BOTÓN FLOTANTE: Georreferenciar (Esquina Inferior Izquierda) */}
+                <div className="absolute bottom-6 left-6 z-[1000] flex items-center gap-3">
+                    {!isAssigning ? (
+                        <button 
+                           onClick={() => setShowSelectionModal(true)}
+                           className="w-12 h-12 bg-primary text-bg-app rounded-full flex items-center justify-center shadow-[0_0_20px_rgba(78,222,163,0.4)] hover:scale-110 active:scale-95 transition-all group"
+                           title="Georreferenciar Entidad"
+                        >
+                           <div className="flex items-center gap-2">
+                              <span className="max-w-0 overflow-hidden group-hover:max-w-[150px] transition-all duration-300 text-[10px] font-black uppercase whitespace-nowrap pl-0 group-hover:pl-4">Georreferenciar</span>
+                              <span className="text-2xl font-bold">+</span>
+                              <span className="w-2"></span>
+                           </div>
+                        </button>
+                    ) : (
+                        <div className="flex items-center gap-4 bg-warning/90 backdrop-blur-md border border-warning px-4 py-2 rounded-2xl shadow-xl animate-pulse">
+                           <span className="text-[10px] font-black text-bg-app uppercase tracking-widest">{selectedEntityToMove?.nombre}</span>
+                           <button 
+                              onClick={() => { setIsAssigning(false); setSelectedEntityToMove(null); }}
+                              className="px-3 py-1 bg-bg-app text-warning rounded-lg text-[9px] font-bold uppercase hover:bg-warning hover:text-bg-app transition-colors"
+                           >
+                              Cancelar
+                           </button>
+                        </div>
+                    )}
+                </div>
             </div>
 
-            {/* TEXTO DEBAJO DEL MAPA - Como pidió el usuario */}
-            <div className="flex flex-col border-l-2 border-primary/50 pl-4 py-2">
-                <h3 className="text-[12px] font-display font-black text-white tracking-[0.2em] uppercase">
-                    Unidad de Vigilancia Perimetral
-                </h3>
-                <p className="text-[9px] font-mono text-primary/70 uppercase">
-                    BAGFM OVERLOOK // ENCRIPTACIÓN ACTIVA AES-256 // SYNC: {new Date().toLocaleTimeString()}
-                </p>
+            {/* TEXTO DEBAJO DEL MAPA */}
+            <div className="flex items-center justify-between opacity-60 hover:opacity-100 transition-opacity">
+                <div className="flex flex-col border-l-2 border-primary/50 pl-4">
+                    <h3 className="text-[11px] font-display font-black text-white tracking-[0.2em] uppercase">
+                        Unidad de Vigilancia Perimetral
+                    </h3>
+                    <p className="text-[8px] font-mono text-primary/70 uppercase">
+                        BAGFM OVERLOOK // ENCRIPTACIÓN ACTIVA AES-256 // SYNC: {new Date().toLocaleTimeString()}
+                    </p>
+                </div>
             </div>
 
             {/* Modal de Selección de Entidad para Georreferenciar */}
@@ -146,47 +152,6 @@ const MapaTactico = () => {
                         ))}
                      </div>
                   </div>
-               </div>
-            )}
-
-            {/* Tactical Detail Overlay (Selected Entity Info) */}
-            {selected && !isAssigning && (
-               <div className="bg-bg-high/80 backdrop-blur-xl p-5 rounded-2xl border border-primary/30 shadow-[0_0_50px_rgba(78,222,163,0.1)] animate-in slide-in-from-left">
-                  <div className="flex justify-between items-start mb-4">
-                     <div>
-                        <h4 className="text-[10px] text-primary uppercase font-bold tracking-[0.2em] mb-1">Entidad Detectada</h4>
-                        <p className="text-xl font-display text-white font-black uppercase leading-tight">{selected.nombre}</p>
-                     </div>
-                     <button onClick={() => setSelected(null)} className="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center hover:bg-white/20 transition-all text-white font-bold">×</button>
-                  </div>
-                  
-                  {selected.capacidad_total ? (
-                     <div className="space-y-3">
-                        <div className="grid grid-cols-2 gap-4">
-                           <div className="p-3 rounded-xl bg-white/5 border border-white/5">
-                              <span className="text-[9px] uppercase font-bold text-text-muted">Ocupación Actual</span>
-                              <div className="text-lg font-display text-white font-black">{selected.ocupacion_actual || 0} / {selected.capacidad_total}</div>
-                           </div>
-                           <div className="p-3 rounded-xl bg-white/5 border border-white/5">
-                              <span className="text-[9px] uppercase font-bold text-text-muted">Estado de Sede</span>
-                              <div className={`text-lg font-display font-black uppercase ${ (selected.ocupacion_actual / selected.capacidad_total) > 0.8 ? 'text-danger' : 'text-primary' }`}>
-                                 { (selected.ocupacion_actual / selected.capacidad_total) > 0.8 ? 'Saturado' : 'Nominal' }
-                              </div>
-                           </div>
-                        </div>
-                     </div>
-                  ) : (
-                     <div className="grid grid-cols-2 gap-4">
-                        <div className="p-3 rounded-xl bg-white/5 border border-white/5">
-                           <span className="text-[9px] uppercase font-bold text-text-muted">Entradas Hoy</span>
-                           <div className="text-xl font-display text-primary font-black">{selected.entradas_hoy || 0}</div>
-                        </div>
-                        <div className="p-3 rounded-xl bg-white/5 border border-white/5">
-                           <span className="text-[9px] uppercase font-bold text-text-muted">Salidas Hoy</span>
-                           <div className="text-xl font-display text-white font-black">{selected.salidas_hoy || 0}</div>
-                        </div>
-                     </div>
-                  )}
                </div>
             )}
         </div>
