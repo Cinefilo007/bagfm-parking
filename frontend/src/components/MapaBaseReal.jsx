@@ -13,32 +13,75 @@ L.Icon.Default.mergeOptions({
   shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
 });
 
-const createTacticalIcon = (IconComponent, color, isSelected = false) => {
+const createTacticalPin = (color, label = "", isSelected = false) => {
   const html = renderToString(
     <div style={{
-      color: color,
-      backgroundColor: isSelected ? color : 'rgba(14, 19, 34, 0.95)',
-      padding: '6px',
-      borderRadius: '8px',
-      border: `2px solid ${color}`,
-      boxShadow: isSelected ? `0 0 25px ${color}` : `0 0 20px ${color}44`,
       display: 'flex',
+      flexDirection: 'column',
       alignItems: 'center',
       justifyContent: 'center',
-      transform: 'rotate(45deg)',
-      transition: 'all 0.3s ease'
+      filter: isSelected ? `drop-shadow(0 0 10px ${color})` : 'none',
+      transform: isSelected ? 'scale(1.15)' : 'scale(1)',
+      transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)'
     }}>
-      <div style={{ transform: 'rotate(-45deg)', color: isSelected ? '#000' : color }}>
-        <IconComponent size={20} strokeWidth={2.5} />
+      {/* Pin Shape */}
+      <div style={{
+        position: 'relative',
+        width: '32px',
+        height: '32px',
+        background: isSelected ? '#FFF' : color,
+        borderRadius: '50% 50% 50% 1px',
+        transform: 'rotate(-45deg)',
+        border: `3px solid rgba(13, 17, 23, 0.8)`,
+        boxShadow: `0 0 15px ${color}66`,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center'
+      }}>
+        {/* Inner Circle / Icon Dot */}
+        <div style={{
+          width: '10px',
+          height: '10px',
+          background: 'rgba(13, 17, 23, 0.9)',
+          borderRadius: '50%',
+          transform: 'rotate(45deg)',
+          border: `2px solid ${isSelected ? color : '#FFF'}`
+        }} />
       </div>
+
+      {/* Label Box */}
+      {label && (
+        <div style={{
+          marginTop: '6px',
+          background: 'rgba(13, 17, 23, 0.85)',
+          backdropBlur: '4px',
+          padding: '2px 8px',
+          borderRadius: '6px',
+          border: `1px solid ${color}44`,
+          boxShadow: '0 4px 10px rgba(0,0,0,0.5)'
+        }}>
+          <span style={{
+            color: 'white',
+            fontSize: '9px',
+            fontFamily: 'Inter, sans-serif',
+            fontWeight: '900',
+            textTransform: 'uppercase',
+            letterSpacing: '0.08em',
+            whiteSpace: 'nowrap',
+            textShadow: '0 1px 2px rgba(0,0,0,0.8)'
+          }}>
+            {label}
+          </span>
+        </div>
+      )}
     </div>
   );
 
   return L.divIcon({
     html,
-    className: 'tactical-icon-wrapper',
-    iconSize: [40, 40],
-    iconAnchor: [20, 20],
+    className: 'tactical-marker-pin',
+    iconSize: [80, 60],
+    iconAnchor: [40, 36],
   });
 };
 
@@ -101,7 +144,7 @@ const MapaBaseReal = ({ situacion, onSelectEntity, assignmentMode, onMapClick, s
                   <Marker 
                     key={`alcabala-${alcabala.id}`}
                     position={[alcabala.latitud, alcabala.longitud]}
-                    icon={createTacticalIcon(Shield, '#4EDEA3', selectedForMove?.id === alcabala.id && selectedForMove?.tipo === 'alcabala')}
+                    icon={createTacticalPin('#4EDEA3', alcabala.nombre, selectedForMove?.id === alcabala.id && selectedForMove?.tipo === 'alcabala')}
                     eventHandlers={{ click: () => !assignmentMode && onSelectEntity(alcabala) }}
                   >
                     <Popup className="tactical-popup">
@@ -117,7 +160,7 @@ const MapaBaseReal = ({ situacion, onSelectEntity, assignmentMode, onMapClick, s
                   <Marker 
                     key={`entidad-${entidad.id}`}
                     position={[entidad.latitud, entidad.longitud]}
-                    icon={createTacticalIcon(Building, '#DEE1F7', selectedForMove?.id === entidad.id && selectedForMove?.tipo === 'entidad')}
+                    icon={createTacticalPin('#DEE1F7', entidad.nombre, selectedForMove?.id === entidad.id && selectedForMove?.tipo === 'entidad')}
                     eventHandlers={{ click: () => !assignmentMode && onSelectEntity(entidad) }}
                   >
                     <Popup className="tactical-popup">
@@ -148,7 +191,7 @@ const MapaBaseReal = ({ situacion, onSelectEntity, assignmentMode, onMapClick, s
                         />
                         <Marker 
                           position={[zona.latitud, zona.longitud]}
-                          icon={createTacticalIcon(SquareParking, '#F59E0B', selectedForMove?.id === zona.id && selectedForMove?.tipo === 'zona')}
+                          icon={createTacticalPin('#F59E0B', zona.nombre, selectedForMove?.id === zona.id && selectedForMove?.tipo === 'zona')}
                           eventHandlers={{ click: () => !assignmentMode && onSelectEntity(zona) }}
                         >
                            <Popup className="tactical-popup">
@@ -173,21 +216,21 @@ const MapaBaseReal = ({ situacion, onSelectEntity, assignmentMode, onMapClick, s
       {/* LEYENDA (Debajo del mapa) */}
       <div className="p-4 grid grid-cols-1 md:grid-cols-3 gap-6 bg-bg-card/30 rounded-2xl border border-white/5 backdrop-blur-md">
           <div className="flex items-center gap-3 px-2">
-             <div className="w-3 h-3 rounded-sm bg-primary rotate-45 shadow-[0_0_12px_#4EDEA3]"></div>
+             <div className="w-4 h-4 rounded-full border-2 border-primary bg-primary/20 shadow-[0_0_12px_#4EDEA3]"></div>
              <div className="flex flex-col">
                 <span className="text-[10px] font-black uppercase text-text-sec tracking-wider">Alcabalas</span>
                 <span className="text-[8px] font-mono text-text-muted uppercase opacity-60">Control Perimetral</span>
              </div>
           </div>
           <div className="flex items-center gap-3 px-2">
-             <div className="w-3 h-3 rounded-sm bg-warning rotate-45 shadow-[0_0_12px_#F59E0B]"></div>
+             <div className="w-4 h-4 rounded-full border-2 border-warning bg-warning/20 shadow-[0_0_12px_#F59E0B]"></div>
              <div className="flex flex-col">
                 <span className="text-[10px] font-black uppercase text-text-sec tracking-wider">Parkings</span>
                 <span className="text-[8px] font-mono text-text-muted uppercase opacity-60">Estacionamientos</span>
              </div>
           </div>
           <div className="flex items-center gap-3 px-2">
-             <div className="w-3 h-3 rounded-sm bg-text-main rotate-45 shadow-[0_0_12px_#DEE1F7]"></div>
+             <div className="w-4 h-4 rounded-full border-2 border-white bg-white/20 shadow-[0_0_12px_#DEE1F7]"></div>
              <div className="flex flex-col">
                 <span className="text-[10px] font-black uppercase text-text-sec tracking-wider">Civiles</span>
                 <span className="text-[8px] font-mono text-text-muted uppercase opacity-60">Sedes Entidades</span>
