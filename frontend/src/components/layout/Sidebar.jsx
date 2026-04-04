@@ -1,8 +1,8 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
 import { 
-  ShieldCheck, Users, Menu, ClipboardList, 
-  CalendarRange, LogOut, Settings, HelpCircle,
+  ShieldCheck, Users, ClipboardList, 
+  CalendarRange, LogOut, Settings,
   LayoutDashboard, UserCircle, Map as MapIcon,
   Camera
 } from 'lucide-react';
@@ -20,12 +20,11 @@ export const Sidebar = () => {
       { to: '/comando/entidades', label: 'Entidades Civiles', icon: Users },
       { to: '/comando/alcabalas', label: 'Gestión Alcabalas', icon: ClipboardList },
       { to: '/comando/eventos', label: 'Eventos Masivos', icon: CalendarRange },
-      { to: '/comando/dashboard', label: 'Mapa Situacional', icon: MapIcon },
     );
   } else if (user?.rol === 'ADMIN_ENTIDAD') {
     navItems.push(
        { to: '/entidad/dashboard', label: 'Panel Control', icon: LayoutDashboard },
-       { to: '/entidad/socios', label: 'Socios & Socios', icon: Users },
+       { to: '/entidad/socios', label: 'Gestión Socios', icon: Users },
        { to: '/entidad/eventos', label: 'Mis Eventos', icon: CalendarRange },
     );
   } else if (user?.rol === 'ALCABALA') {
@@ -51,18 +50,18 @@ export const Sidebar = () => {
       </div>
 
       {/* User Info Brief */}
-      <div className="px-6 py-4 flex items-center gap-3">
-         <div className="w-8 h-8 rounded-full bg-surface-variant flex items-center justify-center border border-white/10">
-            <UserCircle size={20} className="text-text-muted" />
+      <div className="px-6 py-4 flex items-center gap-3 border-b border-white/5 mx-2 my-2 rounded-xl bg-white/5">
+         <div className="w-10 h-10 rounded-full bg-surface-variant flex items-center justify-center border border-white/10 shrink-0">
+            <UserCircle size={24} className="text-text-muted" />
          </div>
          <div className="flex flex-col overflow-hidden">
             <span className="text-xs font-bold text-text-main truncate uppercase">{user?.nombre || 'Usuario'}</span>
-            <span className="text-[10px] text-text-muted font-medium">{user?.rol}</span>
+            <span className="text-[9px] text-primary font-black tracking-widest">{user?.rol}</span>
          </div>
       </div>
 
       {/* Navigation Space */}
-      <nav className="flex-1 px-4 py-6 flex flex-col gap-1.5 overflow-y-auto no-scrollbar">
+      <nav className="flex-1 px-4 py-4 flex flex-col gap-1.5 overflow-y-auto no-scrollbar">
          <span className="px-3 text-[9px] font-black uppercase text-text-muted tracking-[0.2em] mb-2 opacity-50">Navegación Principal</span>
          {navItems.map((item) => {
             const Icon = item.icon;
@@ -79,12 +78,16 @@ export const Sidebar = () => {
                    )
                  }
                >
-                 <Icon size={20} strokeWidth={isActive ? 2.5 : 2} className="group-hover:scale-110 transition-transform" />
-                 <span className="text-xs font-bold tracking-wide uppercase">
-                   {item.label}
-                 </span>
-                 {item.to.includes('dashboard') && (
-                    <div className="ml-auto w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
+                 {({ isActive }) => (
+                    <>
+                      <Icon size={20} strokeWidth={isActive ? 2.5 : 2} className={cn("transition-transform group-hover:scale-110", isActive && "scale-110")} />
+                      <span className="text-xs font-bold tracking-wide uppercase">
+                        {item.label}
+                      </span>
+                      {isActive && (
+                         <div className="ml-auto w-1.5 h-1.5 rounded-full bg-primary animate-pulse shadow-[0_0_8px_#4EDEA3]" />
+                      )}
+                    </>
                  )}
                </NavLink>
             );
@@ -93,15 +96,15 @@ export const Sidebar = () => {
 
       {/* Bottom Actions */}
       <div className="p-6 border-t border-white/5 flex flex-col gap-2">
-         <NavLink to="/ajustes" className="flex items-center gap-3 px-4 py-2.5 rounded-lg text-text-muted hover:bg-white/5 hover:text-text-sec transition-all">
-            <Settings size={18} />
+         <NavLink to="/ajustes" className="flex items-center gap-3 px-4 py-2.5 rounded-lg text-text-muted hover:bg-white/5 hover:text-text-sec transition-all group">
+            <Settings size={18} className="group-hover:rotate-90 transition-transform duration-500" />
             <span className="text-xs font-bold uppercase tracking-tight">Ajustes</span>
          </NavLink>
          <button 
            onClick={logout}
-           className="flex items-center gap-3 px-4 py-2.5 rounded-lg text-danger/70 hover:bg-danger/10 hover:text-danger transition-all text-left"
+           className="flex items-center gap-3 px-4 py-2.5 rounded-lg text-danger/70 hover:bg-danger/10 hover:text-danger transition-all text-left group"
          >
-            <LogOut size={18} />
+            <LogOut size={18} className="group-hover:-translate-x-1 transition-transform" />
             <span className="text-xs font-bold uppercase tracking-tight">Cerrar Sesión</span>
          </button>
       </div>
