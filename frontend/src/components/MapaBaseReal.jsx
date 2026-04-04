@@ -1,8 +1,8 @@
 import React, { useMemo } from 'react';
-import { MapContainer, TileLayer, Marker, Popup, Circle } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, Popup, Circle, useMapEvents } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
-import { Shield, Building, SquareParking } from 'lucide-react';
+import { Shield, Building, SquareParking, Crosshair } from 'lucide-react';
 import { renderToString } from 'react-dom/server';
 
 // Fix para los iconos por defecto de Leaflet
@@ -13,21 +13,22 @@ L.Icon.Default.mergeOptions({
   shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
 });
 
-const createTacticalIcon = (IconComponent, color) => {
+const createTacticalIcon = (IconComponent, color, isSelected = false) => {
   const html = renderToString(
     <div style={{
       color: color,
-      backgroundColor: 'rgba(14, 19, 34, 0.95)',
+      backgroundColor: isSelected ? color : 'rgba(14, 19, 34, 0.95)',
       padding: '6px',
       borderRadius: '8px',
       border: `2px solid ${color}`,
-      boxShadow: `0 0 20px ${color}44`,
+      boxShadow: isSelected ? `0 0 25px ${color}` : `0 0 20px ${color}44`,
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',
-      transform: 'rotate(45deg)'
+      transform: 'rotate(45deg)',
+      transition: 'all 0.3s ease'
     }}>
-      <div style={{ transform: 'rotate(-45deg)' }}>
+      <div style={{ transform: 'rotate(-45deg)', color: isSelected ? '#000' : color }}>
         <IconComponent size={20} strokeWidth={2.5} />
       </div>
     </div>
@@ -41,11 +42,23 @@ const createTacticalIcon = (IconComponent, color) => {
   });
 };
 
-const MapaBaseReal = ({ situacion, onSelectEntity }) => {
+// Componente interno para manejar clicks en el mapa
+function MapClickHandler({ onMapClick, assignmentMode }) {
+  useMapEvents({
+    click: (e) => {
+      if (assignmentMode) {
+        onMapClick(e.latlng.lat, e.latlng.lng);
+      }
+    },
+  });
+  return null;
+}
+
+const MapaBaseReal = ({ situacion, onSelectEntity, assignmentMode, onMapClick, selectedForMove }) => {
   const center = [10.4851, -66.8436]; 
   const bounds = [
-    [10.46, -66.88], // Sudoeste
-    [10.51, -66.80]  // Nordeste
+    [10.46, -66.88],
+    [10.51, -66.80]
   ];
 
   const hasCoords = (item) => {
@@ -54,8 +67,16 @@ const MapaBaseReal = ({ situacion, onSelectEntity }) => {
 
   return (
     <div className="w-full h-full bg-bg-app relative flex flex-col gap-4">
-      {/* Contenedor del Mapa con Zoom y Límites Bloqueados */}
       <div className="flex-1 min-h-[400px] border border-white/5 rounded-2xl shadow-tactica overflow-hidden relative z-0">
+          
+          {/* Capas de Feedback Visual modo asignación */}
+          {assignmentMode && (
+             <div className="absolute top-4 right-4 z-[1000] bg-warning/90 backdrop-blur-md px-4 py-2 rounded-lg border border-warning shadow-[0_0_20px_rgba(245,158,11,0.3)] flex items-center gap-3 animate-pulse">
+                <Crosshair size={18} className="text-bg-app animate-spin" />
+                <span className="text-[10px] font-black text-bg-app uppercase tracking-widest leading-none">Modo Georreferencia Activo: Haz clic en el mapa</span>
+             </div>
+          )}
+
           <MapContainer 
             center={center} 
             zoom={15} 
@@ -65,12 +86,14 @@ const MapaBaseReal = ({ situacion, onSelectEntity }) => {
             maxBoundsViscosity={1.0}
             scrollWheelZoom={true} 
             className="w-full h-full"
-            style={{ background: '#0E1322' }}
+            style={{ background: '#0E1322', cursor: assignmentMode ? 'crosshair' : 'grab' }}
           >
             <TileLayer
               attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
               url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
             />
+
+            <MapClickHandler onMapClick={onMapClick} assignmentMode={assignmentMode} />
 
             {situacion && (
               <>
@@ -78,8 +101,8 @@ const MapaBaseReal = ({ situacion, onSelectEntity }) => {
                   <Marker 
                     key={`alcabala-${alcabala.id}`}
                     position={[alcabala.latitud, alcabala.longitud]}
-                    icon={createTacticalIcon(Shield, '#4EDEA3')}
-                    eventHandlers={{ click: () => onSelectEntity(alcabala) }}
+                    icon={createTacticalIcon(Shield, '#4EDEA3', selectedForMove?.id === alcabala.id && selectedForMove?.tipo === 'alcabala')}
+                    eventHandlers={{ click: () => !assignmentMode && onSelectEntity(alcabala) }}
                   >
                     <Popup className="tactical-popup">
                       <div className="p-1">
@@ -94,8 +117,8 @@ const MapaBaseReal = ({ situacion, onSelectEntity }) => {
                   <Marker 
                     key={`entidad-${entidad.id}`}
                     position={[entidad.latitud, entidad.longitud]}
-                    icon={createTacticalIcon(Building, '#DEE1F7')}
-                    eventHandlers={{ click: () => onSelectEntity(entidad) }}
+                    icon={createTacticalIcon(Building, '#DEE1F7', selectedForMove?.id === entidad.id && selectedForMove?.tipo === 'entidad')}
+                    eventHandlers={{ click: () => !assignmentMode && onSelectEntity(entidad) }}
                   >
                     <Popup className="tactical-popup">
                         <div className="p-1">
@@ -125,8 +148,8 @@ const MapaBaseReal = ({ situacion, onSelectEntity }) => {
                         />
                         <Marker 
                           position={[zona.latitud, zona.longitud]}
-                          icon={createTacticalIcon(SquareParking, '#F59E0B')}
-                          eventHandlers={{ click: () => onSelectEntity(zona) }}
+                          icon={createTacticalIcon(SquareParking, '#F59E0B', selectedForMove?.id === zona.id && selectedForMove?.tipo === 'zona')}
+                          eventHandlers={{ click: () => !assignmentMode && onSelectEntity(zona) }}
                         >
                            <Popup className="tactical-popup">
                               <div className="p-1">
@@ -147,27 +170,27 @@ const MapaBaseReal = ({ situacion, onSelectEntity }) => {
           </MapContainer>
       </div>
 
-      {/* LEYENDA - Ubicada debajo del mapa como pidió el usuario */}
-      <div className="p-4 grid grid-cols-1 md:grid-cols-3 gap-6 bg-bg-card/50 rounded-2xl border border-white/5 backdrop-blur-md">
+      {/* LEYENDA (Debajo del mapa) */}
+      <div className="p-4 grid grid-cols-1 md:grid-cols-3 gap-6 bg-bg-card/30 rounded-2xl border border-white/5 backdrop-blur-md">
           <div className="flex items-center gap-3 px-2">
              <div className="w-3 h-3 rounded-sm bg-primary rotate-45 shadow-[0_0_12px_#4EDEA3]"></div>
              <div className="flex flex-col">
                 <span className="text-[10px] font-black uppercase text-text-sec tracking-wider">Alcabalas</span>
-                <span className="text-[8px] font-mono text-text-muted uppercase">Puntos de Control</span>
+                <span className="text-[8px] font-mono text-text-muted uppercase opacity-60">Control Perimetral</span>
              </div>
           </div>
           <div className="flex items-center gap-3 px-2">
              <div className="w-3 h-3 rounded-sm bg-warning rotate-45 shadow-[0_0_12px_#F59E0B]"></div>
              <div className="flex flex-col">
                 <span className="text-[10px] font-black uppercase text-text-sec tracking-wider">Parkings</span>
-                <span className="text-[8px] font-mono text-text-muted uppercase">Zonas de Estacionamiento</span>
+                <span className="text-[8px] font-mono text-text-muted uppercase opacity-60">Estacionamientos</span>
              </div>
           </div>
           <div className="flex items-center gap-3 px-2">
              <div className="w-3 h-3 rounded-sm bg-text-main rotate-45 shadow-[0_0_12px_#DEE1F7]"></div>
              <div className="flex flex-col">
-                <span className="text-[10px] font-black uppercase text-text-sec tracking-wider">Entidades Civiles</span>
-                <span className="text-[8px] font-mono text-text-muted uppercase">Sedes Operativas</span>
+                <span className="text-[10px] font-black uppercase text-text-sec tracking-wider">Civiles</span>
+                <span className="text-[8px] font-mono text-text-muted uppercase opacity-60">Sedes Entidades</span>
              </div>
           </div>
       </div>

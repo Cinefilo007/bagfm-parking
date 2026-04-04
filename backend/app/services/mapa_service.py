@@ -3,6 +3,7 @@ Service para el Mapa Táctico (Async).
 Agrega información de múltiples entidades para proporcionar una visión situacional completa.
 """
 from datetime import date
+from typing import Literal
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import func, select
 from app.models.entidad_civil import EntidadCivil
@@ -49,3 +50,27 @@ async def get_situacion_actual(db: AsyncSession):
         "vehiculos_hoy": vehiculos_hoy,
         "alertas_activas": alertas_activas
     }
+
+async def actualizar_georreferencia(
+    db: AsyncSession, 
+    tipo: Literal['entidad', 'alcabala', 'zona'], 
+    res_id: str, 
+    lat: float, 
+    lng: float
+):
+    """Actualiza la ubicación física de una entidad táctica en el mapa."""
+    if tipo == 'entidad':
+        obj = await db.get(EntidadCivil, res_id)
+    elif tipo == 'alcabala':
+        obj = await db.get(PuntoAcceso, res_id)
+    elif tipo == 'zona':
+        obj = await db.get(ZonaEstacionamiento, res_id)
+    else:
+        return False
+    
+    if obj:
+        obj.latitud = lat
+        obj.longitud = lng
+        await db.commit()
+        return True
+    return False

@@ -20,11 +20,11 @@ export default function DashboardComando() {
       />
       
       <main className="px-4 py-6 lg:px-8">
-        {/* Layout de Rejilla Adaptativa */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        {/* Layout de Rejilla Adaptativa (50/50 en Desktop) */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 items-start">
           
-          {/* Columna Izquierda: Stats (Mobile First, 2x2 en md+) */}
-          <div className="lg:col-span-1 flex flex-col gap-6">
+          {/* Columna Izquierda: Stats */}
+          <div className="flex flex-col gap-6">
             <h3 className="font-display font-semibold text-sm text-text-main uppercase tracking-widest border-b border-white/5 pb-2">
                Métricas de la Base
             </h3>
@@ -69,12 +69,12 @@ export default function DashboardComando() {
             </div>
           </div>
 
-          {/* Columna Derecha/Central: Mapa Táctico (Más grande en Desktop) */}
-          <div className="lg:col-span-2 flex flex-col">
-            <h3 className="font-display font-semibold text-sm text-text-main uppercase tracking-widest border-b border-white/5 pb-2 mb-6">
+          {/* Columna Derecha: Mapa Táctico (Ahora ocupa el 50%) */}
+          <div className="flex flex-col h-full">
+            <h3 className="font-display font-semibold text-sm text-text-main uppercase tracking-widest border-b border-white/5 pb-2 mb-6 opacity-70">
                Situación Táctica en Tiempo Real
             </h3>
-            <div className="flex-1 min-h-[500px] lg:min-h-[600px]">
+            <div className="flex-1 min-h-[450px]">
                <MapaTactico />
             </div>
           </div>
