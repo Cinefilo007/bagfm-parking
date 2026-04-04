@@ -1,9 +1,11 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
-from app.api.dependencies import obtener_db, obtener_usuario_actual
+from app.core.database import obtener_db
+from app.core.dependencias import obtener_usuario_actual
 from app.services import mapa_service
 from pydantic import BaseModel
 from typing import Literal
+from app.models.enums import RolTipo
 
 router = APIRouter()
 
@@ -29,7 +31,8 @@ async def actualizar_ubicacion(
 ):
     """Actualiza la posición geográfica de una entidad en el mapa."""
     # Solo roles de alto mando pueden georreferenciar
-    if usuario_actual.rol not in ['COMANDANTE', 'ADMIN_BASE', 'SUPERVISOR']:
+    ALTO_MANDO = [RolTipo.COMANDANTE, RolTipo.ADMIN_BASE, RolTipo.SUPERVISOR]
+    if usuario_actual.rol not in ALTO_MANDO:
         raise HTTPException(status_code=403, detail="No tienes permisos para georreferenciar.")
     
     exito = await mapa_service.actualizar_georreferencia(
