@@ -91,13 +91,13 @@ export default function Alcabalas() {
 
   return (
     <div className="p-4 space-y-6 pb-24">
-      <header className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-white flex items-center gap-2">
-            <Shield className="text-primary" />
-            Mando de Alcabalas
+      <header className="flex items-center justify-between gap-4">
+        <div className="min-w-0">
+          <h1 className="text-2xl font-bold text-white flex items-center gap-2 truncate">
+            <Shield className="text-primary shrink-0" />
+            <span className="truncate">Mando de Alcabalas</span>
           </h1>
-          <p className="text-text-muted text-sm">Control Directo y Relevo Táctico</p>
+          <p className="text-text-muted text-sm truncate">Control Directo y Relevo Táctico</p>
         </div>
         <Boton 
           size="sm" 
@@ -106,7 +106,7 @@ export default function Alcabalas() {
             setFormPunto({ nombre: '', ubicacion: '' });
             setShowModalPunto(true);
           }}
-          className="gap-2 h-9 px-4"
+          className="gap-2 h-9 px-6 w-fit shrink-0 whitespace-nowrap shadow-tactica"
         >
           <Plus size={16} />
           <span>Crear Alcabala</span>
@@ -118,19 +118,13 @@ export default function Alcabalas() {
         {puntos.map(p => (
           <Card key={p.id} className="bg-bg-low border-white/5 overflow-hidden group">
             <div className={`h-1 w-full ${p.activo ? 'bg-primary' : 'bg-error'} opacity-50`} />
-            <CardContent className="p-0">
-              <div className="p-4 flex justify-between items-start">
-                <div>
-                  <h3 className="text-lg font-bold text-white leading-tight uppercase tracking-tight">{p.nombre}</h3>
-                  <p className="text-[10px] text-text-muted flex items-center gap-1 mt-1">
-                    <MapPin size={10} /> {p.ubicacion || 'Sin ubicación específica'}
-                  </p>
-                </div>
-                <div className="flex gap-1">
+            <CardContent className="p-0 relative">
+              {/* ACCIONES DE TARJETA (EDITAR / ELIMINAR) */}
+              <div className="absolute top-3 right-3 flex gap-1 z-20">
                     <Boton 
                         variant="ghost" 
                         size="icon" 
-                        className="h-7 w-7 text-text-muted hover:text-white"
+                        className="h-8 w-8 bg-black/20 text-text-muted hover:text-white rounded-lg backdrop-blur"
                         onClick={() => {
                             setPuntoSeleccionado(p);
                             setFormPunto({ nombre: p.nombre, ubicacion: p.ubicacion });
@@ -142,11 +136,19 @@ export default function Alcabalas() {
                     <Boton 
                         variant="ghost" 
                         size="icon" 
-                        className="h-7 w-7 text-text-muted hover:text-error"
+                        className="h-8 w-8 bg-black/20 text-text-muted hover:text-error rounded-lg backdrop-blur"
                         onClick={() => setShowConfirmDelete(p)}
                     >
                         <Trash2 size={14} />
                     </Boton>
+              </div>
+
+              <div className="p-4 pr-20">
+                <div>
+                  <h3 className="text-lg font-black text-white leading-tight uppercase tracking-tighter truncate max-w-full block" title={p.nombre}>{p.nombre}</h3>
+                  <p className="text-[10px] text-text-muted flex items-center gap-1 mt-1 truncate">
+                    <MapPin size={10} className="shrink-0" /> <span className="truncate">{p.ubicacion || 'Sin ubicación específica'}</span>
+                  </p>
                 </div>
               </div>
 
@@ -192,7 +194,7 @@ export default function Alcabalas() {
                     title="Generar nueva clave"
                     onClick={() => handleRegenerarClave(p.id)}
                   >
-                    <RefreshCw size={20} className="animate-pulse-slow" />
+                    <RefreshCw size={20} className="animate-spin-slow" />
                   </Boton>
                 </div>
                 {/* Indicador de tiempo */}
