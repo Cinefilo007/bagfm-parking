@@ -166,13 +166,15 @@ class EntidadCivilService:
         from sqlalchemy import func
         from app.models.vehiculo import Vehiculo
         
-        # Ejecutar en paralelo (conceptualmente, aunque aquí es secuencial en await por simplicidad)
+        # Ejecuciones optimizadas
         total_e = (await db.execute(select(func.count(EntidadCivil.id)))).scalar() or 0
+        total_in = (await db.execute(select(func.count(EntidadCivil.id)).where(EntidadCivil.activo == False))).scalar() or 0
         total_v = (await db.execute(select(func.count(Vehiculo.id)))).scalar() or 0
         total_u = (await db.execute(select(func.count(Usuario.id)))).scalar() or 0
         
         return {
             "total_entidades": total_e,
+            "total_inactivas": total_in,
             "total_vehiculos": total_v,
             "total_usuarios": total_u
         }

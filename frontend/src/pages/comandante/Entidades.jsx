@@ -14,7 +14,7 @@ export default function Entidades() {
   const navigate = useNavigate();
   const [entidades, setEntidades] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [stats, setStats] = useState({ total_entidades: 0, total_vehiculos: 0, total_usuarios: 0 });
+  const [stats, setStats] = useState({ total_entidades: 0, total_vehiculos: 0, total_usuarios: 0, total_inactivas: 0 });
   const [page, setPage] = useState(0);
   const limit = 5;
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -122,32 +122,41 @@ export default function Entidades() {
       
       <main className="px-4 py-6 max-w-4xl mx-auto pb-24">
         {/* Barra de Estadísticas Globales */}
-        <div className="grid grid-cols-3 gap-4 mb-8">
-           <Card className="bg-bg-card/20 border-white/5 p-4 py-3 flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary border border-primary/20">
-                 <Activity size={20} />
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-4 mb-8">
+           <Card className="bg-bg-card/20 border-white/5 p-3 lg:p-4 flex items-center gap-3">
+              <div className="w-9 h-9 lg:w-10 lg:h-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary border border-primary/20">
+                 <Activity size={18} />
               </div>
               <div>
-                 <p className="text-[10px] text-text-muted font-bold uppercase tracking-widest leading-none mb-1">Entidades</p>
-                 <p className="text-xl font-display font-black text-white leading-none">{stats.total_entidades}</p>
+                 <p className="text-[9px] lg:text-[10px] text-text-muted font-bold uppercase tracking-widest leading-none mb-1">Entidades</p>
+                 <p className="text-lg lg:text-xl font-display font-black text-white leading-none">{stats.total_entidades}</p>
               </div>
            </Card>
-           <Card className="bg-bg-card/20 border-white/5 p-4 py-3 flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-blue-500/10 flex items-center justify-center text-blue-400 border border-blue-500/20">
-                 <Users size={20} />
+           <Card className="bg-bg-card/20 border-white/5 p-3 lg:p-4 flex items-center gap-3">
+              <div className="w-9 h-9 lg:w-10 lg:h-10 rounded-xl bg-blue-500/10 flex items-center justify-center text-blue-400 border border-blue-500/20">
+                 <Users size={18} />
               </div>
               <div>
-                 <p className="text-[10px] text-text-muted font-bold uppercase tracking-widest leading-none mb-1">Socios</p>
-                 <p className="text-xl font-display font-black text-white leading-none">{stats.total_usuarios}</p>
+                 <p className="text-[9px] lg:text-[10px] text-text-muted font-bold uppercase tracking-widest leading-none mb-1">Socios</p>
+                 <p className="text-lg lg:text-xl font-display font-black text-white leading-none">{stats.total_usuarios}</p>
               </div>
            </Card>
-           <Card className="bg-bg-card/20 border-white/5 p-4 py-3 flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-emerald-500/10 flex items-center justify-center text-emerald-400 border border-emerald-500/20">
-                 <Car size={20} />
+           <Card className="bg-bg-card/20 border-white/5 p-3 lg:p-4 flex items-center gap-3">
+              <div className="w-9 h-9 lg:w-10 lg:h-10 rounded-xl bg-emerald-500/10 flex items-center justify-center text-emerald-400 border border-emerald-500/20">
+                 <Car size={18} />
               </div>
               <div>
-                 <p className="text-[10px] text-text-muted font-bold uppercase tracking-widest leading-none mb-1">Parque</p>
-                 <p className="text-xl font-display font-black text-white leading-none">{stats.total_vehiculos}</p>
+                 <p className="text-[9px] lg:text-[10px] text-text-muted font-bold uppercase tracking-widest leading-none mb-1">Parque</p>
+                 <p className="text-lg lg:text-xl font-display font-black text-white leading-none">{stats.total_vehiculos}</p>
+              </div>
+           </Card>
+           <Card className="bg-bg-card/20 border-white/5 p-3 lg:p-4 flex items-center gap-3">
+              <div className="w-9 h-9 lg:w-10 lg:h-10 rounded-xl bg-red-500/10 flex items-center justify-center text-red-400 border border-red-500/20">
+                 <Power size={18} />
+              </div>
+              <div>
+                 <p className="text-[9px] lg:text-[10px] text-text-muted font-bold uppercase tracking-widest leading-none mb-1">Suspendidas</p>
+                 <p className="text-lg lg:text-xl font-display font-black text-white leading-none">{stats.total_inactivas}</p>
               </div>
            </Card>
         </div>
