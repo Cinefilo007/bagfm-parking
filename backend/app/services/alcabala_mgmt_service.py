@@ -19,10 +19,15 @@ import re
 
 class AlcabalaService:
     def _generar_slug(self, texto: str) -> str:
-        """Convierte un nombre de alcabala en un slug para el username."""
+        """Convierte un nombre de alcabala en un slug corto."""
+        # Tomamos solo las primeras palabras o siglas si es largo
         texto = texto.lower()
-        texto = re.sub(r'[^a-z0-9 ]', '', texto)
-        return texto.replace(' ', '.')
+        # Eliminar stop words comunes para acortar
+        for sw in ['alcabala', 'punto', 'de', 'control', 'la', 'el']:
+            texto = texto.replace(sw, '').strip()
+        
+        texto = re.sub(r'[^a-z0-9]', '', texto)
+        return texto[:15] # Máximo 15 caracteres para el slug
 
     async def listar_puntos(self, db: AsyncSession):
         """Lista todas las alcabalas con su clave actual y el usuario asociado."""
@@ -53,14 +58,20 @@ class AlcabalaService:
         secret = secrets.token_hex(16)
         salt = secrets.token_hex(8)
         
-        # 2. Crear el Usuario fijo para esta alcabala
-        username = f"guardia.{self._generar_slug(nombre)}"
-        # La password inicial es irrelevante porque se usa la rotativa, 
-        # pero ponemos una segura por si acaso
+        # 2. Crear el Usuario fijo para esta alcabala con username único (CORTO)
+        slug = self._generar_slug(nombre)
+        base_username = f"alc.{slug}"
+        username = base_username
+        
+        # Verificar si ya existe para evitar colisión de cédula (unique index)
+        existing_user = await db.execute(select(Usuario).where(Usuario.cedula == username))
+        if existing_user.scalars().first():
+            username = f"{base_username}.{secrets.token_hex(2)}"
+
         pass_inicial = secrets.token_urlsafe(16)
         
         nuevo_usuario = Usuario(
-            cedula=username, # Usamos el username en el campo cedula para simplificar auth
+            cedula=username,
             nombre="Guardia",
             apellido=nombre,
             rol=RolTipo.ALCABALA,
@@ -68,7 +79,7 @@ class AlcabalaService:
             activo=True
         )
         db.add(nuevo_usuario)
-        await db.flush() # Para obtener el ID del usuario
+        await db.flush() 
         
         # 3. Crear el Punto de Acceso
         punto = PuntoAcceso(
