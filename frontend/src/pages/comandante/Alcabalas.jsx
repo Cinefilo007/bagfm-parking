@@ -329,8 +329,8 @@ export default function Alcabalas() {
             No podrá recuperar la trazabilidad directa de este punto.
           </p>
           <div className="flex gap-3 pt-4">
-            <Boton variant="ghost" onClick={() => setShowConfirmDelete(null)} className="flex-1">Mantener</Boton>
-            <Boton variant="error" onClick={() => handleEliminarPunto(showConfirmDelete?.id)} className="flex-1">Eliminar Definitivamente</Boton>
+            <Boton variant="outline" onClick={() => setShowConfirmDelete(null)} className="flex-1">Mantener</Boton>
+            <Boton variant="destructivo" onClick={() => handleEliminarPunto(showConfirmDelete?.id)} className="flex-1">Eliminar Definitivamente</Boton>
           </div>
         </div>
       </Modal>

@@ -16,6 +16,8 @@
   --color-warning: #F59E0B;
   --color-danger: #FFAB4B;
   --color-danger-deep: #93000A;
+  --color-error: #EF4444;
+  --color-error-dark: #B91C1C;
   --color-surface-variant: #2F3445;
 
   --font-sans: "Inter", "sans-serif";
