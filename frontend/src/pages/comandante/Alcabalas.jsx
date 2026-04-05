@@ -118,13 +118,22 @@ export default function Alcabalas() {
         {puntos.map(p => (
           <Card key={p.id} className="bg-bg-low border-white/5 overflow-hidden group">
             <div className={`h-1 w-full ${p.activo ? 'bg-primary' : 'bg-error'} opacity-50`} />
-            <CardContent className="p-0 relative">
-              {/* ACCIONES DE TARJETA (EDITAR / ELIMINAR) */}
-              <div className="absolute top-3 right-3 flex gap-1 z-20">
+            <CardContent className="p-0">
+              <div className="p-4 flex items-center justify-between border-b border-white/5 bg-white/[0.02]">
+                <div className="min-w-0 flex-1">
+                  <h3 className="text-sm font-black text-white leading-tight uppercase tracking-widest truncate" title={p.nombre}>{p.nombre}</h3>
+                  <p className="text-[9px] text-text-muted flex items-center gap-1 mt-0.5 truncate font-bold">
+                    <MapPin size={9} className="text-primary shrink-0" />
+                    <span className="truncate">{p.ubicacion || 'Sector Norte'}</span>
+                  </p>
+                </div>
+                
+                {/* GRUPO DE ACCIONES TÁCTICAS */}
+                <div className="flex items-center gap-1.5 shrink-0 ml-4">
                     <Boton 
-                        variant="ghost" 
-                        size="icon" 
-                        className="h-8 w-8 bg-black/20 text-text-muted hover:text-white rounded-lg backdrop-blur"
+                        variant="secundario" 
+                        size="sm" 
+                        className="h-8 w-8 px-0 border-white/10"
                         onClick={() => {
                             setPuntoSeleccionado(p);
                             setFormPunto({ nombre: p.nombre, ubicacion: p.ubicacion });
@@ -134,37 +143,29 @@ export default function Alcabalas() {
                         <Edit3 size={14} />
                     </Boton>
                     <Boton 
-                        variant="ghost" 
-                        size="icon" 
-                        className="h-8 w-8 bg-black/20 text-text-muted hover:text-error rounded-lg backdrop-blur"
+                        variant="destructivo" 
+                        size="sm" 
+                        className="h-8 w-8 px-0"
                         onClick={() => setShowConfirmDelete(p)}
                     >
                         <Trash2 size={14} />
                     </Boton>
-              </div>
-
-              <div className="p-4 pr-20">
-                <div>
-                  <h3 className="text-lg font-black text-white leading-tight uppercase tracking-tighter truncate max-w-full block" title={p.nombre}>{p.nombre}</h3>
-                  <p className="text-[10px] text-text-muted flex items-center gap-1 mt-1 truncate">
-                    <MapPin size={10} className="shrink-0" /> <span className="truncate">{p.ubicacion || 'Sin ubicación específica'}</span>
-                  </p>
                 </div>
               </div>
 
-              {/* PANEL DE SEGURIDAD */}
-              <div className="mx-4 mb-4 bg-black/40 rounded-2xl border border-white/10 p-4 space-y-3">
+              {/* CUERPO DE SEGURIDAD */}
+              <div className="p-4 space-y-4">
                 {/* Usuario asignado */}
-                <div className="flex items-center justify-between pb-2 border-b border-white/5">
+                <div className="bg-black/20 rounded-xl p-3 border border-white/5 flex items-center justify-between">
                   <div>
-                    <p className="text-[7px] font-black text-text-muted uppercase tracking-[0.2em] mb-0.5">Usuario de Sistema</p>
-                    <p className="text-xs font-mono text-white/90">{p.usuario_nombre}</p>
+                    <p className="text-[7px] font-black text-text-muted uppercase tracking-[0.2em] mb-0.5">Identificador de Acceso</p>
+                    <p className="text-xs font-mono font-bold text-white/90 selection:bg-primary/30">{p.usuario_nombre}</p>
                   </div>
                   <Boton 
                     variant="ghost" 
-                    size="icon" 
-                    className="h-8 w-8 text-text-muted hover:text-white"
-                    onClick={() => copiarAlPortapapeles(p.usuario_nombre, 'Nombre de usuario copiado')}
+                    size="sm" 
+                    className="h-8 w-8 px-0 hover:bg-white/10"
+                    onClick={() => copiarAlPortapapeles(p.usuario_nombre, 'Usuario copiado')}
                     title="Copiar Usuario"
                   >
                     <Copy size={14} />
@@ -172,29 +173,30 @@ export default function Alcabalas() {
                 </div>
 
                 {/* Clave rotativa */}
-                <div className="flex items-center justify-between relative z-10 pt-1">
-                  <div>
-                    <p className="text-[7px] font-black text-primary uppercase tracking-[0.2em] mb-0.5">Clave Táctica (24h)</p>
-                    <div className="flex items-center gap-2">
-                        <p className="text-2xl font-mono font-black text-white tracking-widest">{p.clave_hoy}</p>
+                <div className="flex items-center justify-between gap-4">
+                  <div className="flex-1">
+                    <p className="text-[7px] font-black text-primary uppercase tracking-[0.2em] mb-1">Clave Táctica (24H)</p>
+                    <div className="flex items-center gap-3">
+                        <p className="text-3xl font-mono font-black text-white tracking-[0.15em]">{p.clave_hoy}</p>
                         <Boton 
                             variant="ghost" 
-                            size="icon" 
-                            className="h-6 w-6 text-text-muted hover:text-white"
-                            onClick={() => copiarAlPortapapeles(p.clave_hoy, 'Clave táctica copiada')}
+                            size="sm" 
+                            className="h-7 w-7 px-0 text-text-muted hover:text-white"
+                            onClick={() => copiarAlPortapapeles(p.clave_hoy, 'Clave copiada')}
                         >
-                            <Copy size={12} />
+                            <Copy size={14} />
                         </Boton>
                     </div>
                   </div>
+                  
                   <Boton 
-                    variant="ghost" 
-                    size="icon" 
-                    className="h-10 w-10 bg-primary/10 text-primary hover:bg-primary hover:text-white transition-all rounded-xl border border-primary/20"
-                    title="Generar nueva clave"
+                    variant="secundario" 
+                    size="sm"
+                    className="h-12 w-12 px-0 bg-primary/5 border-primary/20 hover:bg-primary hover:text-on-primary transition-all rounded-xl"
+                    title="Renovar Clave Táctica"
                     onClick={() => handleRegenerarClave(p.id)}
                   >
-                    <RefreshCw size={20} className="animate-spin-slow" />
+                    <RefreshCw size={22} className="animate-spin-slow" />
                   </Boton>
                 </div>
                 {/* Indicador de tiempo */}
