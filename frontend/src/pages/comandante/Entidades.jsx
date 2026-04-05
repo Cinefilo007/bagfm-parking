@@ -7,7 +7,7 @@ import { Card } from '../../components/ui/Card';
 import { Badge } from '../../components/ui/Badge';
 import { Modal } from '../../components/ui/Modal';
 import { Input } from '../../components/ui/Input';
-import { Network, Plus, ShieldCheck, Database, Power, Activity, Users, Car, AlertTriangle } from 'lucide-react';
+import { Network, Plus, ShieldCheck, Store, Power, Activity, Users, Car, AlertTriangle, ChevronDown } from 'lucide-react';
 import api from '../../services/api';
 
 export default function Entidades() {
@@ -72,17 +72,13 @@ export default function Entidades() {
     e.preventDefault();
     setCreando(true);
     try {
-      // Limpiar datos antes de enviar
       const payload = {
         ...nuevaEntidad,
         capacidad_vehiculos: parseInt(nuevaEntidad.capacidad_vehiculos) || 0
       };
-      
-      // Si codigo_slug es nulo o vacío, lo eliminamos para que el backend lo genere
       if (!payload.codigo_slug) {
         delete payload.codigo_slug;
       }
-      
       await api.post('/entidades', payload);
       setIsModalOpen(false);
       setNuevaEntidad({ 
@@ -103,6 +99,89 @@ export default function Entidades() {
     } finally {
       setCreando(false);
     }
+  };
+
+  const EntidadCard = ({ ent, handleToggleEstado }) => {
+    const [isOpen, setIsOpen] = useState(false);
+
+    return (
+       <Card hoverable elevation={2} className="relative overflow-hidden group border-white/5 bg-bg-card/40 backdrop-blur-sm transition-all duration-300">
+          <div className="absolute top-0 left-0 w-1 bg-primary/30 h-full group-hover:bg-primary transition-all duration-500"></div>
+          
+          <div className="flex justify-between items-start mb-1">
+             <div className="flex gap-4 cursor-pointer flex-1" onClick={() => setIsOpen(!isOpen)}>
+                <div className="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center text-primary border border-primary/20">
+                   <Store size={24} />
+                </div>
+                <div>
+                   <h4 className="font-display font-black text-xl text-white uppercase tracking-tight">
+                     {ent.nombre}
+                   </h4>
+                   <div className="mt-1 flex items-center gap-2">
+                      <Badge variant={ent.activo ? 'activa' : 'suspendida'} className="text-[10px] h-5 font-black tracking-widest px-3 border-none bg-opacity-20 uppercase">
+                        {ent.activo ? 'OPERATIVO' : 'SUSPENDIDA'}
+                      </Badge>
+                      <ChevronDown size={14} className={`text-text-muted transition-transform duration-300 ${isOpen ? 'rotate-180' : ''}`} />
+                   </div>
+                </div>
+             </div>
+             <div className="flex gap-2 relative z-10">
+               <Boton 
+                 variant="ghost" 
+                 className={`p-2 min-h-0 w-auto rounded-full ${ent.activo ? 'text-emerald-500 hover:bg-emerald-500/10' : 'text-red-500 hover:bg-red-500/10'} border border-white/5`}
+                 onClick={(e) => {
+                   e.stopPropagation();
+                   handleToggleEstado(ent.id);
+                 }}
+                 title={ent.activo ? "Suspender Entidad" : "Reactivar Entidad"}
+               >
+                  <Power size={18} />
+               </Boton>
+             </div>
+          </div>
+
+          {isOpen && (
+            <div className="animate-in fade-in slide-in-from-top-2 duration-300 mt-4">
+               <div className="grid grid-cols-3 gap-2 border-t border-white/5 pt-3 pb-1">
+                  <div className="flex flex-col border-r border-white/5">
+                     <span className="text-[8px] uppercase font-bold text-text-muted tracking-widest mb-0.5">
+                       Capacidad
+                     </span>
+                     <span className="text-white font-mono font-bold text-sm">
+                       {ent.capacidad_vehiculos} <span className="text-[9px] text-text-muted">VEH</span>
+                     </span>
+                  </div>
+                  <div className="flex flex-col border-r border-white/5 pl-2">
+                     <span className="text-[8px] uppercase font-bold text-text-muted tracking-widest mb-0.5">
+                       Socios
+                     </span>
+                     <span className="text-white font-mono font-bold text-sm">
+                       {ent.total_usuarios || 0} <span className="text-[9px] text-text-muted">UFS</span>
+                     </span>
+                  </div>
+                  <div className="flex flex-col pl-2">
+                     <span className="text-[8px] uppercase font-bold text-text-muted tracking-widest mb-0.5">
+                       Parque
+                     </span>
+                     <span className="text-white font-mono font-bold text-sm">
+                       {ent.total_vehiculos || 0} <span className="text-[9px] text-text-muted">UNI</span>
+                     </span>
+                  </div>
+               </div>
+               
+               <div className="mt-3 pt-3 border-t border-white/5 flex justify-end">
+                  <button 
+                    onClick={() => navigate(`/comando/entidades/${ent.id}`)}
+                    className="text-[10px] font-black uppercase text-primary tracking-widest hover:underline underline-offset-4 flex items-center gap-2 group"
+                  >
+                     GESTIONAR CONCESIÓN
+                     <ShieldCheck size={12} className="group-hover:scale-125 transition-transform" />
+                  </button>
+               </div>
+            </div>
+          )}
+       </Card>
+    );
   };
 
   return (
@@ -161,103 +240,40 @@ export default function Entidades() {
            </Card>
         </div>
         {loading ? (
-           <p className="text-center text-text-muted text-sm tracking-widest uppercase">Cargando Tácticas...</p>
+            <p className="text-center text-text-muted text-sm tracking-widest uppercase">Cargando Tácticas...</p>
         ) : (
-          <div className="space-y-4">
-            {entidades.map(ent => (
-                <Card key={ent.id} hoverable elevation={2} className="relative overflow-hidden group border-white/5 bg-bg-card/40 backdrop-blur-sm">
-                   <div className="absolute top-0 left-0 w-1 bg-primary/30 h-full group-hover:bg-primary transition-all duration-500"></div>
-                   
-                   <div className="flex justify-between items-start mb-3">
-                      <div className="flex gap-4">
-                         <div className="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center text-primary border border-primary/20">
-                            <Database size={24} />
-                         </div>
-                         <div>
-                            <h4 className="font-display font-black text-xl text-white uppercase tracking-tight">
-                              {ent.nombre}
-                            </h4>
-                            <div className="mt-1">
-                               <Badge variant={ent.activo ? 'activa' : 'suspendida'} className="text-[10px] h-5 font-black tracking-widest px-3 border-none bg-opacity-20 uppercase">
-                                 {ent.activo ? 'OPERATIVO' : 'SUSPENDIDA'}
-                               </Badge>
-                            </div>
-                         </div>
-                      </div>
-                      <div className="flex gap-2">
-                        <Boton 
-                          variant="ghost" 
-                          className={`p-2 min-h-0 w-auto rounded-full ${ent.activo ? 'text-emerald-500 hover:bg-emerald-500/10' : 'text-red-500 hover:bg-red-500/10'} border border-white/5`}
-                          onClick={() => handleToggleEstado(ent.id)}
-                          title={ent.activo ? "Suspender Entidad" : "Reactivar Entidad"}
-                        >
-                           <Power size={18} />
-                        </Boton>
-                      </div>
-                   </div>
-
-                   <div className="grid grid-cols-3 gap-2 border-t border-white/5 pt-3 pb-1">
-                      <div className="flex flex-col border-r border-white/5">
-                         <span className="text-[8px] uppercase font-bold text-text-muted tracking-widest mb-0.5">
-                           Capacidad
-                         </span>
-                         <span className="text-white font-mono font-bold text-sm">
-                           {ent.capacidad_vehiculos} <span className="text-[9px] text-text-muted">VEH</span>
-                         </span>
-                      </div>
-                      <div className="flex flex-col border-r border-white/5 pl-2">
-                         <span className="text-[8px] uppercase font-bold text-text-muted tracking-widest mb-0.5">
-                           Socios
-                         </span>
-                         <span className="text-white font-mono font-bold text-sm">
-                           {ent.total_usuarios || 0} <span className="text-[9px] text-text-muted">UFS</span>
-                         </span>
-                      </div>
-                      <div className="flex flex-col pl-2">
-                         <span className="text-[8px] uppercase font-bold text-text-muted tracking-widest mb-0.5">
-                           Parque
-                         </span>
-                         <span className="text-white font-mono font-bold text-sm">
-                           {ent.total_vehiculos || 0} <span className="text-[9px] text-text-muted">UNI</span>
-                         </span>
-                      </div>
-                   </div>
-
-                   <div className="mt-4 flex justify-end">
-                      <button 
-                        onClick={() => navigate(`/comando/entidades/${ent.id}`)}
-                        className="text-[10px] font-black uppercase text-primary tracking-widest hover:underline underline-offset-4 flex items-center gap-2 group"
-                      >
-                         GESTIONAR CONCESIÓN
-                         <ShieldCheck size={12} className="group-hover:scale-125 transition-transform" />
-                      </button>
-                   </div>
-                </Card>
-            ))}
-
-            {/* Controles de Paginación */}
-            {(entidades.length > 0 || page > 0) && (
-               <div className="flex items-center justify-between pt-6 border-t border-white/5 mt-4">
-                  <button
-                    disabled={page === 0}
-                    onClick={() => setPage(p => p - 1)}
-                    className="flex items-center gap-2 text-[10px] font-black uppercase text-white disabled:opacity-30 disabled:pointer-events-none hover:text-primary transition-colors"
-                  >
-                     ← Anterior
-                  </button>
-                  <span className="text-[11px] font-mono font-bold text-text-muted uppercase">
-                    Página {page + 1}
-                  </span>
-                  <button
-                    disabled={!hasMore}
-                    onClick={() => setPage(p => p + 1)}
-                    className="flex items-center gap-2 text-[10px] font-black uppercase text-white disabled:opacity-30 disabled:pointer-events-none hover:text-primary transition-colors"
-                  >
-                     Siguiente →
-                  </button>
-               </div>
-            )}
-          </div>
+           <div className="space-y-4">
+             {entidades.map(ent => (
+                 <EntidadCard 
+                   key={ent.id} 
+                   ent={ent} 
+                   handleToggleEstado={handleToggleEstado} 
+                 />
+             ))}
+           </div>
+        )}
+        
+        {/* Controles de Paginación */}
+        {!loading && (entidades.length > 0 || page > 0) && (
+           <div className="flex items-center justify-between pt-6 border-t border-white/5 mt-4">
+              <button
+                disabled={page === 0}
+                onClick={() => setPage(p => p - 1)}
+                className="flex items-center gap-2 text-[10px] font-black uppercase text-white disabled:opacity-30 disabled:pointer-events-none hover:text-primary transition-colors"
+              >
+                 ← Anterior
+              </button>
+              <span className="text-[11px] font-mono font-bold text-text-muted uppercase">
+                Página {page + 1}
+              </span>
+              <button
+                disabled={!hasMore}
+                onClick={() => setPage(p => p + 1)}
+                className="flex items-center gap-2 text-[10px] font-black uppercase text-white disabled:opacity-30 disabled:pointer-events-none hover:text-primary transition-colors"
+              >
+                 Siguiente →
+              </button>
+           </div>
         )}
       </main>
 
@@ -276,7 +292,7 @@ export default function Entidades() {
              </h3>
              <Input 
                label="Nombre de la Entidad"
-               icon={<Database size={16} />}
+               icon={<Store size={16} />}
                required
                placeholder="Ej: AEROCLUB"
                value={nuevaEntidad.nombre}
