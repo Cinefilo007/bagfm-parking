@@ -4,6 +4,9 @@ from app.models.usuario import Usuario
 from app.schemas.auth import LoginEntrada, Token
 from app.core.security import verificar_password, crear_token_acceso
 from app.core.excepciones import CredencialesInvalidas, UsuarioInactivo
+from app.core.password_rotativo import generar_password_diario
+from app.models.alcabala_evento import PuntoAcceso
+from app.models.enums import RolTipo
 
 class AuthService:
     async def autenticar_usuario(self, db: AsyncSession, credenciales: LoginEntrada) -> Token:
@@ -14,8 +17,28 @@ class AuthService:
         if not usuario:
             raise CredencialesInvalidas("Credenciales incorrectas")
 
-        if not verificar_password(credenciales.password, usuario.password_hash):
-            raise CredencialesInvalidas("Credenciales incorrectas")
+        # Lógica especial para ALCABALAS (Contraseña Rotativa)
+        if usuario.rol == RolTipo.ALCABALA:
+            # 1. Obtener el punto de acceso asociado
+            q_punto = select(PuntoAcceso).where(PuntoAcceso.usuario_id == usuario.id)
+            res_punto = await db.execute(q_punto)
+            punto = res_punto.scalar_one_or_none()
+            
+            if punto:
+                clave_diaria = generar_password_diario(punto.secret_key, punto.key_salt)
+                # Validar si coincide con la clave diaria
+                if credenciales.password != clave_diaria:
+                    # Si no coincide con la diaria, probamos con la del hash (admin backend access)
+                    if not verificar_password(credenciales.password, usuario.password_hash):
+                        raise CredencialesInvalidas("Credenciales de alcabala inválidas para este turno")
+            else:
+                # Si no hay punto asociado, fallamos
+                if not verificar_password(credenciales.password, usuario.password_hash):
+                    raise CredencialesInvalidas("Credenciales incorrectas")
+        else:
+            # Autenticación estándar para otros roles
+            if not verificar_password(credenciales.password, usuario.password_hash):
+                raise CredencialesInvalidas("Credenciales incorrectas")
 
         if getattr(usuario, "activo", True) == False:
             raise UsuarioInactivo("El usuario está inactivo")

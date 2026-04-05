@@ -6,116 +6,188 @@ from datetime import datetime, timedelta, time
 from uuid import UUID
 from sqlalchemy.future import select
 from sqlalchemy.ext.asyncio import AsyncSession
-from app.models.alcabala_evento import PuntoAcceso
+from app.models.alcabala_evento import PuntoAcceso, GuardiaTurno
 from app.models.usuario import Usuario
 from app.models.acceso import Acceso
 from app.models.enums import RolTipo
 from app.core.security import hashear_password
-from sqlalchemy import func
+from app.core.password_rotativo import generar_password_diario, obtener_fecha_tactica
+from sqlalchemy import func, update, delete
+import secrets
+import string
+import re
 
-class AlcabalaMgmtService:
-    @staticmethod
-    async def crear_punto_acceso(db: AsyncSession, nombre: str, ubicacion: str = None):
-        punto = PuntoAcceso(nombre=nombre, ubicacion=ubicacion)
+class AlcabalaService:
+    def _generar_slug(self, texto: str) -> str:
+        """Convierte un nombre de alcabala en un slug para el username."""
+        texto = texto.lower()
+        texto = re.sub(r'[^a-z0-9 ]', '', texto)
+        return texto.replace(' ', '.')
+
+    async def listar_puntos(self, db: AsyncSession):
+        """Lista todas las alcabalas con su clave actual inyectada."""
+        query = select(PuntoAcceso).where(PuntoAcceso.activo == True)
+        result = await db.execute(query)
+        puntos = result.scalars().all()
+        
+        # Inyectar clave diaria a cada punto para que el Comandante pueda verla
+        for p in puntos:
+            p.clave_hoy = generar_password_diario(p.secret_key, p.key_salt)
+        return puntos
+
+    async def obtener_punto_por_id(self, db: AsyncSession, id: UUID):
+        query = select(PuntoAcceso).where(PuntoAcceso.id == id)
+        result = await db.execute(query)
+        punto = result.scalars().first()
+        if punto:
+            punto.clave_hoy = generar_password_diario(punto.secret_key, punto.key_salt)
+        return punto
+
+    async def crear_punto_acceso(self, db: AsyncSession, nombre: str, ubicacion: str = None):
+        """
+        Crea un punto de acceso y su usuario fijo asociado.
+        """
+        # 1. Generar semillas de seguridad
+        secret = secrets.token_hex(16)
+        salt = secrets.token_hex(8)
+        
+        # 2. Crear el Usuario fijo para esta alcabala
+        username = f"guardia.{self._generar_slug(nombre)}"
+        # La password inicial es irrelevante porque se usa la rotativa, 
+        # pero ponemos una segura por si acaso
+        pass_inicial = secrets.token_urlsafe(16)
+        
+        nuevo_usuario = Usuario(
+            cedula=username, # Usamos el username en el campo cedula para simplificar auth
+            nombre="Guardia",
+            apellido=nombre,
+            rol=RolTipo.ALCABALA,
+            password_hash=hashear_password(pass_inicial),
+            activo=True
+        )
+        db.add(nuevo_usuario)
+        await db.flush() # Para obtener el ID del usuario
+        
+        # 3. Crear el Punto de Acceso
+        punto = PuntoAcceso(
+            nombre=nombre, 
+            ubicacion=ubicacion,
+            usuario_id=nuevo_usuario.id,
+            secret_key=secret,
+            key_salt=salt
+        )
         db.add(punto)
+        await db.commit()
+        await db.refresh(punto)
+        
+        punto.clave_hoy = generar_password_diario(secret, salt)
+        return punto
+
+    async def actualizar_punto_acceso(self, db: AsyncSession, id: UUID, nombre: str, ubicacion: str = None):
+        punto = await self.obtener_punto_por_id(db, id)
+        if not punto: return None
+        
+        punto.nombre = nombre
+        punto.ubicacion = ubicacion
         await db.commit()
         await db.refresh(punto)
         return punto
 
-    @staticmethod
-    async def listar_puntos(db: AsyncSession):
-        query = select(PuntoAcceso).where(PuntoAcceso.activo == True)
-        result = await db.execute(query)
-        return result.scalars().all()
-
-    @staticmethod
-    async def crear_guardia_temporal(db: AsyncSession, cedula: str, nombre: str, apellido: str):
-        """
-        Crea un usuario temporal para una guardia de alcabala.
-        La guardia dura 24h y termina a las 08:30 AM (VET).
-        """
-        # Calcular expiración: Siguiente 08:30 AM
-        now = datetime.now()
+    async def eliminar_punto_acceso(self, db: AsyncSession, id: UUID):
+        """Elimina el punto y su usuario asociado."""
+        punto = await self.obtener_punto_por_id(db, id)
+        if not punto: return False
         
-        limite_hora = time(8, 30)
-        expira = datetime.combine(now.date(), limite_hora)
-        
-        if now.time() >= limite_hora:
-            expira += timedelta(days=1)
+        u_id = punto.usuario_id
+        await db.execute(delete(PuntoAcceso).where(PuntoAcceso.id == id))
+        if u_id:
+            await db.execute(delete(Usuario).where(Usuario.id == u_id))
             
-        # Password temporal por defecto
-        password_temp = f"Alcabala.{cedula[-4:]}"
+        await db.commit()
+        return True
+
+    async def regenerar_clave_emergencia(self, db: AsyncSession, punto_id: UUID):
+        """Garantiza una nueva clave tras una fuga de datos."""
+        punto = await self.obtener_punto_por_id(db, punto_id)
+        if not punto: return None
         
-        nuevo_usuario = Usuario(
-            cedula=cedula,
-            nombre=nombre,
-            apellido=apellido,
-            rol=RolTipo.ALCABALA,
-            password_hash=hashear_password(password_temp),
-            expira_at=expira,
-            activo=True
+        # Cambiamos el salt para forzar una nueva clave táctica
+        punto.key_salt = secrets.token_hex(8)
+        await db.commit()
+        await db.refresh(punto)
+        return generar_password_diario(punto.secret_key, punto.key_salt)
+
+    async def obtener_punto_de_usuario(self, db: AsyncSession, usuario_id: UUID):
+        """Retorna el punto de acceso vinculado a este usuario de alcabala."""
+        query = select(PuntoAcceso).where(PuntoAcceso.usuario_id == usuario_id)
+        result = await db.execute(query)
+        return result.scalars().first()
+
+    async def obtener_mi_identificacion_actual(self, db: AsyncSession, usuario_id: UUID):
+        query = select(GuardiaTurno).where(
+            GuardiaTurno.usuario_id == usuario_id,
+            GuardiaTurno.activo == True
+        )
+        result = await db.execute(query)
+        return result.scalars().first()
+
+    async def identificar_guardia_entrante(self, db: AsyncSession, punto_id: UUID, usuario_id: UUID, datos: dict):
+        """
+        Registra quién está tomando el turno en este momento.
+        """
+        # Desactivar guardia anterior si existía
+        await db.execute(
+            update(GuardiaTurno)
+            .where(GuardiaTurno.punto_id == punto_id, GuardiaTurno.activo == True)
+            .values(activo=False)
         )
         
-        db.add(nuevo_usuario)
+        nuevo_turno = GuardiaTurno(
+            punto_id=punto_id,
+            usuario_id=usuario_id,
+            grado=datos.get('grado'),
+            nombre=datos.get('nombre'),
+            apellido=datos.get('apellido'),
+            telefono=datos.get('telefono'),
+            unidad=datos.get('unidad'),
+            key_version=secrets.token_hex(4) # Marca el inicio de este turno
+        )
+        db.add(nuevo_turno)
         await db.commit()
-        await db.refresh(nuevo_usuario)
-        
-        return {
-            "usuario": nuevo_usuario,
-            "password_temporal": password_temp,
-            "expira_at": expira
-        }
+        return nuevo_turno
 
-    @staticmethod
-    async def listar_guardias_activos_con_stats(db: AsyncSession):
+    async def obtener_guardia_actual(self, db: AsyncSession, punto_id: UUID):
+        query = select(GuardiaTurno).where(GuardiaTurno.punto_id == punto_id, GuardiaTurno.activo == True)
+        result = await db.execute(query)
+        return result.scalars().first()
+
+    async def listar_personal_activo_mando(self, db: AsyncSession):
         """
-        Lista usuarios con rol ALCABALA que están activos y no han expirado.
-        Incluye el conteo de accesos registrados por cada uno.
+        Retorna quién está físicamente en cada alcabala para el panel del Comandante.
         """
-        now = datetime.now()
-        
-        # Query para obtener usuarios activos
         query = select(
-            Usuario,
-            func.count(Acceso.id).label("total_escaneos")
-        ).outerjoin(
-            Acceso, Usuario.id == Acceso.registrado_por
+            PuntoAcceso,
+            GuardiaTurno
+        ).join(
+            GuardiaTurno, PuntoAcceso.id == GuardiaTurno.punto_id
         ).where(
-            Usuario.rol == RolTipo.ALCABALA,
-            Usuario.activo == True,
-            Usuario.expira_at > now
-        ).group_by(Usuario.id)
-        
+            PuntoAcceso.activo == True,
+            GuardiaTurno.activo == True
+        )
         result = await db.execute(query)
         rows = result.all()
         
         return [
             {
-                "id": u.id,
-                "nombre_completo": f"{u.nombre} {u.apellido}",
-                "cedula": u.cedula,
-                "total_escaneos": total,
-                "expira_at": u.expira_at
+                "alcabala": p.nombre,
+                "alcabala_id": p.id,
+                "grado": g.grado,
+                "nombre": f"{g.nombre} {g.apellido}",
+                "telefono": g.telefono,
+                "unidad": g.unidad,
+                "inicio": g.inicio_turno
             }
-            for u, total in rows
+            for p, g in rows
         ]
 
-    @staticmethod
-    async def limpiar_guardias_expirados(db: AsyncSession):
-        """Desactiva usuarios cuya guardia ha terminado."""
-        now = datetime.now()
-        query = select(Usuario).where(
-            Usuario.rol == RolTipo.ALCABALA,
-            Usuario.expira_at <= now,
-            Usuario.activo == True
-        )
-        result = await db.execute(query)
-        expirados = result.scalars().all()
-        
-        for u in expirados:
-            u.activo = False
-            
-        await db.commit()
-        return len(expirados)
-
-alcabala_mgmt_service = AlcabalaMgmtService()
+alcabala_service = AlcabalaService()

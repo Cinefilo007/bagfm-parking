@@ -1,5 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { Shield, Plus, UserPlus, Trash2, Clock, MapPin, Key, CheckCircle2 } from 'lucide-react';
+import { 
+  Shield, Plus, Trash2, MapPin, Key, 
+  RefreshCw, Phone, Copy, Edit3, 
+  ExternalLink, UserCheck, Clock, 
+  AlertCircle
+} from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardContent } from '../../components/ui/Card';
 import { Boton } from '../../components/ui/Boton';
 import { Input } from '../../components/ui/Input';
@@ -9,14 +14,15 @@ import { toast } from 'react-hot-toast';
 
 export default function Alcabalas() {
   const [puntos, setPuntos] = useState([]);
-  const [guardias, setGuardias] = useState([]);
+  const [personales, setPersonales] = useState([]);
   const [loading, setLoading] = useState(true);
+  
+  // Modales
   const [showModalPunto, setShowModalPunto] = useState(false);
-  const [showModalGuardia, setShowModalGuardia] = useState(false);
-  const [credencialTemp, setCredencialTemp] = useState(null);
+  const [puntoSeleccionado, setPuntoSeleccionado] = useState(null);
+  const [showConfirmDelete, setShowConfirmDelete] = useState(null);
 
   const [formPunto, setFormPunto] = useState({ nombre: '', ubicacion: '' });
-  const [formGuardia, setFormGuardia] = useState({ cedula: '', nombre: '', apellido: '' });
 
   useEffect(() => {
     fetchData();
@@ -24,62 +30,63 @@ export default function Alcabalas() {
 
   const fetchData = async () => {
     setLoading(true);
-    await Promise.all([fetchPuntos(), fetchGuardias()]);
-    setLoading(false);
-  };
-
-  const fetchPuntos = async () => {
     try {
-      const data = await comandoService.getPuntosAcceso();
-      setPuntos(data);
+      const [resPuntos, resPersonal] = await Promise.all([
+        comandoService.getPuntosAcceso(),
+        comandoService.getPersonalActivo()
+      ]);
+      setPuntos(resPuntos);
+      setPersonales(resPersonal);
     } catch (error) {
-      toast.error('Error al cargar alcabalas');
+      toast.error('Error al sincronizar datos tácticos');
+    } finally {
+      setLoading(false);
     }
   };
 
-  const fetchGuardias = async () => {
-    try {
-      const data = await comandoService.getGuardiasActivos();
-      setGuardias(data);
-    } catch (error) {
-      toast.error('Error al cargar personal de turno');
-    }
-  };
-
-  const handleCrearPunto = async (e) => {
+  const handleCrearOEditarPunto = async (e) => {
     e.preventDefault();
     try {
-      await comandoService.crearPuntoAcceso(formPunto);
-      toast.success('Punto de acceso registrado');
+      if (puntoSeleccionado) {
+        await comandoService.actualizarPuntoAcceso(puntoSeleccionado.id, formPunto);
+        toast.success('Alcabala actualizada');
+      } else {
+        await comandoService.crearPuntoAcceso(formPunto);
+        toast.success('Punto de control desplegado');
+      }
       setShowModalPunto(false);
+      setPuntoSeleccionado(null);
       setFormPunto({ nombre: '', ubicacion: '' });
-      fetchPuntos();
+      fetchData();
     } catch (error) {
-      toast.error('No se pudo crear el punto');
+      toast.error('No se pudo procesar la solicitud');
     }
   };
 
-  const handleCrearGuardia = async (e) => {
-    e.preventDefault();
+  const handleEliminarPunto = async (id) => {
     try {
-      const res = await comandoService.crearGuardiaTemporal(formGuardia);
-      setCredencialTemp(res);
-      setShowModalGuardia(false);
-      setFormGuardia({ cedula: '', nombre: '', apellido: '' });
-      fetchGuardias();
+      await comandoService.eliminarPuntoAcceso(id);
+      toast.success('Alcabala desarticulada del sistema');
+      setShowConfirmDelete(null);
+      fetchData();
     } catch (error) {
-      toast.error(error.response?.data?.detail || 'Error al crear guardia');
+      toast.error('Error al eliminar punto');
     }
   };
 
-  const handleLimpiar = async () => {
-    if (!confirm('¿Seguro que desea desactivar todos los guardias expirados?')) return;
+  const handleRegenerarClave = async (id) => {
     try {
-      const res = await comandoService.limpiar_guardias();
-      toast.success(res.mensaje);
+      const res = await comandoService.regenerarClave(id);
+      toast.success(`Nueva clave generada: ${res.nueva_clave}`, { duration: 5000 });
+      fetchData();
     } catch (error) {
-      toast.error('Error en limpieza');
+      toast.error('Error al regenerar clave');
     }
+  };
+
+  const copiarAlPortapapeles = (texto, mensaje) => {
+    navigator.clipboard.writeText(texto);
+    toast.success(mensaje || 'Copiado al portapapeles');
   };
 
   return (
@@ -88,127 +95,172 @@ export default function Alcabalas() {
         <div>
           <h1 className="text-2xl font-bold text-white flex items-center gap-2">
             <Shield className="text-primary" />
-            Gestión de Alcabalas
+            Mando de Alcabalas
           </h1>
-          <p className="text-text-muted text-sm">Mando y Control de Accesos</p>
+          <p className="text-text-muted text-sm">Control Directo y Relevo Táctico</p>
         </div>
-        <Boton variant="ghost" className="text-error" onClick={handleLimpiar}>
-          <Trash2 size={18} />
+        <Boton 
+          size="sm" 
+          onClick={() => {
+            setPuntoSeleccionado(null);
+            setFormPunto({ nombre: '', ubicacion: '' });
+            setShowModalPunto(true);
+          }}
+          className="gap-2"
+        >
+          <Plus size={18} />
+          <span className="hidden sm:inline">Desplegar Punto</span>
         </Boton>
       </header>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {/* PUNTOS DE ACCESO */}
-        <Card className="bg-bg-low border-white/5">
-          <CardHeader className="flex flex-row items-center justify-between border-b border-white/5 pb-2">
-            <CardTitle className="text-lg flex items-center gap-2">
-              <MapPin size={20} className="text-primary" />
-              Alcabalas Activas
-            </CardTitle>
-            <Boton variant="ghost" size="icon" className="h-8 w-8 rounded-full hover:bg-primary/20 hover:text-primary" onClick={() => setShowModalPunto(true)}>
-              <Plus size={18} />
-            </Boton>
-          </CardHeader>
-          <CardContent className="pt-4">
-            <div className="space-y-3">
-              {puntos.map(p => (
-                <div key={p.id} className="flex items-center justify-between p-3 bg-black/40 rounded-xl border border-white/5">
-                  <div>
-                    <p className="font-bold text-white">{p.nombre}</p>
-                    <p className="text-[10px] text-text-muted uppercase">{p.ubicacion || 'Sin ubicación específica'}</p>
-                  </div>
-                  <div className="w-2 h-2 rounded-full bg-success animate-pulse" />
+      {/* GRID DE ALCABALAS Y CLAVES */}
+      <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        {puntos.map(p => (
+          <Card key={p.id} className="bg-bg-low border-white/5 overflow-hidden group">
+            <div className={`h-1 w-full ${p.activo ? 'bg-primary' : 'bg-error'} opacity-50`} />
+            <CardContent className="p-0">
+              <div className="p-4 flex justify-between items-start">
+                <div>
+                  <h3 className="text-lg font-bold text-white leading-tight uppercase tracking-tight">{p.nombre}</h3>
+                  <p className="text-[10px] text-text-muted flex items-center gap-1 mt-1">
+                    <MapPin size={10} /> {p.ubicacion || 'Sin ubicación específica'}
+                  </p>
                 </div>
-              ))}
-              {puntos.length === 0 && !loading && (
-                <p className="text-center text-text-muted py-4 italic text-sm">No hay alcabalas registradas</p>
-              )}
-            </div>
-          </CardContent>
-        </Card>
+                <div className="flex gap-1">
+                    <Boton 
+                        variant="ghost" 
+                        size="icon" 
+                        className="h-7 w-7 text-text-muted hover:text-white"
+                        onClick={() => {
+                            setPuntoSeleccionado(p);
+                            setFormPunto({ nombre: p.nombre, ubicacion: p.ubicacion });
+                            setShowModalPunto(true);
+                        }}
+                    >
+                        <Edit3 size={14} />
+                    </Boton>
+                    <Boton 
+                        variant="ghost" 
+                        size="icon" 
+                        className="h-7 w-7 text-text-muted hover:text-error"
+                        onClick={() => setShowConfirmDelete(p)}
+                    >
+                        <Trash2 size={14} />
+                    </Boton>
+                </div>
+              </div>
 
-        {/* GUARDIA TEMPORAL */}
-        <Card className="bg-bg-low border-white/5 h-full">
-          <CardHeader className="flex flex-row items-center justify-between border-b border-white/5 pb-2">
-            <CardTitle className="text-lg flex items-center gap-2">
-              <UserPlus size={20} className="text-primary" />
-              Guardia de Turno
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="pt-6 flex flex-col items-center justify-center space-y-4">
-            <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center text-primary">
-               <Clock size={32} />
-            </div>
-            <div className="text-center">
-              <p className="text-white font-medium">Registro de Usuario Temporal</p>
-              <p className="text-xs text-text-muted max-w-[200px] mx-auto">
-                Crea una cuenta válida por 24 horas para el personal de guardia.
-              </p>
-            </div>
-            <Boton onClick={() => setShowModalGuardia(true)} className="w-full">
-              Asignar Guardia
-            </Boton>
-          </CardContent>
-        </Card>
-      </div>
+              {/* PANEL DE CLAVE ROTATIVA */}
+              <div className="mx-4 mb-4 bg-black/60 rounded-2xl border border-white/10 p-4 relative overflow-hidden">
+                <div className="flex items-center justify-between relative z-10">
+                  <div>
+                    <p className="text-[8px] font-black text-primary uppercase tracking-[0.2em] mb-1">Clave Táctica (24h)</p>
+                    <p className="text-3xl font-mono font-black text-white tracking-widest">{p.clave_hoy}</p>
+                  </div>
+                  <Boton 
+                    variant="ghost" 
+                    size="icon" 
+                    className="h-10 w-10 bg-primary/10 text-primary hover:bg-primary hover:text-white transition-all rounded-xl"
+                    title="Regenerar por Seguridad"
+                    onClick={() => handleRegenerarClave(p.id)}
+                  >
+                    <RefreshCw size={20} />
+                  </Boton>
+                </div>
+                {/* Indicador de tiempo */}
+                <div className="mt-3 flex items-center gap-2 text-[10px] text-text-muted">
+                    <Clock size={12} />
+                    <span>Próximo relevo: 08:30 AM Caracas</span>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+        {puntos.length === 0 && !loading && (
+          <div className="col-span-full py-12 text-center border-2 border-dashed border-white/5 rounded-3xl">
+            <Shield size={48} className="mx-auto text-white/10 mb-4" />
+            <p className="text-text-muted italic">No hay puntos de control activos desplegados</p>
+          </div>
+        )}
+      </section>
 
-      {/* ESTADÍSTICAS DE GUARDIAS ACTIIOS */}
+      {/* MONITOR DE PERSONAL EN VIVO */}
       <section className="space-y-4">
         <div className="flex items-center justify-between px-2">
-           <h2 className="text-lg font-bold text-white flex items-center gap-2">
-              <Key size={20} className="text-primary" />
-              Personal en Turno
-           </h2>
-           <span className="px-2 py-1 bg-primary/10 text-primary text-[10px] font-bold rounded-lg border border-primary/20">
-              GUARDIA ACTIVA
-           </span>
+            <h2 className="text-lg font-bold text-white flex items-center gap-2">
+                <UserCheck size={22} className="text-success" />
+                Personal en Operación
+            </h2>
+            <div className="flex items-center gap-2 px-3 py-1 bg-success/10 text-success rounded-full border border-success/20">
+                <span className="w-2 h-2 rounded-full bg-success animate-pulse" />
+                <span className="text-[10px] font-black uppercase tracking-widest">En Línea</span>
+            </div>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-           {guardias.map(g => (
-             <Card key={g.id} className="bg-bg-low border-white/5 hover:border-primary/30 transition-all group">
-               <CardContent className="p-4">
-                  <div className="flex items-start justify-between">
-                     <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary group-hover:bg-primary group-hover:text-white transition-colors">
-                           <Shield size={20} />
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {personales.map(g => (
+                <Card key={g.alcabala_id} className="bg-bg-low border-white/10 overflow-hidden hover:border-success/30 transition-all">
+                    <CardContent className="p-4 flex items-center justify-between">
+                        <div className="flex items-center gap-4">
+                            <div className="w-12 h-12 rounded-2xl bg-success/10 flex items-center justify-center text-success border border-success/20">
+                                <Shield size={24} />
+                            </div>
+                            <div>
+                                <div className="flex items-center gap-2">
+                                    <span className="text-[10px] font-bold text-success uppercase bg-success/10 px-1.5 py-0.5 rounded border border-success/20">
+                                        {g.grado || 'S/G'}
+                                    </span>
+                                    <h4 className="font-bold text-white">{g.nombre}</h4>
+                                </div>
+                                <p className="text-[10px] text-text-muted font-medium mt-0.5 uppercase tracking-wide">
+                                    {g.alcabala} • {g.unidad || 'Unidad No Registrada'}
+                                </p>
+                            </div>
                         </div>
-                        <div>
-                           <p className="font-bold text-white leading-tight">{g.nombre_completo}</p>
-                           <p className="text-[10px] text-text-muted font-mono">{g.cedula}</p>
-                        </div>
-                     </div>
-                     <div className="text-right">
-                        <p className="text-2xl font-black text-white group-hover:text-primary transition-colors">{g.total_escaneos}</p>
-                        <p className="text-[8px] text-text-muted uppercase font-bold tracking-widest">ESCANEOS</p>
-                     </div>
-                  </div>
-                  
-                  <div className="mt-4 pt-3 border-t border-white/5 flex items-center justify-between">
-                     <div className="flex items-center gap-1.5 text-success">
-                        <div className="w-1.5 h-1.5 rounded-full bg-success animate-pulse" />
-                        <span className="text-[10px] font-bold uppercase">En línea</span>
-                     </div>
-                     <div className="flex items-center gap-1 text-text-muted">
-                        <Clock size={12} />
-                        <span className="text-[10px]">Expira: {new Date(g.expira_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
-                     </div>
-                  </div>
-               </CardContent>
-             </Card>
-           ))}
 
-           {guardias.length === 0 && (
-             <div className="col-span-full p-8 border-2 border-dashed border-white/5 rounded-2xl text-center">
-                <p className="text-text-muted italic text-sm">No hay personal de guardia registrado actualmente</p>
-             </div>
-           )}
+                        {/* ACCIONES DE CONTACTO */}
+                        <div className="flex items-center gap-2">
+                            {g.telefono && (
+                                <a 
+                                    href={`tel:${g.telefono}`} 
+                                    className="h-10 w-10 flex items-center justify-center bg-primary/10 text-primary hover:bg-primary hover:text-white transition-all rounded-xl border border-primary/20"
+                                    title="Llamar directamente"
+                                >
+                                    <Phone size={20} />
+                                </a>
+                            )}
+                            <Boton 
+                                variant="ghost" 
+                                size="icon" 
+                                className="h-10 w-10 bg-white/5 text-text-muted hover:text-white rounded-xl"
+                                onClick={() => copiarAlPortapapeles(g.telefono || '', 'Teléfono copiado')}
+                                title="Copiar Teléfono"
+                            >
+                                <Copy size={18} />
+                            </Boton>
+                        </div>
+                    </CardContent>
+                    <div className="px-4 py-2 bg-black/40 border-t border-white/5 flex items-center justify-between text-[9px] text-text-muted italic">
+                         <span>Turno iniciado: {new Date(g.inicio).toLocaleString()}</span>
+                         <span className="flex items-center gap-1"><ExternalLink size={10} /> Logs de acceso</span>
+                    </div>
+                </Card>
+            ))}
+            {personales.length === 0 && (
+                <div className="col-span-full p-10 bg-black/20 rounded-3xl border border-white/5 text-center">
+                    <p className="text-text-muted italic text-sm">No hay reportes de guardias activos en los puntos de control</p>
+                </div>
+            )}
         </div>
       </section>
 
-      {/* MODAL CREAR PUNTO */}
-      <Modal isOpen={showModalPunto} onClose={() => setShowModalPunto(false)} title="Nueva Alcabala">
-        <form onSubmit={handleCrearPunto} className="space-y-4">
+      {/* MODAL CREAR / EDITAR PUNTO */}
+      <Modal 
+        isOpen={showModalPunto} 
+        onClose={() => setShowModalPunto(false)} 
+        title={puntoSeleccionado ? "Modificar Alcabala" : "Nuevo Despliegue"}
+      >
+        <form onSubmit={handleCrearOEditarPunto} className="space-y-4">
           <Input 
             label="Nombre de Alcabala" 
             placeholder="Ej: Alcabala Principal (Paso Real)"
@@ -222,75 +274,33 @@ export default function Alcabalas() {
             value={formPunto.ubicacion}
             onChange={e => setFormPunto({...formPunto, ubicacion: e.target.value})}
           />
-          <Boton type="submit" className="w-full">Registrar Punto</Boton>
+          <div className="pt-4 flex gap-2">
+            <Boton variant="ghost" type="button" onClick={() => setShowModalPunto(false)} className="flex-1">Cancelar</Boton>
+            <Boton type="submit" className="flex-1">{puntoSeleccionado ? 'Actualizar' : 'Desplegar'}</Boton>
+          </div>
         </form>
       </Modal>
 
-      {/* MODAL CREAR GUARDIA */}
-      <Modal isOpen={showModalGuardia} onClose={() => setShowModalGuardia(false)} title="Asignar Nuevo Guardia">
-        <form onSubmit={handleCrearGuardia} className="space-y-4">
-          <Input 
-            label="Cédula" 
-            placeholder="V-12345678"
-            value={formGuardia.cedula}
-            onChange={e => setFormGuardia({...formGuardia, cedula: e.target.value})}
-            required
-          />
-          <div className="grid grid-cols-2 gap-2">
-            <Input 
-              label="Nombre" 
-              value={formGuardia.nombre}
-              onChange={e => setFormGuardia({...formGuardia, nombre: e.target.value})}
-              required
-            />
-            <Input 
-              label="Apellido" 
-              value={formGuardia.apellido}
-              onChange={e => setFormGuardia({...formGuardia, apellido: e.target.value})}
-              required
-            />
+      {/* MODAL CONFIRMAR ELIMINAR */}
+      <Modal 
+        isOpen={!!showConfirmDelete} 
+        onClose={() => setShowConfirmDelete(null)} 
+        title="Desarticular Punto"
+      >
+        <div className="space-y-4 text-center">
+          <div className="w-16 h-16 bg-error/10 text-error rounded-full flex items-center justify-center mx-auto mb-4">
+            <AlertCircle size={32} />
           </div>
-          <Boton type="submit" className="w-full">Generar Credenciales</Boton>
-        </form>
-      </Modal>
-
-      {/* MODAL CREDENCIAL GENERADA */}
-      <Modal isOpen={!!credencialTemp} onClose={() => setCredencialTemp(null)} title="Credenciales Temporales">
-        {credencialTemp && (
-          <div className="space-y-6 text-center">
-            <div className="flex justify-center flex-col items-center gap-2">
-               <div className="w-12 h-12 bg-success/20 text-success rounded-full flex items-center justify-center">
-                  <CheckCircle2 size={24} />
-               </div>
-               <h3 className="text-white font-bold text-lg uppercase tracking-tight">Acceso Generado</h3>
-            </div>
-            
-            <div className="bg-black/60 p-6 rounded-2xl border border-white/5 space-y-4">
-               <div>
-                  <p className="text-text-muted text-[10px] uppercase font-bold tracking-widest mb-1">Usuario (Cédula)</p>
-                  <p className="text-2xl font-mono text-white tracking-wider">{credencialTemp.cedula}</p>
-               </div>
-               <div className="py-2 border-t border-white/5">
-                  <p className="text-text-muted text-[10px] uppercase font-bold tracking-widest mb-1">Contraseña Temporal</p>
-                  <p className="text-2xl font-mono text-primary font-bold">{credencialTemp.password_temporal}</p>
-               </div>
-               <div className="pt-2 border-t border-white/5 flex items-center justify-center gap-2 text-warning">
-                  <Clock size={14} />
-                  <p className="text-xs font-medium">Expira: {new Date(credencialTemp.expira_at).toLocaleString()}</p>
-               </div>
-            </div>
-
-            <div className="p-4 bg-primary/5 rounded-xl border border-primary/10">
-               <p className="text-xs text-primary/80 italic">
-                  Entregue estas credenciales al guardia. El sistema le pedirá cambiar la contraseña si es su primer acceso (opcional) o la cuenta se autodestruirá al finalizar el turno.
-               </p>
-            </div>
-
-            <Boton variant="ghost" onClick={() => setCredencialTemp(null)} className="w-full text-text-muted">
-              Cerrar
-            </Boton>
+          <p className="text-white font-medium">¿Está seguro de eliminar la alcabala "{showConfirmDelete?.nombre}"?</p>
+          <p className="text-xs text-text-muted">
+            Esta acción eliminará el punto de control y su usuario asociado permanentemente. 
+            No podrá recuperar la trazabilidad directa de este punto.
+          </p>
+          <div className="flex gap-3 pt-4">
+            <Boton variant="ghost" onClick={() => setShowConfirmDelete(null)} className="flex-1">Mantener</Boton>
+            <Boton variant="error" onClick={() => handleEliminarPunto(showConfirmDelete?.id)} className="flex-1">Eliminar Definitivamente</Boton>
           </div>
-        )}
+        </div>
       </Modal>
     </div>
   );

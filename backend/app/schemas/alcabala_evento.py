@@ -11,35 +11,46 @@ class PuntoAccesoBase(BaseModel):
     longitud: Optional[float] = None
 
 class PuntoAccesoCrear(PuntoAccesoBase):
-    pass
+    ubicacion: Optional[str] = None
 
 class PuntoAccesoSalida(PuntoAccesoBase):
     id: UUID
+    ubicacion: Optional[str] = None
     activo: bool
+    clave_hoy: Optional[str] = None # Inyectado por el servicio
     created_at: datetime
     model_config = ConfigDict(from_attributes=True)
 
-# --- Guardia Temporal ---
-class GuardiaTemporalCrear(BaseModel):
-    cedula: str
+# --- Guardia de Turno (Identificación Obligatoria) ---
+class GuardiaTurnoCrear(BaseModel):
+    punto_id: UUID
+    grado: Optional[str] = None
     nombre: str
     apellido: str
+    telefono: Optional[str] = None
+    unidad: Optional[str] = None
 
-class GuardiaTemporalSalida(BaseModel):
-    usuario_id: UUID
-    cedula: str
-    nombre_completo: str
-    password_temporal: str
-    expira_at: datetime
-    model_config = ConfigDict(from_attributes=True)
-
-class GuardiaActivoSalida(BaseModel):
+class GuardiaTurnoSalida(BaseModel):
     id: UUID
-    nombre_completo: str
-    cedula: str
-    total_escaneos: int
-    expira_at: datetime
+    punto_id: UUID
+    grado: Optional[str] = None
+    nombre: str
+    apellido: str
+    telefono: Optional[str] = None
+    unidad: Optional[str] = None
+    inicio_turno: datetime
+    activo: bool
+    
     model_config = ConfigDict(from_attributes=True)
+
+class PersonalActivoSalida(BaseModel):
+    alcabala: str
+    alcabala_id: UUID
+    grado: Optional[str] = None
+    nombre: str
+    telefono: Optional[str] = None
+    unidad: Optional[str] = None
+    inicio: datetime
 
 # --- Solicitud de Evento (Pases Masivos) ---
 class SolicitudEventoBase(BaseModel):
