@@ -168,7 +168,7 @@ export default function Entidades() {
                 <Card key={ent.id} hoverable elevation={2} className="relative overflow-hidden group border-white/5 bg-bg-card/40 backdrop-blur-sm">
                    <div className="absolute top-0 left-0 w-1 bg-primary/30 h-full group-hover:bg-primary transition-all duration-500"></div>
                    
-                   <div className="flex justify-between items-start mb-4">
+                   <div className="flex justify-between items-start mb-3">
                       <div className="flex gap-4">
                          <div className="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center text-primary border border-primary/20">
                             <Database size={24} />
@@ -177,12 +177,8 @@ export default function Entidades() {
                             <h4 className="font-display font-black text-xl text-white uppercase tracking-tight">
                               {ent.nombre}
                             </h4>
-                            <div className="flex items-center gap-3 mt-0.5">
-                               <p className="text-text-muted text-[10px] font-mono tracking-widest uppercase flex items-center gap-1.5 opacity-70">
-                                  ID: {ent.codigo_slug}
-                               </p>
-                               <span className="w-1 h-1 rounded-full bg-white/20"></span>
-                               <Badge variant={ent.activo ? 'activa' : 'suspendida'} className="text-[9px] h-4">
+                            <div className="mt-1">
+                               <Badge variant={ent.activo ? 'activa' : 'suspendida'} className="text-[10px] h-5 font-black tracking-widest px-3 border-none bg-opacity-20 uppercase">
                                  {ent.activo ? 'OPERATIVO' : 'SUSPENDIDA'}
                                </Badge>
                             </div>
@@ -191,41 +187,38 @@ export default function Entidades() {
                       <div className="flex gap-2">
                         <Boton 
                           variant="ghost" 
-                          className={`p-2 min-h-0 w-auto rounded-full ${ent.activo ? 'text-emerald-500 hover:bg-emerald-500/10' : 'text-red-500 hover:bg-red-500/10'}`}
+                          className={`p-2 min-h-0 w-auto rounded-full ${ent.activo ? 'text-emerald-500 hover:bg-emerald-500/10' : 'text-red-500 hover:bg-red-500/10'} border border-white/5`}
                           onClick={() => handleToggleEstado(ent.id)}
                           title={ent.activo ? "Suspender Entidad" : "Reactivar Entidad"}
                         >
                            <Power size={18} />
                         </Boton>
-                        <Boton variant="ghost" className="p-2 min-h-0 w-auto rounded-full hover:bg-white/5" onClick={() => navigate(`/comando/entidades/${ent.id}`)}>
-                           <ShieldCheck size={18} className="opacity-50 hover:opacity-100 transition-opacity" />
-                        </Boton>
                       </div>
                    </div>
 
-                   <div className="grid grid-cols-3 gap-4 border-t border-white/5 pt-4">
-                      <div className="flex flex-col">
-                         <span className="text-[9px] uppercase font-bold text-text-muted tracking-widest mb-1">
+                   <div className="grid grid-cols-3 gap-2 border-t border-white/5 pt-3 pb-1">
+                      <div className="flex flex-col border-r border-white/5">
+                         <span className="text-[8px] uppercase font-bold text-text-muted tracking-widest mb-0.5">
                            Capacidad
                          </span>
-                         <span className="text-white font-mono font-bold text-base">
-                           {ent.capacidad_vehiculos} <span className="text-[10px] text-text-muted">VEH</span>
+                         <span className="text-white font-mono font-bold text-sm">
+                           {ent.capacidad_vehiculos} <span className="text-[9px] text-text-muted">VEH</span>
                          </span>
                       </div>
-                      <div className="flex flex-col">
-                         <span className="text-[9px] uppercase font-bold text-text-muted tracking-widest mb-1">
+                      <div className="flex flex-col border-r border-white/5 pl-2">
+                         <span className="text-[8px] uppercase font-bold text-text-muted tracking-widest mb-0.5">
                            Socios
                          </span>
-                         <span className="text-white font-mono font-bold text-base">
-                           {ent.total_usuarios || 0} <span className="text-[10px] text-text-muted">UFS</span>
+                         <span className="text-white font-mono font-bold text-sm">
+                           {ent.total_usuarios || 0} <span className="text-[9px] text-text-muted">UFS</span>
                          </span>
                       </div>
-                      <div className="flex flex-col">
-                         <span className="text-[9px] uppercase font-bold text-text-muted tracking-widest mb-1">
+                      <div className="flex flex-col pl-2">
+                         <span className="text-[8px] uppercase font-bold text-text-muted tracking-widest mb-0.5">
                            Parque
                          </span>
-                         <span className="text-white font-mono font-bold text-base">
-                           {ent.total_vehiculos || 0} <span className="text-[10px] text-text-muted">UNI</span>
+                         <span className="text-white font-mono font-bold text-sm">
+                           {ent.total_vehiculos || 0} <span className="text-[9px] text-text-muted">UNI</span>
                          </span>
                       </div>
                    </div>
