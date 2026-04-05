@@ -105,17 +105,20 @@ async def toggle_estado_entidad(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
 
 
-@router.delete("/{id}", response_model=EntidadCivilSalida)
-async def desactivar_entidad(
+@router.delete("/{id}")
+async def eliminar_entidad(
     id: UUID,
     db: AsyncSession = Depends(obtener_db),
     usuario_actual: Usuario = DEPENDENCY_ADMIN_BASE,
 ):
     """
-    Desactiva a la entidad (soft delete) permanentemente. 
-    Usa el endpoint de toggle si solo deseas suspenderla temporalmente.
+    BAJA DEFINITIVA: Elimina la entidad y todos sus datos relacionados (socios, vehículos, QRs) en cascada técnica.
+    Esta acción es irreversible.
     """
     try:
-        return await entidad_service.toggle_estado(db, id) # Usamos toggle para facilitar
+        exito = await entidad_service.eliminar(db, id)
+        return {"status": "success", "message": "Entidad eliminada permanentemente", "deleted": exito}
     except EntidadNoEncontrada as e:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Error al eliminar entidad: {str(e)}")

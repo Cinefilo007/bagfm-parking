@@ -7,10 +7,16 @@ from sqlalchemy.exc import IntegrityError
 
 from app.models.entidad_civil import EntidadCivil
 from app.models.usuario import Usuario
+from app.models.membresia import Membresia
+from app.models.vehiculo import Vehiculo
+from app.models.codigo_qr import CodigoQR
+from app.models.alcabala_evento import SolicitudEvento
+from app.models.acceso import Acceso
 from app.models.enums import RolTipo
 from app.schemas.entidad_civil import EntidadCivilCrear
 from app.core.excepciones import EntidadDuplicada, EntidadNoEncontrada
 from app.core.security import hashear_password
+from sqlalchemy import delete
 
 class EntidadCivilService:
     def _generar_slug(self, texto: str) -> str:
@@ -189,5 +195,44 @@ class EntidadCivilService:
         await db.commit()
         await db.refresh(entidad)
         return entidad
+
+    async def eliminar(self, db: AsyncSession, entidad_id: UUID) -> bool:
+        """
+        SOP: Baja Definitiva con Eliminación en Cascada Manual.
+        Purga jerárquicamente Accesos -> QR -> Membresías -> Eventos -> Vehículos -> Usuarios -> Entidad.
+        """
+        # 1. Verificar existencia
+        entidad = await self.obtener_por_id(db, entidad_id)
+        
+        # 2. Identificar a todos los usuarios (socios y admins) de esta entidad
+        q_usuarios = select(Usuario.id).where(Usuario.entidad_id == entidad_id)
+        res_usuarios = await db.execute(q_usuarios)
+        user_ids = [row[0] for row in res_usuarios.all()]
+        
+        try:
+            # 3. Purga secuencial para evitar errores de FK
+            if user_ids:
+                # Borrar Accesos (donde el usuario es visitante o parquero de la entidad)
+                await db.execute(delete(Acceso).where(Acceso.usuario_id.in_(user_ids)))
+                # Borrar Códigos QR
+                await db.execute(delete(CodigoQR).where(CodigoQR.usuario_id.in_(user_ids)))
+                # Borrar Membresías
+                await db.execute(delete(Membresia).where(Membresia.entidad_id == entidad_id))
+                # Borrar Eventos
+                await db.execute(delete(SolicitudEvento).where(SolicitudEvento.entidad_id == entidad_id))
+                # Borrar Vehículos asociados a esos usuarios
+                await db.execute(delete(Vehiculo).where(Vehiculo.socio_id.in_(user_ids)))
+                # Borrar Usuarios definidos para esta entidad
+                await db.execute(delete(Usuario).where(Usuario.entidad_id == entidad_id))
+            
+            # 4. Finalmente, borrar la entidad
+            await db.execute(delete(EntidadCivil).where(EntidadCivil.id == entidad_id))
+            
+            await db.commit()
+            return True
+            
+        except Exception as e:
+            await db.rollback()
+            raise e
 
 entidad_service = EntidadCivilService()

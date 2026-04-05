@@ -7,7 +7,7 @@ import { Card } from '../../components/ui/Card';
 import { Badge } from '../../components/ui/Badge';
 import { Modal } from '../../components/ui/Modal';
 import { Input } from '../../components/ui/Input';
-import { Network, Plus, ShieldCheck, Store, Power, Activity, Users, Car, AlertTriangle, ChevronDown } from 'lucide-react';
+import { Network, Plus, ShieldCheck, Store, Power, Activity, Users, Car, AlertTriangle, ChevronDown, Trash2 } from 'lucide-react';
 import api from '../../services/api';
 
 export default function Entidades() {
@@ -30,6 +30,10 @@ export default function Entidades() {
     admin_email: '',
     admin_password: ''
   });
+
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [entidadADelete, setEntidadADelete] = useState(null);
+  const [eliminando, setEliminando] = useState(false);
 
   const fetchStats = async () => {
     try {
@@ -101,6 +105,22 @@ export default function Entidades() {
     }
   };
 
+  const handleConfirmarEliminacion = async () => {
+    if (!entidadADelete) return;
+    setEliminando(true);
+    try {
+      await api.delete(`/entidades/${entidadADelete.id}`);
+      setDeleteModalOpen(false);
+      setEntidadADelete(null);
+      fetchEntidades();
+    } catch (err) {
+      console.error("Error eliminando entidad", err);
+      alert("Error al procesar la baja definitiva");
+    } finally {
+      setEliminando(false);
+    }
+  };
+
   const EntidadCard = ({ ent, handleToggleEstado }) => {
     const [isOpen, setIsOpen] = useState(false);
 
@@ -136,6 +156,19 @@ export default function Entidades() {
                  title={ent.activo ? "Suspender Entidad" : "Reactivar Entidad"}
                >
                   <Power size={18} />
+               </Boton>
+               
+               <Boton 
+                 variant="ghost" 
+                 className="p-2 min-h-0 w-auto rounded-full text-red-400 hover:bg-red-500/10 border border-white/5"
+                 onClick={(e) => {
+                   e.stopPropagation();
+                   setEntidadADelete(ent);
+                   setDeleteModalOpen(true);
+                 }}
+                 title="Eliminar Permanente"
+               >
+                  <Trash2 size={18} />
                </Boton>
              </div>
           </div>
@@ -358,6 +391,47 @@ export default function Entidades() {
              </Boton>
            </div>
         </form>
+      </Modal>
+
+      {/* Modal de Confirmación Táctica (Eliminación) */}
+      <Modal 
+        isOpen={deleteModalOpen} 
+        onClose={() => !eliminando && setDeleteModalOpen(false)} 
+        title="Baja Definitiva"
+      >
+        <div className="text-center p-2">
+           <div className="w-16 h-16 bg-red-500/10 rounded-full flex items-center justify-center text-red-500 mx-auto mb-4 border border-red-500/20">
+              <AlertTriangle size={32} />
+           </div>
+           <h3 className="font-display font-black text-xl text-white uppercase tracking-tight mb-2">
+             ¿CONFIRMAR ELIMINACIÓN?
+           </h3>
+           <p className="text-sm text-text-muted mb-6 leading-relaxed">
+             Estás por purgar la entidad <span className="text-red-400 font-bold">"{entidadADelete?.nombre}"</span>. <br/>
+             Esta acción eliminará en cascada a todos los socios, vehículos y credenciales. 
+             <span className="block mt-2 font-black text-xs text-red-500 uppercase tracking-widest italic">
+               Acción irreversible de alto impacto.
+             </span>
+           </p>
+           
+           <div className="flex gap-3 mt-4">
+              <Boton 
+                variant="ghost" 
+                className="flex-1 border-white/10" 
+                onClick={() => setDeleteModalOpen(false)}
+                disabled={eliminando}
+              >
+                CANCELAR
+              </Boton>
+              <Boton 
+                className="flex-1 bg-red-600 hover:bg-red-700 border-red-500 text-white" 
+                onClick={handleConfirmarEliminacion}
+                disabled={eliminando}
+              >
+                {eliminando ? 'PURGANDO...' : 'SÍ, ELIMINAR'}
+              </Boton>
+           </div>
+        </div>
       </Modal>
     </div>
   );
