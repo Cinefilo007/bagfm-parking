@@ -106,10 +106,10 @@ export default function Alcabalas() {
             setFormPunto({ nombre: '', ubicacion: '' });
             setShowModalPunto(true);
           }}
-          className="gap-2"
+          className="gap-2 h-9 px-4"
         >
-          <Plus size={18} />
-          <span className="hidden sm:inline">Desplegar Punto</span>
+          <Plus size={16} />
+          <span>Crear Alcabala</span>
         </Boton>
       </header>
 
@@ -150,21 +150,49 @@ export default function Alcabalas() {
                 </div>
               </div>
 
-              {/* PANEL DE CLAVE ROTATIVA */}
-              <div className="mx-4 mb-4 bg-black/60 rounded-2xl border border-white/10 p-4 relative overflow-hidden">
-                <div className="flex items-center justify-between relative z-10">
+              {/* PANEL DE SEGURIDAD */}
+              <div className="mx-4 mb-4 bg-black/40 rounded-2xl border border-white/10 p-4 space-y-3">
+                {/* Usuario asignado */}
+                <div className="flex items-center justify-between pb-2 border-b border-white/5">
                   <div>
-                    <p className="text-[8px] font-black text-primary uppercase tracking-[0.2em] mb-1">Clave Táctica (24h)</p>
-                    <p className="text-3xl font-mono font-black text-white tracking-widest">{p.clave_hoy}</p>
+                    <p className="text-[7px] font-black text-text-muted uppercase tracking-[0.2em] mb-0.5">Usuario de Sistema</p>
+                    <p className="text-xs font-mono text-white/90">{p.usuario_nombre}</p>
                   </div>
                   <Boton 
                     variant="ghost" 
                     size="icon" 
-                    className="h-10 w-10 bg-primary/10 text-primary hover:bg-primary hover:text-white transition-all rounded-xl"
-                    title="Regenerar por Seguridad"
+                    className="h-8 w-8 text-text-muted hover:text-white"
+                    onClick={() => copiarAlPortapapeles(p.usuario_nombre, 'Nombre de usuario copiado')}
+                    title="Copiar Usuario"
+                  >
+                    <Copy size={14} />
+                  </Boton>
+                </div>
+
+                {/* Clave rotativa */}
+                <div className="flex items-center justify-between relative z-10 pt-1">
+                  <div>
+                    <p className="text-[7px] font-black text-primary uppercase tracking-[0.2em] mb-0.5">Clave Táctica (24h)</p>
+                    <div className="flex items-center gap-2">
+                        <p className="text-2xl font-mono font-black text-white tracking-widest">{p.clave_hoy}</p>
+                        <Boton 
+                            variant="ghost" 
+                            size="icon" 
+                            className="h-6 w-6 text-text-muted hover:text-white"
+                            onClick={() => copiarAlPortapapeles(p.clave_hoy, 'Clave táctica copiada')}
+                        >
+                            <Copy size={12} />
+                        </Boton>
+                    </div>
+                  </div>
+                  <Boton 
+                    variant="ghost" 
+                    size="icon" 
+                    className="h-10 w-10 bg-primary/10 text-primary hover:bg-primary hover:text-white transition-all rounded-xl border border-primary/20"
+                    title="Generar nueva clave"
                     onClick={() => handleRegenerarClave(p.id)}
                   >
-                    <RefreshCw size={20} />
+                    <RefreshCw size={20} className="animate-pulse-slow" />
                   </Boton>
                 </div>
                 {/* Indicador de tiempo */}

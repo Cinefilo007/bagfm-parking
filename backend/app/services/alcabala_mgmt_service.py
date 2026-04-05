@@ -25,15 +25,17 @@ class AlcabalaService:
         return texto.replace(' ', '.')
 
     async def listar_puntos(self, db: AsyncSession):
-        """Lista todas las alcabalas con su clave actual inyectada."""
-        query = select(PuntoAcceso).where(PuntoAcceso.activo == True)
+        """Lista todas las alcabalas con su clave actual y el usuario asociado."""
+        query = select(PuntoAcceso, Usuario).outerjoin(Usuario, PuntoAcceso.usuario_id == Usuario.id).where(PuntoAcceso.activo == True)
         result = await db.execute(query)
-        puntos = result.scalars().all()
+        rows = result.all()
         
-        # Inyectar clave diaria a cada punto para que el Comandante pueda verla
-        for p in puntos:
+        resultado = []
+        for p, u in rows:
             p.clave_hoy = generar_password_diario(p.secret_key, p.key_salt)
-        return puntos
+            p.usuario_nombre = u.cedula if u else "s/u"
+            resultado.append(p)
+        return resultado
 
     async def obtener_punto_por_id(self, db: AsyncSession, id: UUID):
         query = select(PuntoAcceso).where(PuntoAcceso.id == id)
@@ -81,6 +83,7 @@ class AlcabalaService:
         await db.refresh(punto)
         
         punto.clave_hoy = generar_password_diario(secret, salt)
+        punto.usuario_nombre = username
         return punto
 
     async def actualizar_punto_acceso(self, db: AsyncSession, id: UUID, nombre: str, ubicacion: str = None):

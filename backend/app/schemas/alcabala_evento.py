@@ -18,6 +18,7 @@ class PuntoAccesoSalida(PuntoAccesoBase):
     ubicacion: Optional[str] = None
     activo: bool
     clave_hoy: Optional[str] = None # Inyectado por el servicio
+    usuario_nombre: Optional[str] = None # Inyectado por el servicio
     created_at: datetime
     model_config = ConfigDict(from_attributes=True)
 
