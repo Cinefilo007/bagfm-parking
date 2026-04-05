@@ -1,55 +1,60 @@
 # DIRECTIVA — MÓDULO ALCABALAS (BAGFM)
 
-Este documento define el estándar de implementación para el módulo de control de acceso en puntos de control (alcabalas). Consultar antes de realizar cambios en este componente.
+Este documento define el estándar de implementación para el módulo de control de acceso y el protocolo de relevo táctico en puntos de control (alcabalas). **Consultar obligatoriamente ante cualquier cambio estructural.**
 
 ---
 
 ## 1. Visión General
-El módulo de Alcabala es la interfaz principal del Guardia Alcabala. Su función es validar el ingreso de socios y vehículos mediante el escaneo de códigos QR, verificando en tiempo real la vigencia de la membresía y la ausencia de sanciones bloqueantes.
+El módulo de Alcabala es la interfaz operativa del personal de guardia. Su función es validar el ingreso de socios y vehículos mediante el escaneo de códigos QR, verificando en tiempo real la vigencia de credenciales y la ausencia de infracciones bloqueantes.
 
-## 2. Lógica de Negocio (SOP)
+## 2. Gestión de Seguridad y Relevo (Protocolo Táctico)
 
-### FL-04 — Flujo de Validación
-1. **Escaneo**: Captura del token JWT desde el código QR (Permanente o Pase de Evento).
-2. **Validación de Identidad**: Verificación de la firma del JWT y vigencia del token.
-3. **Pases de Evento (FL-08)**: 
-   - El sistema reconoce el tipo `pase_evento`.
-   - Verifica que el evento sea hoy y en horario permitido.
-4. **Validación de Estado (Membresía)**:
-   - Debe estar en estado `activa`.
-   - Fecha de fin (si existe) debe ser >= hoy.
-5. **Validación de Sanciones**:
-   - Si es **entrada**: Solo informativo.
-   - Si es **salida**: Si existe infracción con `bloquea_salida = true`, el sistema impide la confirmación del egreso.
-6. **Registro**: Creación de registro en la tabla `accesos`.
+### RT-01 — Cuentas Fijas y Claves Rotativas
+- **Identidad Fija**: Cada alcabala física tiene una cuenta de usuario persistente (ej: `guardia.principal`).
+- **Rotación Máxima**: La contraseña de acceso cambia automáticamente cada **24 horas**.
+- **Sincronización**: El cambio ocurre a las **08:30 AM Caracas (VET)**.
+- **Generación Táctica**: La clave es un código de 6 dígitos generado algorítmicamente basado en una semilla secreta única por punto (`secret_key`) y la fecha táctica.
+- **Regeneración de Emergencia**: El Comandante puede invalidar la clave actual refrescando la sal (`key_salt`) del punto, forzando un cambio inmediato ante fugas de información.
 
-### FL-11 — Normativa de Guardias Temporales
-- **Duración**: Ciclos de 24 horas.
-- **Horario**: Inicio/Fin a las **08:30 AM (VET)**.
-- **Dispositivos**: Uso de teléfonos personales mediante PWA segura.
-- **Expiración**: Las cuentas se bloquean automáticamente al finalizar el turno para evitar accesos residuales al sistema.
+### RT-02 — Protocolo Mandibular de Identificación
+1. **Acceso Inicial**: Al loguearse por primera vez en el turno, el sistema bloquea las funciones de escaneo.
+2. **Registro de Relevo**: El guardia debe suministrar:
+   - Grado Militar
+   - Nombres y Apellidos
+   - Unidad de Adscripción
+   - Teléfono de Contacto
+3. **Validación de Turno**: Una vez registrado, se habilita el Dashboard Operativo. Este registro es mandatorio para la trazabilidad histórica de quién operó físicamente el punto.
 
-## 3. Arquitectura Técnica
+## 3. Lógica de Validación (SOP)
+
+### FL-04 — Flujo de Validación de Acceso
+1. **Escaneo**: Captura del token JWT desde el QR.
+2. **Validación de Identidad**: Verificación de firma y vigencia.
+3. **Validación de Sanciones**:
+   - **Entrada**: Informativo (Alerta naranja).
+   - **Salida**: Si existe infracción con `bloquea_salida = true`, el sistema **impide** la confirmación del egreso.
+4. **Registro de Acceso**: Creación de registro atómico en la tabla `accesos`, vinculando el `usuario_id` del punto y el registro activo de `GuardiaTurno`.
+
+## 4. Arquitectura Técnica
 
 ### Backend
-- **Service**: `acceso_service.py` manejará la orquestación (validar QR -> check membresía -> check infracciones -> registrar).
-- **Endpoint**: `POST /api/v1/accesos/validar` y `POST /api/v1/accesos/registrar`.
-- **Model**: `Acceso` (ORM SQLAlchemy).
+- **Service**: `alcabala_service.py` maneja CRUD de alcabalas, regeneración de claves y registro de relevos.
+- **Security**: `password_rotativo.py` contiene la lógica criptográfica de las claves de 6 dígitos.
+- **Models**: 
+  - `PuntoAcceso`: Semillas de clave y usuario vinculado.
+  - `GuardiaTurno`: Historial de personal físico en el punto.
 
 ### Frontend
-- **Página**: `Alcabala.jsx` con diseño premium (Dark Mode, transiciones suaves).
-- **Componente**: `QRScanner` integrado (usando `html5-qrcode` o similar).
-- **Feedback Visual**: 
-  - ✅ **Verde**: Acceso permitido.
-  - ❌ **Rojo**: Acceso denegado (con motivo).
-  - ⚠️ **Naranja**: Alerta (ej: infracción no bloqueante).
+- **Dashboard**: `Dashboard.jsx` (Alcabala) con bloqueo de identificación mandibular.
+- **Mando**: `Alcabalas.jsx` (Comandante) con monitor de personal en vivo y gestión de claves.
 
 ---
 
-## 4. Convenciones de Código
-- Los mensajes de error deben ser amigables y en español.
-- El registro de acceso debe ser atómico.
-- Los logs deben incluir el ID del guardia que registra el acceso (`registrado_por`).
+## 5. Convenciones de Seguridad
+- Nunca almacenar el código de 6 dígitos en texto plano; se genera al vuelo o se valida contra la semilla.
+- Toda acción de escaneo debe estar vinculada a un registro activo de `GuardiaTurno`.
+- El botón de contacto (Llamada/Copia) en el panel de mando es prioridad para la operatividad.
 
 ---
-*Última actualización: 2026-04-02 | Ver: DIRECTIVA_MAESTRA.md para contexto*
+*Última actualización: 2026-04-05 | Relevo Táctico v2.0*
+*Docs Relacionados: SCHEMA_BD.md, ROLES_Y_PERMISOS.md*

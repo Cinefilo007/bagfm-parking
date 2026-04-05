@@ -3,6 +3,22 @@
 > Este documento registra todos los cambios significativos al sistema.  
 > Sigue el formato [Keep a Changelog](https://keepachangelog.com/es-ES/1.0.0/).
 
+## [0.7.0] — 2026-04-05
+
+### Añadido
+- **Relevo Táctico Mandatorio**: Nuevo flujo de identificación obligatorio para el personal de guardia (Grado, Nombre, Unidad, Teléfono).
+- **Seguridad Rotativa**: Implementación de contraseñas de 6 dígitos que cambian automáticamente cada 24h a las 08:30 AM (VET).
+- **Mando Directo**: Panel de supervisión en tiempo real con monitor de personal activo y botones de contacto rápido.
+- **Regeneración de Emergencia**: Botón de comando para invalidar claves y forzar cambio inmediato de seguridad en puntos de acceso.
+- **Auto-Gestión del Punto**: Endpoint `/mi-situacion` para que el guardia reconozca automáticamente su estado operativo.
+
+### Modificado
+- **Arquitectura de Alcabalas**: Migración del sistema de cuentas temporales a cuentas fijas vinculadas a puntos físicos.
+- **Servicio de Autenticación**: Soporte para validación dual Hash/OTP para el rol `ALCABALA`.
+
+### Seguridad
+- Implementado motor criptográfico de semillas (`secret_key` + `key_salt`) para la generación de claves deterministas basadas en tiempo.
+
 ---
 
 ## [0.6.0] — 2026-04-02

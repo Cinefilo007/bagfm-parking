@@ -32,8 +32,10 @@ Personal de ronda que recorre la base.
 - No gestiona socios ni entidades.
 
 ### `ALCABALA`
-Guardia de turno en los puntos de entrada de la base.  
-- Personal con **cuenta temporal** (24h) creada por el Comandante.
+Personal operacional en los puntos de entrada de la base.  
+- **Cuenta Fija**: Tiene un usuario permanente vinculado al punto físico.
+- **Autenticación Táctica**: Accede mediante una **clave rotativa de 6 dígitos** (cambia cada 24h).
+- **Identificación Mandatoria**: Debe registrar su identidad física (Grado, Nombre, Unidad) para habilitar el escáner.
 - Escanea QR para verificar autorización de entrada.
 - Registra entradas (obligatorio) y salidas (según configuración).
 - Recibe alertas en tiempo real de infracciones activas.
@@ -138,9 +140,11 @@ Acceso temporal aprobado para un evento.
 | Aprobar/Denegar evento | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ |
 | Ver solicitudes | ✅ | ✅ | ❌ | ❌ | ✅ (propias) | ❌ | ❌ |
 | **ALCABALAS Y GUARDIAS** |
-| Registrar punto de acceso | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ |
-| Crear guardia temporal | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ |
-| Ver alcabalas activas | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ |
+| Configurar punto de acceso (Alcabala) | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ |
+| Ver alcabalas y claves del día | ✅ | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ |
+| Regenerar clave de emergencia | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ |
+| Registrar identificación de guardia | ❌ | ❌ | ❌ | ✅ | ❌ | ❌ | ❌ |
+| Monitorear personal activo | ✅ | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ |
 
 ---
 
@@ -178,4 +182,4 @@ class Rol(str, Enum):
 
 ---
 
-*Última actualización: 2026-03-30 | Ver: DIRECTIVA_MAESTRA.md para contexto*
+*Última actualización: 2026-04-05 | Ver: DIRECTIVA_MAESTRA.md para contexto*

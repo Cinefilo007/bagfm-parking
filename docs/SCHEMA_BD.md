@@ -232,9 +232,31 @@ Puntos físicos de control (alcabalas).
 |-------|------|-------------|-------|
 | `id` | UUID | PK | — |
 | `nombre` | VARCHAR(100) | NOT NULL | Ej: "Alcabala Norte" |
+| `usuario_id` | UUID | FK → usuarios, UNIQUE | Usuario fijo vinculado |
+| `secret_key` | VARCHAR(64) | NOT NULL | Semilla para clave rotativa |
+| `key_salt` | VARCHAR(32) | DEFAUL 'BAGFM' | Sal para regeneración de emergencia |
 | `latitud` | NUMERIC | NULL | — |
 | `longitud` | NUMERIC | NULL | — |
 | `activo` | BOOLEAN | DEFAULT true | — |
+
+---
+
+### `guardias_turno`
+Registro de personal físico operando en el punto de acceso (Trazabilidad).
+
+| Campo | Tipo | Restricción | Notas |
+|-------|------|-------------|-------|
+| `id` | UUID | PK | — |
+| `punto_id` | UUID | FK → puntos_acceso, NOT NULL | Punto donde opera |
+| `usuario_id` | UUID | FK → usuarios, NOT NULL | Cuenta fija usada |
+| `grado` | VARCHAR(20) | NOT NULL | Grado militar del guardia |
+| `nombre` | VARCHAR(100) | NOT NULL | Nombre del guardia físico |
+| `apellido` | VARCHAR(100) | NOT NULL | Apellido del guardia físico |
+| `telefono` | VARCHAR(20) | NOT NULL | Contacto directo |
+| `unidad` | VARCHAR(100) | NOT NULL | Unidad de adscripción |
+| `activo` | BOOLEAN | DEFAULT true | Solo uno activo por punto |
+| `inicio_turno` | TIMESTAMPTZ | DEFAULT now() | — |
+| `fin_turno` | TIMESTAMPTZ | NULL | — |
 
 ---
 
@@ -309,8 +331,9 @@ CREATE INDEX idx_codigos_qr_token ON codigos_qr(token) WHERE activo = true;
 | Versión | Fecha | Cambio |
 |---------|-------|--------|
 | 0.1.0 | 2026-03-30 | Schema inicial definido |
-| 0.6.1 | 2026-04-04 | Agregados campos de geoposicionamiento para Mapa Táctico |
+| 0.6.1 | 2026-04-03 | Agregados campos de geoposicionamiento para Mapa Táctico |
+| 0.7.0 | 2026-04-05 | Infraestructura de Alcabalas Fijas y Registro de Relevos |
 
 ---
 
-*Última actualización: 2026-03-30 | Ver: DIRECTIVA_MAESTRA.md para contexto*
+*Última actualización: 2026-04-05 | Ver: DIRECTIVA_MAESTRA.md para contexto*
