@@ -39,6 +39,7 @@ async def crear_punto(
     return await alcabala_service.crear_punto_acceso(db, datos.nombre, datos.ubicacion)
 
 @router.get("/puntos-acceso", response_model=List[PuntoAccesoSalida])
+@router.get("/alcabalas", response_model=List[PuntoAccesoSalida])
 async def listar_puntos(
     db: AsyncSession = Depends(obtener_db),
     _ = Depends(obtener_usuario_actual)

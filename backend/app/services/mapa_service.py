@@ -5,13 +5,14 @@ Agrega información de múltiples entidades para proporcionar una visión situac
 from datetime import date
 from typing import Literal
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import func, select
+from sqlalchemy import func, select, Date, cast
 from app.models.entidad_civil import EntidadCivil
 from app.models.alcabala_evento import PuntoAcceso
 from app.models.zona_estacionamiento import ZonaEstacionamiento
 from app.models.acceso import Acceso
 from app.models.infraccion import Infraccion
 from app.models.enums import InfraccionEstado
+from app.models.usuario import Usuario
 
 async def get_situacion_actual(db: AsyncSession):
     hoy = date.today()
@@ -25,13 +26,12 @@ async def get_situacion_actual(db: AsyncSession):
     entidades_data = []
     for ent in entidades:
         # Simplificación: Contar cuántos miembros de esta entidad han entrado hoy
-        from app.models.usuario import Usuario
         query_ocupacion = select(func.count(Acceso.id)).join(
             Usuario, Acceso.usuario_id == Usuario.id
         ).filter(
             Usuario.entidad_id == ent.id,
             Acceso.tipo == "entrada",
-            func.date(Acceso.timestamp) == hoy
+            func.cast(Acceso.timestamp, Date) == hoy
         )
         ocupacion = (await db.execute(query_ocupacion)).scalar() or 0
         
@@ -56,15 +56,19 @@ async def get_situacion_actual(db: AsyncSession):
         q_ent = select(func.count(Acceso.id)).filter(
             Acceso.punto_acceso == a.nombre,
             Acceso.tipo == "entrada",
-            func.date(Acceso.timestamp) == hoy
+            func.cast(Acceso.timestamp, Date) == hoy
         )
         q_sal = select(func.count(Acceso.id)).filter(
             Acceso.punto_acceso == a.nombre,
             Acceso.tipo == "salida",
-            func.date(Acceso.timestamp) == hoy
+            func.cast(Acceso.timestamp, Date) == hoy
         )
         entradas = (await db.execute(q_ent)).scalar() or 0
         salidas = (await db.execute(q_sal)).scalar() or 0
+        
+        # Obtener personal si existe
+        from app.services.alcabala_mgmt_service import alcabala_service
+        guardia = await alcabala_service.obtener_guardia_actual(db, a.id)
         
         alcabalas_data.append({
             "id": a.id,
@@ -72,17 +76,29 @@ async def get_situacion_actual(db: AsyncSession):
             "latitud": a.latitud,
             "longitud": a.longitud,
             "entradas_hoy": entradas,
-            "salidas_hoy": salidas
+            "salidas_hoy": salidas,
+            "personal_activo": f"{guardia.grado} {guardia.nombre}" if guardia else None
         })
 
-    # 3. Zonas de Estacionamiento (Ya traen ocupacion_actual en el modelo)
+    # 3. Zonas de Estacionamiento (Convertir a dict para serialización limpia)
     query_zonas = select(ZonaEstacionamiento).filter(ZonaEstacionamiento.activo == True)
     result_zonas = await db.execute(query_zonas)
-    zonas = result_zonas.scalars().all()
+    zonas_objs = result_zonas.scalars().all()
+    
+    zonas_data = []
+    for z in zonas_objs:
+        zonas_data.append({
+            "id": z.id,
+            "nombre": z.nombre,
+            "latitud": z.latitud,
+            "longitud": z.longitud,
+            "capacidad_total": z.capacidad_total,
+            "ocupacion_actual": z.ocupacion_actual
+        })
 
     # 4. Globales
     query_vehiculos = select(func.count(Acceso.id)).filter(
-        func.date(Acceso.timestamp) == hoy,
+        func.cast(Acceso.timestamp, Date) == hoy,
         Acceso.tipo == "entrada"
     )
     vehiculos_hoy = (await db.execute(query_vehiculos)).scalar() or 0
@@ -95,7 +111,7 @@ async def get_situacion_actual(db: AsyncSession):
     return {
         "entidades": entidades_data,
         "alcabalas": alcabalas_data,
-        "zonas_estacionamiento": zonas,
+        "zonas_estacionamiento": zonas_data,
         "vehiculos_hoy": vehiculos_hoy,
         "alertas_activas": alertas_activas
     }
