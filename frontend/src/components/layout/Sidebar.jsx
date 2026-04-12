@@ -4,13 +4,15 @@ import {
   ShieldCheck, Users, ClipboardList, 
   CalendarRange, LogOut, Settings,
   LayoutDashboard, UserCircle, Map as MapIcon,
-  Camera
+  Camera, Sun, Moon
 } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import { useAuthStore } from '../../store/auth.store';
+import { useThemeStore } from '../../store/theme.store';
 
 export const Sidebar = () => {
   const { user, logout } = useAuthStore();
+  const { isDarkMode, toggleTheme } = useThemeStore();
   
   const navItems = [];
   
@@ -96,6 +98,20 @@ export const Sidebar = () => {
 
       {/* Bottom Actions */}
       <div className="p-6 border-t border-white/5 flex flex-col gap-2">
+          <button 
+            onClick={toggleTheme}
+            className="flex items-center gap-3 px-4 py-2.5 rounded-lg text-text-muted hover:bg-white/5 hover:text-text-sec transition-all group"
+          >
+             {isDarkMode ? (
+               <Sun size={18} className="group-hover:rotate-12 transition-transform duration-500" />
+             ) : (
+               <Moon size={18} className="group-hover:-rotate-12 transition-transform duration-500" />
+             )}
+             <span className="text-xs font-bold uppercase tracking-tight">
+               Modo {isDarkMode ? 'Claro' : 'Oscuro'}
+             </span>
+          </button>
+
          <NavLink to="/ajustes" className="flex items-center gap-3 px-4 py-2.5 rounded-lg text-text-muted hover:bg-white/5 hover:text-text-sec transition-all group">
             <Settings size={18} className="group-hover:rotate-90 transition-transform duration-500" />
             <span className="text-xs font-bold uppercase tracking-tight">Ajustes</span>

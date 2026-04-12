@@ -4,6 +4,7 @@ import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { Shield, Building, SquareParking, Crosshair } from 'lucide-react';
 import { renderToString } from 'react-dom/server';
+import { useThemeStore } from '../store/theme.store';
 
 // Fix para los iconos por defecto de Leaflet
 delete L.Icon.Default.prototype._getIconUrl;
@@ -13,7 +14,9 @@ L.Icon.Default.mergeOptions({
   shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
 });
 
-const createTacticalPin = (color, label = "", isSelected = false) => {
+const createTacticalPin = (color, label = "", isSelected = false, isDarkMode = true) => {
+  const pinBgColor = isDarkMode ? 'rgba(13, 17, 23, 0.8)' : 'rgba(255, 255, 255, 0.9)';
+  const pinTextColor = isDarkMode ? 'white' : '#0F172A';
   const html = renderToString(
     <div style={{
       display: 'flex',
@@ -29,10 +32,10 @@ const createTacticalPin = (color, label = "", isSelected = false) => {
         position: 'relative',
         width: '32px',
         height: '32px',
-        background: isSelected ? '#FFF' : color,
+        background: isSelected ? (isDarkMode ? '#FFF' : '#10B981') : color,
         borderRadius: '50% 50% 50% 1px',
         transform: 'rotate(-45deg)',
-        border: `3px solid rgba(13, 17, 23, 0.8)`,
+        border: `3px solid ${pinBgColor}`,
         boxShadow: `0 0 15px ${color}66`,
         display: 'flex',
         alignItems: 'center',
@@ -42,10 +45,10 @@ const createTacticalPin = (color, label = "", isSelected = false) => {
         <div style={{
           width: '10px',
           height: '10px',
-          background: 'rgba(13, 17, 23, 0.9)',
+          background: pinBgColor,
           borderRadius: '50%',
           transform: 'rotate(45deg)',
-          border: `2px solid ${isSelected ? color : '#FFF'}`
+          border: `2px solid ${isSelected ? color : (isDarkMode ? '#FFF' : '#FFF')}`
         }} />
       </div>
 
@@ -53,22 +56,22 @@ const createTacticalPin = (color, label = "", isSelected = false) => {
       {label && (
         <div style={{
           marginTop: '6px',
-          background: 'rgba(13, 17, 23, 0.85)',
-          backdropBlur: '4px',
+          background: pinBgColor,
+          backdropFilter: 'blur(4px)',
           padding: '2px 8px',
           borderRadius: '6px',
           border: `1px solid ${color}44`,
-          boxShadow: '0 4px 10px rgba(0,0,0,0.5)'
+          boxShadow: '0 4px 10px rgba(0,0,0,0.3)'
         }}>
           <span style={{
-            color: 'white',
+            color: pinTextColor,
             fontSize: '9px',
             fontFamily: 'Inter, sans-serif',
             fontWeight: '900',
             textTransform: 'uppercase',
             letterSpacing: '0.08em',
             whiteSpace: 'nowrap',
-            textShadow: '0 1px 2px rgba(0,0,0,0.8)'
+            textShadow: isDarkMode ? '0 1px 2px rgba(0,0,0,0.8)' : 'none'
           }}>
             {label}
           </span>
@@ -98,6 +101,7 @@ function MapClickHandler({ onMapClick, assignmentMode }) {
 }
 
 const MapaBaseReal = ({ situacion, onSelectEntity, assignmentMode, onMapClick, selectedForMove }) => {
+  const { isDarkMode } = useThemeStore();
   const center = [10.4851, -66.8436]; 
   const bounds = [
     [10.46, -66.88],
@@ -129,11 +133,14 @@ const MapaBaseReal = ({ situacion, onSelectEntity, assignmentMode, onMapClick, s
             maxBoundsViscosity={1.0}
             scrollWheelZoom={true} 
             className="w-full h-full"
-            style={{ background: '#0E1322', cursor: assignmentMode ? 'crosshair' : 'grab' }}
+            style={{ background: isDarkMode ? '#0E1322' : '#F8FAFC', cursor: assignmentMode ? 'crosshair' : 'grab' }}
           >
             <TileLayer
               attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-              url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
+              url={isDarkMode 
+                ? "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
+                : "https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
+              }
             />
 
             <MapClickHandler onMapClick={onMapClick} assignmentMode={assignmentMode} />
@@ -144,7 +151,7 @@ const MapaBaseReal = ({ situacion, onSelectEntity, assignmentMode, onMapClick, s
                   <Marker 
                     key={`alcabala-${alcabala.id}`}
                     position={[alcabala.latitud, alcabala.longitud]}
-                    icon={createTacticalPin('#4EDEA3', alcabala.nombre, selectedForMove?.id === alcabala.id && selectedForMove?.tipo === 'alcabala')}
+                    icon={createTacticalPin('#4EDEA3', alcabala.nombre, selectedForMove?.id === alcabala.id && selectedForMove?.tipo === 'alcabala', isDarkMode)}
                     eventHandlers={{ click: () => !assignmentMode && onSelectEntity(alcabala) }}
                   >
                     <Popup className="tactical-popup">
@@ -170,7 +177,7 @@ const MapaBaseReal = ({ situacion, onSelectEntity, assignmentMode, onMapClick, s
                   <Marker 
                     key={`entidad-${entidad.id}`}
                     position={[entidad.latitud, entidad.longitud]}
-                    icon={createTacticalPin('#DEE1F7', entidad.nombre, selectedForMove?.id === entidad.id && selectedForMove?.tipo === 'entidad')}
+                    icon={createTacticalPin('#DEE1F7', entidad.nombre, selectedForMove?.id === entidad.id && selectedForMove?.tipo === 'entidad', isDarkMode)}
                     eventHandlers={{ click: () => !assignmentMode && onSelectEntity(entidad) }}
                   >
                     <Popup className="tactical-popup">
@@ -205,7 +212,7 @@ const MapaBaseReal = ({ situacion, onSelectEntity, assignmentMode, onMapClick, s
                         />
                         <Marker 
                           position={[zona.latitud, zona.longitud]}
-                          icon={createTacticalPin('#F59E0B', zona.nombre, selectedForMove?.id === zona.id && selectedForMove?.tipo === 'zona')}
+                          icon={createTacticalPin('#F59E0B', zona.nombre, selectedForMove?.id === zona.id && selectedForMove?.tipo === 'zona', isDarkMode)}
                           eventHandlers={{ click: () => !assignmentMode && onSelectEntity(zona) }}
                         >
                            <Popup className="tactical-popup">

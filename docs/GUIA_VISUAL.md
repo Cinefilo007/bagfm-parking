@@ -18,38 +18,34 @@ Este no es un sistema de consumo masivo. Es un entorno de **misión crítica de 
 
 ---
 
-## 2. Paleta de Colores Completa
+## 2. Paleta de Colores (Dual Táctico)
 
-### Colores Primarios de Marca
-```
-Primario (Esmeralda):     #4EDEA3   ← Color dominante del sistema
-Primario Container:       #10B981   ← Gradiente de CTAs principales
-Primario Fixed:           #6FFBBE   ← Glow, detalles menos críticos
-Primario Fixed Dim:       #4EDEA3   ← Texto esmeralda no crítico
-```
+El sistema utiliza variables CSS dinámicas que se alternan según el tema seleccionado.
 
-### Superficies (Jerarquía de Profundidad)
-```
-Surface Lowest:    #090E1C   ← El más profundo / oscuro
-Surface Dim:       #0E1322   ← Base Canvas (fondo de aplicación)
-Surface:           #0E1322   ← Nivel base ← FONDO APP
-Surface Low:       #161B2B   ← Bloques de layout principales
-Surface Container: #1A1F2F   ← Elementos interactivos / Cards
-Surface High:      #25293A   ← Cards elevadas
-Surface Highest:   #2F3445   ← Modales / Popovers flotantes
-Surface Bright:    #343949   ← Más brillante (uso moderado)
-Surface Variant:   #2F3445   ← Chips, telemetría
-Surface Tint:      #4EDEA3   ← Tinte esmeralda
+### 2.1 Modo Oscuro (Aegis Tactical - Default)
+*Jerarquía de profundidad para operaciones nocturnas.*
+
+```css
+Surface Lowest:    #090E1C   /* --bg-app */
+Surface Dim:       #0E1322   /* Base */
+Surface Low:       #161B2B   /* Layout Blocks */
+Surface Container: #1A1F2F   /* Cards */
+Text Main:         #DEE1F7   /* on_surface */
+Text Sec:          #BBCABF   /* on_surface_var */
+Primary:           #4EDEA3   /* Esmeralda Táctico */
 ```
 
-### Colores de Estado (On-Surface)
-```
-On Background:     #DEE1F7   ← Texto principal (NUNCA usar #FFFFFF)
-On Surface:        #DEE1F7   ← Texto sobre fondo oscuro
-On Surface Var:    #BBCABF   ← Texto secundario / descriptivo
-On Primary:        #003824   ← Texto sobre botón verde (alto contraste)
-On Primary Cont:   #00422B   ← Texto sobre primario container
-On Primary Fixed:  #002113   ← Texto sobre fixed
+### 2.2 Modo Claro (Tactical Light)
+*Optimizado para visibilidad bajo luz solar directa.*
+
+```css
+Surface Lowest:    #F1F5F9   /* Slate 100 */
+Surface Dim:       #F8FAFC   /* Slate 50 (App Base) */
+Surface Low:       #F1F5F9   /* Slate 100 (Layout) */
+Surface Container: #FFFFFF   /* Blanco Puro (Cards) */
+Text Main:         #0F172A   /* Slate 900 */
+Text Sec:          #475569   /* Slate 600 */
+Primary:           #10B981   /* Esmeralda Oscuro (Contraste) */
 ```
 
 ### Colores Semánticos
@@ -742,37 +738,17 @@ Padding interno de cards:       16px  (--space-4)
 
 ### Variables CSS Globales (index.css)
 ```css
+/* El sistema conmuta entre :root y .dark */
 :root {
-  /* Superficies */
-  --bg-app:        #0E1322;
-  --bg-low:        #161B2B;
-  --bg-card:       #1A1F2F;
-  --bg-card-high:  #25293A;
-  --bg-modal:      #2F3445;
-  --bg-chip:       #2F3445;
+  --bg-app: #F8FAFC;
+  --primary: #10B981;
+  /* ... resto de variables claras */
+}
 
-  /* Primario */
-  --primary:       #4EDEA3;
-  --primary-dark:  #10B981;
-  --on-primary:    #003824;
-
-  /* Texto */
-  --text-main:     #DEE1F7;
-  --text-sec:      #BBCABF;
-  --text-muted:    #86948A;
-
-  /* Semánticos */
-  --success:       #4EDEA3;
-  --warning:       #F59E0B;
-  --danger:        #FFAB4B;
-  --danger-deep:   #93000A;
-
-  /* Radios */
-  --r-sm:  4px;
-  --r-md:  6px;
-  --r-lg:  8px;
-  --r-xl:  12px;
-  --r-full: 9999px;
+.dark {
+  --bg-app: #0E1322;
+  --primary: #4EDEA3;
+  /* ... resto de variables oscuras */
 }
 ```
 

@@ -224,7 +224,35 @@ Este no es un sistema de consumo masivo. Es un entorno de **misión crítica de 
 
 ---
 
-## 2. Paleta de Colores Completa
+## 2. Paleta de Colores (Dual Táctico)
+
+El sistema implementa un sistema de temas dual (Claro/Oscuro) basado en variables CSS dinámicas.
+
+### 2.1 Modo Oscuro (Aegis Tactical - Default)
+*Jerarquía de profundidad para operaciones nocturnas.*
+
+```css
+Surface Lowest:    #090E1C   ← El más profundo
+Surface Dim:       #0E1322   ← Fondo Aplicación
+Surface Low:       #161B2B   ← Bloques de layout
+Surface Container: #1A1F2F   ← Cards / Interacción
+Text Main:         #DEE1F7   ← Texto primario
+Primary:           #4EDEA3   ← Esmeralda Táctico
+```
+
+### 2.2 Modo Claro (Tactical Light)
+*Optimizado para visibilidad bajo luz solar directa.*
+
+```css
+Surface Lowest:    #F1F5F9   ← Slate 100
+Surface Dim:       #F8FAFC   ← Fondo Aplicación (Slate 50)
+Surface Low:       #F1F5F9   ← Bloques de layout
+Surface Container: #FFFFFF   ← Blanco Puro (Cards)
+Text Main:         #0F172A   ← Slate 900
+Primary:           #10B981   ← Esmeralda Oscurecido (contraste)
+```
+
+---
 
 ### Colores Primarios de Marca
 ```

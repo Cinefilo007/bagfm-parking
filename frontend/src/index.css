@@ -1,24 +1,62 @@
 @import "tailwindcss";
 
+:root {
+  --bg-app: #F8FAFC;
+  --bg-low: #F1F5F9;
+  --bg-card: #FFFFFF;
+  --bg-high: #E2E8F0;
+  --bg-modal: #CBD5E1;
+  --primary: #10B981;
+  --primary-dark: #059669;
+  --on-primary: #FFFFFF;
+  --text-main: #0F172A;
+  --text-sec: #475569;
+  --text-muted: #94A3B8;
+  --success: #10B981;
+  --warning: #F59E0B;
+  --danger: #EF4444;
+  --danger-deep: #B91C1C;
+  --surface-variant: #E2E8F0;
+}
+
+.dark {
+  --bg-app: #0E1322;
+  --bg-low: #161B2B;
+  --bg-card: #1A1F2F;
+  --bg-high: #25293A;
+  --bg-modal: #2F3445;
+  --primary: #4EDEA3;
+  --primary-dark: #10B981;
+  --on-primary: #003824;
+  --text-main: #DEE1F7;
+  --text-sec: #BBCABF;
+  --text-muted: #86948A;
+  --success: #4EDEA3;
+  --warning: #F59E0B;
+  --danger: #FFAB4B;
+  --danger-deep: #93000A;
+  --surface-variant: #2F3445;
+}
+
 @theme {
-  --color-bg-app: #0E1322;
-  --color-bg-low: #161B2B;
-  --color-bg-card: #1A1F2F;
-  --color-bg-high: #25293A;
-  --color-bg-modal: #2F3445;
-  --color-primary: #4EDEA3;
-  --color-primary-dark: #10B981;
-  --color-on-primary: #003824;
-  --color-text-main: #DEE1F7;
-  --color-text-sec: #BBCABF;
-  --color-text-muted: #86948A;
-  --color-success: #4EDEA3;
-  --color-warning: #F59E0B;
-  --color-danger: #FFAB4B;
-  --color-danger-deep: #93000A;
-  --color-error: #EF4444;
-  --color-error-dark: #B91C1C;
-  --color-surface-variant: #2F3445;
+  --color-bg-app: var(--bg-app);
+  --color-bg-low: var(--bg-low);
+  --color-bg-card: var(--bg-card);
+  --color-bg-high: var(--bg-high);
+  --color-bg-modal: var(--bg-modal);
+  --color-primary: var(--primary);
+  --color-primary-dark: var(--primary-dark);
+  --color-on-primary: var(--on-primary);
+  --color-text-main: var(--text-main);
+  --color-text-sec: var(--text-sec);
+  --color-text-muted: var(--text-muted);
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+  --color-danger: var(--danger);
+  --color-danger-deep: var(--danger-deep);
+  --color-error: var(--danger);
+  --color-error-dark: var(--danger-deep);
+  --color-surface-variant: var(--surface-variant);
 
   --font-sans: "Inter", "sans-serif";
   --font-display: "Space Grotesk", "sans-serif";
@@ -127,17 +165,17 @@
 
   /* Tactical Map Popups Fix */
   .tactical-popup .leaflet-popup-content-wrapper {
-    background: #161B2B !important;
-    color: #DEE1F7 !important;
-    border: 1px solid rgba(78, 222, 163, 0.3) !important;
+    background: var(--bg-low) !important;
+    color: var(--text-main) !important;
+    border: 1px solid var(--primary) !important;
     border-radius: 12px !important;
-    box-shadow: 0 10px 25px rgba(0,0,0,0.5) !important;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.2) !important;
     padding: 2px !important;
   }
 
   .tactical-popup .leaflet-popup-tip {
-    background: #161B2B !important;
-    border: 1px solid rgba(78, 222, 163, 0.3) !important;
+    background: var(--bg-low) !important;
+    border: 1px solid var(--primary) !important;
   }
 
   .tactical-popup .leaflet-popup-content {
