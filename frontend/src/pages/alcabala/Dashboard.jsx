@@ -110,10 +110,15 @@ const DashboardAlcabala = () => {
                     </div>
 
                     <Card className="bg-bg-card border-bg-high shadow-tactica rounded-[2.5rem] overflow-hidden">
-                        <div className="bg-primary p-4 text-center">
-                            <span className="text-[10px] font-black text-on-primary uppercase tracking-[0.3em]">Protocolo de Identificación Obligatorio</span>
+                        <div className="p-8 pb-0 flex flex-col items-center">
+                            <div className="flex items-center gap-3 mb-2">
+                                <span className="w-8 h-[1px] bg-primary/30" />
+                                <span className="text-[10px] font-black text-primary uppercase tracking-[0.4em] italic">Protocolo de Registro</span>
+                                <span className="w-8 h-[1px] bg-primary/30" />
+                            </div>
+                            <h2 className="text-xl font-black text-text-main uppercase tracking-tight">Verificación de Identidad</h2>
                         </div>
-                        <form onSubmit={handleIdentificar} className="p-8 space-y-6">
+                        <form onSubmit={handleIdentificar} className="p-8 pt-6 space-y-6">
                             <div className="grid grid-cols-3 gap-4">
                                 <Input 
                                     label="Grado" required placeholder="S1"
