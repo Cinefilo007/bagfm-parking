@@ -25,24 +25,36 @@ class AccesoService:
     async def validar_qr(self, db: AsyncSession, datos: AccesoValidar) -> ResultadoValidacion:
         """
         Valida un token de QR y retorna la ficha del socio con su estado de cumplimiento.
-        No persiste cambios en la BD, solo consulta.
         """
         try:
+            print(f"DEBUG: Iniciando validación de QR para tipo: {datos.tipo}")
+            
             # 1. Decodificar Token
-            payload = decodificar_token(datos.qr_token)
+            try:
+                payload = decodificar_token(datos.qr_token)
+            except JWTError as e:
+                print(f"DEBUG: Fallo en decodificación JWT: {str(e)}")
+                return ResultadoValidacion(permitido=False, mensaje="Token QR expirado o corrupto", tipo_alerta="error")
+                
             usuario_id = payload.get("sub")
             vehiculo_id = payload.get("vehiculo_id")
+            print(f"DEBUG: Token decodificado. Usuario ID: {usuario_id}")
             
             if not usuario_id:
                 return ResultadoValidacion(permitido=False, mensaje="Token QR inválido: falta ID de usuario", tipo_alerta="error")
 
-            # 2. Buscar QR en BD para ver si está activo
-            query_qr = select(CodigoQR).where(CodigoQR.token == datos.qr_token, CodigoQR.activo == True)
+            # 2. Buscar QR en BD
+            query_qr = select(CodigoQR).where(CodigoQR.token == datos.qr_token)
             res_qr = await db.execute(query_qr)
             qr_db = res_qr.scalar_one_or_none()
             
             if not qr_db:
-                return ResultadoValidacion(permitido=False, mensaje="El QR ha sido revocado o no existe", tipo_alerta="error")
+                print(f"DEBUG: Token no encontrado en tabla CodigoQR")
+                return ResultadoValidacion(permitido=False, mensaje="QR no registrado en el sistema", tipo_alerta="error")
+            
+            if not qr_db.activo:
+                print(f"DEBUG: Token QR encontrado pero inactivo (ID: {qr_db.id})")
+                return ResultadoValidacion(permitido=False, mensaje="El QR ha sido revocado o ya no es válido", tipo_alerta="error")
 
             # 3. Buscar Usuario (Socio)
             query_socio = select(Usuario).where(Usuario.id == UUID(usuario_id), Usuario.activo == True)
@@ -50,40 +62,35 @@ class AccesoService:
             socio = res_socio.scalar_one_or_none()
 
             if not socio:
+                print(f"DEBUG: Socio {usuario_id} no encontrado o inactivo")
                 return ResultadoValidacion(permitido=False, mensaje="Socio no encontrado o inactivo", tipo_alerta="error")
 
-            # 4. Verificar Membresía (Activa o Exonerada)
+            # 4. Verificar Membresía
             query_mem = select(Membresia).where(
-                Membresia.socio_id == socio.id, 
-                Membresia.estado.in_([MembresiaEstado.activa, MembresiaEstado.exonerada])
-            )
+                Membresia.socio_id == socio.id
+            ).order_by(Membresia.updated_at.desc())
             res_mem = await db.execute(query_mem)
-            membresia = res_mem.scalar_one_or_none()
+            membresia = res_mem.scalars().first()
 
-            if not membresia:
-                # Buscar por qué no tiene membresía para dar mensaje claro
-                query_any_mem = select(Membresia).where(Membresia.socio_id == socio.id)
-                res_any = await db.execute(query_any_mem)
-                any_mem = res_any.scalar_one_or_none()
-                
-                msg = "Socio sin registro de membresía"
-                if any_mem:
-                    if any_mem.estado == MembresiaEstado.suspendida:
+            if not membresia or membresia.estado not in [MembresiaEstado.activa, MembresiaEstado.exonerada]:
+                msg = "Socio sin registro de membresía vigente"
+                if membresia:
+                    if membresia.estado == MembresiaEstado.suspendida:
                         msg = "MEMBRESÍA SUSPENDIDA ADMIN."
-                    elif any_mem.estado == MembresiaEstado.vencida:
+                    elif membresia.estado == MembresiaEstado.vencida:
                         msg = "MEMBRESÍA VENCIDA (PAGO PENDIENTE)"
                 
+                print(f"DEBUG: Bloqueo por membresía: {msg}")
                 return ResultadoValidacion(permitido=False, mensaje=msg, tipo_alerta="error")
 
-            # 5. Buscar Vehículo (si viene en el QR)
+            # 5. Vehículo
             vehiculo = None
             if vehiculo_id:
                 query_veh = select(Vehiculo).where(Vehiculo.id == UUID(vehiculo_id), Vehiculo.activo == True)
                 res_veh = await db.execute(query_veh)
                 vehiculo = res_veh.scalar_one_or_none()
 
-            # 6. Consultar Infracciones (especialmente para salida)
-            # Solo buscamos infracciones activas
+            # 6. Infracciones
             query_inf = select(Infraccion).where(
                 Infraccion.usuario_id == socio.id, 
                 Infraccion.estado == InfraccionEstado.activa
@@ -91,7 +98,6 @@ class AccesoService:
             res_inf = await db.execute(query_inf)
             infracciones = res_inf.scalars().all()
             
-            # 7. Evaluar bloqueo de salida
             bloqueado = False
             msg_bloqueo = ""
             if datos.tipo == AccesoTipo.salida:
@@ -101,22 +107,23 @@ class AccesoService:
                         msg_bloqueo = f"SALIDA BLOQUEADA: {inf.descripcion}"
                         break
 
-            # 8. Obtener nombre de la entidad y VERIFICAR ESTADO
+            # 7. Entidad
             query_ent = select(EntidadCivil).where(EntidadCivil.id == socio.entidad_id)
             res_ent = await db.execute(query_ent)
             entidad = res_ent.scalar_one_or_none()
 
             if entidad and not entidad.activo:
+                print(f"DEBUG: Bloqueo por entidad inactiva: {entidad.nombre}")
                 return ResultadoValidacion(
                     permitido=False, 
                     mensaje=f"CESE DE SERVICIOS: CONCESIÓN {entidad.nombre} SUSPENDIDA", 
                     tipo_alerta="error"
                 )
 
-            # 9. Construir respuesta
+            print(f"DEBUG: Validación Exitosa para {socio.nombre}")
             return ResultadoValidacion(
                 permitido = not bloqueado,
-                mensaje = msg_bloqueo if bloqueado else "Validación exitosa",
+                mensaje = msg_bloqueo if bloqueado else "Validación Exitosa",
                 tipo_alerta = "error" if bloqueado else ("warning" if infracciones else "info"),
                 socio = socio,
                 vehiculo = vehiculo,
@@ -128,9 +135,8 @@ class AccesoService:
                 membresia_info = membresia_service.calcular_progreso(membresia) if membresia else None
             )
 
-        except JWTError:
-            return ResultadoValidacion(permitido=False, mensaje="Token QR expirado o corrupto", tipo_alerta="error")
         except Exception as e:
+            print(f"DEBUG: Error inesperado en validación: {str(e)}")
             return ResultadoValidacion(permitido=False, mensaje=f"Error en validación: {str(e)}", tipo_alerta="error")
 
     async def registrar_acceso(self, db: AsyncSession, datos: AccesoRegistrar, registrado_por_id: UUID) -> Acceso:

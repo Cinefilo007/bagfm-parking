@@ -138,18 +138,42 @@ class AlcabalaService:
         return result.scalars().first()
 
     async def obtener_mi_identificacion_actual(self, db: AsyncSession, usuario_id: UUID):
+        """
+        Retorna la guardia activa del usuario, validando que pertenezca al turno táctico actual (8:30 VET).
+        """
+        fecha_tactica = obtener_fecha_tactica()
         query = select(GuardiaTurno).where(
             GuardiaTurno.usuario_id == usuario_id,
             GuardiaTurno.activo == True
-        )
+        ).order_by(GuardiaTurno.inicio_turno.desc())
+        
         result = await db.execute(query)
-        return result.scalars().first()
+        guardia = result.scalars().first()
+        
+        if guardia:
+            # Validar si el inicio de turno corresponde a la fecha táctica actual
+            # Convertimos inicio_turno a VET para comparar
+            from app.core.password_rotativo import VET
+            inicio_vet = guardia.inicio_turno.astimezone(VET)
+            
+            # Si el guardia inició en un ciclo táctico anterior, lo marcamos como inactivo
+            limite = time(8, 30)
+            inicio_tactico = inicio_vet.date()
+            if inicio_vet.time() < limite:
+                inicio_tactico = (inicio_vet - timedelta(days=1)).date()
+            
+            if inicio_tactico != fecha_tactica:
+                guardia.activo = False
+                await db.commit()
+                return None
+                
+        return guardia
 
     async def identificar_guardia_entrante(self, db: AsyncSession, punto_id: UUID, usuario_id: UUID, datos: dict):
         """
         Registra quién está tomando el turno en este momento.
         """
-        # Desactivar guardia anterior si existía
+        # Desactivar TODAS las guardias anteriores para este punto
         await db.execute(
             update(GuardiaTurno)
             .where(GuardiaTurno.punto_id == punto_id, GuardiaTurno.activo == True)
@@ -171,9 +195,30 @@ class AlcabalaService:
         return nuevo_turno
 
     async def obtener_guardia_actual(self, db: AsyncSession, punto_id: UUID):
-        query = select(GuardiaTurno).where(GuardiaTurno.punto_id == punto_id, GuardiaTurno.activo == True)
+        """Retorna el guardia físicamente presente, validando el turno táctico."""
+        fecha_tactica = obtener_fecha_tactica()
+        query = select(GuardiaTurno).where(
+            GuardiaTurno.punto_id == punto_id, 
+            GuardiaTurno.activo == True
+        ).order_by(GuardiaTurno.inicio_turno.desc())
+        
         result = await db.execute(query)
-        return result.scalars().first()
+        guardia = result.scalars().first()
+        
+        if guardia:
+            from app.core.password_rotativo import VET
+            inicio_vet = guardia.inicio_turno.astimezone(VET)
+            limite = time(8, 30)
+            inicio_tactico = inicio_vet.date()
+            if inicio_vet.time() < limite:
+                inicio_tactico = (inicio_vet - timedelta(days=1)).date()
+                
+            if inicio_tactico != fecha_tactica:
+                guardia.activo = False
+                await db.commit()
+                return None
+                
+        return guardia
 
     async def listar_personal_activo_mando(self, db: AsyncSession):
         """
