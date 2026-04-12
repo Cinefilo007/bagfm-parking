@@ -9,6 +9,8 @@ import {
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-hot-toast';
 
+import { ThemeToggle } from '../components/ui/ThemeToggle';
+
 export default function Login() {
   const [cedula, setCedula] = useState('');
   const [password, setPassword] = useState('');
@@ -49,13 +51,15 @@ export default function Login() {
 
   return (
     <div className="min-h-screen bg-bg-app flex flex-col justify-center px-6 antialiased">
+      <ThemeToggle />
+      
       <div className="w-full max-w-sm mx-auto">
         {/* LOGO SIMULADO */}
         <div className="flex flex-col items-center mb-10 text-center">
           <div className="w-16 h-16 bg-gradient-to-br from-primary to-primary-dark rounded-2xl flex flex-col items-center justify-center mb-4 shadow-[0_0_30px_rgba(78,222,163,0.3)]">
             <ShieldCheck size={32} color="#003824" strokeWidth={2} />
           </div>
-          <h1 className="font-display font-bold text-3xl tracking-tight text-white uppercase">BAGFM</h1>
+          <h1 className="font-display font-bold text-3xl tracking-tight text-text-main uppercase">BAGFM</h1>
           <p className="text-primary tracking-[0.2em] text-[10px] font-semibold uppercase mt-1">Control Táctico</p>
         </div>
 

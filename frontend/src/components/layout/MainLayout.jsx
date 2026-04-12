@@ -2,10 +2,12 @@ import React from 'react';
 import { Outlet } from 'react-router-dom';
 import { Sidebar } from './Sidebar';
 import { BottomNav } from './BottomNav';
+import { ThemeToggle } from '../ui/ThemeToggle';
 
 export const MainLayout = ({ hideNav = false }) => {
   return (
     <div className="min-h-screen bg-bg-app flex">
+       <ThemeToggle />
        {/* Sidebar para Escritorio (Desktop) */}
        {!hideNav && <Sidebar />}
 
