@@ -16,10 +16,10 @@ const EventMonitor = ({ eventos = [] }) => {
       </div>
 
       <div className="flex-1 overflow-y-auto p-4 no-scrollbar space-y-3">
-        {eventos.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-full text-center opacity-30">
-            <ShieldCheck size={32} className="mb-2" />
-            <p className="text-[10px] uppercase font-bold tracking-widest">Escaneando Perímetro...</p>
+        {!eventos || eventos.length === 0 ? (
+          <div className="flex flex-col items-center justify-center h-full text-center opacity-40">
+            <ShieldCheck size={32} className="mb-2 text-primary/50" />
+            <p className="text-[10px] uppercase font-black tracking-widest text-text-muted">Sin actividad operativa reciente</p>
           </div>
         ) : (
           eventos.map((evento) => (
