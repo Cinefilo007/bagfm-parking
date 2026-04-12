@@ -5,6 +5,7 @@ Implementa la directiva FL-08: Solicitud, Aprobación Parcial y Generación Masi
 from datetime import datetime, timedelta, timezone
 from uuid import UUID
 from sqlalchemy.future import select
+from sqlalchemy import func
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.models.alcabala_evento import SolicitudEvento
 from app.models.codigo_qr import CodigoQR
@@ -107,15 +108,12 @@ class EventoService:
         return result.scalars().all()
 
     async def get_stats(self, db: AsyncSession, entidad_id: UUID = None):
-        """Calcula estadísticas generales de solicitudes de eventos."""
-        from sqlalchemy import func
-        
-        # Filtro base
+        """Calcula estadísticas generales de solicitudes de eventos (Analítica Táctica)."""
         filtros = []
         if entidad_id:
             filtros.append(SolicitudEvento.entidad_id == entidad_id)
             
-        async def count_by_status(status_list: list = None):
+        async def _count(status_list: list = None):
             query = select(func.count(SolicitudEvento.id))
             if filtros:
                 query = query.where(*filtros)
@@ -124,24 +122,28 @@ class EventoService:
             result = await db.execute(query)
             return result.scalar() or 0
 
-        total = await count_by_status()
-        pendientes = await count_by_status([SolicitudEstado.pendiente])
-        aprobadas = await count_by_status([SolicitudEstado.aprobada, SolicitudEstado.aprobada_parcial])
-        denegadas = await count_by_status([SolicitudEstado.denegada])
+        # Ejecución secuencial para estabilidad de sesión async
+        total = await _count()
+        pendientes = await _count([SolicitudEstado.pendiente])
+        aprobadas = await _count([SolicitudEstado.aprobada, SolicitudEstado.aprobada_parcial])
+        denegadas = await _count([SolicitudEstado.denegada])
 
-        # Suma de pases otorgados
+        # Suma de pases otorgados (autorizados)
         query_pases = select(func.sum(SolicitudEvento.cantidad_aprobada))
         if filtros:
             query_pases = query_pases.where(*filtros)
+        
         result_pases = await db.execute(query_pases)
-        pases_otorgados = result_pases.scalar() or 0
+        pases_otorgados = result_pases.scalar()
+        if pases_otorgados is None:
+            pases_otorgados = 0
 
         return {
             "total": total,
             "pendientes": pendientes,
             "aprobadas": aprobadas,
             "denegadas": denegadas,
-            "pases_otorgados": pases_otorgados
+            "pases_otorgados": int(pases_otorgados)
         }
 
 evento_service = EventoService()

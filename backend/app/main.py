@@ -4,6 +4,9 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.core.excepciones import BagfmError, EntidadNoEncontrada, EntidadDuplicada, AccesoDenegado
 from app.core.config import obtener_config
 
+# 1. Asegurar registro de modelos ANTES de cualquier otra cosa de la API
+from app.models import base
+
 config = obtener_config()
 
 # Crear instancia principal de FastAPI
@@ -67,9 +70,7 @@ async def health_check():
         "entorno": config.app_env
     }
 
-# Importar modelos para asegurar que se registren en el metadata de Base
-from app.models import base
-
+# 2. Importar routers DESPUÉS de registrar modelos
 from app.api.v1 import (
     auth, entidades, socios, accesos, 
     infracciones, websocket, comando, eventos, mapa,

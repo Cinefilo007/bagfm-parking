@@ -6,3 +6,5 @@ from . import infracciones
 from . import websocket
 from . import comando
 from . import eventos
+from . import mapa
+from . import personal
