@@ -8,8 +8,12 @@ const getBaseURL = () => {
   // en producción (Railway) o si el sitio principal es seguro.
   const esLocal = url.includes('localhost') || url.includes('127.0.0.1');
 
-  if (!esLocal && url.startsWith('http:')) {
-    url = url.replace('http:', 'https:');
+  if (!esLocal) {
+    if (url.startsWith('http:')) {
+      url = url.replace('http:', 'https:');
+    } else if (!url.startsWith('https:')) {
+      url = 'https://' + url.replace(/^\/+/, '');
+    }
   }
   
   return url.trim();

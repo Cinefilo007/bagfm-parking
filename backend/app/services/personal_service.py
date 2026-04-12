@@ -18,8 +18,8 @@ class PersonalService:
         """
         Lista el personal según el rol del usuario que consulta.
         """
-        # Incluimos la relación con la entidad para ver el nombre
-        query = select(Usuario).options(joinedload(Usuario.entidad_pertenece)).order_by(Usuario.nombre.asc())
+        # Simplificamos la consulta para asegurar el arranque
+        query = select(Usuario).order_by(Usuario.nombre.asc())
         
         if usuario_actual.rol in [RolTipo.COMANDANTE, RolTipo.ADMIN_BASE]:
             # Comandante/AdminBase ven a todos los operativos y admins

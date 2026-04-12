@@ -40,7 +40,7 @@ class Usuario(Base):
         return f"{self.nombre} {self.apellido}"
 
     # Relaciones
-    entidad_pertenece = relationship("EntidadCivil", foreign_keys=[entidad_id], back_populates="usuarios")
+    entidad_pertenece = relationship("EntidadCivil", back_populates="usuarios")
     # entidades_creadas = relationship("EntidadCivil", foreign_keys="EntidadCivil.created_by")
     # vehiculos = relationship("Vehiculo", back_populates="propietario")
     # membresias = relationship("Membresia", back_populates="propietario")
