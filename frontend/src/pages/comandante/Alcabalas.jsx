@@ -134,97 +134,96 @@ export default function Alcabalas() {
         <div className="px-2">
             <h2 className="text-xs font-black text-text-muted uppercase tracking-[0.3em]">Red de Control Activa</h2>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 gap-6 items-start">
             {puntos.map(p => {
               const isExpanded = expandedPuntos.has(p.id);
               return (
                 <Card key={p.id} className={`bg-bg-card border-white/5 overflow-hidden transition-all duration-300 ${isExpanded ? 'ring-1 ring-primary/30 shadow-2xl' : 'hover:border-white/10'}`}>
                     <div className={`h-1.5 w-full ${p.activo ? 'bg-primary' : 'bg-error'} transition-all`} />
                     <CardContent className="p-0">
-                    <div className="p-5 flex items-center justify-between">
+                    <div className="p-4 flex items-center justify-between">
                         <div className="min-w-0 flex-1 cursor-pointer" onClick={() => toggleExpansio(p.id)}>
-                            <div className="flex items-center gap-2 mb-1">
-                                <h3 className="text-sm font-black text-text-main uppercase tracking-widest truncate">{p.nombre}</h3>
-                                {isExpanded ? <ChevronUp size={14} className="text-primary" /> : <ChevronDown size={14} className="text-text-muted" />}
+                            <div className="flex items-center gap-2 mb-0.5">
+                                <h3 className="text-xs font-black text-text-main uppercase tracking-widest truncate">{p.nombre}</h3>
+                                {isExpanded ? <ChevronUp size={12} className="text-primary" /> : <ChevronDown size={12} className="text-text-muted" />}
                             </div>
-                            <p className="text-[10px] text-text-muted flex items-center gap-1.5 font-bold uppercase tracking-wider">
-                                <MapPin size={10} className="text-primary shrink-0" />
+                            <p className="text-[9px] text-text-muted flex items-center gap-1.5 font-bold uppercase tracking-wider">
+                                <MapPin size={9} className="text-primary shrink-0" />
                                 <span className="truncate">{p.ubicacion || 'Sin ubicación específica'}</span>
                             </p>
                         </div>
                         
-                        <div className="flex items-center gap-2 shrink-0 ml-4">
+                        <div className="flex items-center gap-1.5 shrink-0 ml-3">
                             <Boton 
                                 variant="ghost" 
                                 size="sm" 
-                                className="h-9 w-9 px-0 bg-white/5 border border-white/5 hover:bg-white/10"
+                                className="h-8 w-8 px-0 bg-white/5 border border-white/5 hover:bg-white/10"
                                 onClick={() => {
                                     setPuntoSeleccionado(p);
                                     setFormPunto({ nombre: p.nombre, ubicacion: p.ubicacion });
                                     setShowModalPunto(true);
                                 }}
                             >
-                                <Edit3 size={16} />
+                                <Edit3 size={14} />
                             </Boton>
                             <Boton 
                                 variant="destructivo" 
                                 size="sm" 
-                                className="h-9 w-9 px-0 bg-error/10 text-error hover:bg-error hover:text-white border-0"
+                                className="h-8 w-8 px-0 bg-error/10 text-error hover:bg-error hover:text-white border-0"
                                 onClick={() => setShowConfirmDelete(p)}
                             >
-                                <Trash2 size={16} />
+                                <Trash2 size={14} />
                             </Boton>
                         </div>
                     </div>
 
-                    {/* CONTENIDO DESPLEGABLE */}
+                    {/* CONTENIDO DESPLEGABLE COMPACTO */}
                     <div className={`overflow-hidden transition-all duration-300 ease-in-out ${isExpanded ? 'max-h-[500px] border-t border-white/5' : 'max-h-0'}`}>
-                        <div className="p-5 space-y-5 bg-bg-high/5">
+                        <div className="p-4 space-y-4 bg-bg-high/5">
                             {/* Identificador */}
-                            <div className="group relative bg-black/40 rounded-2xl p-4 border border-white/5 hover:border-primary/20 transition-colors">
-                                <p className="text-[8px] font-black text-text-muted uppercase tracking-[0.25em] mb-2 px-1">Identificador de Acceso</p>
+                            <div className="group relative bg-black/40 rounded-xl p-3 border border-white/5 hover:border-primary/20 transition-colors">
+                                <p className="text-[7px] font-black text-text-muted uppercase tracking-[0.25em] mb-1.5 px-0.5">Identificador de Acceso</p>
                                 <div className="flex items-center justify-between">
-                                    <p className="text-sm font-mono font-black text-primary tracking-widest">{p.usuario_nombre}</p>
+                                    <p className="text-xs font-mono font-black text-primary tracking-widest">{p.usuario_nombre}</p>
                                     <Boton 
                                         variant="ghost" 
                                         size="sm" 
-                                        className="h-8 w-8 px-0 text-text-muted hover:text-white"
+                                        className="h-7 w-7 px-0 text-text-muted hover:text-white"
                                         onClick={() => copiarAlPortapapeles(p.usuario_nombre, 'Usuario copiado')}
                                     >
-                                        <Copy size={16} />
+                                        <Copy size={14} />
                                     </Boton>
                                 </div>
                             </div>
 
-                            {/* Clave rotativa */}
-                            <div className="flex items-end justify-between gap-4">
+                            {/* Clave rotativa Compacta */}
+                            <div className="flex items-center justify-between gap-3">
                                 <div className="flex-1">
-                                    <p className="text-[8px] font-black text-text-muted uppercase tracking-[0.25em] mb-2 px-1">Clave Táctica <span className="text-primary">(24H)</span></p>
-                                    <div className="flex items-center gap-4 bg-black/20 p-4 rounded-2xl border border-white/5">
-                                        <p className="text-4xl font-mono font-black text-text-main tracking-[0.2em]">{p.clave_hoy}</p>
+                                    <p className="text-[7px] font-black text-text-muted uppercase tracking-[0.25em] mb-1.5 px-0.5">Clave Táctica <span className="text-primary">(24H)</span></p>
+                                    <div className="flex items-center justify-between bg-black/20 p-3 rounded-xl border border-white/5">
+                                        <p className="text-2xl font-mono font-black text-text-main tracking-[0.2em]">{p.clave_hoy}</p>
                                         <Boton 
                                             variant="ghost" 
                                             size="sm" 
-                                            className="h-10 w-10 px-0 text-text-muted hover:text-primary transition-colors"
+                                            className="h-8 w-8 px-0 text-text-muted hover:text-primary transition-colors"
                                             onClick={() => copiarAlPortapapeles(p.clave_hoy, 'Clave copiada')}
                                         >
-                                            <Copy size={20} />
+                                            <Copy size={16} />
                                         </Boton>
                                     </div>
                                 </div>
                                 <Boton 
-                                    size="lg"
-                                    className="h-[74px] w-[74px] px-0 bg-primary shadow-tactica-hover hover:scale-[1.05] transition-all rounded-3xl"
+                                    className="h-14 w-14 px-0 bg-primary shadow-tactica hover:scale-[1.05] transition-all rounded-2xl flex-shrink-0"
                                     title="Renovar Clave Táctica"
                                     onClick={() => handleRegenerarClave(p.id)}
                                 >
-                                    <RefreshCw size={32} />
+                                    <RefreshCw size={24} />
                                 </Boton>
                             </div>
 
-                            <div className="flex items-center gap-3 text-xs text-text-muted px-2 py-1 bg-white/5 rounded-full w-fit">
-                                <Clock size={14} className="text-primary" />
-                                <span className="font-bold">Siguiente relevo: 08:30 AM</span>
+                            <div className="flex items-center gap-2 text-[9px] text-text-muted px-2 py-1 bg-white/5 rounded-full w-fit">
+                                <Clock size={12} className="text-primary" />
+                                <span className="font-bold uppercase tracking-wider">Relevo: 08:30 AM</span>
                             </div>
                         </div>
                     </div>
