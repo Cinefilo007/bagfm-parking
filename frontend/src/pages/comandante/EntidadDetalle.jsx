@@ -71,6 +71,22 @@ export default function EntidadDetalle() {
       console.error("Error creando socio", err);
     }
   };
+  
+  const handleActionSocio = async (tipo, payload) => {
+    try {
+      if (tipo === 'renovacion') {
+        const socio = payload;
+        await api.post(`/socios/${socio.id}/renovar?meses=1`);
+      } else if (tipo === 'estado') {
+        const { socio, nuevoEstado } = payload;
+        await api.post(`/socios/${socio.id}/estado?estado=${nuevoEstado}`);
+      }
+      fetchData(); // Refrescar lista tras acción exitosa
+    } catch (err) {
+      console.error(`Error en acción ${tipo}:`, err);
+      alert("Error al procesar la acción operativa");
+    }
+  };
 
   if (loading && !entidad) {
     return (
@@ -138,7 +154,7 @@ export default function EntidadDetalle() {
 
         <div className="space-y-4">
           {socios.map(socio => (
-            <SocioCard key={socio.id} socio={socio} />
+            <SocioCard key={socio.id} socio={socio} onAction={handleActionSocio} />
           ))}
 
           {socios.length === 0 && (
