@@ -100,7 +100,18 @@ function MapClickHandler({ onMapClick, assignmentMode }) {
   return null;
 }
 
-const MapaBaseReal = ({ situacion, onSelectEntity, assignmentMode, onMapClick, selectedForMove }) => {
+// Componente interno para forzar el re-calculo del tamaño cuando cambia el contenedor
+function MapResizer({ isFullscreen }) {
+  const map = useMapEvents({});
+  React.useEffect(() => {
+    setTimeout(() => {
+      map.invalidateSize();
+    }, 100); // Pequeño delay para asegurar que el DOM se ha expandido
+  }, [isFullscreen, map]);
+  return null;
+}
+
+const MapaBaseReal = ({ situacion, onSelectEntity, assignmentMode, onMapClick, selectedForMove, isFullscreen }) => {
   const { isDarkMode } = useThemeStore();
   const center = [10.4851, -66.8436]; 
   const bounds = [
@@ -144,6 +155,7 @@ const MapaBaseReal = ({ situacion, onSelectEntity, assignmentMode, onMapClick, s
             />
 
             <MapClickHandler onMapClick={onMapClick} assignmentMode={assignmentMode} />
+            <MapResizer isFullscreen={isFullscreen} />
 
             {situacion && (
               <>

@@ -81,7 +81,7 @@ export default function DashboardComando() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-stretch h-[550px]">
           
           {/* Columna Izquierda: Mapa Táctico */}
-          <div className="flex flex-col h-full overflow-hidden">
+          <div className="flex flex-col h-full">
              <MapaTactico pollingEnabled={false} situacionPreload={situacion} />
           </div>
 

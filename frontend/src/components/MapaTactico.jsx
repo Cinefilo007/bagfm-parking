@@ -1,5 +1,4 @@
 import React, { useEffect, useState } from 'react';
-import { createPortal } from 'react-dom';
 import { Target, MapPin, X, Check, Search, Filter, Maximize2, Minimize2, Shield, Users, Car } from 'lucide-react';
 import { mapaService } from '../services/mapaService';
 import MapaBaseReal from './MapaBaseReal';
@@ -75,8 +74,9 @@ const MapaTactico = ({ pollingEnabled = true, situacionPreload = null }) => {
       </div>
     );
 
-    const MapContent = () => (
-        <div className={`flex flex-col gap-6 h-full relative transition-all duration-500 ${isFullscreen ? 'fixed inset-0 z-[9999] bg-bg-app p-6' : ''}`}>
+    return (
+        <div className={`flex flex-col gap-6 h-full relative transition-all duration-300 ${isFullscreen ? 'fixed inset-0 z-[5000] bg-bg-app p-4 lg:p-8' : ''}`}>
+            {/* Mapa de Situación Real */}
             <div className="flex-1 relative z-0 border border-bg-high/10 rounded-3xl overflow-hidden shadow-2xl bg-bg-low">
                 <MapaBaseReal 
                     situacion={situacion} 
@@ -84,8 +84,10 @@ const MapaTactico = ({ pollingEnabled = true, situacionPreload = null }) => {
                     assignmentMode={isAssigning}
                     onMapClick={handleMapClick}
                     selectedForMove={selectedEntityToMove}
+                    isFullscreen={isFullscreen}
                 />
 
+                {/* BOTÓN: Fullscreen Toggle */}
                 <div className="absolute top-4 right-4 z-[1000]">
                     <button 
                         onClick={toggleFullscreen}
@@ -95,6 +97,7 @@ const MapaTactico = ({ pollingEnabled = true, situacionPreload = null }) => {
                     </button>
                 </div>
 
+                {/* BOTÓN FLOTANTE: Georreferenciar */}
                 <div className="absolute bottom-6 left-6 z-[1000]">
                     {!isAssigning ? (
                         <button 
@@ -108,7 +111,7 @@ const MapaTactico = ({ pollingEnabled = true, situacionPreload = null }) => {
                            <span className="text-[10px] font-black text-bg-app uppercase tracking-widest leading-none">{selectedEntityToMove?.nombre}</span>
                            <button 
                               onClick={() => { setIsAssigning(false); setSelectedEntityToMove(null); }}
-                              className="px-3 py-1 bg-bg-app text-warning rounded-lg text-[9px] font-bold uppercase hover:bg-warning hover:text-bg-app transition-colors outline-none"
+                              className="px-3 py-1 bg-bg-app text-warning rounded-lg text-[9px] font-bold uppercase hover:bg-warning hover:text-bg-app transition-colors"
                            >
                               Cancelar
                            </button>
@@ -116,6 +119,7 @@ const MapaTactico = ({ pollingEnabled = true, situacionPreload = null }) => {
                     )}
                 </div>
 
+                {/* OVERLAYS LATERALES (Solo en Fullscreen) */}
                 {isFullscreen && (
                     <div className="absolute top-4 left-4 z-[1000] w-64 flex flex-col gap-4 animate-in slide-in-from-left duration-500">
                         <Card className="bg-bg-card/90 backdrop-blur-md border-bg-high/10 p-4 shadow-2xl">
@@ -160,8 +164,9 @@ const MapaTactico = ({ pollingEnabled = true, situacionPreload = null }) => {
                 )}
             </div>
 
+            {/* Modal de Selección (También adaptado para no usar Portal si es posible, pero aquí está bien ya que es un modal estándar) */}
             {showSelectionModal && (
-               <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-bg-app/80 backdrop-blur-sm">
+               <div className="fixed inset-0 z-[6000] flex items-center justify-center p-4 bg-bg-app/80 backdrop-blur-sm">
                   <div className="bg-bg-card w-full max-w-md rounded-2xl border border-bg-high/10 shadow-2xl overflow-hidden max-h-[80vh] flex flex-col animate-in fade-in zoom-in duration-200">
                      <div className="p-6 border-b border-bg-high/10 flex justify-between items-center bg-bg-low/50">
                         <h4 className="text-sm font-display font-bold uppercase tracking-widest text-text-main">Seleccionar Entidad</h4>
@@ -199,8 +204,6 @@ const MapaTactico = ({ pollingEnabled = true, situacionPreload = null }) => {
             )}
         </div>
     );
-
-    return isFullscreen ? createPortal(<MapContent />, document.body) : <MapContent />;
 };
 
 export default MapaTactico;
