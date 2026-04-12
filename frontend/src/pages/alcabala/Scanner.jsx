@@ -73,7 +73,7 @@ const ScannerAlcabala = () => {
                 {/* Cabecera del Escáner */}
                 <div className="flex items-center justify-between px-2">
                     <div>
-                        <h2 className="text-2xl font-black text-white uppercase tracking-tighter italic leading-none">
+                        <h2 className="text-2xl font-black text-text-main dark:text-white uppercase tracking-tighter italic leading-none">
                             Detector <span className={tipoAcceso === 'entrada' ? 'text-primary' : 'text-warning'}>QR</span>
                         </h2>
                         <p className="text-[10px] font-black text-text-muted uppercase tracking-[0.2em] mt-2 opacity-60">
@@ -85,7 +85,7 @@ const ScannerAlcabala = () => {
                              <span className="text-[8px] font-black text-text-muted uppercase tracking-widest leading-none mb-1">Status</span>
                              <div className="flex items-center gap-1.5">
                                  <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse shadow-[0_0_8px_var(--color-primary)]" />
-                                 <span className="text-[10px] font-black text-white uppercase italic">Online</span>
+                                 <span className="text-[10px] font-black text-text-main dark:text-white uppercase italic">Online</span>
                              </div>
                          </div>
                     </div>
@@ -112,11 +112,11 @@ const ScannerAlcabala = () => {
                 <div className="grid grid-cols-2 gap-4 h-16">
                     <Card className="bg-bg-low/40 border-white/5 flex items-center justify-center gap-3">
                         <Camera size={20} className="text-primary" />
-                        <span className="text-[10px] font-black text-white uppercase tracking-widest">Activo</span>
+                        <span className="text-[10px] font-black text-text-main dark:text-white uppercase tracking-widest">Activo</span>
                     </Card>
                     <Card className="bg-bg-low/40 border-white/5 flex items-center justify-center gap-3">
                         <Activity size={20} className={tipoAcceso === 'entrada' ? 'text-primary' : 'text-warning'} />
-                        <span className="text-[10px] font-black text-white uppercase tracking-widest">{tipoAcceso}</span>
+                        <span className="text-[10px] font-black text-text-main dark:text-white uppercase tracking-widest">{tipoAcceso}</span>
                     </Card>
                 </div>
 
@@ -180,7 +180,7 @@ const ScannerAlcabala = () => {
                                             )}
                                         </div>
                                         <div className="flex-1 min-w-0">
-                                            <h5 className="text-2xl font-black text-white uppercase tracking-tight italic truncate leading-none">
+                                            <h5 className="text-2xl font-black text-text-main dark:text-white uppercase tracking-tight italic truncate leading-none">
                                                 {resultado.socio.nombre} {resultado.socio.apellido}
                                             </h5>
                                             <div className="mt-3 flex flex-wrap gap-3">

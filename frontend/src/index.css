@@ -10,8 +10,8 @@
   --primary-dark: #059669;
   --on-primary: #FFFFFF;
   --text-main: #0F172A;
-  --text-sec: #475569;
-  --text-muted: #64748B;
+  --text-sec: #334155;   /* Slate 700 - Más oscuro para contraste */
+  --text-muted: #475569; /* Slate 600 - Mejorado de 64748B */
   --success: #10B981;
   --warning: #F59E0B;
   --danger: #EF4444;

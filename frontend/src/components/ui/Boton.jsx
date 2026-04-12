@@ -17,8 +17,8 @@ export const Boton = ({
     primario: 'btn-primario bg-primary text-on-primary hover:primary-dark shadow-sm',
     secundario: 'bg-bg-high text-primary border border-primary/20 hover:bg-primary/10',
     destructivo: 'bg-error text-white hover:bg-error-dark shadow-sm',
-    ghost: 'bg-transparent text-text-sec hover:bg-white/5 hover:text-text-main',
-    outline: 'bg-transparent border border-white/10 text-text-main hover:bg-white/5',
+    ghost: 'bg-transparent text-text-sec hover:bg-bg-low dark:hover:bg-white/5 hover:text-text-main',
+    outline: 'bg-transparent border border-bg-high dark:border-white/10 text-text-main hover:bg-bg-low dark:hover:bg-white/5',
   };
 
   const sizes = {

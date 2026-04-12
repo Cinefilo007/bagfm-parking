@@ -103,15 +103,15 @@ const DashboardAlcabala = () => {
                         <div className="w-24 h-24 bg-primary/10 text-primary rounded-3xl flex items-center justify-center mx-auto mb-6 border border-primary/20 shadow-2xl shadow-primary/10 animate-bounce">
                             <ShieldAlert size={48} />
                         </div>
-                        <h1 className="text-3xl font-black text-white uppercase tracking-tighter italic">Relevo de Guardia</h1>
+                        <h1 className="text-3xl font-black text-text-main uppercase tracking-tighter italic">Relevo de Guardia</h1>
                         <p className="text-text-muted text-sm font-bold uppercase tracking-widest opacity-60">
                             Terminal: <span className="text-primary">{situacion.punto.nombre}</span>
                         </p>
                     </div>
 
-                    <Card className="bg-bg-low/40 border-white/5 backdrop-blur-2xl shadow-tactica rounded-[2.5rem] overflow-hidden">
-                        <div className="bg-primary/5 p-4 border-b border-white/5 text-center">
-                            <span className="text-[10px] font-black text-primary uppercase tracking-[0.3em]">Protocolo de Identificación Obligatorio</span>
+                    <Card className="bg-bg-card border-bg-high shadow-tactica rounded-[2.5rem] overflow-hidden">
+                        <div className="bg-primary p-4 text-center">
+                            <span className="text-[10px] font-black text-on-primary uppercase tracking-[0.3em]">Protocolo de Identificación Obligatorio</span>
                         </div>
                         <form onSubmit={handleIdentificar} className="p-8 space-y-6">
                             <div className="grid grid-cols-3 gap-4">
@@ -176,7 +176,7 @@ const DashboardAlcabala = () => {
                             </div>
                             <div>
                                 <h3 className="text-xs font-black text-text-muted uppercase tracking-[0.2em] opacity-60">Operador en Servicio</h3>
-                                <p className="text-lg font-black text-white uppercase tracking-tight italic">
+                                <p className="text-lg font-black text-text-main uppercase tracking-tight italic">
                                     {situacion?.datos_guardia?.grado} {situacion?.datos_guardia?.nombre} {situacion?.datos_guardia?.apellido}
                                 </p>
                             </div>
@@ -197,7 +197,7 @@ const DashboardAlcabala = () => {
                         <div className="h-20 w-20 rounded-full bg-primary/10 flex items-center justify-center text-primary group-hover:bg-primary group-hover:text-bg-app transition-colors shadow-inner">
                             <LogIn size={40} strokeWidth={2.5} />
                         </div>
-                        <span className="font-black text-white dark:text-white dark:group-hover:text-primary light:text-text-main uppercase tracking-[0.3em] text-sm italic">Registrar Entrada</span>
+                        <span className="font-black text-text-main dark:text-white uppercase tracking-[0.3em] text-sm italic">Registrar Entrada</span>
                      </button>
 
                      <button 
@@ -210,7 +210,7 @@ const DashboardAlcabala = () => {
                         <div className="h-20 w-20 rounded-full bg-warning/10 flex items-center justify-center text-warning group-hover:bg-warning group-hover:text-bg-app transition-colors shadow-inner">
                             <LogOut size={40} strokeWidth={2.5} />
                         </div>
-                        <span className="font-black text-white dark:text-white dark:group-hover:text-warning light:text-text-main uppercase tracking-[0.3em] text-sm italic">Registrar Salida</span>
+                        <span className="font-black text-text-main dark:text-white uppercase tracking-[0.3em] text-sm italic">Registrar Salida</span>
                      </button>
                 </div>
 
@@ -218,19 +218,19 @@ const DashboardAlcabala = () => {
                 <div className="grid grid-cols-3 gap-4">
                     <Card className="bg-bg-low/40 border-white/5 py-6">
                          <div className="flex flex-col items-center">
-                             <span className="text-3xl font-black text-white leading-none tracking-tighter">{stats.entradas}</span>
+                             <span className="text-3xl font-black text-text-main dark:text-white leading-none tracking-tighter">{stats.entradas}</span>
                              <span className="text-[10px] text-text-muted font-black uppercase mt-2 tracking-widest opacity-60">Entradas</span>
                          </div>
                     </Card>
                     <Card className="bg-bg-low/40 border-white/5 py-6">
                          <div className="flex flex-col items-center">
-                             <span className="text-3xl font-black text-white leading-none tracking-tighter">{stats.salidas}</span>
+                             <span className="text-3xl font-black text-text-main dark:text-white leading-none tracking-tighter">{stats.salidas}</span>
                              <span className="text-[10px] text-text-muted font-black uppercase mt-2 tracking-widest opacity-60">Salidas</span>
                          </div>
                     </Card>
                     <Card className={cn("bg-bg-low/40 border-white/5 py-6 transition-colors", stats.infracciones > 0 && "border-danger/30 bg-danger/5")}>
                          <div className="flex flex-col items-center">
-                             <span className={cn("text-3xl font-black leading-none tracking-tighter", stats.infracciones > 0 ? "text-danger" : "text-white")}>{stats.infracciones}</span>
+                             <span className={cn("text-3xl font-black leading-none tracking-tighter", stats.infracciones > 0 ? "text-danger" : "text-text-main dark:text-white")}>{stats.infracciones}</span>
                              <span className={cn("text-[10px] font-black uppercase mt-2 tracking-widest opacity-60", stats.infracciones > 0 ? "text-danger/60" : "text-text-muted")}>Alertas</span>
                          </div>
                     </Card>
@@ -241,10 +241,10 @@ const DashboardAlcabala = () => {
                     <div className="flex items-center justify-between px-2">
                         <div className="flex items-center gap-3">
                             <Activity size={18} className="text-primary animate-pulse" />
-                            <h3 className="text-xs font-black text-white uppercase tracking-[0.3em] italic">Monitor de Alertas</h3>
+                            <h3 className="text-xs font-black text-text-main dark:text-white uppercase tracking-[0.3em] italic">Monitor de Alertas</h3>
                         </div>
                         {alertasLocales.length > 0 && (
-                            <button onClick={() => setAlertasLocales([])} className="text-[10px] font-black text-text-muted hover:text-white uppercase tracking-widest border-b border-white/5">Limpiar Historial</button>
+                            <button onClick={() => setAlertasLocales([])} className="text-[10px] font-black text-text-muted hover:text-text-main dark:hover:text-white uppercase tracking-widest border-b border-white/5">Limpiar Historial</button>
                         )}
                     </div>
                     
