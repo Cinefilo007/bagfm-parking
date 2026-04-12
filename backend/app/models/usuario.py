@@ -39,8 +39,8 @@ class Usuario(Base):
     def nombre_completo(self) -> str:
         return f"{self.nombre} {self.apellido}"
 
-    # Relaciones - a definir según los modelos estén construidos
-    # entidad_pertenece = relationship("EntidadCivil", foreign_keys=[entidad_id], back_populates="socios")
+    # Relaciones
+    entidad_pertenece = relationship("EntidadCivil", foreign_keys=[entidad_id], back_populates="usuarios")
     # entidades_creadas = relationship("EntidadCivil", foreign_keys="EntidadCivil.created_by")
     # vehiculos = relationship("Vehiculo", back_populates="propietario")
     # membresias = relationship("Membresia", back_populates="propietario")

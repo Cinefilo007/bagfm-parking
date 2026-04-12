@@ -26,8 +26,6 @@ class EntidadCivil(Base):
     created_by = Column(UUID(as_uuid=True), ForeignKey("usuarios.id", ondelete="RESTRICT"), nullable=True)
 
     # Relaciones
-    # zona = relationship("ZonaEstacionamiento", back_populates="entidades")
-    # usuarios_creador = relationship("Usuario", foreign_keys=[created_by])
-    # socios = relationship("Usuario", foreign_keys="Usuario.entidad_id", back_populates="entidad_pertenece")
+    usuarios = relationship("Usuario", foreign_keys="Usuario.entidad_id", back_populates="entidad_pertenece")
     # membresias = relationship("Membresia", back_populates="entidad")
     # solicitudes_evento = relationship("SolicitudEvento", back_populates="entidad")

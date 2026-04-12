@@ -16,7 +16,10 @@ import {
   Mail, 
   Phone,
   Building2,
-  ChevronRight
+  ChevronRight,
+  Power,
+  RotateCcw,
+  UserMinus
 } from 'lucide-react';
 import api from '../services/api';
 import { useAuthStore } from '../store/auth.store';
@@ -42,11 +45,9 @@ export default function Personal() {
   const fetchData = async () => {
     setLoading(true);
     try {
-      // 1. Cargar Personal
       const resPersonal = await api.get('/personal/lista');
       setPersonal(resPersonal.data);
 
-      // 2. Cargar Entidades (Si el rol lo permite)
       if (userActual.rol === 'COMANDANTE' || userActual.rol === 'ADMIN_BASE') {
         try {
           const resEntidades = await api.get('/entidades');
@@ -71,7 +72,7 @@ export default function Personal() {
     try {
       await api.post('/personal/', {
         ...nuevoMiembro,
-        password: nuevoMiembro.cedula // Password por defecto = cédula
+        password: nuevoMiembro.cedula
       });
       setIsModalOpen(false);
       setNuevoMiembro({
@@ -81,6 +82,25 @@ export default function Personal() {
     } catch (err) {
       console.error("Error registrando personal", err);
       alert(err.response?.data?.detail || "Error al registrar personal");
+    }
+  };
+
+  const handleToggleActivo = async (id) => {
+    try {
+      await api.post(`/personal/${id}/toggle`);
+      fetchData();
+    } catch (err) {
+      alert(err.response?.data?.detail || "Error al cambiar estado");
+    }
+  };
+
+  const handleEliminar = async (id, nombre) => {
+    if (!window.confirm(`¿Está seguro de dar de baja definitiva a ${nombre}? Esta acción es irreversible.`)) return;
+    try {
+      await api.delete(`/personal/${id}`);
+      fetchData();
+    } catch (err) {
+      alert(err.response?.data?.detail || "Error al eliminar");
     }
   };
 
@@ -111,6 +131,7 @@ export default function Personal() {
           <option value="ADMIN_BASE">ADMIN BASE</option>
           <option value="SUPERVISOR">SUPERVISOR</option>
           <option value="PARQUERO">PARQUERO</option>
+          <option value="ADMIN_ENTIDAD">ADMIN ENTIDAD</option>
         </>
       );
     }
@@ -149,10 +170,10 @@ export default function Personal() {
           <div className="grid grid-cols-1 gap-4">
             {personal.map(miembro => (
               <Card key={miembro.id} className="group relative overflow-hidden flex items-center justify-between p-4 border-white/5 hover:border-white/10 transition-all">
-                <div className={`absolute left-0 top-0 h-full w-1 ${getRolColor(miembro.rol).replace('text-', 'bg-')}`} />
+                <div className={`absolute left-0 top-0 h-full w-1 ${miembro.activo ? getRolColor(miembro.rol).replace('text-', 'bg-') : 'bg-red-500'}`} />
                 
                 <div className="flex items-center gap-4">
-                  <div className={`h-12 w-12 rounded-2xl flex items-center justify-center border border-white/10 ${getRolColor(miembro.rol)} ${getRolBg(miembro.rol)}`}>
+                  <div className={`h-12 w-12 rounded-2xl flex items-center justify-center border border-white/10 ${miembro.activo ? getRolColor(miembro.rol) : 'text-red-500'} ${miembro.activo ? getRolBg(miembro.rol) : 'bg-red-500/10'}`}>
                     <UserCircle size={28} />
                   </div>
                   <div>
@@ -163,11 +184,21 @@ export default function Personal() {
                         {miembro.rol.replace('_', ' ')}
                       </span>
                     </h4>
-                    <div className="flex items-center gap-3">
-                      <p className="text-[10px] text-text-muted font-mono uppercase tracking-widest">
-                        ID: {miembro.cedula}
-                      </p>
-                      <span className="text-white/5">•</span>
+                    <div className="flex flex-col gap-1">
+                      <div className="flex items-center gap-3">
+                        <p className="text-[10px] text-text-muted font-mono uppercase tracking-widest">
+                          ID: {miembro.cedula}
+                        </p>
+                        {miembro.entidad_nombre && (
+                          <>
+                            <span className="text-white/5">•</span>
+                            <div className="flex items-center gap-1">
+                              <Building2 size={10} className="text-primary/60" />
+                              <span className="text-[10px] text-primary/80 font-bold uppercase">{miembro.entidad_nombre}</span>
+                            </div>
+                          </>
+                        )}
+                      </div>
                       <p className="text-[10px] text-text-muted/60 font-bold">
                         {miembro.telefono || 'SIN TELÉFONO'}
                       </p>
@@ -175,14 +206,40 @@ export default function Personal() {
                   </div>
                 </div>
 
-                <div className="flex items-center gap-4">
-                  <div className="hidden sm:flex flex-col items-end">
+                <div className="flex items-center gap-2">
+                  <div className="hidden sm:flex flex-col items-end mr-2">
                     <span className="text-[8px] uppercase font-bold text-text-muted tracking-widest mb-1">ACCESO</span>
                     <Badge variant={miembro.activo ? 'activa' : 'suspendida'}>
                       {miembro.activo ? 'VIGENTE' : 'RESTRINGIDO'}
                     </Badge>
                   </div>
-                  <ChevronRight size={18} className="text-text-muted group-hover:text-primary transition-colors" />
+                  
+                  {/* Acciones para COMANDANTE / ADMIN_BASE */}
+                  {(userActual.rol === 'COMANDANTE' || userActual.rol === 'ADMIN_BASE') && (
+                    <div className="flex items-center gap-1">
+                      <button 
+                        onClick={() => handleToggleActivo(miembro.id)}
+                        className={`p-2 rounded-xl transition-all ${miembro.activo ? 'text-amber-500 hover:bg-amber-500/10' : 'text-emerald-500 hover:bg-emerald-500/10'}`}
+                        title={miembro.activo ? "Pausar Acceso" : "Reactivar Acceso"}
+                      >
+                        {miembro.activo ? <Power size={18} /> : <RotateCcw size={18} />}
+                      </button>
+                      
+                      {userActual.rol === 'COMANDANTE' && (
+                        <button 
+                          onClick={() => handleEliminar(miembro.id, miembro.nombre)}
+                          className="p-2 rounded-xl text-red-500 hover:bg-red-500/10 transition-all"
+                          title="Eliminar Permanente"
+                        >
+                          <UserMinus size={18} />
+                        </button>
+                      )}
+                    </div>
+                  )}
+                  
+                  {!['COMANDANTE', 'ADMIN_BASE'].includes(userActual.rol) && (
+                    <ChevronRight size={18} className="text-text-muted group-hover:text-primary transition-colors" />
+                  )}
                 </div>
               </Card>
             ))}

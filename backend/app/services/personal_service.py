@@ -1,5 +1,5 @@
-from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, or_
+from sqlalchemy.orm import joinedload
 from uuid import UUID
 from typing import List, Optional
 
@@ -18,15 +18,15 @@ class PersonalService:
         """
         Lista el personal según el rol del usuario que consulta.
         """
-        query = select(Usuario).order_by(Usuario.nombre.asc())
+        # Incluimos la relación con la entidad para ver el nombre
+        query = select(Usuario).options(joinedload(Usuario.entidad_pertenece)).order_by(Usuario.nombre.asc())
         
         if usuario_actual.rol in [RolTipo.COMANDANTE, RolTipo.ADMIN_BASE]:
             # Comandante/AdminBase ven a todos los operativos y admins
-            # Excluimos SOCIO porque tienen su propia vista
+            # EXCLUIMOS ALCABALA (según solicitud) y SOCIO (tienen su propia vista)
             query = query.where(Usuario.rol.in_([
                 RolTipo.ADMIN_BASE, 
                 RolTipo.SUPERVISOR, 
-                RolTipo.ALCABALA, 
                 RolTipo.ADMIN_ENTIDAD, 
                 RolTipo.PARQUERO
             ]))
@@ -40,7 +40,14 @@ class PersonalService:
             raise AccesoDenegado("No tiene permisos para ver la lista de personal")
             
         res = await db.execute(query)
-        return res.scalars().all()
+        usuarios = res.scalars().all()
+        
+        # Mapear el nombre de la entidad para el esquema de salida
+        for u in usuarios:
+            if u.entidad_pertenece:
+                u.entidad_nombre = u.entidad_pertenece.nombre
+                
+        return usuarios
 
     async def crear_personal(
         self, 
@@ -90,5 +97,44 @@ class PersonalService:
         await db.commit()
         await db.refresh(nuevo_usuario)
         return nuevo_usuario
+
+    async def toggle_activo(self, db: AsyncSession, usuario_id: UUID, usuario_actual: Usuario) -> Usuario:
+        """Cambia el estado activo/suspendido de un miembro del personal."""
+        if usuario_actual.rol not in [RolTipo.COMANDANTE, RolTipo.ADMIN_BASE]:
+            raise AccesoDenegado("Solo el Mando Superior puede suspender personal")
+            
+        query = select(Usuario).where(Usuario.id == usuario_id)
+        res = await db.execute(query)
+        usuario = res.scalar_one_or_none()
+        
+        if not usuario:
+            raise EntidadNoEncontrada("Usuario no encontrado")
+            
+        if usuario.rol == RolTipo.COMANDANTE:
+            raise AccesoDenegado("No se puede suspender al Comandante")
+
+        usuario.activo = not usuario.activo
+        await db.commit()
+        await db.refresh(usuario)
+        return usuario
+
+    async def eliminar(self, db: AsyncSession, usuario_id: UUID, usuario_actual: Usuario) -> bool:
+        """Elimina permanentemente a un miembro del personal."""
+        if usuario_actual.rol != RolTipo.COMANDANTE:
+            raise AccesoDenegado("Solo el Comandante puede dar de baja definitiva al personal")
+            
+        query = select(Usuario).where(Usuario.id == usuario_id)
+        res = await db.execute(query)
+        usuario = res.scalar_one_or_none()
+        
+        if not usuario:
+            raise EntidadNoEncontrada("Usuario no encontrado")
+            
+        if usuario.rol == RolTipo.COMANDANTE:
+            raise AccesoDenegado("No se puede eliminar al Comandante")
+
+        await db.delete(usuario)
+        await db.commit()
+        return True
 
 personal_service = PersonalService()

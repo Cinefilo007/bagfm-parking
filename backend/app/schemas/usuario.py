@@ -12,6 +12,7 @@ class UsuarioBase(BaseModel):
     telefono: Optional[str] = None
     rol: RolTipo
     entidad_id: Optional[UUID] = None
+    entidad_nombre: Optional[str] = None
     activo: bool = True
     foto_url: Optional[str] = None
 
