@@ -14,7 +14,7 @@ import Alcabalas from '../pages/comandante/Alcabalas';
 import EventosMando from '../pages/comandante/EventosMando';
 import EventosEntidad from '../pages/entidad/Eventos';
 import Ajustes from '../pages/Ajustes';
-import PortalSocio from '../pages/socio/Portal';
+import Personal from '../pages/Personal';
 import { useAuthStore } from '../store/auth.store';
 
 const TemporaryPlaceholder = ({ name }) => (
@@ -60,6 +60,7 @@ export const router = createBrowserRouter([
               { path: 'entidades/:id', element: <EntidadDetalle /> },
               { path: 'alcabalas', element: <Alcabalas /> },
               { path: 'eventos', element: <EventosMando /> },
+              { path: 'personal', element: <Personal /> },
               { path: 'infracciones', element: <TemporaryPlaceholder name="Infracciones" /> }
             ],
           },
@@ -70,6 +71,7 @@ export const router = createBrowserRouter([
             children: [
               { path: 'dashboard', element: <DashboardEntidad /> },
               { path: 'socios', element: <SociosEntidad /> },
+              { path: 'personal', element: <Personal /> },
               { path: 'eventos', element: <EventosEntidad /> }
             ]
           },
