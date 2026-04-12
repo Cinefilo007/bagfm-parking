@@ -1,8 +1,17 @@
 import axios from 'axios';
 
 // Axios Instance Configuration
+const getBaseURL = () => {
+  const url = import.meta.env.VITE_API_URL || 'https://bagfm-backend-production.up.railway.app/api/v1';
+  // Si estamos en HTTPS (producción/railway), asegurar que la API use HTTPS
+  if (typeof window !== 'undefined' && window.location.protocol === 'https:' && url.startsWith('http:')) {
+    return url.replace('http:', 'https:');
+  }
+  return url;
+};
+
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || 'https://bagfm-backend-production.up.railway.app/api/v1',
+  baseURL: getBaseURL(),
   headers: {
     'Content-Type': 'application/json',
   },

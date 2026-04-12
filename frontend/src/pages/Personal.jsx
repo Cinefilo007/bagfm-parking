@@ -106,7 +106,6 @@ export default function Personal() {
           <option value="ADMIN_BASE">ADMIN BASE</option>
           <option value="SUPERVISOR">SUPERVISOR</option>
           <option value="PARQUERO">PARQUERO</option>
-          <option value="ALCABALA">PERSONAL ALCABALA</option>
         </>
       );
     }
@@ -237,26 +236,27 @@ export default function Personal() {
             />
           </div>
 
-          <Input 
-            label="Correo Electrónico"
-            icon={<Mail size={16} />}
-            type="email"
-            placeholder="correo@ejemplo.com"
-            value={nuevoMiembro.email}
-            onChange={(e) => setNuevoMiembro({...nuevoMiembro, email: e.target.value})}
-          />
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-1">
+              <label className="text-[10px] font-bold text-text-muted uppercase tracking-widest px-1">Rol de Operaciones</label>
+              <select 
+                className="w-full h-11 bg-bg-high/40 border border-white/10 rounded-xl px-4 text-sm text-text-main focus:ring-1 focus:ring-primary/50 transition-all outline-none appearance-none"
+                required
+                value={nuevoMiembro.rol}
+                onChange={(e) => setNuevoMiembro({...nuevoMiembro, rol: e.target.value})}
+              >
+                <option value="">Seleccione Rango...</option>
+                {renderRolesDisponibles()}
+              </select>
+            </div>
 
-          <div className="space-y-1">
-            <label className="text-[10px] font-bold text-text-muted uppercase tracking-widest px-1">Rol de Operaciones</label>
-            <select 
-              className="w-full h-11 bg-bg-high/40 border border-white/10 rounded-xl px-4 text-sm text-text-main focus:ring-1 focus:ring-primary/50 transition-all outline-none appearance-none"
-              required
-              value={nuevoMiembro.rol}
-              onChange={(e) => setNuevoMiembro({...nuevoMiembro, rol: e.target.value})}
-            >
-              <option value="">Seleccione Rango...</option>
-              {renderRolesDisponibles()}
-            </select>
+            <Input 
+              label="Correo"
+              type="email"
+              placeholder="juan@bagfm.com"
+              value={nuevoMiembro.email}
+              onChange={(e) => setNuevoMiembro({...nuevoMiembro, email: e.target.value})}
+            />
           </div>
 
           {(nuevoMiembro.rol === 'PARQUERO' || nuevoMiembro.rol === 'ADMIN_ENTIDAD') && (userActual.rol === 'COMANDANTE' || userActual.rol === 'ADMIN_BASE') && (

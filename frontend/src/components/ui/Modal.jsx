@@ -49,7 +49,7 @@ export const Modal = ({ isOpen, onClose, title, children, className }) => {
         </div>
         
         {/* Body */}
-        <div className="px-6 py-6 overflow-y-auto max-h-[80vh]">
+        <div className={cn("px-6 py-6", className)}>
           {children}
         </div>
       </div>
