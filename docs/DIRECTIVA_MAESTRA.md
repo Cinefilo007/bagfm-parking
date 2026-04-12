@@ -14,7 +14,7 @@ Base Aérea Generalísimo Francisco de Miranda
 | Campo | Valor |
 |-------|-------|
 | **Nombre** | BAGFM — Control de Acceso Vehicular |
-| **Versión** | 0.6.0 (PWA & Navigation Stability) |
+| **Versión** | 0.6.1 (Tactical Standardization) |
 | **Dominio** | Configurable via `APP_DOMAIN` (`.env`) |
 | **Idioma** | Español (código, comentarios, variables, UI) |
 | **Metodología** | Mejora Infinita — SOPs vs Ejecución |
@@ -41,10 +41,15 @@ El sistema está diseñado para **evolucionar continuamente** sin romper lo exis
 - Esto protege la integridad histórica de los datos.
 
 **4. Configuración > Hardcoding**  
-- Cualquier comportamiento que pueda cambiar en el futuro va en `.env` o en la tabla `configuracion` de la BD.
+- Cualesquiera comportamientos que puedan cambiar en el futuro van en `.env` o en la tabla `configuracion` de la BD.
 - Ejemplos: `salida_requerida`, `max_vehiculos_evento`, `APP_DOMAIN`.
 
-**5. Ciclo de mejora**  
+**5. Identidad Visual Unificada (Aegis Tactical v2)**  
+- Todas las vistas de mando deben usar el estándar de **Cabecera Táctica** (Icono Boxed + Título Black + Subtítulo con Beacon).
+- El layout principal de gestión debe usar `max-w-[1400px]` para estaciones de trabajo.
+- Los botones de acción principal deben estar en la cabecera.
+
+**6. Ciclo de mejora**  
 ```
 Identificar necesidad
     → Documentar en directiva correspondiente
@@ -189,7 +194,7 @@ Definidas en `backend/.env` y `frontend/.env`. Ver `.env.example` en cada carpet
 | Setup proyecto | ✅ Completo |
 | Schema BD | ✅ Completo |
 | Autenticación | ✅ Completa |
-| Panel Comandante | 🏗️ En progreso |
+| Panel Comandante | ✅ Estandarizado (v2) |
 | Portal Entidad | 🏗️ En progreso |
 | Portal Alcabala | ⏳ Pendiente |
 | Portal Parquero | ⏳ Pendiente |
@@ -203,5 +208,5 @@ Definidas en `backend/.env` y `frontend/.env`. Ver `.env.example` en cada carpet
 
 ---
 
-*Última actualización: 2026-04-02 | Autor: Antigravity*  
-*Guía Visual: Design System Aegis Tactical generado y validado en Google Stitch · Proyecto `4512440937494164528`*
+*Última actualización: 2026-04-12 | Autor: Antigravity*  
+*Guía Visual: Design System Aegis Tactical v2 generado y validado en Google Stitch · Proyecto `4512440937494164528`*

@@ -197,10 +197,10 @@ export default function Alcabalas() {
                             </div>
 
                             {/* Clave rotativa Compacta */}
-                            <div className="flex items-center justify-between gap-3">
-                                <div className="flex-1">
-                                    <p className="text-[7px] font-black text-text-muted uppercase tracking-[0.25em] mb-1.5 px-0.5">Clave Táctica <span className="text-primary">(24H)</span></p>
-                                    <div className="flex items-center justify-between bg-black/20 p-3 rounded-xl border border-white/5">
+                            <div className="space-y-1.5">
+                                <p className="text-[7px] font-black text-text-muted uppercase tracking-[0.25em] mb-1 px-0.5">Clave Táctica <span className="text-primary">(24H)</span></p>
+                                <div className="flex items-center justify-between gap-3">
+                                    <div className="flex-1 flex items-center justify-between bg-black/20 p-3 rounded-xl border border-white/5">
                                         <p className="text-2xl font-mono font-black text-text-main tracking-[0.2em]">{p.clave_hoy}</p>
                                         <Boton 
                                             variant="ghost" 
@@ -211,14 +211,14 @@ export default function Alcabalas() {
                                             <Copy size={16} />
                                         </Boton>
                                     </div>
+                                    <Boton 
+                                        className="h-14 w-14 px-0 bg-primary shadow-tactica hover:scale-[1.05] transition-all rounded-2xl flex-shrink-0"
+                                        title="Renovar Clave Táctica"
+                                        onClick={() => handleRegenerarClave(p.id)}
+                                    >
+                                        <RefreshCw size={24} />
+                                    </Boton>
                                 </div>
-                                <Boton 
-                                    className="h-14 w-14 px-0 bg-primary shadow-tactica hover:scale-[1.05] transition-all rounded-2xl flex-shrink-0"
-                                    title="Renovar Clave Táctica"
-                                    onClick={() => handleRegenerarClave(p.id)}
-                                >
-                                    <RefreshCw size={24} />
-                                </Boton>
                             </div>
 
                             <div className="flex items-center gap-2 text-[9px] text-text-muted px-2 py-1 bg-white/5 rounded-full w-fit">

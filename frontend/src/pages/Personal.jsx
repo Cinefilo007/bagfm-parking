@@ -1,6 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { Header } from '../components/layout/Header';
-import { BottomNav } from '../components/layout/BottomNav';
 import { Card } from '../components/ui/Card';
 import { Badge } from '../components/ui/Badge';
 import { Boton } from '../components/ui/Boton';
@@ -8,7 +6,7 @@ import { Modal } from '../components/ui/Modal';
 import { Input } from '../components/ui/Input';
 import { 
   UserCircle, 
-  UserPlus, 
+  Plus,
   ShieldCheck, 
   ShieldAlert, 
   UserCog, 
@@ -139,27 +137,34 @@ export default function Personal() {
   };
 
   return (
-    <div className="min-h-screen bg-bg-app">
-      <Header 
-        titulo="Gestión de Personal" 
-        subtitle="Mando y Control de Operativos"
-      />
+    <div className="p-4 space-y-8 pb-24 max-w-[1400px] mx-auto">
+      <header className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-bg-card/30 p-4 rounded-3xl border border-white/5">
+        <div className="min-w-0">
+          <h1 className="text-2xl font-black text-text-main flex items-center gap-3 tracking-tight">
+            <div className="p-2 bg-primary/10 rounded-xl">
+                <UserCog className="text-primary shrink-0" size={24} />
+            </div>
+            <span className="truncate">Gestión de Personal</span>
+          </h1>
+          <p className="text-text-muted text-sm mt-1 flex items-center gap-1.5 px-1">
+            <span className="w-1.5 h-1.5 rounded-full bg-success animate-pulse" />
+            Mando y Control de Operativos
+          </p>
+        </div>
+        <Boton 
+          size="lg" 
+          onClick={() => setIsModalOpen(true)}
+          className="gap-2 h-12 px-8 w-full sm:w-fit shrink-0 whitespace-nowrap shadow-tactica hover:scale-[1.02] transition-transform"
+        >
+          <Plus size={20} />
+          <span>Añadir Personal</span>
+        </Boton>
+      </header>
 
-      <main className="px-4 py-6 max-w-4xl mx-auto pb-24">
+      <main className="space-y-6">
         {/* Cabecera de Lista */}
-        <div className="flex justify-between items-center mb-6">
-           <h2 className="text-sm font-bold text-text-main uppercase tracking-widest flex items-center gap-2">
-             <UserCog size={18} className="text-primary" />
-             Personal Activo
-           </h2>
-           <Boton 
-             variant="ghost" 
-             className="h-9 px-4 text-[10px] gap-2 border-primary/20 text-primary bg-primary/5"
-             onClick={() => setIsModalOpen(true)}
-           >
-             <UserPlus size={16} />
-             AÑADIR PERSONAL
-           </Boton>
+        <div className="px-2">
+            <h2 className="text-xs font-black text-text-muted uppercase tracking-[0.3em]">Fuerza de Tareas Activa</h2>
         </div>
 
         {loading ? (
@@ -253,8 +258,6 @@ export default function Personal() {
           </div>
         )}
       </main>
-
-      <BottomNav />
 
       {/* Modal Añadir Personal */}
       <Modal 

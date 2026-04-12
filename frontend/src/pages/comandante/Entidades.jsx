@@ -1,7 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Header } from '../../components/layout/Header';
-import { BottomNav } from '../../components/layout/BottomNav';
 import { Boton } from '../../components/ui/Boton';
 import { Card } from '../../components/ui/Card';
 import { Badge } from '../../components/ui/Badge';
@@ -218,21 +216,31 @@ export default function Entidades() {
   };
 
   return (
-    <div className="min-h-screen bg-bg-app">
-      <Header 
-        titulo="Entidades Civiles" 
-        subtitle="MÓDULO DE CONCESIONES // COMANDO" 
-        actionElement={
-          <button 
-            onClick={() => setIsModalOpen(true)}
-            className="h-10 w-10 bg-primary/20 rounded-full flex items-center justify-center border border-primary/40 text-primary active:scale-95 transition-all"
-          >
-            <Plus size={20} strokeWidth={2.5} />
-          </button>
-        }
-      />
-      
-      <main className="px-4 py-6 max-w-4xl mx-auto pb-24">
+    <div className="p-4 space-y-8 pb-24 max-w-[1400px] mx-auto">
+      <header className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-bg-card/30 p-4 rounded-3xl border border-white/5">
+        <div className="min-w-0">
+          <h1 className="text-2xl font-black text-text-main flex items-center gap-3 tracking-tight">
+            <div className="p-2 bg-primary/10 rounded-xl">
+                <Network className="text-primary shrink-0" size={24} />
+            </div>
+            <span className="truncate">Entidades Civiles</span>
+          </h1>
+          <p className="text-text-muted text-sm mt-1 flex items-center gap-1.5 px-1">
+            <span className="w-1.5 h-1.5 rounded-full bg-success animate-pulse" />
+            Módulo de Concesiones // Comando
+          </p>
+        </div>
+        <Boton 
+          size="lg" 
+          onClick={() => setIsModalOpen(true)}
+          className="gap-2 h-12 px-8 w-full sm:w-fit shrink-0 whitespace-nowrap shadow-tactica hover:scale-[1.02] transition-transform"
+        >
+          <Plus size={20} />
+          <span>Nueva Entidad</span>
+        </Boton>
+      </header>
+
+      <main className="space-y-6">
         {/* Barra de Estadísticas Globales */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-4 mb-8">
            <Card className="bg-bg-card border-bg-high/10 p-3 lg:p-4 flex items-center gap-3">
@@ -309,8 +317,6 @@ export default function Entidades() {
            </div>
         )}
       </main>
-
-      <BottomNav />
 
       {/* Modal de Creación */}
       <Modal 

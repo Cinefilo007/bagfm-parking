@@ -833,6 +833,51 @@ module.exports = {
 
 ---
 
+## 11. Estándar de Cabeceras Tácticas (Aegis Tactical v2)
+
+Para unificar la identidad del Mando Central, todas las vistas principales de gestión (Personal, Entidades, Alcabalas) deben seguir esta estructura exacta.
+
+### 11.1 Anatomía del Header
+```jsx
+<header className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-bg-card/30 p-4 rounded-3xl border border-white/5">
+  <div className="min-w-0">
+    <h1 className="text-2xl font-black text-text-main flex items-center gap-3 tracking-tight">
+      <div className="p-2 bg-primary/10 rounded-xl">
+          <IconTáctico className="text-primary shrink-0" size={24} />
+      </div>
+      <span className="truncate">Título de la Operación</span>
+    </h1>
+    <p className="text-text-muted text-sm mt-1 flex items-center gap-1.5 px-1">
+      <span className="w-1.5 h-1.5 rounded-full bg-success animate-pulse" />
+      Subtítulo Contextual / Estado del Protocolo
+    </p>
+  </div>
+  <Boton size="lg" className="...">
+    Acción Principal de la Vista
+  </Boton>
+</header>
+```
+
+### 11.2 Reglas de Layout Superior
+- **Contenedor Maestro**: Todas las páginas de gestión deben estar envueltas en un `max-w-[1400px] mx-auto` para optimizar la visualización en estaciones de trabajo PC.
+- **Acción Principal**: El botón de creación (ej. "Añadir Personal", "Nueva Alcabala") **DEBE** ir en la cabecera, alineado a la derecha en PC y expandido en Mobile.
+- **Iconografía**: Los iconos de cabecera deben usar el color `primary` y estar contenidos en un background `primary/10` con border-radius `xl`.
+
+---
+
+## 12. Alineación de Componentes de Datos
+
+### 12.1 Botones de Acción Inline
+En campos que muestran datos sensibles (como claves tácticas o contraseñas), el botón de regeneración o reinicio debe estar **nivelado horizontalmente con el contenedor del dato**, no con el label superior.
+
+- **Estructura Recomendada**:
+  - Label superior (pequeño, tracking ancho).
+  - Flex container que agrupa el `Input/DataContainer` y el `Boton`.
+  - Ambos elementos deben tener la misma altura visual o estar centrados entre sí.
+
+---
+
+
 *Última actualización: 2026-03-30*  
 *Fuente: Google Stitch — Proyecto BAGFM `4512440937494164528`*  
 *Ver: DIRECTIVA_MAESTRA.md para contexto del sistema completo*
