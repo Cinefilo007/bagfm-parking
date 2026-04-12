@@ -2,7 +2,7 @@ import React from 'react';
 
 export const Header = ({ titulo, subtitle, actionElement }) => {
   return (
-    <header className="bg-bg-app border-b border-white/5 py-8 px-4 md:px-8 mb-6">
+    <header className="bg-bg-app border-b border-bg-high/10 py-8 px-4 md:px-8 mb-6">
       <div className="container mx-auto flex items-center justify-between">
         <div>
           {subtitle && (
@@ -10,7 +10,7 @@ export const Header = ({ titulo, subtitle, actionElement }) => {
               {subtitle}
             </p>
           )}
-          <h1 className="font-display font-black text-2xl lg:text-4xl tracking-tight text-white leading-none uppercase">
+          <h1 className="font-display font-black text-2xl lg:text-4xl tracking-tight text-text-main leading-none uppercase">
             {titulo}
           </h1>
         </div>

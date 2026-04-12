@@ -125,7 +125,7 @@ export default function Entidades() {
     const [isOpen, setIsOpen] = useState(false);
 
     return (
-       <Card hoverable elevation={2} className="relative overflow-hidden group border-white/5 bg-bg-card/40 backdrop-blur-sm transition-all duration-300">
+       <Card hoverable elevation={2} className="relative overflow-hidden group border-bg-high/10 bg-bg-card backdrop-blur-sm transition-all duration-300">
           <div className="absolute top-0 left-0 w-1 bg-primary/30 h-full group-hover:bg-primary transition-all duration-500"></div>
           
           <div className="flex justify-between items-start mb-1">
@@ -134,7 +134,7 @@ export default function Entidades() {
                    <Store size={24} />
                 </div>
                 <div>
-                   <h4 className="font-display font-black text-xl text-white uppercase tracking-tight">
+                   <h4 className="font-display font-black text-xl text-text-main uppercase tracking-tight">
                      {ent.nombre}
                    </h4>
                    <div className="mt-1 flex items-center gap-2">
@@ -148,7 +148,7 @@ export default function Entidades() {
              <div className="flex gap-2 relative z-10">
                <Boton 
                  variant="ghost" 
-                 className={`p-2 min-h-0 w-auto rounded-full ${ent.activo ? 'text-emerald-500 hover:bg-emerald-500/10' : 'text-red-500 hover:bg-red-500/10'} border border-white/5`}
+                 className={`p-2 min-h-0 w-auto rounded-full ${ent.activo ? 'text-emerald-500 hover:bg-emerald-500/10' : 'text-red-500 hover:bg-red-500/10'} border border-bg-high/10`}
                  onClick={(e) => {
                    e.stopPropagation();
                    handleToggleEstado(ent.id);
@@ -160,7 +160,7 @@ export default function Entidades() {
                
                <Boton 
                  variant="ghost" 
-                 className="p-2 min-h-0 w-auto rounded-full text-red-400 hover:bg-red-500/10 border border-white/5"
+                 className="p-2 min-h-0 w-auto rounded-full text-red-400 hover:bg-red-500/10 border border-bg-high/10"
                  onClick={(e) => {
                    e.stopPropagation();
                    setEntidadADelete(ent);
@@ -175,20 +175,20 @@ export default function Entidades() {
 
           {isOpen && (
             <div className="animate-in fade-in slide-in-from-top-2 duration-300 mt-4">
-               <div className="grid grid-cols-3 gap-2 border-t border-white/5 pt-3 pb-1">
-                  <div className="flex flex-col border-r border-white/5">
+               <div className="grid grid-cols-3 gap-2 border-t border-bg-high/10 pt-3 pb-1">
+                  <div className="flex flex-col border-r border-bg-high/10">
                      <span className="text-[8px] uppercase font-bold text-text-muted tracking-widest mb-0.5">
                        Capacidad
                      </span>
-                     <span className="text-white font-mono font-bold text-sm">
+                     <span className="text-text-main font-mono font-bold text-sm">
                        {ent.capacidad_vehiculos} <span className="text-[9px] text-text-muted">VEH</span>
                      </span>
                   </div>
-                  <div className="flex flex-col border-r border-white/5 pl-2">
+                  <div className="flex flex-col border-r border-bg-high/10 pl-2">
                      <span className="text-[8px] uppercase font-bold text-text-muted tracking-widest mb-0.5">
                        Socios
                      </span>
-                     <span className="text-white font-mono font-bold text-sm">
+                     <span className="text-text-main font-mono font-bold text-sm">
                        {ent.total_usuarios || 0} <span className="text-[9px] text-text-muted">UFS</span>
                      </span>
                   </div>
@@ -196,13 +196,13 @@ export default function Entidades() {
                      <span className="text-[8px] uppercase font-bold text-text-muted tracking-widest mb-0.5">
                        Parque
                      </span>
-                     <span className="text-white font-mono font-bold text-sm">
+                     <span className="text-text-main font-mono font-bold text-sm">
                        {ent.total_vehiculos || 0} <span className="text-[9px] text-text-muted">UNI</span>
                      </span>
                   </div>
                </div>
                
-               <div className="mt-3 pt-3 border-t border-white/5 flex justify-end">
+               <div className="mt-3 pt-3 border-t border-bg-high/10 flex justify-end">
                   <button 
                     onClick={() => navigate(`/comando/entidades/${ent.id}`)}
                     className="text-[10px] font-black uppercase text-primary tracking-widest hover:underline underline-offset-4 flex items-center gap-2 group"
@@ -235,40 +235,40 @@ export default function Entidades() {
       <main className="px-4 py-6 max-w-4xl mx-auto pb-24">
         {/* Barra de Estadísticas Globales */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-4 mb-8">
-           <Card className="bg-bg-card/20 border-white/5 p-3 lg:p-4 flex items-center gap-3">
+           <Card className="bg-bg-card border-bg-high/10 p-3 lg:p-4 flex items-center gap-3">
               <div className="w-9 h-9 lg:w-10 lg:h-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary border border-primary/20">
                  <Activity size={18} />
               </div>
               <div>
                  <p className="text-[9px] lg:text-[10px] text-text-muted font-bold uppercase tracking-widest leading-none mb-1">Entidades</p>
-                 <p className="text-lg lg:text-xl font-display font-black text-white leading-none">{stats.total_entidades}</p>
+                 <p className="text-lg lg:text-xl font-display font-black text-text-main leading-none">{stats.total_entidades}</p>
               </div>
            </Card>
-           <Card className="bg-bg-card/20 border-white/5 p-3 lg:p-4 flex items-center gap-3">
+           <Card className="bg-bg-card border-bg-high/10 p-3 lg:p-4 flex items-center gap-3">
               <div className="w-9 h-9 lg:w-10 lg:h-10 rounded-xl bg-blue-500/10 flex items-center justify-center text-blue-400 border border-blue-500/20">
                  <Users size={18} />
               </div>
               <div>
                  <p className="text-[9px] lg:text-[10px] text-text-muted font-bold uppercase tracking-widest leading-none mb-1">Socios</p>
-                 <p className="text-lg lg:text-xl font-display font-black text-white leading-none">{stats.total_usuarios}</p>
+                 <p className="text-lg lg:text-xl font-display font-black text-text-main leading-none">{stats.total_usuarios}</p>
               </div>
            </Card>
-           <Card className="bg-bg-card/20 border-white/5 p-3 lg:p-4 flex items-center gap-3">
+           <Card className="bg-bg-card border-bg-high/10 p-3 lg:p-4 flex items-center gap-3">
               <div className="w-9 h-9 lg:w-10 lg:h-10 rounded-xl bg-emerald-500/10 flex items-center justify-center text-emerald-400 border border-emerald-500/20">
                  <Car size={18} />
               </div>
               <div>
                  <p className="text-[9px] lg:text-[10px] text-text-muted font-bold uppercase tracking-widest leading-none mb-1">Parque</p>
-                 <p className="text-lg lg:text-xl font-display font-black text-white leading-none">{stats.total_vehiculos}</p>
+                 <p className="text-lg lg:text-xl font-display font-black text-text-main leading-none">{stats.total_vehiculos}</p>
               </div>
            </Card>
-           <Card className="bg-bg-card/20 border-white/5 p-3 lg:p-4 flex items-center gap-3">
+           <Card className="bg-bg-card border-bg-high/10 p-3 lg:p-4 flex items-center gap-3">
               <div className="w-9 h-9 lg:w-10 lg:h-10 rounded-xl bg-red-500/10 flex items-center justify-center text-red-400 border border-red-500/20">
                  <Power size={18} />
               </div>
               <div>
                  <p className="text-[9px] lg:text-[10px] text-text-muted font-bold uppercase tracking-widest leading-none mb-1">Suspendidas</p>
-                 <p className="text-lg lg:text-xl font-display font-black text-white leading-none">{stats.total_inactivas}</p>
+                 <p className="text-lg lg:text-xl font-display font-black text-text-main leading-none">{stats.total_inactivas}</p>
               </div>
            </Card>
         </div>
@@ -288,11 +288,11 @@ export default function Entidades() {
         
         {/* Controles de Paginación */}
         {!loading && (entidades.length > 0 || page > 0) && (
-           <div className="flex items-center justify-between pt-6 border-t border-white/5 mt-4">
+           <div className="flex items-center justify-between pt-6 border-t border-bg-high/10 mt-4">
               <button
                 disabled={page === 0}
                 onClick={() => setPage(p => p - 1)}
-                className="flex items-center gap-2 text-[10px] font-black uppercase text-white disabled:opacity-30 disabled:pointer-events-none hover:text-primary transition-colors"
+                className="flex items-center gap-2 text-[10px] font-black uppercase text-text-main disabled:opacity-30 disabled:pointer-events-none hover:text-primary transition-colors"
               >
                  ← Anterior
               </button>
@@ -302,7 +302,7 @@ export default function Entidades() {
               <button
                 disabled={!hasMore}
                 onClick={() => setPage(p => p + 1)}
-                className="flex items-center gap-2 text-[10px] font-black uppercase text-white disabled:opacity-30 disabled:pointer-events-none hover:text-primary transition-colors"
+                className="flex items-center gap-2 text-[10px] font-black uppercase text-text-main disabled:opacity-30 disabled:pointer-events-none hover:text-primary transition-colors"
               >
                  Siguiente →
               </button>
@@ -403,7 +403,7 @@ export default function Entidades() {
            <div className="w-16 h-16 bg-red-500/10 rounded-full flex items-center justify-center text-red-500 mx-auto mb-4 border border-red-500/20">
               <AlertTriangle size={32} />
            </div>
-           <h3 className="font-display font-black text-xl text-white uppercase tracking-tight mb-2">
+           <h3 className="font-display font-black text-xl text-text-main uppercase tracking-tight mb-2">
              ¿CONFIRMAR ELIMINACIÓN?
            </h3>
            <p className="text-sm text-text-muted mb-6 leading-relaxed">

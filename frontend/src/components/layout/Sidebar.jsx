@@ -37,23 +37,23 @@ export const Sidebar = () => {
   }
 
   return (
-    <aside className="w-72 bg-bg-low h-screen sticky top-0 hidden lg:flex flex-col border-r border-white/5 shadow-2xl z-[1000]">
+    <aside className="w-72 bg-bg-low h-screen sticky top-0 hidden lg:flex flex-col border-r border-bg-high/20 shadow-2xl z-[1000]">
       {/* Brand Header */}
-      <div className="p-8 border-b border-white/5 bg-bg-app/40 backdrop-blur-sm">
+      <div className="p-8 border-b border-bg-high/10 bg-bg-app/40 backdrop-blur-sm">
         <div className="flex items-center gap-4">
            <div className="w-10 h-10 bg-gradient-to-br from-primary to-primary-dark rounded-xl flex items-center justify-center shadow-[0_0_15px_rgba(78,222,163,0.3)]">
               <ShieldCheck className="text-on-primary" size={24} strokeWidth={2.5} />
            </div>
            <div className="flex flex-col">
-              <span className="text-sm font-display font-black text-white tracking-widest uppercase">BAGFM ACCESS</span>
+              <span className="text-sm font-display font-black text-text-main tracking-widest uppercase">BAGFM ACCESS</span>
               <span className="text-[9px] font-mono text-primary font-bold tracking-[0.2em]">SISTEMA TÁCTICO</span>
            </div>
         </div>
       </div>
 
       {/* User Info Brief */}
-      <div className="px-6 py-4 flex items-center gap-3 border-b border-white/5 mx-2 my-2 rounded-xl bg-white/5">
-         <div className="w-10 h-10 rounded-full bg-surface-variant flex items-center justify-center border border-white/10 shrink-0">
+      <div className="px-6 py-4 flex items-center gap-3 border-b border-bg-high/10 mx-2 my-2 rounded-xl bg-bg-high/20">
+         <div className="w-10 h-10 rounded-full bg-surface-variant flex items-center justify-center border border-bg-high/20 shrink-0">
             <UserCircle size={24} className="text-text-muted" />
          </div>
          <div className="flex flex-col overflow-hidden">
@@ -76,7 +76,7 @@ export const Sidebar = () => {
                      "flex items-center gap-4 px-4 py-3.5 rounded-xl transition-all duration-300 group",
                      isActive 
                        ? "bg-primary/10 text-primary shadow-[inset_0_0_0_1px_rgba(78,222,163,0.15)] shadow-tactica/10" 
-                       : "text-text-muted hover:bg-white/5 hover:text-text-sec"
+                       : "text-text-muted hover:bg-bg-high/20 hover:text-text-sec"
                    )
                  }
                >
@@ -97,10 +97,10 @@ export const Sidebar = () => {
       </nav>
 
       {/* Bottom Actions */}
-      <div className="p-6 border-t border-white/5 flex flex-col gap-2">
+      <div className="p-6 border-t border-bg-high/10 flex flex-col gap-2">
           <button 
             onClick={toggleTheme}
-            className="flex items-center gap-3 px-4 py-2.5 rounded-lg text-text-muted hover:bg-white/5 hover:text-text-sec transition-all group"
+            className="flex items-center gap-3 px-4 py-2.5 rounded-lg text-text-muted hover:bg-bg-high/20 hover:text-text-sec transition-all group"
           >
              {isDarkMode ? (
                <Sun size={18} className="group-hover:rotate-12 transition-transform duration-500" />
@@ -112,7 +112,7 @@ export const Sidebar = () => {
              </span>
           </button>
 
-         <NavLink to="/ajustes" className="flex items-center gap-3 px-4 py-2.5 rounded-lg text-text-muted hover:bg-white/5 hover:text-text-sec transition-all group">
+         <NavLink to="/ajustes" className="flex items-center gap-3 px-4 py-2.5 rounded-lg text-text-muted hover:bg-bg-high/20 hover:text-text-sec transition-all group">
             <Settings size={18} className="group-hover:rotate-90 transition-transform duration-500" />
             <span className="text-xs font-bold uppercase tracking-tight">Ajustes</span>
          </NavLink>

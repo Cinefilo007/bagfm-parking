@@ -88,7 +88,7 @@ export default function EntidadDetalle() {
         actionElement={
           <button 
             onClick={() => navigate('/comando/entidades')}
-            className="h-10 w-10 bg-white/5 rounded-full flex items-center justify-center border border-white/10 text-text-muted active:scale-95 transition-all"
+            className="h-10 w-10 bg-bg-high/20 rounded-full flex items-center justify-center border border-bg-high/10 text-text-muted active:scale-95 transition-all"
           >
             <ArrowLeft size={20} />
           </button>
@@ -122,7 +122,7 @@ export default function EntidadDetalle() {
         </div>
 
         {/* Sección de Socios */}
-        <div className="flex justify-between items-center mb-6 border-b border-white/5 pb-2">
+        <div className="flex justify-between items-center mb-6 border-b border-bg-high/10 pb-2">
            <h3 className="text-text-main font-display font-bold uppercase tracking-widest text-sm">
              Personal Registrado
            </h3>
@@ -142,7 +142,7 @@ export default function EntidadDetalle() {
           ))}
 
           {socios.length === 0 && (
-            <div className="text-center p-12 border border-dashed border-white/10 rounded-2xl">
+            <div className="text-center p-12 border border-dashed border-bg-high/20 rounded-2xl">
                <Users size={32} className="mx-auto text-text-muted/30 mb-4" />
                <p className="text-text-muted text-xs uppercase tracking-widest font-medium">
                  No hay socios vinculados a esta entidad

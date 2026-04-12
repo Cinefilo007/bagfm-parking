@@ -60,7 +60,7 @@ export default function DashboardComando() {
             </div>
 
             {/* Ultimas Alertas (Placeholder estético) */}
-            <div className="mt-4 p-4 border border-white/5 rounded-xl bg-bg-low/50">
+            <div className="mt-4 p-4 border border-bg-high/20 rounded-xl bg-bg-low/30">
                <span className="text-[10px] font-mono text-text-muted uppercase">Logs del Sistema: 1h ago</span>
                <p className="text-[11px] text-text-sec mt-2 italic">No se detectan intrusiones perimetrales. Sensores operativos.</p>
             </div>
