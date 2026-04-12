@@ -3,7 +3,7 @@ import {
   Shield, Plus, Trash2, MapPin, Key, 
   RefreshCw, Phone, Copy, Edit3, 
   ExternalLink, UserCheck, Clock, 
-  AlertCircle
+  AlertCircle, ChevronDown, ChevronUp
 } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardContent } from '../../components/ui/Card';
 import { Boton } from '../../components/ui/Boton';
@@ -23,6 +23,17 @@ export default function Alcabalas() {
   const [showConfirmDelete, setShowConfirmDelete] = useState(null);
 
   const [formPunto, setFormPunto] = useState({ nombre: '', ubicacion: '' });
+
+  const [expandedPuntos, setExpandedPuntos] = useState(new Set());
+  
+  const toggleExpansio = (id) => {
+    setExpandedPuntos(prev => {
+        const next = new Set(prev);
+        if (next.has(id)) next.delete(id);
+        else next.add(id);
+        return next;
+    });
+  };
 
   useEffect(() => {
     fetchData();
@@ -90,130 +101,145 @@ export default function Alcabalas() {
   };
 
   return (
-    <div className="p-4 space-y-6 pb-24">
-      <header className="flex items-center justify-between gap-4">
+    <div className="p-4 space-y-8 pb-24 max-w-[1400px] mx-auto">
+      <header className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-bg-card/30 p-4 rounded-3xl border border-white/5">
         <div className="min-w-0">
-          <h1 className="text-2xl font-bold text-text-main flex items-center gap-2 truncate">
-            <Shield className="text-primary shrink-0" />
+          <h1 className="text-2xl font-black text-text-main flex items-center gap-3 tracking-tight">
+            <div className="p-2 bg-primary/10 rounded-xl">
+                <Shield className="text-primary shrink-0" size={24} />
+            </div>
             <span className="truncate">Mando de Alcabalas</span>
           </h1>
-          <p className="text-text-muted text-sm truncate">Control Directo y Relevo Táctico</p>
+          <p className="text-text-muted text-sm mt-1 flex items-center gap-1.5 px-1">
+            <span className="w-1.5 h-1.5 rounded-full bg-success animate-pulse" />
+            Control Directo y Relevo Táctico
+          </p>
         </div>
         <Boton 
-          size="sm" 
+          size="lg" 
           onClick={() => {
             setPuntoSeleccionado(null);
             setFormPunto({ nombre: '', ubicacion: '' });
             setShowModalPunto(true);
           }}
-          className="gap-2 h-9 px-6 w-fit shrink-0 whitespace-nowrap shadow-tactica"
+          className="gap-2 h-12 px-8 w-full sm:w-fit shrink-0 whitespace-nowrap shadow-tactica hover:scale-[1.02] transition-transform"
         >
-          <Plus size={16} />
-          <span>Crear Alcabala</span>
+          <Plus size={20} />
+          <span>Nueva Alcabala</span>
         </Boton>
       </header>
 
-      {/* GRID DE ALCABALAS Y CLAVES */}
-      <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {puntos.map(p => (
-          <Card key={p.id} className="bg-bg-card border-bg-high/10 overflow-hidden group">
-            <div className={`h-1 w-full ${p.activo ? 'bg-primary' : 'bg-error'} opacity-50`} />
-            <CardContent className="p-0">
-              <div className="p-4 flex items-center justify-between border-b border-bg-high/10 bg-bg-high/5">
-                <div className="min-w-0 flex-1">
-                  <h3 className="text-sm font-black text-text-main leading-tight uppercase tracking-widest truncate" title={p.nombre}>{p.nombre}</h3>
-                  <p className="text-[9px] text-text-muted flex items-center gap-1 mt-0.5 truncate font-bold">
-                    <MapPin size={9} className="text-primary shrink-0" />
-                    <span className="truncate">{p.ubicacion || 'Sector Norte'}</span>
-                  </p>
-                </div>
-                
-                {/* GRUPO DE ACCIONES TÁCTICAS */}
-                <div className="flex items-center gap-1.5 shrink-0 ml-4">
-                    <Boton 
-                        variant="secundario" 
-                        size="sm" 
-                        className="h-8 w-8 px-0 border-white/10"
-                        onClick={() => {
-                            setPuntoSeleccionado(p);
-                            setFormPunto({ nombre: p.nombre, ubicacion: p.ubicacion });
-                            setShowModalPunto(true);
-                        }}
-                    >
-                        <Edit3 size={14} />
-                    </Boton>
-                    <Boton 
-                        variant="destructivo" 
-                        size="sm" 
-                        className="h-8 w-8 px-0"
-                        onClick={() => setShowConfirmDelete(p)}
-                    >
-                        <Trash2 size={14} />
-                    </Boton>
-                </div>
-              </div>
-
-              {/* CUERPO DE SEGURIDAD */}
-              <div className="p-4 space-y-4">
-                {/* Usuario asignado */}
-                <div className="bg-bg-high/10 rounded-xl p-3 border border-bg-high/10 flex items-center justify-between">
-                  <div>
-                    <p className="text-[7px] font-black text-text-muted uppercase tracking-[0.2em] mb-0.5">Identificador de Acceso</p>
-                    <p className="text-xs font-mono font-bold text-text-main/90 selection:bg-primary/30">{p.usuario_nombre}</p>
-                  </div>
-                  <Boton 
-                    variant="ghost" 
-                    size="sm" 
-                    className="h-8 w-8 px-0 hover:bg-bg-high/10"
-                    onClick={() => copiarAlPortapapeles(p.usuario_nombre, 'Usuario copiado')}
-                    title="Copiar Usuario"
-                  >
-                    <Copy size={14} />
-                  </Boton>
-                </div>
-
-                {/* Clave rotativa */}
-                <div className="flex items-center justify-between gap-4">
-                  <div className="flex-1">
-                    <p className="text-[7px] font-black text-primary uppercase tracking-[0.2em] mb-1">Clave Táctica (24H)</p>
-                    <div className="flex items-center gap-3">
-                        <p className="text-3xl font-mono font-black text-text-main tracking-[0.15em]">{p.clave_hoy}</p>
-                        <Boton 
-                            variant="ghost" 
-                            size="sm" 
-                            className="h-7 w-7 px-0 text-text-muted hover:text-text-main"
-                            onClick={() => copiarAlPortapapeles(p.clave_hoy, 'Clave copiada')}
-                        >
-                            <Copy size={14} />
-                        </Boton>
+      {/* MONITOR DE ALCABALAS */}
+      <section className="space-y-4">
+        <div className="px-2">
+            <h2 className="text-xs font-black text-text-muted uppercase tracking-[0.3em]">Red de Control Activa</h2>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 gap-6">
+            {puntos.map(p => {
+              const isExpanded = expandedPuntos.has(p.id);
+              return (
+                <Card key={p.id} className={`bg-bg-card border-white/5 overflow-hidden transition-all duration-300 ${isExpanded ? 'ring-1 ring-primary/30 shadow-2xl' : 'hover:border-white/10'}`}>
+                    <div className={`h-1.5 w-full ${p.activo ? 'bg-primary' : 'bg-error'} transition-all`} />
+                    <CardContent className="p-0">
+                    <div className="p-5 flex items-center justify-between">
+                        <div className="min-w-0 flex-1 cursor-pointer" onClick={() => toggleExpansio(p.id)}>
+                            <div className="flex items-center gap-2 mb-1">
+                                <h3 className="text-sm font-black text-text-main uppercase tracking-widest truncate">{p.nombre}</h3>
+                                {isExpanded ? <ChevronUp size={14} className="text-primary" /> : <ChevronDown size={14} className="text-text-muted" />}
+                            </div>
+                            <p className="text-[10px] text-text-muted flex items-center gap-1.5 font-bold uppercase tracking-wider">
+                                <MapPin size={10} className="text-primary shrink-0" />
+                                <span className="truncate">{p.ubicacion || 'Sin ubicación específica'}</span>
+                            </p>
+                        </div>
+                        
+                        <div className="flex items-center gap-2 shrink-0 ml-4">
+                            <Boton 
+                                variant="ghost" 
+                                size="sm" 
+                                className="h-9 w-9 px-0 bg-white/5 border border-white/5 hover:bg-white/10"
+                                onClick={() => {
+                                    setPuntoSeleccionado(p);
+                                    setFormPunto({ nombre: p.nombre, ubicacion: p.ubicacion });
+                                    setShowModalPunto(true);
+                                }}
+                            >
+                                <Edit3 size={16} />
+                            </Boton>
+                            <Boton 
+                                variant="destructivo" 
+                                size="sm" 
+                                className="h-9 w-9 px-0 bg-error/10 text-error hover:bg-error hover:text-white border-0"
+                                onClick={() => setShowConfirmDelete(p)}
+                            >
+                                <Trash2 size={16} />
+                            </Boton>
+                        </div>
                     </div>
-                  </div>
-                  
-                  <Boton 
-                    variant="secundario" 
-                    size="sm"
-                    className="h-12 w-12 px-0 bg-primary/5 border-primary/20 hover:bg-primary hover:text-on-primary transition-all rounded-xl"
-                    title="Renovar Clave Táctica"
-                    onClick={() => handleRegenerarClave(p.id)}
-                  >
-                    <RefreshCw size={22} className="animate-spin-slow" />
-                  </Boton>
-                </div>
-                {/* Indicador de tiempo */}
-                <div className="mt-3 flex items-center gap-2 text-[10px] text-text-muted">
-                    <Clock size={12} />
-                    <span>Próximo relevo: 08:30 AM Caracas</span>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
-        {puntos.length === 0 && !loading && (
-          <div className="col-span-full py-12 text-center border-2 border-dashed border-white/5 rounded-3xl">
-            <Shield size={48} className="mx-auto text-white/10 mb-4" />
-            <p className="text-text-muted italic">No hay puntos de control activos desplegados</p>
-          </div>
-        )}
+
+                    {/* CONTENIDO DESPLEGABLE */}
+                    <div className={`overflow-hidden transition-all duration-300 ease-in-out ${isExpanded ? 'max-h-[500px] border-t border-white/5' : 'max-h-0'}`}>
+                        <div className="p-5 space-y-5 bg-bg-high/5">
+                            {/* Identificador */}
+                            <div className="group relative bg-black/40 rounded-2xl p-4 border border-white/5 hover:border-primary/20 transition-colors">
+                                <p className="text-[8px] font-black text-text-muted uppercase tracking-[0.25em] mb-2 px-1">Identificador de Acceso</p>
+                                <div className="flex items-center justify-between">
+                                    <p className="text-sm font-mono font-black text-primary tracking-widest">{p.usuario_nombre}</p>
+                                    <Boton 
+                                        variant="ghost" 
+                                        size="sm" 
+                                        className="h-8 w-8 px-0 text-text-muted hover:text-white"
+                                        onClick={() => copiarAlPortapapeles(p.usuario_nombre, 'Usuario copiado')}
+                                    >
+                                        <Copy size={16} />
+                                    </Boton>
+                                </div>
+                            </div>
+
+                            {/* Clave rotativa */}
+                            <div className="flex items-end justify-between gap-4">
+                                <div className="flex-1">
+                                    <p className="text-[8px] font-black text-text-muted uppercase tracking-[0.25em] mb-2 px-1">Clave Táctica <span className="text-primary">(24H)</span></p>
+                                    <div className="flex items-center gap-4 bg-black/20 p-4 rounded-2xl border border-white/5">
+                                        <p className="text-4xl font-mono font-black text-text-main tracking-[0.2em]">{p.clave_hoy}</p>
+                                        <Boton 
+                                            variant="ghost" 
+                                            size="sm" 
+                                            className="h-10 w-10 px-0 text-text-muted hover:text-primary transition-colors"
+                                            onClick={() => copiarAlPortapapeles(p.clave_hoy, 'Clave copiada')}
+                                        >
+                                            <Copy size={20} />
+                                        </Boton>
+                                    </div>
+                                </div>
+                                <Boton 
+                                    size="lg"
+                                    className="h-[74px] w-[74px] px-0 bg-primary shadow-tactica-hover hover:scale-[1.05] transition-all rounded-3xl"
+                                    title="Renovar Clave Táctica"
+                                    onClick={() => handleRegenerarClave(p.id)}
+                                >
+                                    <RefreshCw size={32} />
+                                </Boton>
+                            </div>
+
+                            <div className="flex items-center gap-3 text-xs text-text-muted px-2 py-1 bg-white/5 rounded-full w-fit">
+                                <Clock size={14} className="text-primary" />
+                                <span className="font-bold">Siguiente relevo: 08:30 AM</span>
+                            </div>
+                        </div>
+                    </div>
+                    </CardContent>
+                </Card>
+              );
+            })}
+            {puntos.length === 0 && !loading && (
+            <div className="col-span-full py-20 text-center border-2 border-dashed border-white/5 rounded-[40px] bg-bg-card/20">
+                <Shield size={64} className="mx-auto text-white/5 mb-6" />
+                <h3 className="text-xl font-bold text-text-muted">Sin puntos de control</h3>
+                <p className="text-text-muted/60 text-sm mt-2 max-w-xs mx-auto">No hay alcabalas activas desplegadas en el sistema táctico.</p>
+            </div>
+            )}
+        </div>
       </section>
 
       {/* MONITOR DE PERSONAL EN VIVO */}

@@ -179,6 +179,9 @@ class AlcabalaService:
         """
         Retorna quién está físicamente en cada alcabala para el panel del Comandante.
         """
+        ahora = datetime.utcnow()
+        limite_24h = ahora - timedelta(hours=24)
+        
         query = select(
             PuntoAcceso,
             GuardiaTurno
@@ -186,7 +189,8 @@ class AlcabalaService:
             GuardiaTurno, PuntoAcceso.id == GuardiaTurno.punto_id
         ).where(
             PuntoAcceso.activo == True,
-            GuardiaTurno.activo == True
+            GuardiaTurno.activo == True,
+            GuardiaTurno.inicio_turno >= limite_24h
         )
         result = await db.execute(query)
         rows = result.all()
