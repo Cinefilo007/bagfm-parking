@@ -93,7 +93,7 @@ export default function Alcabalas() {
     <div className="p-4 space-y-6 pb-24">
       <header className="flex items-center justify-between gap-4">
         <div className="min-w-0">
-          <h1 className="text-2xl font-bold text-white flex items-center gap-2 truncate">
+          <h1 className="text-2xl font-bold text-text-main flex items-center gap-2 truncate">
             <Shield className="text-primary shrink-0" />
             <span className="truncate">Mando de Alcabalas</span>
           </h1>
@@ -116,12 +116,12 @@ export default function Alcabalas() {
       {/* GRID DE ALCABALAS Y CLAVES */}
       <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {puntos.map(p => (
-          <Card key={p.id} className="bg-bg-low border-white/5 overflow-hidden group">
+          <Card key={p.id} className="bg-bg-card border-bg-high/10 overflow-hidden group">
             <div className={`h-1 w-full ${p.activo ? 'bg-primary' : 'bg-error'} opacity-50`} />
             <CardContent className="p-0">
-              <div className="p-4 flex items-center justify-between border-b border-white/5 bg-white/[0.02]">
+              <div className="p-4 flex items-center justify-between border-b border-bg-high/10 bg-bg-high/5">
                 <div className="min-w-0 flex-1">
-                  <h3 className="text-sm font-black text-white leading-tight uppercase tracking-widest truncate" title={p.nombre}>{p.nombre}</h3>
+                  <h3 className="text-sm font-black text-text-main leading-tight uppercase tracking-widest truncate" title={p.nombre}>{p.nombre}</h3>
                   <p className="text-[9px] text-text-muted flex items-center gap-1 mt-0.5 truncate font-bold">
                     <MapPin size={9} className="text-primary shrink-0" />
                     <span className="truncate">{p.ubicacion || 'Sector Norte'}</span>
@@ -156,15 +156,15 @@ export default function Alcabalas() {
               {/* CUERPO DE SEGURIDAD */}
               <div className="p-4 space-y-4">
                 {/* Usuario asignado */}
-                <div className="bg-black/20 rounded-xl p-3 border border-white/5 flex items-center justify-between">
+                <div className="bg-bg-high/10 rounded-xl p-3 border border-bg-high/10 flex items-center justify-between">
                   <div>
                     <p className="text-[7px] font-black text-text-muted uppercase tracking-[0.2em] mb-0.5">Identificador de Acceso</p>
-                    <p className="text-xs font-mono font-bold text-white/90 selection:bg-primary/30">{p.usuario_nombre}</p>
+                    <p className="text-xs font-mono font-bold text-text-main/90 selection:bg-primary/30">{p.usuario_nombre}</p>
                   </div>
                   <Boton 
                     variant="ghost" 
                     size="sm" 
-                    className="h-8 w-8 px-0 hover:bg-white/10"
+                    className="h-8 w-8 px-0 hover:bg-bg-high/10"
                     onClick={() => copiarAlPortapapeles(p.usuario_nombre, 'Usuario copiado')}
                     title="Copiar Usuario"
                   >
@@ -177,11 +177,11 @@ export default function Alcabalas() {
                   <div className="flex-1">
                     <p className="text-[7px] font-black text-primary uppercase tracking-[0.2em] mb-1">Clave Táctica (24H)</p>
                     <div className="flex items-center gap-3">
-                        <p className="text-3xl font-mono font-black text-white tracking-[0.15em]">{p.clave_hoy}</p>
+                        <p className="text-3xl font-mono font-black text-text-main tracking-[0.15em]">{p.clave_hoy}</p>
                         <Boton 
                             variant="ghost" 
                             size="sm" 
-                            className="h-7 w-7 px-0 text-text-muted hover:text-white"
+                            className="h-7 w-7 px-0 text-text-muted hover:text-text-main"
                             onClick={() => copiarAlPortapapeles(p.clave_hoy, 'Clave copiada')}
                         >
                             <Copy size={14} />
@@ -219,7 +219,7 @@ export default function Alcabalas() {
       {/* MONITOR DE PERSONAL EN VIVO */}
       <section className="space-y-4">
         <div className="flex items-center justify-between px-2">
-            <h2 className="text-lg font-bold text-white flex items-center gap-2">
+            <h2 className="text-lg font-bold text-text-main flex items-center gap-2">
                 <UserCheck size={22} className="text-success" />
                 Personal en Operación
             </h2>
@@ -231,7 +231,7 @@ export default function Alcabalas() {
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {personales.map(g => (
-                <Card key={g.alcabala_id} className="bg-bg-low border-white/10 overflow-hidden hover:border-success/30 transition-all">
+                <Card key={g.alcabala_id} className="bg-bg-card border-bg-high/10 overflow-hidden hover:border-success/30 transition-all">
                     <CardContent className="p-4 flex items-center justify-between">
                         <div className="flex items-center gap-4">
                             <div className="w-12 h-12 rounded-2xl bg-success/10 flex items-center justify-center text-success border border-success/20">
@@ -242,7 +242,7 @@ export default function Alcabalas() {
                                     <span className="text-[10px] font-bold text-success uppercase bg-success/10 px-1.5 py-0.5 rounded border border-success/20">
                                         {g.grado || 'S/G'}
                                     </span>
-                                    <h4 className="font-bold text-white">{g.nombre}</h4>
+                                    <h4 className="font-bold text-text-main">{g.nombre}</h4>
                                 </div>
                                 <p className="text-[10px] text-text-muted font-medium mt-0.5 uppercase tracking-wide">
                                     {g.alcabala} • {g.unidad || 'Unidad No Registrada'}
@@ -272,7 +272,7 @@ export default function Alcabalas() {
                             </Boton>
                         </div>
                     </CardContent>
-                    <div className="px-4 py-2 bg-black/40 border-t border-white/5 flex items-center justify-between text-[9px] text-text-muted italic">
+                    <div className="px-4 py-2 bg-bg-high/5 border-t border-bg-high/10 flex items-center justify-between text-[9px] text-text-muted italic">
                          <span>Turno iniciado: {new Date(g.inicio).toLocaleString()}</span>
                          <span className="flex items-center gap-1"><ExternalLink size={10} /> Logs de acceso</span>
                     </div>
@@ -323,7 +323,7 @@ export default function Alcabalas() {
           <div className="w-16 h-16 bg-error/10 text-error rounded-full flex items-center justify-center mx-auto mb-4">
             <AlertCircle size={32} />
           </div>
-          <p className="text-white font-medium">¿Está seguro de eliminar la alcabala "{showConfirmDelete?.nombre}"?</p>
+          <p className="text-text-main font-medium">¿Está seguro de eliminar la alcabala "{showConfirmDelete?.nombre}"?</p>
           <p className="text-xs text-text-muted">
             Esta acción eliminará el punto de control y su usuario asociado permanentemente. 
             No podrá recuperar la trazabilidad directa de este punto.
