@@ -23,7 +23,6 @@ export const BottomNav = () => {
        { to: '/entidad/dashboard', label: 'Panel', icon: ShieldCheck },
        { to: '/entidad/socios', label: 'Socios', icon: Users },
        { to: '/entidad/personal', label: 'Personal', icon: UserCog },
-       { to: '/entidad/eventos', label: 'Eventos', icon: CalendarRange },
        { to: '/ajustes', label: 'Más', icon: Menu }
     );
   } else if (user?.rol === 'ALCABALA') {

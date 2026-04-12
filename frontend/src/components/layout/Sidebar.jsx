@@ -4,7 +4,7 @@ import {
   ShieldCheck, Users, ClipboardList, 
   CalendarRange, LogOut, Settings,
   LayoutDashboard, UserCircle, Map as MapIcon,
-  Camera, Sun, Moon
+  Camera, Sun, Moon, UserCog
 } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import { useAuthStore } from '../../store/auth.store';
@@ -20,6 +20,7 @@ export const Sidebar = () => {
     navItems.push(
       { to: '/comando/dashboard', label: 'Dashboard', icon: ShieldCheck },
       { to: '/comando/entidades', label: 'Entidades Civiles', icon: Users },
+      { to: '/comando/personal', label: 'Gestión Personal', icon: UserCog },
       { to: '/comando/alcabalas', label: 'Gestión Alcabalas', icon: ClipboardList },
       { to: '/comando/eventos', label: 'Eventos Masivos', icon: CalendarRange },
     );
@@ -27,6 +28,7 @@ export const Sidebar = () => {
     navItems.push(
        { to: '/entidad/dashboard', label: 'Panel Control', icon: LayoutDashboard },
        { to: '/entidad/socios', label: 'Gestión Socios', icon: Users },
+       { to: '/entidad/personal', label: 'Gestión Personal', icon: UserCog },
        { to: '/entidad/eventos', label: 'Mis Eventos', icon: CalendarRange },
     );
   } else if (user?.rol === 'ALCABALA') {
