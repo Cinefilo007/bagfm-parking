@@ -151,10 +151,10 @@ export const SocioCard = ({ socio, onAction }) => {
           </div>
 
           {/* Acciones Tácticas */}
-          <div className="pt-4 border-t border-white/5 flex gap-2">
+          <div className="pt-4 border-t border-white/5 grid grid-cols-2 md:grid-cols-3 gap-2">
             <Boton 
               variant="ghost" 
-              className="flex-1 h-9 text-[9px] bg-primary/10 border-primary/20 text-primary hover:bg-primary/20"
+              className="h-9 text-[9px] bg-primary/10 border-primary/20 text-primary hover:bg-primary/20"
               onClick={() => onAction('renovacion', socio)}
             >
               <RefreshCw size={14} className="mr-1.5" /> RENOVAR
@@ -162,7 +162,7 @@ export const SocioCard = ({ socio, onAction }) => {
             
             <Boton 
               variant="ghost" 
-              className={`flex-1 h-9 text-[9px] ${esSuspendido ? 'bg-primary/5 border-primary/10 text-primary' : 'bg-danger/5 border-danger/10 text-danger'}`}
+              className={`h-9 text-[9px] ${esSuspendido ? 'bg-primary/5 border-primary/10 text-primary' : 'bg-danger/5 border-danger/10 text-danger'}`}
               onClick={() => onAction('estado', { socio, nuevoEstado: esSuspendido ? 'activa' : 'suspendida' })}
             >
               {esSuspendido ? <Play size={14} className="mr-1.5" /> : <Pause size={14} className="mr-1.5" />}
@@ -171,11 +171,10 @@ export const SocioCard = ({ socio, onAction }) => {
 
             <Boton 
               variant="ghost" 
-              className={`h-9 px-3 text-[9px] ${esExonerado ? 'bg-primary/20 border-primary/30 text-primary' : 'bg-white/5 border-white/10 text-text-muted'}`}
+              className={`h-9 text-[9px] col-span-2 md:col-span-1 ${esExonerado ? 'bg-primary/20 border-primary/30 text-primary font-black' : 'bg-white/5 border-white/10 text-text-muted'}`}
               onClick={() => onAction('estado', { socio, nuevoEstado: esExonerado ? 'activa' : 'exonerada' })}
-              title={esExonerado ? "Quitar Exoneración" : "Exonerar Socio"}
             >
-              <ShieldAlert size={14} />
+              <ShieldAlert size={14} className="mr-1.5" /> {esExonerado ? 'EXONERADO' : 'EXONERAR'}
             </Boton>
           </div>
         </div>
