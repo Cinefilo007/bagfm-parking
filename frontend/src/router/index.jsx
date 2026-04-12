@@ -15,6 +15,7 @@ import EventosMando from '../pages/comandante/EventosMando';
 import EventosEntidad from '../pages/entidad/Eventos';
 import Ajustes from '../pages/Ajustes';
 import Personal from '../pages/Personal';
+import PortalSocio from '../pages/socio/Portal';
 import { useAuthStore } from '../store/auth.store';
 
 const TemporaryPlaceholder = ({ name }) => (
