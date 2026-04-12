@@ -42,16 +42,21 @@ export default function Personal() {
   const fetchData = async () => {
     setLoading(true);
     try {
-      const [resPersonal, resEntidades] = await Promise.all([
-        api.get('/personal/lista'),
-        userActual.rol === 'COMANDANTE' || userActual.rol === 'ADMIN_BASE' 
-          ? api.get('/entidades/') 
-          : Promise.resolve({ data: [] })
-      ]);
+      // 1. Cargar Personal
+      const resPersonal = await api.get('/personal/lista');
       setPersonal(resPersonal.data);
-      setEntidades(resEntidades.data);
+
+      // 2. Cargar Entidades (Si el rol lo permite)
+      if (userActual.rol === 'COMANDANTE' || userActual.rol === 'ADMIN_BASE') {
+        try {
+          const resEntidades = await api.get('/entidades');
+          setEntidades(resEntidades.data);
+        } catch (entErr) {
+          console.error("Error cargando lista de entidades:", entErr);
+        }
+      }
     } catch (err) {
-      console.error("Error cargando personal", err);
+      console.error("Error cargando personal operativo:", err);
     } finally {
       setLoading(false);
     }

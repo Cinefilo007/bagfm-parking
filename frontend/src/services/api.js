@@ -4,15 +4,15 @@ import axios from 'axios';
 const getBaseURL = () => {
   let url = import.meta.env.VITE_API_URL || 'https://bagfm-backend-production.up.railway.app/api/v1';
   
-  // Forzar HTTPS si estamos en producción de Railway o si el sitio principal es seguro
-  const esProduccion = url.includes('railway.app');
-  const esSitioSeguro = typeof window !== 'undefined' && window.location.protocol === 'https:';
+  // NORMALIZE: Asegurar que NO haya espacios y que el protocolo sea HTTPS 
+  // en producción (Railway) o si el sitio principal es seguro.
+  const esLocal = url.includes('localhost') || url.includes('127.0.0.1');
 
-  if ((esProduccion || esSitioSeguro) && url.startsWith('http:')) {
+  if (!esLocal && url.startsWith('http:')) {
     url = url.replace('http:', 'https:');
   }
   
-  return url;
+  return url.trim();
 };
 
 const api = axios.create({
