@@ -18,6 +18,15 @@ from app.services.evento_service import evento_service
 
 router = APIRouter()
 
+@router.get("/stats")
+async def obtener_estadisticas_eventos(
+    db: AsyncSession = Depends(obtener_db),
+    usuario: Usuario = Depends(obtener_usuario_actual)
+):
+    """Retorna estadísticas generales de solicitudes (Filtrado por entidad si es ADMIN_ENTIDAD)."""
+    entidad_id = usuario.entidad_id if usuario.rol == RolTipo.ADMIN_ENTIDAD else None
+    return await evento_service.get_stats(db, entidad_id)
+
 @router.post("/solicitudes", response_model=SolicitudEventoSalida)
 async def crear_solicitud_evento(
     datos: SolicitudEventoCrear,

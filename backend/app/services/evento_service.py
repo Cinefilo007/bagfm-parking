@@ -106,4 +106,42 @@ class EventoService:
         result = await db.execute(query)
         return result.scalars().all()
 
+    async def get_stats(self, db: AsyncSession, entidad_id: UUID = None):
+        """Calcula estadísticas generales de solicitudes de eventos."""
+        from sqlalchemy import func
+        
+        # Filtro base
+        filtros = []
+        if entidad_id:
+            filtros.append(SolicitudEvento.entidad_id == entidad_id)
+            
+        async def count_by_status(status_list: list = None):
+            query = select(func.count(SolicitudEvento.id))
+            if filtros:
+                query = query.where(*filtros)
+            if status_list:
+                query = query.where(SolicitudEvento.estado.in_(status_list))
+            result = await db.execute(query)
+            return result.scalar() or 0
+
+        total = await count_by_status()
+        pendientes = await count_by_status([SolicitudEstado.pendiente])
+        aprobadas = await count_by_status([SolicitudEstado.aprobada, SolicitudEstado.aprobada_parcial])
+        denegadas = await count_by_status([SolicitudEstado.denegada])
+
+        # Suma de pases otorgados
+        query_pases = select(func.sum(SolicitudEvento.cantidad_aprobada))
+        if filtros:
+            query_pases = query_pases.where(*filtros)
+        result_pases = await db.execute(query_pases)
+        pases_otorgados = result_pases.scalar() or 0
+
+        return {
+            "total": total,
+            "pendientes": pendientes,
+            "aprobadas": aprobadas,
+            "denegadas": denegadas,
+            "pases_otorgados": pases_otorgados
+        }
+
 evento_service = EventoService()

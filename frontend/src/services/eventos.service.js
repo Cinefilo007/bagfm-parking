@@ -9,6 +9,11 @@ export const eventosService = {
     return res.data;
   },
 
+  async getStats() {
+    const res = await api.get('/eventos/stats');
+    return res.data;
+  },
+
   async crearSolicitud(datos) {
     /**
      * @param {Object} datos - { nombre_evento, fecha_evento, cantidad_solicitada, motivo, entidad_id }
