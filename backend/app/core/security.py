@@ -48,11 +48,12 @@ def decodificar_token(token: str) -> dict[str, Any]:
 def crear_token_qr(usuario_id: str, vehiculo_id: str | None = None) -> str:
     """
     Crea un JWT especial para códigos QR de acceso.
-    Sin expiración por defecto (QR permanente).
+    Incluye iat para asegurar unicidad en la base de datos.
     """
     payload = {
         "sub": usuario_id,
         "tipo": "qr_acceso",
+        "iat": datetime.now(timezone.utc)
     }
     if vehiculo_id:
         payload["vehiculo_id"] = vehiculo_id

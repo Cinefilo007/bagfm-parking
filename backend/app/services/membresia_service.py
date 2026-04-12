@@ -50,7 +50,6 @@ class MembresiaService:
         base_date = max(membresia.fecha_fin or date.today(), date.today())
         membresia.fecha_fin = base_date + relativedelta(months=meses)
         membresia.estado = MembresiaEstado.activa
-        membresia.updated_at = datetime.now()
         
         # Refrescar QR por seguridad al renovar
         await self.refrescar_qr_socio(db, socio_id, membresia.id, creador_id)
