@@ -2,11 +2,16 @@ import axios from 'axios';
 
 // Axios Instance Configuration
 const getBaseURL = () => {
-  const url = import.meta.env.VITE_API_URL || 'https://bagfm-backend-production.up.railway.app/api/v1';
-  // Si estamos en HTTPS (producción/railway), asegurar que la API use HTTPS
-  if (typeof window !== 'undefined' && window.location.protocol === 'https:' && url.startsWith('http:')) {
-    return url.replace('http:', 'https:');
+  let url = import.meta.env.VITE_API_URL || 'https://bagfm-backend-production.up.railway.app/api/v1';
+  
+  // Forzar HTTPS si estamos en producción de Railway o si el sitio principal es seguro
+  const esProduccion = url.includes('railway.app');
+  const esSitioSeguro = typeof window !== 'undefined' && window.location.protocol === 'https:';
+
+  if ((esProduccion || esSitioSeguro) && url.startsWith('http:')) {
+    url = url.replace('http:', 'https:');
   }
+  
   return url;
 };
 
