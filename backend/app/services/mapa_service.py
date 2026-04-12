@@ -96,7 +96,28 @@ async def get_situacion_actual(db: AsyncSession):
             "ocupacion_actual": z.ocupacion_actual
         })
 
-    # 4. Globales
+    # 4. Eventos Recientes (Monitor en tiempo real)
+    # Combinar los últimos 10 accesos
+    query_recientes = select(Acceso).order_by(Acceso.timestamp.desc()).limit(10)
+    result_recientes = await db.execute(query_recientes)
+    accesos_recientes = result_recientes.scalars().all()
+    
+    eventos_data = []
+    for acc in accesos_recientes:
+        # Rehidratar usuario para nombre
+        q_u = select(Usuario).filter(Usuario.id == acc.usuario_id)
+        u = (await db.execute(q_u)).scalar_one_or_none()
+        
+        eventos_data.append({
+            "id": acc.id,
+            "tipo": acc.tipo, # entrada / salida
+            "timestamp": acc.timestamp.isoformat(),
+            "usuario": f"{u.nombre} {u.apellido}" if u else "Socio Desconocido",
+            "punto": acc.punto_acceso,
+            "es_manual": acc.es_manual
+        })
+
+    # 5. Globales
     query_vehiculos = select(func.count(Acceso.id)).filter(
         func.cast(Acceso.timestamp, Date) == hoy,
         Acceso.tipo == "entrada"
@@ -113,7 +134,8 @@ async def get_situacion_actual(db: AsyncSession):
         "alcabalas": alcabalas_data,
         "zonas_estacionamiento": zonas_data,
         "vehiculos_hoy": vehiculos_hoy,
-        "alertas_activas": alertas_activas
+        "alertas_activas": alertas_activas,
+        "eventos_recientes": eventos_data
     }
 
 async def actualizar_georreferencia(
