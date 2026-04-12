@@ -10,12 +10,13 @@ import {
   Pause, 
   Play, 
   ShieldCheck, 
-  ChevronRight,
+  ChevronDown,
   Clock,
   ShieldAlert
 } from 'lucide-react';
 
 export const SocioCard = ({ socio, onAction }) => {
+  const [isOpen, setIsOpen] = useState(false);
   const tieneVehiculos = socio.vehiculos && socio.vehiculos.length > 0;
   const m = socio.membresia;
   const progreso = m?.progreso;
@@ -49,11 +50,14 @@ export const SocioCard = ({ socio, onAction }) => {
   }
 
   return (
-    <Card elevation={1} className={`group relative overflow-hidden border-white/5 transition-all duration-300 hover:border-white/10`}>
+    <Card elevation={1} className={`group relative overflow-hidden border-white/5 transition-all duration-300 hover:border-white/10 ${isOpen ? 'ring-1 ring-primary/20 bg-bg-high/5' : ''}`}>
       {/* Indicador de estado superior */}
       <div className={`absolute top-0 left-0 w-1 h-full ${statusColor.replace('text-', 'bg-')}`} />
       
-      <div className="flex justify-between items-start mb-4">
+      <div 
+        className="flex justify-between items-start cursor-pointer group/header"
+        onClick={() => setIsOpen(!isOpen)}
+      >
         <div className="flex items-center gap-3">
           <div className={`h-11 w-11 rounded-xl bg-white/5 flex items-center justify-center border border-white/10 transition-colors group-hover:border-primary/30 ${statusColor}`}>
             <User size={22} />
@@ -75,14 +79,17 @@ export const SocioCard = ({ socio, onAction }) => {
           </div>
         </div>
         
-        <Badge variant={badgeVariant}>
-          {statusLabel}
-        </Badge>
+        <div className="flex items-center gap-2">
+          <Badge variant={badgeVariant}>
+            {statusLabel}
+          </Badge>
+          <ChevronDown size={16} className={`text-text-muted transition-transform duration-300 ${isOpen ? 'rotate-180' : ''}`} />
+        </div>
       </div>
 
-      {/* Barra de Progreso de Membresía */}
+      {/* Barra de Progreso de Membresía (Siempre Visible si existe) */}
       {m && !esExonerado && (
-        <div className="mb-4 px-1">
+        <div className="mt-4 px-1">
           <div className="flex justify-between items-end mb-1.5">
             <span className="text-[8px] uppercase font-bold tracking-widest text-text-muted">TIEMPO DE ACCESO</span>
             <span className={`text-[10px] font-mono font-bold ${progreso.porcentaje > 80 ? 'text-danger' : 'text-text-muted'}`}>
@@ -101,64 +108,78 @@ export const SocioCard = ({ socio, onAction }) => {
         </div>
       )}
 
-      {esExonerado && (
-        <div className="mb-4 px-3 py-2 bg-primary/5 rounded-lg border border-primary/10 flex items-center gap-3">
-          <ShieldCheck size={16} className="text-primary" />
-          <p className="text-[10px] font-bold text-primary/80 uppercase tracking-widest">Acceso Permanente (Exonerado)</p>
+      {/* SECCIÓN DESPLEGABLE */}
+      {isOpen && (
+        <div className="animate-in fade-in slide-in-from-top-2 duration-300 mt-4">
+          {esExonerado && (
+            <div className="mb-4 px-3 py-2 bg-primary/5 rounded-lg border border-primary/10 flex items-center gap-3">
+              <ShieldCheck size={16} className="text-primary" />
+              <p className="text-[10px] font-bold text-primary/80 uppercase tracking-widest">Acceso Permanente (Exonerado)</p>
+            </div>
+          )}
+
+          {/* Resumen de Vehículos y Fecha */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-4">
+            <div className="p-2.5 bg-white/5 rounded-xl border border-white/5">
+              <div className="flex items-center gap-2 mb-2">
+                <Car size={13} className="text-text-muted/50" />
+                <span className="text-[9px] uppercase font-bold text-text-muted tracking-widest">Vehículos Registrados</span>
+              </div>
+              <div className="space-y-1.5">
+                {tieneVehiculos ? (
+                  socio.vehiculos.map((v, idx) => (
+                    <div key={idx} className="flex justify-between items-center text-[11px] font-mono bg-white/5 p-1.5 rounded-lg border border-white/5">
+                      <span className="text-text-main font-bold">{v.placa}</span>
+                      <span className="text-text-muted text-[9px] uppercase">{v.marca} {v.modelo}</span>
+                    </div>
+                  ))
+                ) : (
+                  <p className="text-[11px] font-bold font-mono text-danger uppercase">Sin Registro de Unidades</p>
+                )}
+              </div>
+            </div>
+
+            <div className="p-2.5 bg-white/5 rounded-xl border border-white/5 flex flex-col justify-center">
+              <div className="flex items-center gap-2 mb-1">
+                <Calendar size={13} className="text-text-muted/50" />
+                <span className="text-[9px] uppercase font-bold text-text-muted tracking-widest">Vencimiento de Acceso</span>
+              </div>
+              <p className="text-lg font-bold font-mono text-text-main">
+                {m?.fecha_fin ? new Date(m.fecha_fin).toLocaleDateString() : 'N/A'}
+              </p>
+            </div>
+          </div>
+
+          {/* Acciones Tácticas */}
+          <div className="pt-4 border-t border-white/5 flex gap-2">
+            <Boton 
+              variant="ghost" 
+              className="flex-1 h-9 text-[9px] bg-primary/10 border-primary/20 text-primary hover:bg-primary/20"
+              onClick={() => onAction('renovacion', socio)}
+            >
+              <RefreshCw size={14} className="mr-1.5" /> RENOVAR
+            </Boton>
+            
+            <Boton 
+              variant="ghost" 
+              className={`flex-1 h-9 text-[9px] ${esSuspendido ? 'bg-primary/5 border-primary/10 text-primary' : 'bg-danger/5 border-danger/10 text-danger'}`}
+              onClick={() => onAction('estado', { socio, nuevoEstado: esSuspendido ? 'activa' : 'suspendida' })}
+            >
+              {esSuspendido ? <Play size={14} className="mr-1.5" /> : <Pause size={14} className="mr-1.5" />}
+              {esSuspendido ? 'ACTIVAR' : 'SUSPENDER'}
+            </Boton>
+
+            <Boton 
+              variant="ghost" 
+              className={`h-9 px-3 text-[9px] ${esExonerado ? 'bg-primary/20 border-primary/30 text-primary' : 'bg-white/5 border-white/10 text-text-muted'}`}
+              onClick={() => onAction('estado', { socio, nuevoEstado: esExonerado ? 'activa' : 'exonerada' })}
+              title={esExonerado ? "Quitar Exoneración" : "Exonerar Socio"}
+            >
+              <ShieldAlert size={14} />
+            </Boton>
+          </div>
         </div>
       )}
-
-      {/* Resumen de Vehículos y Fecha */}
-      <div className="grid grid-cols-2 gap-3 mb-4">
-        <div className="p-2.5 bg-white/5 rounded-xl border border-white/5">
-          <div className="flex items-center gap-2 mb-1">
-            <Car size={13} className="text-text-muted/50" />
-            <span className="text-[9px] uppercase font-bold text-text-muted tracking-widest">Vehículos</span>
-          </div>
-          <p className="text-[11px] font-bold font-mono text-text-main truncate">
-            {tieneVehiculos ? `${socio.vehiculos.length} UNIDADES` : 'SIN REGISTRO'}
-          </p>
-        </div>
-
-        <div className="p-2.5 bg-white/5 rounded-xl border border-white/5">
-          <div className="flex items-center gap-2 mb-1">
-            <Calendar size={13} className="text-text-muted/50" />
-            <span className="text-[9px] uppercase font-bold text-text-muted tracking-widest">Vencimiento</span>
-          </div>
-          <p className="text-[11px] font-bold font-mono text-text-main">
-            {m?.fecha_fin ? new Date(m.fecha_fin).toLocaleDateString() : 'N/A'}
-          </p>
-        </div>
-      </div>
-
-      {/* Acciones Tácticas */}
-      <div className="pt-3 border-t border-white/5 flex gap-2">
-        <Boton 
-          variant="ghost" 
-          className="flex-1 h-9 text-[9px] bg-primary/5 border-primary/10 text-primary hover:bg-primary/10"
-          onClick={() => onAction('renovacion', socio)}
-        >
-          <RefreshCw size={14} className="mr-1.5" /> RENOVAR
-        </Boton>
-        
-        <Boton 
-          variant="ghost" 
-          className={`flex-1 h-9 text-[9px] ${esSuspendido ? 'bg-primary/5 border-primary/10 text-primary' : 'bg-danger/5 border-danger/10 text-danger'}`}
-          onClick={() => onAction('estado', { socio, nuevoEstado: esSuspendido ? 'activa' : 'suspendida' })}
-        >
-          {esSuspendido ? <Play size={14} className="mr-1.5" /> : <Pause size={14} className="mr-1.5" />}
-          {esSuspendido ? 'ACTIVAR' : 'SUSPENDER'}
-        </Boton>
-
-        <Boton 
-          variant="ghost" 
-          className={`h-9 px-3 text-[9px] ${esExonerado ? 'bg-primary/20 border-primary/30 text-primary' : 'bg-white/5 border-white/10 text-text-muted'}`}
-          onClick={() => onAction('estado', { socio, nuevoEstado: esExonerado ? 'activa' : 'exonerada' })}
-          title={esExonerado ? "Quitar Exoneración" : "Exonerar Socio"}
-        >
-          <ShieldAlert size={14} />
-        </Boton>
-      </div>
     </Card>
   );
 };

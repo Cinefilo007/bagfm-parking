@@ -68,7 +68,7 @@ class SocioService:
         return nuevo_socio
 
     async def obtener_socios_entidad(self, db: AsyncSession, entidad_id: UUID) -> List[dict]:
-        # Usamos join para traer la membresía activa
+        # 1. Traer socios y su membresía activa
         query = (
             select(Usuario, Membresia)
             .outerjoin(Membresia, Usuario.id == Membresia.socio_id)
@@ -81,8 +81,20 @@ class SocioService:
         resultado = await db.execute(query)
         socios_con_membresia = resultado.all()
         
+        # 2. Traer todos los vehículos de los socios de esta entidad para mapear
+        query_v = (
+            select(Vehiculo)
+            .join(Usuario, Vehiculo.socio_id == Usuario.id)
+            .where(Usuario.entidad_id == entidad_id)
+        )
+        res_v = await db.execute(query_v)
+        todos_los_vehiculos = res_v.scalars().all()
+        
         lista_final = []
         for usuario, membresia in socios_con_membresia:
+            # Filtrar vehículos para este usuario
+            vehiculos_socio = [v for v in todos_los_vehiculos if v.socio_id == usuario.id]
+            
             socio_dict = {
                 "id": usuario.id,
                 "cedula": usuario.cedula,
@@ -96,7 +108,8 @@ class SocioService:
                 "entidad_id": usuario.entidad_id,
                 "debe_cambiar_password": usuario.debe_cambiar_password,
                 "created_at": usuario.created_at,
-                "membresia": None
+                "membresia": None,
+                "vehiculos": vehiculos_socio
             }
             
             if membresia:

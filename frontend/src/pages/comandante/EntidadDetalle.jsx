@@ -95,7 +95,7 @@ export default function EntidadDetalle() {
         }
       />
 
-      <main className="px-4 py-6 max-w-lg mx-auto pb-24">
+      <main className="px-4 py-6 max-w-4xl mx-auto pb-24">
         {/* Estadísticas Rápidas de la Entidad */}
         <div className="grid grid-cols-2 gap-4 mb-8">
            <Card className="flex flex-col p-4">
