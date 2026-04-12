@@ -174,8 +174,8 @@ export default function Entidades() {
           </div>
 
           {isOpen && (
-            <div className="animate-in fade-in slide-in-from-top-2 duration-300 mt-4">
-               <div className="grid grid-cols-3 gap-2 border-t border-bg-high/10 pt-3 pb-1">
+            <div className="animate-in fade-in slide-in-from-top-1 duration-200 mt-2">
+               <div className="grid grid-cols-3 gap-2 border-t border-bg-high/10 pt-2 pb-0.5">
                   <div className="flex flex-col border-r border-bg-high/10">
                      <span className="text-[8px] uppercase font-bold text-text-muted tracking-widest mb-0.5">
                        Capacidad
@@ -202,7 +202,7 @@ export default function Entidades() {
                   </div>
                </div>
                
-               <div className="mt-3 pt-3 border-t border-bg-high/10 flex justify-end">
+               <div className="mt-2 pt-2 border-t border-bg-high/10 flex justify-end">
                   <button 
                     onClick={() => navigate(`/comando/entidades/${ent.id}`)}
                     className="text-[10px] font-black uppercase text-primary tracking-widest hover:underline underline-offset-4 flex items-center gap-2 group"
