@@ -58,10 +58,10 @@ export const Sidebar = () => {
          <div className="w-10 h-10 rounded-full bg-surface-variant flex items-center justify-center border border-bg-high/20 shrink-0">
             <UserCircle size={24} className="text-text-muted" />
          </div>
-         <div className="flex flex-col overflow-hidden">
-            <span className="text-xs font-bold text-text-main truncate uppercase">{user?.nombre || 'Usuario'}</span>
-            <span className="text-[9px] text-primary font-black tracking-widest">{user?.rol}</span>
-         </div>
+          <div className="flex flex-col overflow-hidden">
+            <span className="text-xs font-bold text-text-main truncate uppercase">{user?.nombre} {user?.apellido}</span>
+            <span className="text-[10px] text-primary font-black tracking-widest uppercase opacity-80">{user?.rol.replace('_', ' ')}</span>
+          </div>
       </div>
 
       {/* Navigation Space */}
