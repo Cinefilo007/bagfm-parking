@@ -784,20 +784,61 @@ module.exports = {
 
 ---
 
-## 9. Pantallas Diseñadas — Inventario
+## 10. Estándares de Arquitectura de Vistas (Aegis v2)
 
-| # | Pantalla | Rol(es) | Screen ID Stitch |
-|---|----------|---------|-----------------|
-| 1 | Login | Todos | `5529aac8fcef44218470866b3db57ba4` |
-| 2 | Dashboard Comandante | COMANDANTE, ADMIN_BASE | `bb2abfde96f1404793ad0fb5972985f8` |
-| 3 | Alcabala — Escaneo QR (Acceso Permitido) | ALCABALA | `da915b0a453a42aeb0c3d6bfb94957fc` |
-| 4 | Mi QR — Portal Socio | SOCIO | `91f9e83f99a64639be94ced6c74012eb` |
-| 5 | Buscador Maestro | COMANDANTE, ADMIN_BASE, SUPERVISOR, ALCABALA | `2a4a27de284e4ec59a1c06432b35e98d` |
-| 6 | Dashboard Admin Entidad (Parque Miranda) | ADMIN_ENTIDAD | `7f1d1eec389f43198dd8f349b2952d63` |
-| 7 | Lista de Socios — Vista Admin Entidad | ADMIN_ENTIDAD | `b12a0711562949a098f8757816f144e0` |
-| 8 | Lista de Socios — Vista Comandante | COMANDANTE, ADMIN_BASE | `8ea3b86a93674af99311be584c8aaa80` |
+Tras la estandarización del panel de mando, se establecen las siguientes reglas estructurales:
 
-**Pantallas pendientes de diseñar:**
+### 10.1 Cabecera de Mando (Sticky Header)
+- **Estructura**: `LayoutDashboard` logic. Siempre `sticky top-0`, `z-[50]`, con `backdrop-blur-md` y fondo `bg-bg-app/40`.
+- **Alineación**: Centrado en contenedor `max-w-7xl` (o 1400px).
+- **Elementos**: Icono de sección, Título en `font-black uppercase tracking-tight italic`, beacons de estado pulsantes para indicar "Operativo".
+
+### 10.2 Vista de Perfil / Expediente
+- **Visual Impact**: Uso de `Header Visual` con gradientes `primary/30` a `secondary/10`.
+- **Avatar**: Centrado o lateral-izquierdo, tamaño `w-32 h-32` (2xl), con bordes de alta fidelidad y badges de estado (`BadgeCheck`).
+- **Data Grid**: Los datos se presentan en tarjetas de solo lectura con iconos de lucide a opacidad reducida (40%).
+- **Acciones**: Botones de acción principal (Editar, Seguridad) deben ser prominentes, de altura `h-14` mínimo, con tipografía `font-black uppercase tracking-widest`.
+
+### 10.3 Regla de Modales (Desplazamiento Compensado)
+- **Centrado Universal**: Todo modal debe implementar la clase `lg:pl-72` en su contenedor raíz `fixed`.
+- **Razón**: Compensar el ancho de la `Sidebar` fija para que el contenido del modal quede centrado visualmente respecto al área de trabajo y no respecto al borde del navegador.
+
+---
+
+## 11. Anatomía de Componentes Críticos (v2)
+
+### 11.1 Boton.jsx (Estandarizado)
+Los botones deben seguir este patrón de clases para mantener la autoridad visual:
+- **Font**: `font-black uppercase tracking-widest text-[11px]`
+- **Height**: `h-14` para acciones primarias, `h-12` para secundarias.
+- **Iconografía**: Icono a la izquierda, espaciado `gap-3`. Usar `transition-transform` para efectos de rotación o escala en hover.
+- **Focus/Hover**: Efectos de gradiente o inversión de color según la variante.
+
+### 11.2 Inputs de Formulario (Tácticos)
+- Altura estándar `h-12`.
+- Border `white/10` por defecto, cambia a `primary` o `danger` según el contexto.
+- Iconos de entrada siempre a la izquierda con `pl-12`.
+- Tipografía `font-bold text-white text-sm`.
+
+---
+
+## 12. Glosario de Clases Tailwind BAGFM
+
+| Propósito | Clase Tailwind |
+|-----------|----------------|
+| Fondo Aplicación | `bg-bg-app` (#0E1322) |
+| Contenedor Bloque | `bg-bg-low` (#161B2B) |
+| Tarjeta / Item | `bg-bg-high/20` |
+| Texto Principal | `text-text-main` |
+| Acento Sistema | `text-primary` (#4EDEA3) |
+| Feedback Peligro | `text-danger` (#FFAB4B) |
+| Blur Táctico | `backdrop-blur-xl` |
+| Sombra Comando | `shadow-2xl shadow-primary/5` |
+
+---
+
+*Última actualización: 2026-04-12 | Autor: Antigravity*  
+*Basado en la refactorización exitosa de los módulos de Comando y Perfil.*
 - [ ] Ficha Detalle del Socio
 - [ ] Formulario Nuevo Socio
 - [ ] Pantalla Acceso Denegado (rojo completo)

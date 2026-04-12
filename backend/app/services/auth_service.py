@@ -45,11 +45,20 @@ class AuthService:
         if getattr(usuario, "activo", True) == False:
             raise UsuarioInactivo("El usuario está inactivo")
 
+        # Obtener nombre de la entidad si aplica
+        entidad_nombre = None
+        if usuario.entidad_id:
+            from app.models.entidad_civil import EntidadCivil
+            q_entidad = select(EntidadCivil.nombre).where(EntidadCivil.id == usuario.entidad_id)
+            res_entidad = await db.execute(q_entidad)
+            entidad_nombre = res_entidad.scalar_one_or_none()
+
         # Generar token
         token_data = {
             "sub": str(usuario.id),
             "rol": usuario.rol.value,
             "entidad_id": str(usuario.entidad_id) if usuario.entidad_id else None,
+            "entidad_nombre": entidad_nombre,
             "nombre": usuario.nombre,
             "apellido": usuario.apellido,
             "cedula": usuario.cedula,

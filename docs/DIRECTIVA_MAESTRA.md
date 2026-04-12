@@ -14,7 +14,7 @@ Base Aérea Generalísimo Francisco de Miranda
 | Campo | Valor |
 |-------|-------|
 | **Nombre** | BAGFM — Control de Acceso Vehicular |
-| **Versión** | 0.6.1 (Tactical Standardization) |
+| **Versión** | 0.8.0 (Tactical Evolution - Aegis v2) |
 | **Dominio** | Configurable via `APP_DOMAIN` (`.env`) |
 | **Idioma** | Español (código, comentarios, variables, UI) |
 | **Metodología** | Mejora Infinita — SOPs vs Ejecución |
@@ -194,9 +194,10 @@ Definidas en `backend/.env` y `frontend/.env`. Ver `.env.example` en cada carpet
 | Setup proyecto | ✅ Completo |
 | Schema BD | ✅ Completo |
 | Autenticación | ✅ Completa |
-| Panel Comandante | ✅ Estandarizado (v2) |
-| Portal Entidad | 🏗️ En progreso |
-| Portal Alcabala | ⏳ Pendiente |
+| Panel Comandante | ✅ Producción / Estandarizado (v2) |
+| Gestión Perfil | ✅ Producción / Estandarizado (v2) |
+| Portal Entidad | 🏗️ Refactorización v2 |
+| Portal Alcabala | 🏗️ En cola para v2 |
 | Portal Parquero | ⏳ Pendiente |
 | Portal Socio | ⏳ Pendiente |
 | Portal Supervisor | ⏳ Pendiente |

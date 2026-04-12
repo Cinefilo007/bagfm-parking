@@ -1,6 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { Calendar, Plus, Download, Clock, CheckCircle2, XCircle, AlertCircle, FileText } from 'lucide-react';
-import { Card, CardHeader, CardTitle, CardContent } from '../../components/ui/Card';
+import { 
+  Calendar, Plus, Download, Clock, 
+  CheckCircle2, XCircle, AlertCircle, 
+  FileText, ShieldAlert, BadgeCheck,
+  ChevronRight, Share2, Printer
+} from 'lucide-react';
+import { Header } from '../../components/layout/Header';
+import { Card, CardContent } from '../../components/ui/Card';
 import { Boton } from '../../components/ui/Boton';
 import { Input } from '../../components/ui/Input';
 import { Modal } from '../../components/ui/Modal';
@@ -36,7 +42,7 @@ export default function Eventos() {
       const data = await eventosService.getSolicitudes();
       setSolicitudes(data);
     } catch (error) {
-      toast.error('Error al cargar eventos');
+      toast.error('Fallo de sincronización con el servidor de eventos');
     } finally {
       setLoading(false);
     }
@@ -46,18 +52,16 @@ export default function Eventos() {
     e.preventDefault();
     try {
       await eventosService.crearSolicitud(form);
-      toast.success('Solicitud enviada al mando');
+      toast.success('Protocolo FL-08 enviado a Comandancia');
       setShowModal(false);
       setForm({
-         nombre_evento: '',
-         fecha_evento: '',
-         cantidad_solicitada: 0,
-         motivo: '',
+         nombre_evento: '', fecha_evento: '',
+         cantidad_solicitada: 0, motivo: '',
          entidad_id: user?.entidad_id
       });
       fetchSolicitudes();
     } catch (error) {
-      toast.error('No se pudo procesar la solicitud');
+      toast.error('No se pudo procesar la solicitud táctica');
     }
   };
 
@@ -68,163 +72,237 @@ export default function Eventos() {
       setSelectedEvento(solicitud);
       setShowModalQrs(true);
     } catch (error) {
-      toast.error('No se pudieron obtener los pases');
+      toast.error('Fallo en la recuperación de tokens de acceso');
     }
   };
 
-  const getStatusColor = (status) => {
+  const getStatusStyles = (status) => {
      switch(status) {
-        case 'pendiente': return 'text-warning bg-warning/5 border-warning/20';
+        case 'pendiente': return 'text-warning bg-warning/10 border-warning/20';
         case 'aprobada': 
-        case 'aprobada_parcial': return 'text-success bg-success/5 border-success/20';
-        case 'denegada': return 'text-error bg-error/5 border-error/20';
-        default: return 'text-text-muted';
+        case 'aprobada_parcial': return 'text-emerald-400 bg-emerald-400/10 border-emerald-400/20';
+        case 'denegada': return 'text-danger bg-danger/10 border-danger/20';
+        default: return 'text-text-muted bg-white/5 border-white/5';
      }
   };
 
-  const getStatusIcon = (status) => {
+  const getStatusLabel = (status) => {
     switch(status) {
-       case 'pendiente': return <Clock size={14} />;
-       case 'aprobada': 
-       case 'aprobada_parcial': return <CheckCircle2 size={14} />;
-       case 'denegada': return <XCircle size={14} />;
-       default: return <AlertCircle size={14} />;
+       case 'pendiente': return 'En Revisión (Mando)';
+       case 'aprobada': return 'Autorización Total';
+       case 'aprobada_parcial': return 'Autorización Parcial';
+       case 'denegada': return 'Acceso Denegado';
+       default: return 'Desconocido';
     }
- };
+  };
 
   return (
-    <div className="p-4 space-y-6 pb-24">
-      <header className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-white flex items-center gap-2">
-            <Calendar className="text-primary" />
-            Mis Eventos
-          </h1>
-          <p className="text-text-muted text-sm">Pases Masivos y Actividades</p>
+    <div className="min-h-screen bg-bg-app animate-in fade-in duration-500">
+      <Header 
+        titulo="Eventos y Protocolos" 
+        subtitle={user?.entidad_nombre || 'AUTORIZACIONES MASIVAS'} 
+      />
+
+      <main className="max-w-[1400px] mx-auto px-6 py-8 pb-32">
+        
+        {/* Cabecera de Acciones Tácticas */}
+        <section className="flex flex-col md:flex-row items-center justify-between gap-6 mb-10 bg-bg-low/40 p-6 rounded-3xl border border-white/5 backdrop-blur-md">
+           <div className="flex items-center gap-4">
+              <div className="h-14 w-14 rounded-2xl bg-primary/10 flex items-center justify-center text-primary shadow-xl shadow-primary/5">
+                 <Calendar size={28} />
+              </div>
+              <div>
+                 <h2 className="text-lg font-black text-white uppercase tracking-tight italic leading-tight">Gestión de Solicitudes FL-08</h2>
+                 <p className="text-[10px] text-text-muted font-black uppercase tracking-[0.2em] mt-1 opacity-60">Control Masivo de Accesos Civiles</p>
+              </div>
+           </div>
+
+           <Boton 
+             onClick={() => setShowModal(true)}
+             className="w-full md:w-auto h-14 px-8 bg-primary text-bg-app font-black uppercase tracking-widest text-[11px] shadow-xl shadow-primary/10 hover:scale-105 active:scale-95 transition-all"
+           >
+              <Plus size={20} className="mr-2" />
+              Nueva Solicitud masiva
+           </Boton>
+        </section>
+
+        {/* Grid de Solicitudes Aegis v2 */}
+        <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+          {loading ? (
+             Array(4).fill(0).map((_, i) => (
+               <div key={i} className="h-64 rounded-3xl bg-white/5 animate-pulse border border-white/5" />
+             ))
+          ) : (
+            <>
+              {solicitudes.map(s => (
+                <Card key={s.id} className="bg-bg-low/60 border-white/5 hover:border-white/10 transition-all group overflow-hidden">
+                  <CardContent className="p-0">
+                     {/* Header Card Táctico */}
+                     <div className="p-6 flex items-start justify-between border-b border-white/5 bg-white/[0.02]">
+                        <div className="flex items-center gap-5">
+                           <div className="h-16 w-16 rounded-2xl bg-bg-app border border-white/5 flex items-center justify-center text-text-muted group-hover:text-primary transition-colors">
+                              <FileText size={32} />
+                           </div>
+                           <div>
+                              <div className={cn("inline-flex items-center gap-1.5 px-3 py-1 rounded-full border text-[9px] font-black uppercase tracking-widest mb-2", getStatusStyles(s.estado))}>
+                                 <div className={cn("w-1.5 h-1.5 rounded-full animate-pulse", s.estado === 'pendiente' ? 'bg-warning' : s.estado.includes('aprobada') ? 'bg-emerald-400' : 'bg-danger')} />
+                                 {getStatusLabel(s.estado)}
+                              </div>
+                              <h3 className="text-xl font-black text-white uppercase tracking-tight italic leading-none">{s.nombre_evento}</h3>
+                              <p className="text-[10px] text-text-muted font-bold uppercase tracking-widest mt-2 flex items-center gap-1.5">
+                                 <Calendar size={12} className="text-primary" /> {s.fecha_evento}
+                              </p>
+                           </div>
+                        </div>
+                        <div className="text-right">
+                           <p className="text-[10px] text-text-muted font-black uppercase tracking-widest opacity-40">Folio Aut.</p>
+                           <p className="text-xs font-mono text-white opacity-60">#{s.id.slice(0, 8)}</p>
+                        </div>
+                     </div>
+                     
+                     {/* Body Card - Métricas de Pases */}
+                     <div className="p-6 grid grid-cols-2 gap-6 bg-black/10">
+                        <div className="bg-white/5 p-4 rounded-2xl border border-white/5">
+                           <p className="text-[9px] text-text-muted uppercase font-black tracking-[0.2em] mb-1">Capacidad Solicitada</p>
+                           <p className="text-2xl font-black italic font-display text-white leading-tight">{s.cantidad_solicitada} <span className="text-[10px] not-italic text-text-muted">PAX</span></p>
+                        </div>
+                        <div className={cn("p-4 rounded-2xl border transition-all", s.estado.includes('aprobada') ? 'bg-emerald-400/5 border-emerald-400/20' : 'bg-white/5 border-white/5')}>
+                           <p className="text-[9px] text-text-muted uppercase font-black tracking-[0.2em] mb-1">Autorización Otorgada</p>
+                           <p className={cn("text-2xl font-black italic font-display leading-tight", s.estado.includes('aprobada') ? 'text-emerald-400' : 'text-white opacity-40')}>
+                             {s.cantidad_aprobada || 0} <span className="text-[10px] not-italic">PAX</span>
+                           </p>
+                        </div>
+                     </div>
+
+                     {/* Footer Card - Acciones Dinámicas */}
+                     <div className="px-6 py-4 bg-bg-low/80 flex items-center justify-between border-t border-white/5">
+                        <div className="flex items-center gap-3">
+                           {s.estado === 'denegada' ? (
+                              <div className="flex items-center gap-2 text-danger/60">
+                                 <ShieldAlert size={14} />
+                                 <span className="text-[10px] font-bold uppercase tracking-widest truncate max-w-[200px]">{s.motivo_rechazo || 'Solicitud Reincorporada'}</span>
+                              </div>
+                           ) : (
+                              <div className="flex items-center gap-2 text-text-muted">
+                                 <BadgeCheck size={14} className={s.estado.includes('aprobada') ? 'text-emerald-400' : 'text-white/20'} />
+                                 <span className="text-[10px] font-bold uppercase tracking-widest">Protocolo de seguridad activo</span>
+                              </div>
+                           )}
+                        </div>
+                        
+                        {s.estado.includes('aprobada') && (
+                           <Boton 
+                             onClick={() => handleVerQrs(s)}
+                             className="h-10 px-6 bg-primary text-bg-app font-black uppercase tracking-widest text-[9px] shadow-lg shadow-primary/10"
+                           >
+                              Generar Terminal de Pases
+                              <ChevronRight size={14} className="ml-1" />
+                           </Boton>
+                        )}
+                     </div>
+                  </CardContent>
+                </Card>
+              ))}
+
+              {solicitudes.length === 0 && (
+                <div className="col-span-full py-32 text-center border border-dashed border-white/10 rounded-3xl bg-bg-low/20 backdrop-blur-sm">
+                  <Calendar size={64} className="mx-auto text-white/5 mb-6" />
+                  <p className="text-text-muted text-[11px] font-black uppercase tracking-[0.3em]">No se registran solicitudes de eventos para esta concesión</p>
+                  <Boton variant="ghost" className="mt-6 text-primary tracking-widest text-[10px]" onClick={() => setShowModal(true)}>INICIAR PRIMER REGISTRO FL-08</Boton>
+                </div>
+              )}
+            </>
+          )}
         </div>
-        <Boton variant="primary" onClick={() => setShowModal(true)}>
-          <Plus size={18} />
-        </Boton>
-      </header>
+      </main>
 
-      <div className="grid grid-cols-1 gap-4">
-        {solicitudes.map(s => (
-          <Card key={s.id} className="bg-bg-low border-white/5 overflow-hidden">
-            <CardContent className="p-0">
-               <div className="p-4 flex items-center justify-between border-b border-white/5 bg-white/5">
-                  <div className="flex items-center gap-3">
-                     <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary">
-                        <Calendar size={20} />
-                     </div>
-                     <div>
-                        <p className="font-bold text-white">{s.nombre_evento}</p>
-                        <p className="text-[10px] text-text-muted uppercase tracking-wider">{s.fecha_evento}</p>
-                     </div>
-                  </div>
-                  <div className={cn("px-2 py-1 rounded-full border text-[10px] font-bold uppercase flex items-center gap-1.5", getStatusColor(s.estado))}>
-                     {getStatusIcon(s.estado)}
-                     {s.estado.replace('_', ' ')}
-                  </div>
-               </div>
-               
-               <div className="p-4 grid grid-cols-2 gap-4">
-                  <div className="space-y-1">
-                     <p className="text-[10px] text-text-muted uppercase font-bold tracking-widest">Solicitados</p>
-                     <p className="text-lg font-mono text-white">{s.cantidad_solicitada}</p>
-                  </div>
-                  <div className="space-y-1">
-                     <p className="text-[10px] text-text-muted uppercase font-bold tracking-widest">Aprobados</p>
-                     <p className="text-lg font-mono text-primary">{s.cantidad_aprobada || 0}</p>
-                  </div>
-               </div>
+      {/* --- MODALES --- */}
 
-               {s.estado !== 'pendiente' && (
-                  <div className="px-4 py-3 bg-black/20 flex items-center justify-between">
-                     <p className="text-xs text-text-muted flex items-center gap-1.5">
-                        <FileText size={14} />
-                        {s.estado === 'denegada' ? (s.motivo_rechazo || 'Sin motivo especificado') : 'Pases generados'}
-                     </p>
-                     {s.estado.includes('aprobada') && (
-                        <Boton size="sm" variant="ghost" className="text-primary hover:bg-primary/10" onClick={() => handleVerQrs(s)}>
-                           Ver Pases
-                        </Boton>
-                     )}
-                  </div>
-               )}
-            </CardContent>
-          </Card>
-        ))}
-
-        {solicitudes.length === 0 && !loading && (
-          <div className="text-center py-20 bg-bg-low rounded-3xl border border-white/5 border-dashed">
-            <Clock size={48} className="mx-auto text-text-muted mb-4 opacity-20" />
-            <p className="text-white font-medium">No hay solicitudes registradas</p>
-            <p className="text-sm text-text-muted">Inicia una nueva solicitud para eventos masivos.</p>
-          </div>
-        )}
-      </div>
-
-      {/* MODAL SOLICITUD */}
-      <Modal isOpen={showModal} onClose={() => setShowModal(false)} title="Solicitar Pases Masivos">
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <Input 
-            label="Nombre del Evento" 
-            placeholder="Ej: Convivencia Civil-Militar X"
-            value={form.nombre_evento}
-            onChange={e => setForm({...form, nombre_evento: e.target.value})}
-            required
-          />
-          <div className="grid grid-cols-2 gap-2">
+      {/* Modal Solicitud */}
+      <Modal isOpen={showModal} onClose={() => setShowModal(false)} title="Nueva Solicitud FL-08">
+        <form onSubmit={handleSubmit} className="space-y-6">
+          <div className="space-y-4">
             <Input 
-              label="Fecha del Evento" 
-              type="date"
-              value={form.fecha_evento}
-              onChange={e => setForm({...form, fecha_evento: e.target.value})}
+              label="Denominación del Evento" 
+              placeholder="Ej: ACTIVIDAD CORPORATIVA NIVEL 1"
+              value={form.nombre_evento}
+              onChange={e => setForm({...form, nombre_evento: e.target.value.toUpperCase()})}
               required
+              className="h-14 bg-bg-app border-white/10"
             />
-            <Input 
-              label="Cantidad de Pases" 
-              type="number"
-              placeholder="0"
-              value={form.cantidad_solicitada}
-              onChange={e => setForm({...form, cantidad_solicitada: parseInt(e.target.value)})}
-              required
-            />
+            
+            <div className="grid grid-cols-2 gap-4">
+              <Input 
+                label="Fecha Programada" type="date"
+                value={form.fecha_evento}
+                onChange={e => setForm({...form, fecha_evento: e.target.value})}
+                required
+                className="h-14 bg-bg-app border-white/10"
+              />
+              <Input 
+                label="Pases Solicitados" type="number"
+                placeholder="0"
+                value={form.cantidad_solicitada}
+                onChange={e => setForm({...form, cantidad_solicitada: parseInt(e.target.value)})}
+                required
+                className="h-14 bg-bg-app border-white/10"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-[10px] uppercase font-black text-text-muted tracking-[0.2em] pl-1 opacity-60">Justificación Operacional</label>
+              <textarea 
+                 className="w-full bg-bg-app border border-white/10 rounded-2xl p-4 text-white text-sm focus:ring-1 focus:ring-primary outline-none min-h-[120px] transition-all"
+                 placeholder="Describa el propósito de la entrada masiva..."
+                 value={form.motivo}
+                 onChange={e => setForm({...form, motivo: e.target.value.toUpperCase()})}
+                 required
+              />
+            </div>
           </div>
-          <div className="space-y-2">
-            <label className="text-[10px] uppercase font-bold text-text-muted tracking-widest pl-1">Motivo / Justificación</label>
-            <textarea 
-               className="w-full bg-bg-low border border-white/10 rounded-xl p-3 text-white text-sm focus:ring-1 focus:ring-primary outline-none min-h-[100px]"
-               placeholder="Describa brevemente la actividad..."
-               value={form.motivo}
-               onChange={e => setForm({...form, motivo: e.target.value})}
-               required
-            />
+
+          <div className="flex gap-4 pt-4">
+             <Boton type="button" variant="ghost" className="flex-1 h-14" onClick={() => setShowModal(false)}>Abortar</Boton>
+             <Boton type="submit" className="flex-[2] bg-primary text-bg-app font-black uppercase tracking-widest h-14 shadow-2xl shadow-primary/10">
+                Enviar Protocolo a Revisión
+             </Boton>
           </div>
-          <Boton type="submit" className="w-full">Enviar Solicitud</Boton>
         </form>
       </Modal>
 
-      {/* MODAL VER QRS */}
-      <Modal isOpen={showModalQrs} onClose={() => setShowModalQrs(false)} title="Pases de Evento Generados" size="lg">
-        <div className="space-y-6">
-           <div className="flex items-center justify-between bg-primary/5 p-4 rounded-xl border border-primary/10">
-              <div>
-                 <p className="text-white font-bold">{selectedEvento?.nombre_evento}</p>
-                 <p className="text-[10px] text-primary font-bold uppercase tracking-widest">Aprobados: {qrsEvento.length}</p>
+      {/* Modal Ver Qrs */}
+      <Modal isOpen={showModalQrs} onClose={() => setShowModalQrs(false)} title="Recubrimiento de Pases de Acceso" size="lg">
+        <div className="space-y-8">
+           <div className="flex items-center justify-between bg-bg-app p-6 rounded-3xl border border-white/5 relative overflow-hidden group">
+              <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
+                 <ShieldAlert size={120} />
               </div>
-              <Boton size="sm" onClick={() => window.print()} variant="ghost" className="text-text-muted">
-                 <Download size={16} />
-              </Boton>
+              <div className="relative z-10">
+                 <h4 className="text-xl font-black text-white italic uppercase tracking-tight leading-none mb-2">{selectedEvento?.nombre_evento}</h4>
+                 <div className="flex items-center gap-3">
+                    <span className="text-[10px] font-black text-primary uppercase tracking-widest border border-primary/20 px-2 py-0.5 rounded-md">AUTORIZADO</span>
+                    <span className="text-[10px] font-black text-text-muted uppercase tracking-widest">{qrsEvento.length} TOKENS GENERADOS</span>
+                 </div>
+              </div>
+              <div className="flex gap-2 relative z-10">
+                 <Boton onClick={() => window.print()} variant="ghost" className="h-12 w-12 p-0 border-white/10 hover:text-primary">
+                    <Printer size={20} />
+                 </Boton>
+                 <Boton variant="ghost" className="h-12 w-12 p-0 border-white/10 hover:text-primary">
+                    <Share2 size={20} />
+                 </Boton>
+              </div>
            </div>
 
-           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-h-[60vh] overflow-y-auto pr-2 custom-scrollbar">
+           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 max-h-[50vh] overflow-y-auto pr-3 custom-scrollbar">
               {qrsEvento.map((qr, idx) => (
-                 <div key={qr.id} className="bg-white p-4 rounded-3xl flex flex-col items-center gap-2 border border-white/10">
-                    <QRCode value={qr.token} size={140} fgColor="#000000" bgColor="#FFFFFF" />
-                    <div className="text-center">
-                       <p className="text-[8px] text-gray-400 font-bold uppercase">Token Permanente - Pase #{idx+1}</p>
-                       <p className="text-[10px] text-black font-black leading-tight truncate w-[140px]">
+                 <div key={qr.id} className="bg-white p-6 rounded-[2rem] flex flex-col items-center gap-4 border-2 border-primary/20 shadow-xl shadow-primary/5 hover:scale-105 transition-transform">
+                    <div className="p-2 border border-black/5 rounded-2xl bg-white shadow-inner">
+                       <QRCode value={qr.token} size={160} fgColor="#000000" bgColor="#FFFFFF" />
+                    </div>
+                    <div className="text-center w-full">
+                       <p className="text-[8px] text-gray-400 font-bold uppercase tracking-[0.2em] mb-1">PROTOCOLO FL-08 // PASE #{idx+1}</p>
+                       <p className="text-[11px] text-black font-black leading-tight uppercase truncate">
                           {selectedEvento?.nombre_evento}
                        </p>
                     </div>
@@ -232,10 +310,12 @@ export default function Eventos() {
               ))}
            </div>
 
-           <div className="p-4 bg-bg-app rounded-xl border border-white/5 space-y-2">
-              <p className="text-[10px] text-text-muted uppercase font-bold">Instrucciones</p>
-              <p className="text-xs text-text-sec">
-                 Estos pases son genéricos y solo válidos para la fecha del evento. Puede descargarlos o imprimirlos para distribuirlos entre los invitados.
+           <div className="p-5 bg-primary/5 rounded-2xl border border-primary/20 flex gap-4">
+              <div className="h-10 w-10 min-w-[40px] rounded-xl bg-primary/10 flex items-center justify-center text-primary">
+                 <AlertCircle size={20} />
+              </div>
+              <p className="text-[10px] text-primary/80 font-bold uppercase leading-relaxed tracking-wide">
+                 ADVERTENCIA: Estos tokens son de un solo uso y caducan automáticamente al finalizar el evento programado. La distribución de estos pases es responsabilidad exclusiva de la entidad civil.
               </p>
            </div>
         </div>
