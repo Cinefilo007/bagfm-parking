@@ -43,7 +43,7 @@ class SolicitudEvento(Base):
     cantidad_aprobada = Column(Integer, nullable=True)
     motivo = Column(Text, nullable=False)
     
-    estado = Column(SQLEnum(SolicitudEstado, name="solicitud_estado", native_enum=True), default=SolicitudEstado.pendiente)
+    estado = Column(SQLEnum(SolicitudEstado, name="solicitud_estado", native_enum=False), default=SolicitudEstado.pendiente)
     
     revisado_por = Column(UUID(as_uuid=True), ForeignKey("usuarios.id", ondelete="RESTRICT"), nullable=True)
     motivo_rechazo = Column(Text, nullable=True)
