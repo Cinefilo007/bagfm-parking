@@ -50,6 +50,9 @@ class AuthService:
             "sub": str(usuario.id),
             "rol": usuario.rol.value,
             "entidad_id": str(usuario.entidad_id) if usuario.entidad_id else None,
+            "nombre": usuario.nombre,
+            "apellido": usuario.apellido,
+            "cedula": usuario.cedula,
             "debe_cambiar_password": usuario.debe_cambiar_password
         }
         
