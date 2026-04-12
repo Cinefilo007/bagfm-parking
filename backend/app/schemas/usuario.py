@@ -25,3 +25,10 @@ class UsuarioSalida(UsuarioBase):
     updated_at: datetime
     
     model_config = ConfigDict(from_attributes=True)
+
+class UsuarioUpdatePerfil(BaseModel):
+    nombre: Optional[str] = None
+    apellido: Optional[str] = None
+    cedula: Optional[str] = None
+    email: Optional[str] = None
+    telefono: Optional[str] = None

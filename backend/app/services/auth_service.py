@@ -7,6 +7,8 @@ from app.core.excepciones import CredencialesInvalidas, UsuarioInactivo
 from app.core.password_rotativo import generar_password_diario
 from app.models.alcabala_evento import PuntoAcceso
 from app.models.enums import RolTipo
+from app.schemas.usuario import UsuarioUpdatePerfil
+from app.core.excepciones import AccesoDenegado
 
 class AuthService:
     async def autenticar_usuario(self, db: AsyncSession, credenciales: LoginEntrada) -> Token:
@@ -71,5 +73,28 @@ class AuthService:
         
         await db.commit()
         return True
+
+    async def actualizar_perfil(self, db: AsyncSession, usuario: Usuario, datos: UsuarioUpdatePerfil) -> Usuario:
+        """
+        Actualiza los datos del perfil del usuario.
+        Restricción: Solo el COMANDANTE puede cambiar nombre, apellido y cedula (Sucesión Táctica).
+        """
+        # Validar si se intentan cambiar campos protegidos sin ser Comandante
+        campos_identidad = ["nombre", "apellido", "cedula"]
+        if usuario.rol != RolTipo.COMANDANTE:
+            for campo in campos_identidad:
+                if getattr(datos, campo) is not None:
+                    raise AccesoDenegado("Solo el Comandante puede modificar datos de identidad")
+
+        # Aplicar cambios
+        if datos.nombre is not None: usuario.nombre = datos.nombre
+        if datos.apellido is not None: usuario.apellido = datos.apellido
+        if datos.cedula is not None: usuario.cedula = datos.cedula
+        if datos.email is not None: usuario.email = datos.email
+        if datos.telefono is not None: usuario.telefono = datos.telefono
+        
+        await db.commit()
+        await db.refresh(usuario)
+        return usuario
 
 auth_service = AuthService()

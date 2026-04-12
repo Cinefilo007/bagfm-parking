@@ -7,6 +7,7 @@ from app.core.excepciones import CredencialesInvalidas, UsuarioInactivo
 from app.core.dependencias import obtener_usuario_actual
 from app.models.usuario import Usuario
 from app.schemas.auth import LoginEntrada, Token, CambioPasswordEntrada
+from app.schemas.usuario import UsuarioSalida, UsuarioUpdatePerfil
 from app.services.auth_service import auth_service
 
 router = APIRouter()
@@ -57,3 +58,15 @@ async def cambiar_password(
         )
         
     return {"mensaje": "Contraseña actualizada exitosamente"}
+
+@router.patch("/perfil", response_model=UsuarioSalida)
+async def actualizar_perfil(
+    datos: UsuarioUpdatePerfil,
+    db: AsyncSession = Depends(obtener_db),
+    usuario_actual: Usuario = Depends(obtener_usuario_actual)
+):
+    """
+    Actualiza datos de contacto de cualquier usuario.
+    Nombre/Apellido/Cédula solo editable por Comandante (validado en service).
+    """
+    return await auth_service.actualizar_perfil(db, usuario_actual, datos)

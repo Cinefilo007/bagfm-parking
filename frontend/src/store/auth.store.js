@@ -65,6 +65,42 @@ export const useAuthStore = create((set) => ({
     window.location.href = '/login';
   },
 
+  updatePerfil: async (datos) => {
+    try {
+      const response = await api.patch('auth/perfil', datos);
+      const updatedUser = response.data;
+      
+      // Actualizar localStorage
+      localStorage.setItem('user', JSON.stringify(updatedUser));
+      
+      // Actualizar estado global
+      set({ user: updatedUser });
+      return updatedUser;
+    } catch (error) {
+      console.error("Error al actualizar perfil", error);
+      throw error;
+    }
+  },
+
+  cambiarPassword: async (nueva_password) => {
+    try {
+      await api.patch('auth/cambiar-password', { nueva_password });
+      
+      // Si tuvo éxito, quitamos el flag de debe_cambiar_password si lo tenía
+      const userString = localStorage.getItem('user');
+      if (userString) {
+        const user = JSON.parse(userString);
+        user.debe_cambiar_password = false;
+        localStorage.setItem('user', JSON.stringify(user));
+        set({ user });
+      }
+      return true;
+    } catch (error) {
+      console.error("Error al cambiar contraseña", error);
+      throw error;
+    }
+  },
+
   setDebeCambiarPassword: (valor) => {
     const userString = localStorage.getItem('user');
     if (userString) {
