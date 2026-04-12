@@ -155,10 +155,10 @@ const MapaBaseReal = ({ situacion, onSelectEntity, assignmentMode, onMapClick, s
                     eventHandlers={{ click: () => !assignmentMode && onSelectEntity(alcabala) }}
                   >
                     <Popup className="tactical-popup">
-                      <div className="p-1">
+                        <div className="p-1">
                           <div className="text-[9px] font-black uppercase tracking-widest text-primary/70 mb-1">Punto de Control</div>
-                          <div className="text-[15px] font-display font-black uppercase text-white mb-3 tracking-tight">{alcabala.nombre}</div>
-                          <div className="grid grid-cols-2 gap-3 border-t border-white/10 pt-3">
+                          <div className="text-[15px] font-display font-black uppercase text-text-main mb-3 tracking-tight">{alcabala.nombre}</div>
+                          <div className="grid grid-cols-2 gap-3 border-t border-bg-high/20 pt-3">
                              <div className="flex flex-col">
                                 <span className="text-[8px] text-text-muted uppercase font-bold">Entradas Hoy</span>
                                 <span className="text-[13px] font-mono font-bold text-primary">{alcabala.entradas_hoy || 0}</span>
@@ -183,8 +183,8 @@ const MapaBaseReal = ({ situacion, onSelectEntity, assignmentMode, onMapClick, s
                     <Popup className="tactical-popup">
                         <div className="p-1">
                             <div className="text-[9px] font-black uppercase tracking-widest text-text-muted mb-1">Sede Administrativa</div>
-                            <div className="text-[15px] font-display font-black uppercase text-white mb-3 tracking-tight">{entidad.nombre}</div>
-                            <div className="flex justify-between items-center text-[10px] font-mono border-t border-white/10 pt-3">
+                            <div className="text-[15px] font-display font-black uppercase text-text-main mb-3 tracking-tight">{entidad.nombre}</div>
+                            <div className="flex justify-between items-center text-[10px] font-mono border-t border-bg-high/20 pt-3">
                                <span className="text-text-sec font-bold">OCUPACIÓN:</span>
                                <span className="text-primary font-black text-[12px]">{entidad.ocupacion_actual || 0} / {entidad.capacidad_total || 0}</span>
                             </div>
@@ -218,10 +218,10 @@ const MapaBaseReal = ({ situacion, onSelectEntity, assignmentMode, onMapClick, s
                            <Popup className="tactical-popup">
                               <div className="p-1">
                                   <div className="text-[10px] font-black uppercase tracking-widest text-warning mb-1">Zona Logística</div>
-                                  <div className="text-sm font-bold uppercase text-white mb-2">{zona.nombre}</div>
-                                  <div className="flex justify-between items-center text-[11px] font-mono border-t border-white/10 pt-2">
+                                  <div className="text-sm font-bold uppercase text-text-main mb-2">{zona.nombre}</div>
+                                  <div className="flex justify-between items-center text-[11px] font-mono border-t border-bg-high/20 pt-2">
                                      <span className="text-text-sec">CAPACIDAD:</span>
-                                     <span className="text-white font-bold">{zona.ocupacion_actual} / {zona.capacidad_total}</span>
+                                     <span className="text-text-main font-bold">{zona.ocupacion_actual} / {zona.capacidad_total}</span>
                                   </div>
                               </div>
                            </Popup>
