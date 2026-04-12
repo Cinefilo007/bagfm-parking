@@ -9,7 +9,6 @@ const MapaTactico = ({ pollingEnabled = true, situacionPreload = null }) => {
     const [situacion, setSituacion] = useState(situacionPreload);
     const [loading, setLoading] = useState(!situacionPreload);
     const [selected, setSelected] = useState(null);
-    const [isFullscreen, setIsFullscreen] = useState(false);
     
     const [isAssigning, setIsAssigning] = useState(false);
     const [selectedEntityToMove, setSelectedEntityToMove] = useState(null);
@@ -61,10 +60,6 @@ const MapaTactico = ({ pollingEnabled = true, situacionPreload = null }) => {
         }
     };
 
-    const toggleFullscreen = () => {
-        setIsFullscreen(!isFullscreen);
-    };
-
     if (loading) return (
       <div className="h-[450px] bg-bg-card rounded-2xl flex items-center justify-center border border-bg-high/10 animate-pulse">
           <div className="flex flex-col items-center gap-3">
@@ -75,7 +70,7 @@ const MapaTactico = ({ pollingEnabled = true, situacionPreload = null }) => {
     );
 
     return (
-        <div className={`flex flex-col gap-6 h-full relative transition-all duration-300 ${isFullscreen ? 'fixed inset-0 z-[5000] bg-bg-app p-4 lg:p-8' : ''}`}>
+        <div className="flex flex-col gap-6 h-full relative">
             {/* Mapa de Situación Real */}
             <div className="flex-1 relative z-0 border border-bg-high/10 rounded-3xl overflow-hidden shadow-2xl bg-bg-low">
                 <MapaBaseReal 
@@ -84,18 +79,8 @@ const MapaTactico = ({ pollingEnabled = true, situacionPreload = null }) => {
                     assignmentMode={isAssigning}
                     onMapClick={handleMapClick}
                     selectedForMove={selectedEntityToMove}
-                    isFullscreen={isFullscreen}
+                    isFullscreen={false}
                 />
-
-                {/* BOTÓN: Fullscreen Toggle */}
-                <div className="absolute top-4 right-4 z-[1000]">
-                    <button 
-                        onClick={toggleFullscreen}
-                        className="w-10 h-10 bg-bg-card/80 backdrop-blur-md text-text-main rounded-xl flex items-center justify-center border border-bg-high/20 shadow-lg hover:scale-105 active:scale-95 transition-all outline-none"
-                    >
-                        {isFullscreen ? <Minimize2 size={20} /> : <Maximize2 size={20} />}
-                    </button>
-                </div>
 
                 {/* BOTÓN FLOTANTE: Georreferenciar */}
                 <div className="absolute bottom-6 left-6 z-[1000]">
@@ -118,53 +103,9 @@ const MapaTactico = ({ pollingEnabled = true, situacionPreload = null }) => {
                         </div>
                     )}
                 </div>
-
-                {/* OVERLAYS LATERALES (Solo en Fullscreen) */}
-                {isFullscreen && (
-                    <div className="absolute top-4 left-4 z-[1000] w-64 flex flex-col gap-4 animate-in slide-in-from-left duration-500">
-                        <Card className="bg-bg-card/90 backdrop-blur-md border-bg-high/10 p-4 shadow-2xl">
-                            <h4 className="text-[10px] font-display font-black text-primary uppercase tracking-widest mb-3 flex items-center gap-2">
-                                <Shield size={12} /> Estado Alcabalas
-                            </h4>
-                            <div className="space-y-2">
-                                {situacion?.alcabalas.map(alc => (
-                                    <div key={alc.id} className="flex justify-between items-center text-[10px]">
-                                        <span className="text-text-main font-bold truncate pr-2 uppercase">{alc.nombre}</span>
-                                        <div className="flex items-center gap-2 shrink-0">
-                                            <span className="text-emerald-500 font-mono font-bold">{alc.entradas_hoy} IN</span>
-                                            <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-                        </Card>
-
-                        <Card className="bg-bg-card/90 backdrop-blur-md border-bg-high/10 p-4 shadow-2xl">
-                            <h4 className="text-[10px] font-display font-black text-warning uppercase tracking-widest mb-3 flex items-center gap-2">
-                                <Users size={12} /> Ocupación Entidades
-                            </h4>
-                            <div className="space-y-3">
-                                {situacion?.entidades.slice(0, 4).map(ent => (
-                                    <div key={ent.id} className="space-y-1">
-                                        <div className="flex justify-between text-[9px] font-bold uppercase text-text-main">
-                                            <span>{ent.nombre}</span>
-                                            <span className="text-text-muted">{ent.ocupacion_actual}/{ent.capacidad_total}</span>
-                                        </div>
-                                        <div className="h-1.5 bg-bg-high/20 rounded-full overflow-hidden border border-bg-high/5">
-                                            <div 
-                                                className="h-full bg-warning shadow-[0_0_10px_rgba(245,158,11,0.5)] transition-all duration-1000" 
-                                                style={{ width: `${(ent.ocupacion_actual / ent.capacidad_total) * 100}%` }}
-                                            />
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-                        </Card>
-                    </div>
-                )}
             </div>
 
-            {/* Modal de Selección (También adaptado para no usar Portal si es posible, pero aquí está bien ya que es un modal estándar) */}
+            {/* Modal de Selección */}
             {showSelectionModal && (
                <div className="fixed inset-0 z-[6000] flex items-center justify-center p-4 bg-bg-app/80 backdrop-blur-sm">
                   <div className="bg-bg-card w-full max-w-md rounded-2xl border border-bg-high/10 shadow-2xl overflow-hidden max-h-[80vh] flex flex-col animate-in fade-in zoom-in duration-200">

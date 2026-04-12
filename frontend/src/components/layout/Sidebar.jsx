@@ -18,7 +18,7 @@ export const Sidebar = () => {
   
   if (user?.rol === 'COMANDANTE' || user?.rol === 'ADMIN_BASE' || user?.rol === 'SUPERVISOR') {
     navItems.push(
-      { to: '/comando/dashboard', label: 'Monitor Táctico', icon: ShieldCheck },
+      { to: '/comando/dashboard', label: 'Dashboard', icon: ShieldCheck },
       { to: '/comando/entidades', label: 'Entidades Civiles', icon: Users },
       { to: '/comando/alcabalas', label: 'Gestión Alcabalas', icon: ClipboardList },
       { to: '/comando/eventos', label: 'Eventos Masivos', icon: CalendarRange },
