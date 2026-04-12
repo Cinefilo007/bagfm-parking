@@ -1,4 +1,3 @@
-from fontTools.ttLib.tables.O_S_2f_2 import table_O_S_2f_2
 from typing import List
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
