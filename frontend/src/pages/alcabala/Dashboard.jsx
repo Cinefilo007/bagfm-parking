@@ -38,23 +38,16 @@ const DashboardAlcabala = () => {
         unidad: ''
     });
 
-    useEffect(() => {
-        fetchSituacion();
-        // Limpiar bloqueo al desmontar por seguridad
-        return () => lockNavigation(false);
-    }, []);
-
-    const fetchSituacion = async () => {
+    const fetchSituacion = React.useCallback(async (showLoading = false) => {
+        if (showLoading) setLoading(true);
         try {
             const data = await comandoService.getMiSituacion();
             setSituacion(data);
             
-            // Actualizar contadores si vienen en la respuesta
             if (data.stats) {
                 setStats(data.stats);
             }
             
-            // Si no está identificado, BLOQUEAR navegación
             if (!data.identificado) {
                 lockNavigation(true);
             } else {
@@ -63,16 +56,22 @@ const DashboardAlcabala = () => {
         } catch (error) {
             console.error('Error sincronizando situación:', error);
         } finally {
-            setLoading(false);
+            if (showLoading) setLoading(false);
         }
-    };
+    }, [lockNavigation]);
+
+    useEffect(() => {
+        fetchSituacion(true);
+        // Limpiar bloqueo al desmontar por seguridad
+        return () => lockNavigation(false);
+    }, [fetchSituacion, lockNavigation]);
 
     useEffect(() => {
         if (situacion?.identificado) {
-            const interval = setInterval(fetchSituacion, 10000);
+            const interval = setInterval(() => fetchSituacion(false), 10000);
             return () => clearInterval(interval);
         }
-    }, [situacion?.identificado]);
+    }, [situacion?.identificado, fetchSituacion]);
 
     const handleIdentificar = async (e) => {
         e.preventDefault();
@@ -207,9 +206,6 @@ const DashboardAlcabala = () => {
                         onClick={() => handleIniciarEscaneo('entrada')}
                         className="group relative h-40 flex flex-col items-center justify-center gap-2 bg-bg-card border-2 border-primary/20 rounded-[2.5rem] shadow-2xl shadow-primary/5 hover:border-primary hover:scale-[1.02] active:scale-95 transition-all outline-none"
                      >
-                        <div className="absolute top-4 right-6 opacity-10 group-hover:opacity-20 transition-opacity">
-                             <Zap size={48} className="text-primary fill-primary" />
-                        </div>
                         <div className="h-16 w-16 rounded-full bg-primary/10 flex items-center justify-center text-primary group-hover:bg-primary group-hover:text-bg-app transition-colors shadow-inner">
                             <LogIn size={32} strokeWidth={2.5} />
                         </div>
@@ -220,9 +216,6 @@ const DashboardAlcabala = () => {
                         onClick={() => handleIniciarEscaneo('salida')}
                         className="group relative h-40 flex flex-col items-center justify-center gap-2 bg-bg-card border-2 border-warning/20 rounded-[2.5rem] shadow-2xl shadow-warning/5 hover:border-warning hover:scale-[1.02] active:scale-95 transition-all outline-none"
                      >
-                        <div className="absolute top-4 right-6 opacity-10 group-hover:opacity-20 transition-opacity">
-                             <ShieldAlert size={48} className="text-warning fill-warning" />
-                        </div>
                         <div className="h-16 w-16 rounded-full bg-warning/10 flex items-center justify-center text-warning group-hover:bg-warning group-hover:text-bg-app transition-colors shadow-inner">
                             <LogOut size={32} strokeWidth={2.5} />
                         </div>
