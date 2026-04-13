@@ -66,7 +66,7 @@ const ScannerAlcabala = () => {
                 usuario_id: resultado.usuario_id,
                 vehiculo_id: resultado.vehiculo_id,
                 tipo: tipoAcceso,
-                punto_acceso: situacion?.punto?.nombre || 'Alcabala Central',
+                punto_acceso: 'Alcabala Central',
                 es_manual: false
             });
             
