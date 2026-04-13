@@ -11,7 +11,7 @@ from app.models.alcabala_evento import PuntoAcceso
 from app.models.zona_estacionamiento import ZonaEstacionamiento
 from app.models.acceso import Acceso
 from app.models.infraccion import Infraccion
-from app.models.enums import InfraccionEstado
+from app.models.enums import InfraccionEstado, RolTipo
 from app.models.usuario import Usuario
 
 async def get_situacion_actual(db: AsyncSession):
