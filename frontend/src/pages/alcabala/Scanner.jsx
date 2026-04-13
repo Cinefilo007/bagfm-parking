@@ -252,14 +252,14 @@ const ScannerAlcabala = () => {
                                     REANUDAR RADAR
                                 </Boton>
                                 <Boton 
-                                    disabled={cargando || !resultado.permitido}
+                                    disabled={cargando || !resultado.permitido || !operador}
                                     onClick={handleConfirmar}
                                     className="flex-[2] h-16 rounded-2xl bg-primary text-bg-app font-black uppercase text-sm tracking-[0.2em] hover:bg-primary/90 shadow-2xl shadow-primary/20 transition-all active:scale-95 flex items-center justify-center gap-3 disabled:opacity-50"
                                 >
                                     {cargando ? <RefreshCw className="animate-spin" size={20} /> : (
                                         <>
                                             <Shield size={20} />
-                                            CONFIRMAR {tipoAcceso.toUpperCase()}
+                                            {!operador ? 'SINCRONIZANDO...' : `CONFIRMAR ${tipoAcceso.toUpperCase()}`}
                                         </>
                                     )}
                                 </Boton>

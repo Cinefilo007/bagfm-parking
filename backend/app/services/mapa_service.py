@@ -52,14 +52,15 @@ async def get_situacion_actual(db: AsyncSession):
     
     alcabalas_data = []
     for a in alcabalas_objs:
-        # Flujo por nombre de punto de acceso
+        # Flujo por nombre de punto de acceso (Normalizado para evitar discrepancias)
+        nombre_normalizado = a.nombre.strip()
         q_ent = select(func.count(Acceso.id)).filter(
-            Acceso.punto_acceso == a.nombre,
+            func.trim(Acceso.punto_acceso) == nombre_normalizado,
             Acceso.tipo == "entrada",
             func.cast(Acceso.timestamp, Date) == hoy
         )
         q_sal = select(func.count(Acceso.id)).filter(
-            Acceso.punto_acceso == a.nombre,
+            func.trim(Acceso.punto_acceso) == nombre_normalizado,
             Acceso.tipo == "salida",
             func.cast(Acceso.timestamp, Date) == hoy
         )
@@ -71,13 +72,13 @@ async def get_situacion_actual(db: AsyncSession):
         guardia = await alcabala_service.obtener_guardia_actual(db, a.id)
         
         alcabalas_data.append({
-            "id": a.id,
+            "id": str(a.id),
             "nombre": a.nombre,
             "latitud": a.latitud,
             "longitud": a.longitud,
             "entradas_hoy": entradas,
             "salidas_hoy": salidas,
-            "personal_activo": f"{guardia.grado} {guardia.nombre}" if guardia else None
+            "personal_activo": f"{guardia.grado} {guardia.nombre}" if guardia else "SIN COMANDO"
         })
 
     # 3. Zonas de Estacionamiento (Convertir a dict para serialización limpia)
@@ -126,19 +127,20 @@ async def get_situacion_actual(db: AsyncSession):
             "es_manual": acc.es_manual
         })
 
-    # 5. Globales
-    query_vehiculos = select(func.count(Acceso.id)).filter(
+    # 5. Globales Refinados
+    query_entradas = select(func.count(Acceso.id)).filter(
         func.cast(Acceso.timestamp, Date) == hoy,
         Acceso.tipo == "entrada"
     )
-    vehiculos_hoy = (await db.execute(query_vehiculos)).scalar() or 0
-
-    query_alertas = select(func.count(Infraccion.id)).filter(
-        Infraccion.estado == InfraccionEstado.activa
+    query_salidas = select(func.count(Acceso.id)).filter(
+        func.cast(Acceso.timestamp, Date) == hoy,
+        Acceso.tipo == "salida"
     )
-    alertas_activas = (await db.execute(query_alertas)).scalar() or 0
-
-    # Bloqueados reales (Socios con activo=False)
+    
+    total_entradas = (await db.execute(query_entradas)).scalar() or 0
+    total_salidas = (await db.execute(query_salidas)).scalar() or 0
+    
+    # 6. Bloqueados reales (Socios con activo=False)
     query_bloqueados = select(func.count(Usuario.id)).filter(
         Usuario.activo == False,
         Usuario.rol == RolTipo.SOCIO
@@ -149,7 +151,8 @@ async def get_situacion_actual(db: AsyncSession):
         "entidades": entidades_data,
         "alcabalas": alcabalas_data,
         "zonas_estacionamiento": zonas_data,
-        "vehiculos_hoy": vehiculos_hoy,
+        "vehiculos_dentro": max(0, total_entradas - total_salidas),
+        "total_accesos_hoy": total_entradas,
         "alertas_activas": alertas_activas,
         "bloqueados_total": bloqueados_reales,
         "eventos_recientes": eventos_data
