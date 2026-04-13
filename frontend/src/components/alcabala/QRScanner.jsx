@@ -7,20 +7,11 @@ import { Boton } from '../ui/Boton';
  * Componente QRScanner Premium.
  * Maneja el ciclo de vida de la cámara y el escaneo.
  */
-export const QRScanner = ({ onScanSuccess, onScanError }) => {
+export const QRScanner = ({ onScanSuccess, onScanError, autoStart = false }) => {
   const [isScanning, setIsScanning] = useState(false);
   const [cameraError, setCameraError] = useState(null);
   const qrRef = useRef(null);
   const html5QrCode = useRef(null);
-
-  useEffect(() => {
-    // Limpieza al desmontar
-    return () => {
-      if (html5QrCode.current && html5QrCode.current.isScanning) {
-        html5QrCode.current.stop();
-      }
-    };
-  }, []);
 
   const startScanner = async () => {
     try {
@@ -56,6 +47,22 @@ export const QRScanner = ({ onScanSuccess, onScanError }) => {
       setIsScanning(false);
     }
   };
+
+  useEffect(() => {
+    if (autoStart) {
+      const timer = setTimeout(() => startScanner(), 500);
+      return () => clearTimeout(timer);
+    }
+  }, [autoStart]);
+
+  useEffect(() => {
+    // Limpieza al desmontar
+    return () => {
+      if (html5QrCode.current && html5QrCode.current.isScanning) {
+        html5QrCode.current.stop();
+      }
+    };
+  }, []);
 
   const stopScanner = async () => {
     if (html5QrCode.current && html5QrCode.current.isScanning) {

@@ -12,7 +12,14 @@ import {
     Camera
 } from 'lucide-react';
 import { Header } from '../../components/layout/Header';
-import { cn } from '../../lib/utils';
+import { toast } from 'react-hot-toast';
+
+// Componentes Locales (Hoisted explicitly)
+const BadgeCheck = ({ size, className }) => (
+    <div className={className}>
+        <CheckCircle2 size={size} />
+    </div>
+);
 
 const ScannerAlcabala = () => {
     const [searchParams] = useSearchParams();
@@ -22,22 +29,33 @@ const ScannerAlcabala = () => {
     const [mostrandoModal, setMostrandoModal] = useState(false);
     const [cargando, setCargando] = useState(false);
 
+    useEffect(() => {
+        console.log(">>> TERMINAL DE ESCANEO MONTADA. TIPO:", tipoAcceso);
+    }, [tipoAcceso]);
+
     const handleScanSuccess = async (qrToken) => {
         if (cargando) return;
+        
+        console.log(">>> DETECTADO QR TOKEN:", qrToken);
+        
         setCargando(true);
-        console.log("Iniciando validación táctica del token QR...");
         try {
             const res = await alcabalaService.validarQR(qrToken, tipoAcceso);
+            console.log(">>> RESPUESTA EXITOSA:", res);
             setResultado(res);
             setMostrandoModal(true);
+            toast.success('Entidad Identificada');
         } catch (error) {
-            console.error("Fallo crítico en reconocimiento QR:", error);
+            console.error(">>> ERROR VALIDANDO QR:", error);
+            const errorMsg = error.response?.data?.detail || error.message || "Fallo de conexión";
+            
             setResultado({ 
                 permitido: false, 
-                mensaje: "Fallo en protocolo de comunicación con la base central.", 
+                mensaje: "Fallo en protocolo: " + errorMsg, 
                 tipo_alerta: "error" 
             });
             setMostrandoModal(true);
+            toast.error('Error de Comunicación');
         } finally {
             setCargando(false);
         }
@@ -93,11 +111,11 @@ const ScannerAlcabala = () => {
 
                 {/* Componente de Escaneo Aegis v2 */}
                 <Card className="bg-black/40 border-white/5 rounded-[2.5rem] overflow-hidden shadow-2xl relative aspect-square">
-                    <div className="absolute inset-0 z-0 opactiy-20">
+                    <div className="absolute inset-0 z-0 opacity-20">
                          <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_transparent_0%,_rgba(0,0,0,0.4)_100%)]" />
                     </div>
                     <div className="relative z-10 w-full h-full p-2">
-                         <QRScanner onScanSuccess={handleScanSuccess} />
+                         <QRScanner onScanSuccess={handleScanSuccess} autoStart={true} />
                     </div>
                     
                     {/* Guías Visuales del Scanner */}
@@ -258,12 +276,5 @@ const ScannerAlcabala = () => {
         </div>
     );
 };
-
-// Icono auxiliar no importado
-const BadgeCheck = ({ size, className }) => (
-    <div className={className}>
-        <CheckCircle2 size={size} />
-    </div>
-);
 
 export default ScannerAlcabala;
