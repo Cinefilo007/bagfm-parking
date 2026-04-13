@@ -105,6 +105,25 @@ async def obtener_situacion_actual(
         raise HTTPException(status_code=404, detail="Usuario no vinculado a una alcabala fija")
     
     identificacion = await alcabala_service.obtener_mi_identificacion_actual(db, usuario.id)
+
+    # Estadísticas para el dashboard del guardia
+    from datetime import date
+    from sqlalchemy import func, Date
+    from app.models.acceso import Acceso
+    
+    hoy = date.today()
+    q_ent = select(func.count(Acceso.id)).filter(
+        Acceso.punto_acceso == punto.nombre,
+        Acceso.tipo == "entrada",
+        func.cast(Acceso.timestamp, Date) == hoy
+    )
+    q_sal = select(func.count(Acceso.id)).filter(
+        Acceso.punto_acceso == punto.nombre,
+        Acceso.tipo == "salida",
+        func.cast(Acceso.timestamp, Date) == hoy
+    )
+    entradas = (await db.execute(q_ent)).scalar() or 0
+    salidas = (await db.execute(q_sal)).scalar() or 0
     
     return {
         "punto": {
@@ -113,7 +132,12 @@ async def obtener_situacion_actual(
             "ubicacion": punto.ubicacion
         },
         "identificado": identificacion is not None,
-        "datos_guardia": identificacion
+        "datos_guardia": identificacion,
+        "stats": {
+            "entradas": entradas,
+            "salidas": salidas,
+            "infracciones": 0
+        }
     }
 
 @router.post("/identificar-guardia", response_model=GuardiaTurnoSalida)

@@ -66,9 +66,17 @@ const ScannerAlcabala = () => {
                 usuario_id: resultado.usuario_id,
                 vehiculo_id: resultado.vehiculo_id,
                 tipo: tipoAcceso,
+                punto_acceso: situacion?.punto?.nombre || 'Alcabala Central',
                 es_manual: false
             });
-            navigate('/alcabala/dashboard');
+            
+            toast.success(`Acceso de ${resultado.socio.nombre} confirmado`);
+            setResultado(null);
+            
+            // Forzar reactivación del radar si es necesario
+            if (scannerRef.current && !scannerRef.current.isScanning) {
+                scannerRef.current.toggleScanner();
+            }
         } catch (error) {
             console.error("Error al persistir registro:", error);
             toast.error("Error al registrar: " + error.message);

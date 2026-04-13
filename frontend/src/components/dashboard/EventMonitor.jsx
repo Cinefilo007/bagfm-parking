@@ -51,6 +51,11 @@ const EventMonitor = ({ eventos = [] }) => {
                   <Clock size={10} className="opacity-40" />
                   {evento.tipo === 'entrada' ? 'Ingreso por' : 'Egreso por'} <span className="text-primary/70">{evento.punto}</span>
                 </p>
+                {evento.vehiculo && (
+                  <p className="text-[8px] font-black text-primary/60 uppercase tracking-widest mt-0.5 ml-3.5">
+                    Unidad: {evento.vehiculo}
+                  </p>
+                )}
               </div>
             </div>
           ))

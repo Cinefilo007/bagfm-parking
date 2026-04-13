@@ -45,10 +45,14 @@ const DashboardAlcabala = () => {
     }, []);
 
     const fetchSituacion = async () => {
-        setLoading(true);
         try {
             const data = await comandoService.getMiSituacion();
             setSituacion(data);
+            
+            // Actualizar contadores si vienen en la respuesta
+            if (data.stats) {
+                setStats(data.stats);
+            }
             
             // Si no está identificado, BLOQUEAR navegación
             if (!data.identificado) {
@@ -57,11 +61,18 @@ const DashboardAlcabala = () => {
                 lockNavigation(false);
             }
         } catch (error) {
-            toast.error('Fallo en sincronización táctica');
+            console.error('Error sincronizando situación:', error);
         } finally {
             setLoading(false);
         }
     };
+
+    useEffect(() => {
+        if (situacion?.identificado) {
+            const interval = setInterval(fetchSituacion, 10000);
+            return () => clearInterval(interval);
+        }
+    }, [situacion?.identificado]);
 
     const handleIdentificar = async (e) => {
         e.preventDefault();

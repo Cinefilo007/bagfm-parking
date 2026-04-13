@@ -31,7 +31,7 @@ export default function DashboardComando() {
     { label: 'Vehículos Dentro', valor: situacion.vehiculos_hoy, highlight: false, icon: CarFront },
     { label: 'Accesos Hoy', valor: situacion.alcabalas.reduce((acc, a) => acc + a.entradas_hoy, 0), highlight: false, icon: Target },
     { label: 'Infracciones Activas', valor: situacion.alertas_activas, highlight: 'alerta', icon: AlertTriangle },
-    { label: 'Bloqueados', valor: situacion.alertas_activas > 5 ? 2 : 1, highlight: 'error', icon: ShieldAlert },
+    { label: 'Bloqueados', valor: situacion.bloqueados_total || 0, highlight: 'error', icon: ShieldAlert },
   ] : [];
 
   return (

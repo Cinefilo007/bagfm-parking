@@ -97,8 +97,8 @@ async def get_situacion_actual(db: AsyncSession):
         })
 
     # 4. Eventos Recientes (Monitor en tiempo real)
-    # Combinar los últimos 10 accesos
-    query_recientes = select(Acceso).order_by(Acceso.timestamp.desc()).limit(10)
+    # Combinar los últimos 15 accesos con info vehicular
+    query_recientes = select(Acceso).order_by(Acceso.timestamp.desc()).limit(15)
     result_recientes = await db.execute(query_recientes)
     accesos_recientes = result_recientes.scalars().all()
     
@@ -108,11 +108,20 @@ async def get_situacion_actual(db: AsyncSession):
         q_u = select(Usuario).filter(Usuario.id == acc.usuario_id)
         u = (await db.execute(q_u)).scalar_one_or_none()
         
+        # Obtener vehículo si existe
+        vehiculo_str = "SIN VEHÍCULO"
+        if acc.vehiculo_id:
+            from app.models.vehiculo import Vehiculo
+            v = await db.get(Vehiculo, acc.vehiculo_id)
+            if v:
+                vehiculo_str = f"{v.marca} [{v.placa}]"
+
         eventos_data.append({
             "id": acc.id,
             "tipo": acc.tipo, # entrada / salida
             "timestamp": acc.timestamp.isoformat(),
             "usuario": f"{u.nombre} {u.apellido}" if u else "Socio Desconocido",
+            "vehiculo": vehiculo_str,
             "punto": acc.punto_acceso,
             "es_manual": acc.es_manual
         })
@@ -129,12 +138,20 @@ async def get_situacion_actual(db: AsyncSession):
     )
     alertas_activas = (await db.execute(query_alertas)).scalar() or 0
 
+    # Bloqueados reales (Socios con activo=False)
+    query_bloqueados = select(func.count(Usuario.id)).filter(
+        Usuario.activo == False,
+        Usuario.rol == RolTipo.SOCIO
+    )
+    bloqueados_reales = (await db.execute(query_bloqueados)).scalar() or 0
+
     return {
         "entidades": entidades_data,
         "alcabalas": alcabalas_data,
         "zonas_estacionamiento": zonas_data,
         "vehiculos_hoy": vehiculos_hoy,
         "alertas_activas": alertas_activas,
+        "bloqueados_total": bloqueados_reales,
         "eventos_recientes": eventos_data
     }
 
