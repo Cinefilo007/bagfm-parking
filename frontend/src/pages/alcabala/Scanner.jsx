@@ -37,26 +37,40 @@ const ScannerAlcabala = () => {
     const handleScanSuccess = async (qrToken) => {
         if (cargando) return;
         
-        console.log(">>> DETECTADO QR TOKEN:", qrToken);
+        let tokenFinal = qrToken;
+        // Si el QR es una URL (común en escaneos directos de cámara), extraer el token
+        if (qrToken.includes('token=')) {
+            try {
+                const url = new URL(qrToken);
+                tokenFinal = url.searchParams.get('token') || qrToken;
+            } catch (e) {
+                console.warn("No es una URL válida, usando texto crudo");
+            }
+        }
+
+        console.log(">>> [SENSOR] TOKEN DETECTADO:", tokenFinal.substring(0, 15) + "...");
+        const toastId = toast.loading('Sincronizando con Base Central...', { duration: 5000 });
         
         setCargando(true);
         try {
+            console.log(">>> [RED] ENVIANDO VALIDACIÓN:", { token: qrToken.substring(0, 20), tipo: tipoAcceso });
             const res = await alcabalaService.validarQR(qrToken, tipoAcceso);
-            console.log(">>> RESPUESTA EXITOSA:", res);
+            
+            console.log(">>> [BACKEND] RESPUESTA RECIBIDA:", res);
             setResultado(res);
             setMostrandoModal(true);
-            toast.success('Entidad Identificada');
+            toast.success('Identidad Recuperada', { id: toastId });
         } catch (error) {
-            console.error(">>> ERROR VALIDANDO QR:", error);
-            const errorMsg = error.response?.data?.detail || error.message || "Fallo de conexión";
+            console.error(">>> [ERROR] FALLO EN VALIDACIÓN:", error);
+            const errorMsg = error.response?.data?.detail || error.message || "Error Desconocido";
             
             setResultado({ 
                 permitido: false, 
-                mensaje: "Fallo en protocolo: " + errorMsg, 
+                mensaje: "Error de Protocolo: " + errorMsg, 
                 tipo_alerta: "error" 
             });
             setMostrandoModal(true);
-            toast.error('Error de Comunicación');
+            toast.error('Fallo en Enlace Táctico', { id: toastId });
         } finally {
             setCargando(false);
         }
