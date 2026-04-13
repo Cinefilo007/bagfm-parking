@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { QRScanner } from '../../components/alcabala/QRScanner';
 import { alcabalaService } from '../../services/alcabala.service';
-import { Modal } from '../../components/ui/Modal';
 import { Badge } from '../../components/ui/Badge';
 import { Boton } from '../../components/ui/Boton';
 import { Card, CardContent } from '../../components/ui/Card';
@@ -27,7 +26,6 @@ const ScannerAlcabala = () => {
     const navigate = useNavigate();
     const tipoAcceso = searchParams.get('tipo') || 'entrada';
     const [resultado, setResultado] = useState(null);
-    const [mostrandoModal, setMostrandoModal] = useState(false);
     const [cargando, setCargando] = useState(false);
 
     useEffect(() => {
@@ -61,18 +59,16 @@ const ScannerAlcabala = () => {
             
             console.log(">>> [BACKEND] RESPUESTA RECIBIDA:", res);
             setResultado(res);
-            setMostrandoModal(true);
             toast.success('Identidad Recuperada', { id: toastId });
         } catch (error) {
             console.error(">>> [ERROR] FALLO EN VALIDACIÓN:", error);
             const errorMsg = error.response?.data?.detail || error.message || "Error Desconocido";
             
-            setResultado({ 
+             setResultado({ 
                 permitido: false, 
                 mensaje: "Error de Protocolo: " + errorMsg, 
                 tipo_alerta: "error" 
             });
-            setMostrandoModal(true);
             toast.error('Fallo en Enlace Táctico', { id: toastId });
         } finally {
             setCargando(false);
@@ -101,37 +97,32 @@ const ScannerAlcabala = () => {
     };
 
     return (
-        <div className="min-h-screen bg-bg-app pb-10 flex flex-col">
+        <div className="min-h-screen bg-bg-app pb-24 flex flex-col">
             <Header titulo="Terminal de Escaneo" subtitle={`OPERACIÓN ${tipoAcceso.toUpperCase()}`} />
             
-            <main className="flex-1 max-w-2xl mx-auto w-full p-6 space-y-8 animate-in slide-in-from-bottom-4 duration-500">
+            <main className="flex-1 max-w-2xl mx-auto w-full p-6 space-y-6 animate-in slide-in-from-bottom-4 duration-500">
                 
-                {/* Cabecera del Escáner */}
+                {/* Cabecera Táctica Estilo Original */}
                 <div className="flex items-center justify-between px-2">
                     <div>
-                        <h2 className="text-2xl font-black text-text-main dark:text-white uppercase tracking-tighter italic leading-none">
-                            Detector <span className={tipoAcceso === 'entrada' ? 'text-primary' : 'text-warning'}>QR</span>
+                        <h2 className="text-3xl font-black text-white uppercase tracking-tighter italic leading-none">
+                            Detector <span className="text-primary">QR</span>
                         </h2>
                         <p className="text-[10px] font-black text-text-muted uppercase tracking-[0.2em] mt-2 opacity-60">
                             Alinee el código en el centro del visor
                         </p>
                     </div>
-                    <div className="flex items-center gap-3">
-                         <div className="flex flex-col items-end">
-                             <span className="text-[8px] font-black text-text-muted uppercase tracking-widest leading-none mb-1">Status</span>
-                             <div className="flex items-center gap-1.5">
-                                 <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse shadow-[0_0_8px_var(--color-primary)]" />
-                                 <span className="text-[10px] font-black text-text-main dark:text-white uppercase italic">Online</span>
-                             </div>
-                         </div>
+                    <div className="flex flex-col items-end">
+                        <span className="text-[8px] font-black text-text-muted uppercase tracking-widest leading-none mb-1">Status</span>
+                        <div className="flex items-center gap-1.5">
+                            <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse shadow-[0_0_8px_var(--color-primary)]" />
+                            <span className="text-[10px] font-black text-white uppercase italic">Online</span>
+                        </div>
                     </div>
                 </div>
 
-                {/* Componente de Escaneo Aegis v2 */}
+                {/* Visor del Escáner */}
                 <Card className="bg-black/40 border-white/5 rounded-[2.5rem] overflow-hidden shadow-2xl relative aspect-square">
-                    <div className="absolute inset-0 z-0 opacity-20">
-                         <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_transparent_0%,_rgba(0,0,0,0.4)_100%)]" />
-                    </div>
                     <div className="relative z-10 w-full h-full p-2">
                          <QRScanner 
                             onScanSuccess={handleScanSuccess} 
@@ -140,161 +131,131 @@ const ScannerAlcabala = () => {
                          />
                     </div>
                     
-                    {/* Guías Visuales del Scanner */}
-                    <div className="absolute inset-x-8 inset-y-8 pointer-events-none border-2 border-white/10 rounded-3xl border-dashed">
-                        <div className="absolute -top-1 -left-1 w-6 h-6 border-t-4 border-l-4 border-primary rounded-tl-lg" />
-                        <div className="absolute -top-1 -right-1 w-6 h-6 border-t-4 border-r-4 border-primary rounded-tr-lg" />
-                        <div className="absolute -bottom-1 -left-1 w-6 h-6 border-b-4 border-l-4 border-primary rounded-bl-lg" />
-                        <div className="absolute -bottom-1 -right-1 w-6 h-6 border-b-4 border-r-4 border-primary rounded-br-lg" />
+                    {/* Guías Visuales */}
+                    <div className="absolute inset-x-8 inset-y-8 pointer-events-none border-2 border-white/5 rounded-3xl border-dashed">
+                        <div className="absolute -top-1 -left-1 w-10 h-10 border-t-4 border-l-4 border-primary rounded-tl-2xl" />
+                        <div className="absolute -top-1 -right-1 w-10 h-10 border-t-4 border-r-4 border-primary rounded-tr-2xl" />
+                        <div className="absolute -bottom-1 -left-1 w-10 h-10 border-b-4 border-l-4 border-primary rounded-bl-2xl" />
+                        <div className="absolute -bottom-1 -right-1 w-10 h-10 border-b-4 border-r-4 border-primary rounded-br-2xl" />
                     </div>
                 </Card>
 
-                <div className="grid grid-cols-2 gap-4 h-16">
-                    <Card className="bg-bg-low/40 border-white/5 flex items-center justify-center gap-3">
+                {/* Info de Operación (Botones Inferiores Originales) */}
+                <div className="grid grid-cols-2 gap-4">
+                    <Card className="bg-bg-low/40 border-white/5 p-4 rounded-2xl flex items-center justify-center gap-3">
                         <Camera size={20} className="text-primary" />
-                        <span className="text-[10px] font-black text-text-main dark:text-white uppercase tracking-widest">Activo</span>
+                        <span className="text-[10px] font-black text-white uppercase tracking-widest">Activo</span>
                     </Card>
-                    <Card className="bg-bg-low/40 border-white/5 flex items-center justify-center gap-3">
-                        <Activity size={20} className={tipoAcceso === 'entrada' ? 'text-primary' : 'text-warning'} />
-                        <span className="text-[10px] font-black text-text-main dark:text-white uppercase tracking-widest">{tipoAcceso}</span>
+                    <Card className="bg-bg-low/40 border-white/5 p-4 rounded-2xl flex items-center justify-center gap-3">
+                        <Activity size={20} className="text-primary" />
+                        <span className="text-[10px] font-black text-white uppercase tracking-widest">{tipoAcceso}</span>
                     </Card>
                 </div>
 
-                {/* Overlay de Carga Táctico */}
-                {cargando && (
-                    <div className="fixed inset-0 bg-bg-app/80 backdrop-blur-xl z-[120] flex items-center justify-center animate-in fade-in duration-300">
-                         <div className="flex flex-col items-center gap-6">
-                             <div className="relative">
-                                 <Zap className="text-primary animate-pulse absolute inset-0 m-auto" size={32} />
-                                 <div className="w-24 h-24 border-4 border-primary/20 border-t-primary rounded-full animate-spin"></div>
-                             </div>
-                             <p className="text-white font-black tracking-[0.4em] text-[10px] uppercase italic animate-pulse">Consultando Seguridad Central...</p>
-                         </div>
+                {/* RESULTADO INTEGRADO (Sin Modal) */}
+                {resultado && (
+                    <div className="animate-in slide-in-from-top-4 fade-in duration-500 space-y-4 pb-12">
+                        {/* Banner de Estado */}
+                        <div className={cn(
+                            "p-6 rounded-3xl border-2 flex items-center gap-4 transition-all duration-500",
+                            resultado.permitido ? "bg-primary/10 border-primary text-primary shadow-[0_0_30px_rgba(var(--primary-rgb),0.2)]" : "bg-error/10 border-error text-error shadow-[0_0_30px_rgba(239,68,68,0.2)]"
+                        )}>
+                            {resultado.permitido ? <CheckCircle2 size={32} /> : <XCircle size={32} />}
+                            <div>
+                                <h4 className="text-xl font-black uppercase italic tracking-tighter leading-none">
+                                    {resultado.permitido ? "Acceso Autorizado" : "Acceso Denegado"}
+                                </h4>
+                                <p className="text-[10px] font-bold uppercase opacity-80 mt-1">{resultado.mensaje}</p>
+                            </div>
+                        </div>
+
+                        {/* Ficha del Socio */}
+                        {resultado.socio && (
+                            <Card className="bg-bg-card border-white/10 rounded-[2.5rem] p-6 shadow-2xl relative overflow-hidden">
+                                <div className="flex items-center gap-6">
+                                    <div className="w-20 h-20 rounded-3xl bg-white/5 border-2 border-white/10 overflow-hidden shrink-0">
+                                        {resultado.socio.foto_url ? (
+                                            <img src={resultado.socio.foto_url} alt="Socio" className="w-full h-full object-cover grayscale-[0.3]" />
+                                        ) : (
+                                            <div className="w-full h-full flex items-center justify-center"><User size={32} className="text-white/20" /></div>
+                                        )}
+                                    </div>
+                                    <div className="flex-1 min-w-0">
+                                        <h5 className="text-2xl font-black text-white uppercase italic tracking-tight leading-none truncate">
+                                            {resultado.socio.nombre} {resultado.socio.apellido}
+                                        </h5>
+                                        <div className="flex gap-2 mt-2">
+                                            <Badge variant="outline" className="text-[8px] font-black border-white/10 uppercase tracking-widest">CI: {resultado.socio.cedula}</Badge>
+                                            <Badge className="bg-primary/20 text-primary border-none text-[8px] font-black uppercase tracking-widest">{resultado.entidad_nombre}</Badge>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Info Vehículo y Membresía */}
+                                <div className="grid grid-cols-2 gap-4 mt-6 pt-6 border-t border-white/5">
+                                    <div className="bg-black/20 p-3 rounded-2xl border border-white/5">
+                                        <div className="flex items-center gap-2 mb-1">
+                                            <Shield size={12} className="text-primary" />
+                                            <span className="text-[8px] font-black text-text-muted uppercase tracking-widest">Membresía</span>
+                                        </div>
+                                        <p className="text-sm font-black text-white uppercase italic">
+                                            {resultado.membresia_info?.dias_restantes || 0} Días Vig.
+                                        </p>
+                                    </div>
+                                    <div className="bg-black/20 p-3 rounded-2xl border border-white/5">
+                                        <div className="flex items-center gap-2 mb-1">
+                                            <Car size={12} className="text-warning" />
+                                            <span className="text-[8px] font-black text-text-muted uppercase tracking-widest">Vehículo</span>
+                                        </div>
+                                        <p className="text-sm font-black text-warning uppercase italic truncate">
+                                            {resultado.vehiculo?.placa || 'SIN ASIGNAR'}
+                                        </p>
+                                    </div>
+                                </div>
+
+                                {/* Acciones Directas */}
+                                <div className="flex gap-3 mt-6">
+                                     <Boton 
+                                        onClick={() => setResultado(null)}
+                                        variant="outline" 
+                                        className="flex-1 h-16 rounded-2xl border-white/5 text-text-muted font-black uppercase text-[10px] tracking-widest"
+                                     >
+                                         NUEVO ESCANEO
+                                     </Boton>
+                                     <Boton 
+                                        disabled={!resultado.permitido}
+                                        onClick={handleConfirmar}
+                                        className={cn(
+                                            "flex-[1.5] h-16 rounded-2xl font-black uppercase text-xs tracking-[0.2em] transition-all",
+                                            resultado.permitido 
+                                                ? "bg-primary text-bg-app shadow-lg shadow-primary/20 scale-105" 
+                                                : "bg-white/5 text-white/10 border-white/5 opacity-50"
+                                        )}
+                                     >
+                                         CONFIRMAR {tipoAcceso}
+                                     </Boton>
+                                </div>
+                            </Card>
+                        )}
                     </div>
                 )}
-
-                {/* Resultado de Validación Aegis v2 */}
-                <Modal 
-                    isOpen={mostrandoModal} 
-                    onClose={() => setMostrandoModal(false)}
-                    title="VALIDACIÓN DE TERMINAL"
-                >
-                    <div className="space-y-6">
-                        {/* Cabecera de Resultado */}
-                        <div className={cn("p-8 rounded-[2rem] border-2 transition-all duration-500 shadow-2xl", getStatusStyles(resultado))}>
-                            <div className="flex items-center gap-6">
-                                {resultado?.permitido ? (
-                                    <div className="h-16 w-16 bg-primary/20 rounded-2xl flex items-center justify-center shadow-inner">
-                                        <CheckCircle2 size={40} strokeWidth={2.5} />
-                                    </div>
-                                ) : (
-                                    <div className="h-16 w-16 bg-danger/20 rounded-2xl flex items-center justify-center shadow-inner">
-                                        <XCircle size={40} strokeWidth={2.5} className="text-danger" />
-                                    </div>
-                                )}
-                                <div className="flex-1">
-                                    <h3 className="text-2xl font-black uppercase tracking-tighter italic leading-none">
-                                        {resultado?.permitido ? "Acceso Permitido" : "Entrada Denegada"}
-                                    </h3>
-                                    <p className="text-xs font-bold opacity-80 mt-2 uppercase tracking-widest italic line-clamp-2">
-                                        {resultado?.mensaje}
-                                    </p>
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Ficha Táctica del Socio */}
-                        {resultado?.socio && (
-                            <section className="space-y-4">
-                                <div className="px-2 flex items-center gap-2">
-                                    <BadgeCheck size={14} className="text-primary" />
-                                    <span className="text-[10px] font-black text-text-muted uppercase tracking-widest">Ficha de Identidad Identificada</span>
-                                </div>
-                                <Card className="p-6 bg-bg-low/40 border-white/5 rounded-[2rem] overflow-hidden relative">
-                                    <div className="flex items-center gap-6">
-                                        <div className="w-20 h-20 rounded-3xl bg-white/5 flex items-center justify-center overflow-hidden border-2 border-white/10 shrink-0 shadow-2xl">
-                                            {resultado.socio.foto_url ? (
-                                                <img src={resultado.socio.foto_url} alt="Socio" className="w-full h-full object-cover grayscale-[0.5] hover:grayscale-0 transition-all" />
-                                            ) : (
-                                                <User className="text-white/10" size={40} />
-                                            )}
-                                        </div>
-                                        <div className="flex-1 min-w-0">
-                                            <h5 className="text-2xl font-black text-text-main dark:text-white uppercase tracking-tight italic truncate leading-none">
-                                                {resultado.socio.nombre} {resultado.socio.apellido}
-                                            </h5>
-                                            <div className="mt-3 flex flex-wrap gap-3">
-                                                 <span className="text-[10px] font-black text-primary bg-primary/10 px-3 py-1 rounded-full uppercase italic">
-                                                     {resultado.entidad_nombre}
-                                                 </span>
-                                                 <span className="text-[10px] font-black text-text-muted bg-white/5 px-3 py-1 rounded-full uppercase">
-                                                     ID: {resultado.socio.cedula}
-                                                 </span>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    
-                                    <div className="mt-6 pt-6 border-t border-white/5 grid grid-cols-2 gap-4">
-                                         {resultado.membresia_info && (
-                                             <div className="bg-black/20 p-3 rounded-2xl border border-white/5">
-                                                 <span className="text-[8px] font-black text-text-muted uppercase tracking-widest block mb-1">Membresía</span>
-                                                 <p className={cn("text-xs font-black uppercase italic", resultado.membresia_info.dias_restantes < 5 ? 'text-danger' : 'text-primary')}>
-                                                     {resultado.membresia_info.dias_restantes} DÍAS VIG.
-                                                 </p>
-                                             </div>
-                                         )}
-                                         {resultado.vehiculo && (
-                                             <div className="bg-black/20 p-3 rounded-2xl border border-white/5">
-                                                 <span className="text-[8px] font-black text-text-muted uppercase tracking-widest block mb-1">Vehículo</span>
-                                                 <p className="text-xs font-black text-warning uppercase italic truncate">
-                                                     {resultado.vehiculo.placa}
-                                                 </p>
-                                             </div>
-                                         )}
-                                    </div>
-                                </Card>
-                            </section>
-                        )}
-
-                        {/* Alertas de Sanciones */}
-                        {resultado?.infracciones_activas?.length > 0 && (
-                            <div className="space-y-3">
-                                {resultado.infracciones_activas.map((inf, idx) => (
-                                    <Card key={idx} className="bg-danger/10 border-danger/30 p-4 rounded-2xl flex items-start gap-4">
-                                         <AlertTriangle size={18} className="text-danger mt-0.5 shrink-0" />
-                                         <p className="text-xs text-text-muted font-medium italic">
-                                             <span className="font-black text-danger uppercase mr-2">{inf.tipo}:</span> {inf.descripcion}
-                                         </p>
-                                    </Card>
-                                ))}
-                            </div>
-                        )}
-
-                        {/* Botones de Comando */}
-                        <div className="flex gap-4 pt-4">
-                             <Boton 
-                                variant="outline" 
-                                className="flex-1 h-16 rounded-2xl border-white/5 text-text-muted font-black uppercase tracking-widest"
-                                onClick={() => setMostrandoModal(false)}
-                             >
-                                 Abortar
-                             </Boton>
-                             <Boton 
-                                disabled={!resultado?.permitido}
-                                className={cn(
-                                    "flex-1 h-16 rounded-2xl font-black text-sm uppercase tracking-[0.2em] shadow-2xl transition-all",
-                                    resultado?.permitido 
-                                        ? (tipoAcceso === 'entrada' ? 'bg-primary text-bg-app shadow-primary/20 scale-105' : 'bg-warning text-bg-app shadow-warning/20 scale-105')
-                                        : 'bg-bg-low text-white/10 scale-100 cursor-not-allowed border-white/5'
-                                )}
-                                onClick={handleConfirmar}
-                             >
-                                 Confirmar {tipoAcceso}
-                             </Boton>
-                        </div>
-                    </div>
-                </Modal>
+                
+                {/* Espaciador para no tapar con el Nav inferior si existiera */}
+                <div className="h-20" />
             </main>
+
+            {/* Overlay de Carga Táctico */}
+            {cargando && (
+                <div className="fixed inset-0 bg-bg-app/80 backdrop-blur-xl z-[120] flex items-center justify-center animate-in fade-in duration-300">
+                     <div className="flex flex-col items-center gap-6">
+                         <div className="relative">
+                             <Zap className="text-primary animate-pulse absolute inset-0 m-auto" size={32} />
+                             <div className="w-24 h-24 border-4 border-primary/20 border-t-primary rounded-full animate-spin"></div>
+                         </div>
+                         <p className="text-white font-black tracking-[0.4em] text-[10px] uppercase italic animate-pulse">Sincronizando Link...</p>
+                     </div>
+                </div>
+            )}
         </div>
     );
 };

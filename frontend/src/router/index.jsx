@@ -76,12 +76,13 @@ export const router = createBrowserRouter([
               { path: 'eventos', element: <EventosEntidad /> }
             ]
           },
-          // ALCABALA (SIN SCANNER AQUÍ)
+          // ALCABALA
           {
             path: 'alcabala',
             element: <RutaProtegida rolesPermitidos={['ALCABALA', 'ADMIN_BASE', 'COMANDANTE']} />,
             children: [
-              { path: 'dashboard', element: <DashboardAlcabala /> }
+              { path: 'dashboard', element: <DashboardAlcabala /> },
+              { path: 'scanner', element: <ScannerAlcabala /> }
             ]
           },
           // SOCIO
@@ -99,15 +100,6 @@ export const router = createBrowserRouter([
           }
         ]
       },
-
-      // ====== RUTAS SIN NAVEGACIÓN (PANTALLA COMPLETA) ======
-      {
-        path: 'alcabala/scanner',
-        element: <RutaProtegida rolesPermitidos={['ALCABALA', 'ADMIN_BASE', 'COMANDANTE']} />,
-        children: [
-          { path: '', element: <ScannerAlcabala /> }
-        ]
-      }
     ],
   },
   {
