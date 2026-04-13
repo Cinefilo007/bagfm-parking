@@ -1,25 +1,18 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { QRScanner } from '../../components/alcabala/QRScanner';
 import { alcabalaService } from '../../services/alcabala.service';
 import { Badge } from '../../components/ui/Badge';
 import { Boton } from '../../components/ui/Boton';
-import { Card, CardContent } from '../../components/ui/Card';
+import { Card } from '../../components/ui/Card';
 import { 
     CheckCircle2, XCircle, AlertTriangle, User, 
-    Car, Shield, Zap, Activity, ChevronRight,
-    Camera
+    Car, Shield, Zap, Activity, Camera,
+    RefreshCw, Power, Clock
 } from 'lucide-react';
 import { Header } from '../../components/layout/Header';
 import { cn } from '../../lib/utils';
 import { toast } from 'react-hot-toast';
-
-// Componentes Locales (Hoisted explicitly)
-const BadgeCheck = ({ size, className }) => (
-    <div className={className}>
-        <CheckCircle2 size={size} />
-    </div>
-);
 
 const ScannerAlcabala = () => {
     const [searchParams] = useSearchParams();
@@ -27,49 +20,40 @@ const ScannerAlcabala = () => {
     const tipoAcceso = searchParams.get('tipo') || 'entrada';
     const [resultado, setResultado] = useState(null);
     const [cargando, setCargando] = useState(false);
+    const scannerRef = useRef(null);
 
-    useEffect(() => {
-        console.log(">>> TERMINAL DE ESCANEO MONTADA. TIPO:", tipoAcceso);
-    }, [tipoAcceso]);
+    // Formateador de Fecha/Hora Caracas
+    const formatCaracas = (dateStr) => {
+        if (!dateStr) return 'SIN REGISTRO PREVIO';
+        const date = new Date(dateStr);
+        return new Intl.DateTimeFormat('es-VE', {
+            timeZone: 'America/Caracas',
+            day: '2-digit',
+            month: '2-digit',
+            year: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit',
+            hour12: true
+        }).format(date);
+    };
 
     const handleScanSuccess = async (qrToken) => {
         if (cargando) return;
-        
-        // CONFIRMACIÓN INMEDIATA DE DETECCIÓN (Para cualquier QR)
-        toast.success(`Detección: ${qrToken.substring(0, 10)}...`, { icon: '🔍' });
-        
-        let tokenFinal = qrToken;
-        // Si el QR es una URL (común en escaneos directos de cámara), extraer el token
-        if (qrToken.includes('token=')) {
-            try {
-                const url = new URL(qrToken);
-                tokenFinal = url.searchParams.get('token') || qrToken;
-            } catch (e) {
-                console.warn("No es una URL válida, usando texto crudo");
-            }
-        }
-
-        console.log(">>> [SENSOR] TOKEN DETECTADO:", tokenFinal.substring(0, 15) + "...");
-        const toastId = toast.loading('Sincronizando con Base Central...', { duration: 5000 });
+        toast.success(`Detección Óptica`, { icon: '🔍', position: 'bottom-center' });
         
         setCargando(true);
         try {
-            console.log(">>> [RED] ENVIANDO VALIDACIÓN:", { token: qrToken.substring(0, 20), tipo: tipoAcceso });
             const res = await alcabalaService.validarQR(qrToken, tipoAcceso);
-            
-            console.log(">>> [BACKEND] RESPUESTA RECIBIDA:", res);
             setResultado(res);
-            toast.success('Identidad Recuperada', { id: toastId });
+            toast.success('Identidad Recuperada', { position: 'bottom-center' });
         } catch (error) {
-            console.error(">>> [ERROR] FALLO EN VALIDACIÓN:", error);
             const errorMsg = error.response?.data?.detail || error.message || "Error Desconocido";
-            
-             setResultado({ 
+            setResultado({ 
                 permitido: false, 
                 mensaje: "Error de Protocolo: " + errorMsg, 
                 tipo_alerta: "error" 
             });
-            toast.error('Fallo en Enlace Táctico', { id: toastId });
+            toast.error('Fallo en Enlace Táctico', { position: 'bottom-center' });
         } finally {
             setCargando(false);
         }
@@ -87,149 +71,162 @@ const ScannerAlcabala = () => {
             navigate('/alcabala/dashboard');
         } catch (error) {
             console.error("Error al persistir registro:", error);
+            toast.error("Error al registrar: " + error.message);
         }
     };
 
-    const getStatusStyles = (res) => {
-        if (!res?.permitido) return 'bg-danger/10 border-danger/20 text-danger';
-        if (res?.tipo_alerta === 'warning') return 'bg-warning/10 border-warning/20 text-warning';
-        return 'bg-primary/10 border-primary/20 text-primary';
+    // Mapeo de Colores de Fondo según el Resultado
+    const getBgColor = () => {
+        if (!resultado) return 'bg-bg-app';
+        if (!resultado.permitido || resultado.tipo_alerta === 'error') return 'bg-[#4a0a0a]'; // Rojo oscuro elegante
+        if (resultado.infracciones_activas?.length > 0 || resultado.tipo_alerta === 'warning') return 'bg-[#4a3a0a]'; // Amarillo/Ambar oscuro
+        return 'bg-[#0a2a4a]'; // Azul oscuro/verde azulado para autorizado
     };
 
     return (
-        <div className="min-h-screen bg-bg-app pb-24 flex flex-col">
+        <div className={cn("min-h-screen pb-24 flex flex-col transition-colors duration-700", getBgColor())}>
             <Header titulo="Terminal de Escaneo" subtitle={`OPERACIÓN ${tipoAcceso.toUpperCase()}`} />
             
             <main className="flex-1 max-w-2xl mx-auto w-full p-6 space-y-6 animate-in slide-in-from-bottom-4 duration-500">
                 
-                {/* Cabecera Táctica Estilo Original */}
-                <div className="flex items-center justify-between px-2">
-                    <div>
-                        <h2 className="text-3xl font-black text-white uppercase tracking-tighter italic leading-none">
-                            Detector <span className="text-primary">QR</span>
-                        </h2>
-                        <p className="text-[10px] font-black text-text-muted uppercase tracking-[0.2em] mt-2 opacity-60">
-                            Alinee el código en el centro del visor
-                        </p>
-                    </div>
-                    <div className="flex flex-col items-end">
-                        <span className="text-[8px] font-black text-text-muted uppercase tracking-widest leading-none mb-1">Status</span>
-                        <div className="flex items-center gap-1.5">
-                            <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse shadow-[0_0_8px_var(--color-primary)]" />
-                            <span className="text-[10px] font-black text-white uppercase italic">Online</span>
-                        </div>
+                {/* Cabecera Táctica Minimalista */}
+                <div className="flex items-center justify-between px-2 pt-2">
+                    <div className="flex items-center gap-3">
+                        <div className="w-2 h-2 rounded-full bg-primary animate-pulse shadow-[0_0_8px_var(--color-primary)]" />
+                        <span className="text-[10px] font-black text-white uppercase tracking-[0.3em] italic">Sistema Aegis Online</span>
                     </div>
                 </div>
 
-                {/* Visor del Escáner */}
-                <Card className="bg-black/40 border-white/5 rounded-[2.5rem] overflow-hidden shadow-2xl relative aspect-square">
-                    <div className="relative z-10 w-full h-full p-2">
-                         <QRScanner 
-                            onScanSuccess={handleScanSuccess} 
-                            autoStart={true} 
-                            status={resultado ? (resultado.permitido ? 'success' : 'error') : 'idle'}
-                         />
-                    </div>
-                    
-                    {/* Guías Visuales */}
-                    <div className="absolute inset-x-8 inset-y-8 pointer-events-none border-2 border-white/5 rounded-3xl border-dashed">
-                        <div className="absolute -top-1 -left-1 w-10 h-10 border-t-4 border-l-4 border-primary rounded-tl-2xl" />
-                        <div className="absolute -top-1 -right-1 w-10 h-10 border-t-4 border-r-4 border-primary rounded-tr-2xl" />
-                        <div className="absolute -bottom-1 -left-1 w-10 h-10 border-b-4 border-l-4 border-primary rounded-bl-2xl" />
-                        <div className="absolute -bottom-1 -right-1 w-10 h-10 border-b-4 border-r-4 border-primary rounded-br-2xl" />
-                    </div>
+                {/* Visor Táctil */}
+                <Card className="bg-black/60 border-white/5 rounded-[3rem] overflow-hidden shadow-2xl relative shadow-black/80">
+                     <QRScanner 
+                        ref={scannerRef}
+                        onScanSuccess={handleScanSuccess} 
+                        autoStart={true} 
+                        status={resultado ? (resultado.permitido ? 'success' : 'error') : 'idle'}
+                     />
                 </Card>
 
-                {/* Info de Operación (Botones Inferiores Originales) */}
+                {/* Comandos de Seguridad (Reemplazan los botones de abajo) */}
                 <div className="grid grid-cols-2 gap-4">
-                    <Card className="bg-bg-low/40 border-white/5 p-4 rounded-2xl flex items-center justify-center gap-3">
-                        <Camera size={20} className="text-primary" />
-                        <span className="text-[10px] font-black text-white uppercase tracking-widest">Activo</span>
-                    </Card>
-                    <Card className="bg-bg-low/40 border-white/5 p-4 rounded-2xl flex items-center justify-center gap-3">
-                        <Activity size={20} className="text-primary" />
-                        <span className="text-[10px] font-black text-white uppercase tracking-widest">{tipoAcceso}</span>
-                    </Card>
+                    <Boton 
+                        onClick={() => scannerRef.current?.switchCamera()}
+                        variant="outline" 
+                        className="h-16 rounded-2xl bg-white/5 border-white/5 flex items-center justify-center gap-3 hover:bg-white/10 active:scale-95 transition-all shadow-lg"
+                    >
+                        <RefreshCw size={20} className="text-primary" />
+                        <span className="text-[10px] font-black text-white uppercase tracking-widest">Cambiar Lente</span>
+                    </Boton>
+                    <Boton 
+                        onClick={() => scannerRef.current?.toggleScanner()}
+                        variant="outline" 
+                        className="h-16 rounded-2xl bg-white/5 border-white/5 flex items-center justify-center gap-3 hover:bg-white/10 active:scale-95 transition-all shadow-lg"
+                    >
+                        {scannerRef.current?.isScanning ? (
+                            <>
+                                <Power size={20} className="text-error" />
+                                <span className="text-[10px] font-black text-white uppercase tracking-widest">Apagar</span>
+                            </>
+                        ) : (
+                            <>
+                                <Zap size={20} className="text-primary" />
+                                <span className="text-[10px] font-black text-white uppercase tracking-widest">Activar</span>
+                            </>
+                        )}
+                    </Boton>
                 </div>
 
-                {/* RESULTADO INTEGRADO (Sin Modal) */}
+                {/* RESULTADO INTEGRADO */}
                 {resultado && (
                     <div className="animate-in slide-in-from-top-4 fade-in duration-500 space-y-4 pb-12">
                         {/* Banner de Estado */}
                         <div className={cn(
-                            "p-6 rounded-3xl border-2 flex items-center gap-4 transition-all duration-500",
-                            resultado.permitido ? "bg-primary/10 border-primary text-primary shadow-[0_0_30px_rgba(var(--primary-rgb),0.2)]" : "bg-error/10 border-error text-error shadow-[0_0_30px_rgba(239,68,68,0.2)]"
+                            "p-6 rounded-3xl border-2 flex items-center gap-4 transition-all duration-500 backdrop-blur-md",
+                            resultado.permitido ? "bg-primary/20 border-primary text-primary" : "bg-error/20 border-error text-error"
                         )}>
                             {resultado.permitido ? <CheckCircle2 size={32} /> : <XCircle size={32} />}
                             <div>
                                 <h4 className="text-xl font-black uppercase italic tracking-tighter leading-none">
-                                    {resultado.permitido ? "Acceso Autorizado" : "Acceso Denegado"}
+                                    {resultado.permitido ? "Acceso Autorizado" : "Ingreso Denegado"}
                                 </h4>
                                 <p className="text-[10px] font-bold uppercase opacity-80 mt-1">{resultado.mensaje}</p>
                             </div>
                         </div>
 
-                        {/* Ficha del Socio */}
+                        {/* Ficha Social y Telemetría */}
                         {resultado.socio && (
-                            <Card className="bg-bg-card border-white/10 rounded-[2.5rem] p-6 shadow-2xl relative overflow-hidden">
+                            <Card className="bg-black/40 backdrop-blur-xl border-white/10 rounded-[2.5rem] p-6 shadow-2xl relative overflow-hidden">
                                 <div className="flex items-center gap-6">
-                                    <div className="w-20 h-20 rounded-3xl bg-white/5 border-2 border-white/10 overflow-hidden shrink-0">
+                                    <div className="w-24 h-24 rounded-[2rem] bg-white/5 border-2 border-white/10 overflow-hidden shrink-0 shadow-2xl">
                                         {resultado.socio.foto_url ? (
-                                            <img src={resultado.socio.foto_url} alt="Socio" className="w-full h-full object-cover grayscale-[0.3]" />
+                                            <img src={resultado.socio.foto_url} alt="Socio" className="w-full h-full object-cover" />
                                         ) : (
-                                            <div className="w-full h-full flex items-center justify-center"><User size={32} className="text-white/20" /></div>
+                                            <div className="w-full h-full flex items-center justify-center"><User size={40} className="text-white/20" /></div>
                                         )}
                                     </div>
                                     <div className="flex-1 min-w-0">
                                         <h5 className="text-2xl font-black text-white uppercase italic tracking-tight leading-none truncate">
                                             {resultado.socio.nombre} {resultado.socio.apellido}
                                         </h5>
-                                        <div className="flex gap-2 mt-2">
-                                            <Badge variant="outline" className="text-[8px] font-black border-white/10 uppercase tracking-widest">CI: {resultado.socio.cedula}</Badge>
-                                            <Badge className="bg-primary/20 text-primary border-none text-[8px] font-black uppercase tracking-widest">{resultado.entidad_nombre}</Badge>
+                                        <div className="flex gap-2 mt-3">
+                                            <span className="text-[8px] font-black text-primary bg-primary/10 px-3 py-1.5 rounded-full uppercase tracking-widest border border-primary/20">{resultado.entidad_nombre}</span>
+                                            <span className="text-[8px] font-black text-white/40 bg-white/5 px-3 py-1.5 rounded-full uppercase tracking-widest border border-white/5">CI: {resultado.socio.cedula}</span>
                                         </div>
                                     </div>
                                 </div>
 
+                                {/* Telemetría de Accesos (Ultima Entrada) */}
+                                <div className="mt-6 p-4 bg-white/5 rounded-3xl border border-white/5 flex items-center gap-4 group">
+                                    <div className="w-10 h-10 bg-white/5 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform">
+                                        <Clock size={20} className="text-primary" />
+                                    </div>
+                                    <div>
+                                        <span className="text-[8px] font-black text-text-muted uppercase tracking-widest block mb-0.5">Última Entrada Detectada (Caracas)</span>
+                                        <p className="text-sm font-black text-white uppercase italic tracking-tight">
+                                            {formatCaracas(resultado.ultima_entrada)}
+                                        </p>
+                                    </div>
+                                </div>
+
                                 {/* Info Vehículo y Membresía */}
-                                <div className="grid grid-cols-2 gap-4 mt-6 pt-6 border-t border-white/5">
-                                    <div className="bg-black/20 p-3 rounded-2xl border border-white/5">
-                                        <div className="flex items-center gap-2 mb-1">
+                                <div className="grid grid-cols-2 gap-4 mt-4">
+                                    <div className="bg-white/5 p-4 rounded-3xl border border-white/5">
+                                        <div className="flex items-center gap-2 mb-1.5 opacity-60">
                                             <Shield size={12} className="text-primary" />
-                                            <span className="text-[8px] font-black text-text-muted uppercase tracking-widest">Membresía</span>
+                                            <span className="text-[8px] font-black text-text-muted uppercase tracking-widest">Plan Base</span>
                                         </div>
                                         <p className="text-sm font-black text-white uppercase italic">
                                             {resultado.membresia_info?.dias_restantes || 0} Días Vig.
                                         </p>
                                     </div>
-                                    <div className="bg-black/20 p-3 rounded-2xl border border-white/5">
-                                        <div className="flex items-center gap-2 mb-1">
+                                    <div className="bg-white/5 p-4 rounded-3xl border border-white/5">
+                                        <div className="flex items-center gap-2 mb-1.5 opacity-60">
                                             <Car size={12} className="text-warning" />
                                             <span className="text-[8px] font-black text-text-muted uppercase tracking-widest">Vehículo</span>
                                         </div>
-                                        <p className="text-sm font-black text-warning uppercase italic truncate">
-                                            {resultado.vehiculo?.placa || 'SIN ASIGNAR'}
+                                        <p className="text-sm font-black text-warning uppercase italic truncate leading-none">
+                                            {resultado.vehiculo?.placa || 'SIN PLACA'}
                                         </p>
                                     </div>
                                 </div>
 
-                                {/* Acciones Directas */}
+                                {/* Acciones de Comando Final */}
                                 <div className="flex gap-3 mt-6">
                                      <Boton 
                                         onClick={() => setResultado(null)}
                                         variant="outline" 
-                                        className="flex-1 h-16 rounded-2xl border-white/5 text-text-muted font-black uppercase text-[10px] tracking-widest"
+                                        className="flex-1 h-14 rounded-2xl border-white/5 text-text-muted font-black uppercase text-[10px] tracking-widest hover:bg-white/5"
                                      >
-                                         NUEVO ESCANEO
+                                         REANUDAR RADAR
                                      </Boton>
                                      <Boton 
                                         disabled={!resultado.permitido}
                                         onClick={handleConfirmar}
                                         className={cn(
-                                            "flex-[1.5] h-16 rounded-2xl font-black uppercase text-xs tracking-[0.2em] transition-all",
+                                            "flex-[1.5] h-14 rounded-2xl font-black uppercase text-xs tracking-[0.2em] transition-all",
                                             resultado.permitido 
-                                                ? "bg-primary text-bg-app shadow-lg shadow-primary/20 scale-105" 
-                                                : "bg-white/5 text-white/10 border-white/5 opacity-50"
+                                                ? "bg-primary text-bg-app shadow-lg shadow-black/40 scale-105 active:scale-100" 
+                                                : "bg-white/5 text-white/10 border-white/5 opacity-40 cursor-not-allowed"
                                         )}
                                      >
                                          CONFIRMAR {tipoAcceso}
@@ -240,19 +237,18 @@ const ScannerAlcabala = () => {
                     </div>
                 )}
                 
-                {/* Espaciador para no tapar con el Nav inferior si existiera */}
                 <div className="h-20" />
             </main>
 
             {/* Overlay de Carga Táctico */}
             {cargando && (
-                <div className="fixed inset-0 bg-bg-app/80 backdrop-blur-xl z-[120] flex items-center justify-center animate-in fade-in duration-300">
+                <div className="fixed inset-0 bg-black/60 backdrop-blur-2xl z-[120] flex items-center justify-center animate-in fade-in duration-300">
                      <div className="flex flex-col items-center gap-6">
                          <div className="relative">
                              <Zap className="text-primary animate-pulse absolute inset-0 m-auto" size={32} />
-                             <div className="w-24 h-24 border-4 border-primary/20 border-t-primary rounded-full animate-spin"></div>
+                             <div className="w-24 h-24 border-4 border-primary/10 border-t-primary rounded-full animate-spin shadow-[0_0_20px_var(--color-primary)]"></div>
                          </div>
-                         <p className="text-white font-black tracking-[0.4em] text-[10px] uppercase italic animate-pulse">Sincronizando Link...</p>
+                         <p className="text-white font-black tracking-[0.5em] text-[8px] uppercase italic animate-pulse">Sincronizando con Base de Datos...</p>
                      </div>
                 </div>
             )}

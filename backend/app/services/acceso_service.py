@@ -120,6 +120,14 @@ class AccesoService:
                     tipo_alerta="error"
                 )
 
+            # 8. Última Entrada (Telemetría para el guardia)
+            query_last = select(Acceso).where(
+                Acceso.usuario_id == socio.id,
+                Acceso.tipo == AccesoTipo.entrada
+            ).order_by(Acceso.timestamp.desc()).limit(1)
+            res_last = await db.execute(query_last)
+            ultima_entrada = res_last.scalar_one_or_none()
+
             print(f"DEBUG: Validación Exitosa para {socio.nombre}")
             return ResultadoValidacion(
                 permitido = not bloqueado,
@@ -132,7 +140,8 @@ class AccesoService:
                 usuario_id = socio.id,
                 vehiculo_id = vehiculo.id if vehiculo else None,
                 infracciones_activas = [{"tipo": i.tipo, "descripcion": i.descripcion, "bloquea": i.bloquea_salida} for i in infracciones],
-                membresia_info = membresia_service.calcular_progreso(membresia) if membresia else None
+                membresia_info = membresia_service.calcular_progreso(membresia) if membresia else None,
+                ultima_entrada = ultima_entrada.timestamp if ultima_entrada else None
             )
 
         except Exception as e:

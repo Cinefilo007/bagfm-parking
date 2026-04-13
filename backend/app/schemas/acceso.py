@@ -54,4 +54,5 @@ class ResultadoValidacion(BaseModel):
     # Si hay infracciones relevantes
     infracciones_activas: List[dict] = []
     membresia_info: Optional[MembresiaInfo] = None
+    ultima_entrada: Optional[datetime] = None
     mensaje_adicional: Optional[str] = None
