@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Html5Qrcode } from 'html5-qrcode';
+import { Html5Qrcode, Html5QrcodeSupportedFormats } from 'html5-qrcode';
 import { Camera, XCircle, RotateCcw } from 'lucide-react';
 import { Boton } from '../ui/Boton';
 
@@ -10,50 +10,76 @@ export const QRScanner = ({ onScanSuccess, onScanError, autoStart = false }) => 
   const html5QrCode = useRef(null);
 
   const startScanner = async () => {
-    if (html5QrCode.current && html5QrCode.current.isScanning) return;
+    if (html5QrCode.current && html5QrCode.current.isScanning) {
+        console.log("Escáner ya activo, rebotando inicio...");
+        return;
+    }
     
     try {
       setCameraError(null);
       setIsScanning(true);
       
       const qrCodeId = "reader";
-      html5QrCode.current = new Html5Qrcode(qrCodeId);
+      
+      // Asegurar limpieza de instancia previa
+      if (html5QrCode.current) {
+          try { await html5QrCode.current.clear(); } catch(e) {}
+      }
+
+      html5QrCode.current = new Html5Qrcode(qrCodeId, {
+          formatsToSupport: [ 
+              Html5QrcodeSupportedFormats.QR_CODE,
+              Html5QrcodeSupportedFormats.AZTEC,
+              Html5QrcodeSupportedFormats.DATA_MATRIX,
+              Html5QrcodeSupportedFormats.PDF_417
+          ],
+          verbose: false
+      });
       
       const config = {
-        fps: 15,
-        qrbox: { width: 250, height: 250 },
+        fps: 20, // Mayor frecuencia para detección rápida
+        qrbox: (viewfinderWidth, viewfinderHeight) => {
+            const minEdge = Math.min(viewfinderWidth, viewfinderHeight);
+            const size = Math.floor(minEdge * 0.7);
+            return { width: size, height: size };
+        },
         aspectRatio: 1.0,
+        experimentalFeatures: {
+            useBarCodeDetectorIfSupported: true
+        }
       };
+
+      console.log("Iniciando cámara con configuración táctica...");
 
       await html5QrCode.current.start(
         { facingMode: "environment" },
         config,
         async (decodedText) => {
-          // Feedback sensorial
-          setSuccessFlash(true);
-          if (navigator.vibrate) navigator.vibrate(100);
+          console.log(">>> [DETECTOR] CÓDIGO CAPTURADO:", decodedText);
           
-          // Detener escaneo para procesar
+          setSuccessFlash(true);
+          if (navigator.vibrate) navigator.vibrate([100, 50, 100]);
+          
           try {
             await html5QrCode.current.stop();
+            await html5QrCode.current.clear();
           } catch (e) {
-            console.warn("Error deteniendo cámara:", e);
+            console.warn("Fallo en parada de sensor:", e);
           }
           
           setIsScanning(false);
-          // Pequeño delay para que el flash sea visible
           setTimeout(() => {
             setSuccessFlash(false);
             onScanSuccess(decodedText);
           }, 400);
         },
         (errorMessage) => {
-          if (onScanError) onScanError(errorMessage);
+          // No logueamos errores de 'no se encontró QR en este frame'
         }
       );
     } catch (err) {
-      console.error("No se pudo iniciar la cámara", err);
-      setCameraError("No se pudo acceder a la cámara. Asegúrate de dar permisos.");
+      console.error("ERROR CRÍTICO DE CÁMARA:", err);
+      setCameraError(`Fallo de sensor: ${err.name || "Error desconocido"}. Verifique permisos y conexión HTTPS.`);
       setIsScanning(false);
     }
   };

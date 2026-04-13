@@ -37,6 +37,9 @@ const ScannerAlcabala = () => {
     const handleScanSuccess = async (qrToken) => {
         if (cargando) return;
         
+        // CONFIRMACIÓN INMEDIATA DE DETECCIÓN (Para cualquier QR)
+        toast.success(`Detección: ${qrToken.substring(0, 10)}...`, { icon: '🔍' });
+        
         let tokenFinal = qrToken;
         // Si el QR es una URL (común en escaneos directos de cámara), extraer el token
         if (qrToken.includes('token=')) {
