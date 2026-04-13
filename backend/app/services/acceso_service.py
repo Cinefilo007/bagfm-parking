@@ -93,7 +93,7 @@ class AccesoService:
             # Si no hay vehículo en el QR, buscar el "primario" del socio
             if not vehiculo:
                 query_veh_socio = select(Vehiculo).where(
-                    Vehiculo.usuario_id == socio.id,
+                    Vehiculo.socio_id == socio.id,
                     Vehiculo.activo == True
                 ).limit(1)
                 res_veh_socio = await db.execute(query_veh_socio)
