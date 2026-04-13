@@ -59,6 +59,20 @@ const ScannerAlcabala = () => {
         }
     };
 
+    const [operador, setOperador] = useState(null);
+
+    useEffect(() => {
+        const cargarProtocolo = async () => {
+             try {
+                const data = await alcabalaService.getMiSituacion();
+                setOperador(data);
+             } catch (e) {
+                console.error("Fallo obteniendo punto:", e);
+             }
+        };
+        cargarProtocolo();
+    }, []);
+
     const handleConfirmar = async () => {
         try {
             await alcabalaService.registrarAcceso({
@@ -66,7 +80,7 @@ const ScannerAlcabala = () => {
                 usuario_id: resultado.usuario_id,
                 vehiculo_id: resultado.vehiculo_id,
                 tipo: tipoAcceso,
-                punto_acceso: 'Alcabala Central',
+                punto_acceso: operador?.punto?.nombre || 'Alcabala Central',
                 es_manual: false
             });
             
@@ -139,108 +153,118 @@ const ScannerAlcabala = () => {
                         </div>
                     </>
                 ) : (
-                    /* RESULTADO INTEGRADO: Ocupa todo el espacio visual */
-                    <div className="animate-in zoom-in-95 duration-500 space-y-4 pb-12">
-                        {/* Banner de Estado */}
+                    /* RESULTADO DE ESCANEO: FICHA TÁCTICA EXPANDIDA */
+                    <div className="space-y-4 animate-in zoom-in-95 duration-300 pb-12">
+                        {/* Status Card */}
                         <div className={cn(
-                            "p-6 rounded-3xl border-2 flex items-center gap-4 transition-all duration-500 backdrop-blur-md",
-                            resultado.permitido ? "bg-primary/20 border-primary text-primary" : "bg-error/20 border-error text-error"
+                            "p-6 rounded-[2.5rem] border-2 shadow-2xl flex flex-col items-center text-center gap-2 backdrop-blur-md",
+                            resultado.permitido ? "bg-success/10 border-success/30" : "bg-error/10 border-error/30"
                         )}>
-                            {resultado.permitido ? <CheckCircle2 size={36} /> : <XCircle size={36} />}
-                            <div>
-                                <h4 className="text-2xl font-black uppercase italic tracking-tighter leading-none">
-                                    {resultado.permitido ? "Acceso Autorizado" : "Ingreso Denegado"}
-                                </h4>
-                                <p className="text-[10px] font-bold uppercase opacity-80 mt-1 tracking-wider">{resultado.mensaje}</p>
+                            <div className={cn(
+                                "w-16 h-16 rounded-full flex items-center justify-center mb-1",
+                                resultado.permitido ? "bg-success/20 text-success" : "bg-error/20 text-error"
+                            )}>
+                                {resultado.permitido ? <CheckCircle2 size={40} /> : <XCircle size={40} />}
                             </div>
+                            <h2 className={cn("text-3xl font-black uppercase tracking-tighter italic leading-none", resultado.permitido ? "text-success" : "text-error")}>
+                                {resultado.permitido ? "ACCESO AUTORIZADO" : "INGRESO DENEGADO"}
+                            </h2>
+                            <p className="text-[10px] font-black opacity-60 uppercase tracking-[0.3em]">{resultado.mensaje || "Validación Exitosa"}</p>
                         </div>
 
-                        {/* Ficha Social y Telemetría Refinada */}
-                        {resultado.socio && (
-                            <Card className="bg-black/60 backdrop-blur-3xl border-white/10 rounded-[2.5rem] p-5 shadow-2xl relative overflow-hidden">
-                                <div className="flex items-center gap-5">
-                                    <div className="w-20 h-20 rounded-[1.8rem] bg-white/5 border-2 border-white/10 overflow-hidden shrink-0 shadow-xl">
-                                        {resultado.socio.foto_url ? (
+                        {/* Ficha Social y Vehicular */}
+                        <Card className="bg-black/40 border-white/5 rounded-[2.5rem] p-6 backdrop-blur-md relative overflow-hidden">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                                {/* Datos Socio */}
+                                <div className="flex gap-5">
+                                    <div className="w-20 h-20 bg-white/5 rounded-[2rem] border-2 border-white/10 flex items-center justify-center shrink-0 overflow-hidden shadow-xl">
+                                        {resultado.socio?.foto_url ? (
                                             <img src={resultado.socio.foto_url} alt="Socio" className="w-full h-full object-cover" />
                                         ) : (
-                                            <div className="w-full h-full flex items-center justify-center"><User size={32} className="text-white/20" /></div>
+                                            <User size={40} className="text-white/20" />
                                         )}
                                     </div>
-                                    <div className="flex-1 min-w-0">
-                                        <h5 className="text-xl font-black text-white uppercase italic tracking-tight leading-none mb-2 truncate">
-                                            {resultado.socio.nombre} {resultado.socio.apellido}
-                                        </h5>
+                                    <div className="min-w-0 flex flex-col justify-center">
+                                        <h3 className="text-2xl font-black text-white uppercase italic truncate tracking-tight leading-none mb-2">
+                                            {resultado.socio?.nombre} {resultado.socio?.apellido}
+                                        </h3>
                                         <div className="flex flex-wrap gap-2">
-                                            <span className="text-[7px] font-black text-primary bg-primary/10 px-2.5 py-1 rounded-full uppercase tracking-widest border border-primary/20">{resultado.entidad_nombre}</span>
-                                            <span className="text-[7px] font-black text-white/40 bg-white/5 px-2.5 py-1 rounded-full uppercase tracking-widest border border-white/5">CI: {resultado.socio.cedula}</span>
+                                            <Badge variant="outline" className="text-[8px] bg-primary/10 border-primary/20 text-primary uppercase font-black px-3 py-1">
+                                                {resultado.socio?.tipo || 'SOCIO ACTIVO'}
+                                            </Badge>
+                                            <span className="text-[10px] font-black text-text-muted opacity-40 uppercase tracking-widest mt-1">CI: {resultado.socio?.cedula || 'N/A'}</span>
                                         </div>
                                     </div>
                                 </div>
 
-                                {/* Telemetría Espacial (Ultima Entrada + Punto) */}
-                                <div className="mt-5 p-4 bg-white/5 rounded-3xl border border-white/5 flex items-center gap-4">
-                                    <div className="w-10 h-10 bg-white/5 rounded-2xl flex items-center justify-center shrink-0">
-                                        <Clock size={20} className={resultado.ultima_entrada ? "text-primary" : "text-white/20"} />
+                                {/* Datos Vehículo (MAXIMA PRIORIDAD) */}
+                                <div className="bg-primary/5 rounded-[2rem] p-6 border-2 border-primary/20 flex items-center gap-5 shadow-inner">
+                                    <div className="w-14 h-14 bg-primary/10 rounded-2xl flex items-center justify-center shrink-0 border border-primary/20">
+                                        <Car size={32} className="text-primary" />
                                     </div>
-                                    <div className="min-w-0 flex-1">
-                                        <span className="text-[7px] font-black text-text-muted uppercase tracking-[0.2em] block mb-1">Último Ingreso Histórico</span>
-                                        <p className="text-xs font-black text-white uppercase italic truncate">
-                                            {formatCaracas(resultado.ultima_entrada)}
-                                        </p>
-                                        {resultado.ultima_entrada_punto && (
-                                            <p className="text-[8px] font-bold text-primary/60 uppercase mt-0.5 tracking-widest">
-                                                Detección en: {resultado.ultima_entrada_punto}
-                                            </p>
-                                        )}
-                                    </div>
-                                </div>
-
-                                {/* Info Vehículo (Prioridad Operativa) */}
-                                <div className="mt-4 p-4 bg-primary/5 rounded-3xl border border-primary/10 flex items-center gap-4">
-                                    <div className="w-10 h-10 bg-primary/10 rounded-2xl flex items-center justify-center shrink-0">
-                                        <Car size={20} className="text-primary" />
-                                    </div>
-                                    <div className="min-w-0 flex-1">
-                                        <span className="text-[7px] font-black text-primary/60 uppercase tracking-[0.2em] block mb-1">Unidad Identificada</span>
+                                    <div className="min-w-0">
+                                        <span className="text-[9px] font-black text-primary/60 uppercase tracking-[0.3em] block mb-1.5 italic">Unidad Inteligente</span>
                                         {resultado.vehiculo ? (
-                                            <div className="flex items-baseline gap-2 overflow-hidden">
-                                                <p className="text-sm font-black text-white uppercase italic leading-none truncate">
+                                            <div className="flex flex-col">
+                                                <p className="text-xl font-black text-white uppercase italic leading-none truncate mb-1">
                                                     {resultado.vehiculo.marca} {resultado.vehiculo.modelo}
                                                 </p>
-                                                <p className="text-lg font-black text-primary leading-none">
+                                                <p className="text-3xl font-black text-primary leading-none tracking-tighter">
                                                     [{resultado.vehiculo.placa}]
                                                 </p>
                                             </div>
                                         ) : (
-                                            <p className="text-xs font-black text-error uppercase italic">SIN VEHÍCULO REGISTRADO</p>
+                                            <p className="text-lg font-black text-error uppercase italic">SIN VEHÍCULO REGISTRADO</p>
                                         )}
                                     </div>
                                 </div>
+                            </div>
 
-                                {/* Acciones de Comando Final */}
-                                <div className="flex gap-3 mt-6">
-                                     <Boton 
-                                        onClick={() => setResultado(null)}
-                                        variant="outline" 
-                                        className="flex-1 h-14 rounded-2xl border-white/5 text-text-muted font-bold uppercase text-[9px] tracking-widest hover:bg-white/5"
-                                     >
-                                         REANUDAR RADAR
-                                     </Boton>
-                                     <Boton 
-                                        disabled={!resultado.permitido}
-                                        onClick={handleConfirmar}
-                                        className={cn(
-                                            "flex-[1.5] h-14 rounded-2xl font-black uppercase text-xs tracking-[0.2em] transition-all",
-                                            resultado.permitido 
-                                                ? "bg-primary text-bg-app shadow-xl shadow-black/40" 
-                                                : "bg-white/5 text-white/10 border-white/5 opacity-40 cursor-not-allowed"
-                                        )}
-                                     >
-                                         CONFIRMAR {tipoAcceso}
-                                     </Boton>
+                            {/* Info Adicional Táctica */}
+                            <div className="mt-8 pt-6 border-t border-white/5 grid grid-cols-2 gap-4">
+                                <div className="bg-white/5 p-4 rounded-3xl border border-white/5">
+                                    <div className="flex items-center gap-2 mb-2">
+                                        <Clock size={16} className="text-primary opacity-60" />
+                                        <span className="text-[9px] font-black text-text-muted uppercase tracking-widest">Último Ingreso</span>
+                                    </div>
+                                    <p className="text-xs font-black text-white uppercase italic">
+                                        {formatCaracas(resultado.ultima_entrada)}
+                                    </p>
                                 </div>
-                            </Card>
-                        )}
+                                <div className="bg-white/5 p-4 rounded-3xl border border-white/5">
+                                    <div className="flex items-center gap-2 mb-2">
+                                        <Activity size={16} className="text-primary opacity-60" />
+                                        <span className="text-[9px] font-black text-text-muted uppercase tracking-widest">Punto Anterior</span>
+                                    </div>
+                                    <p className="text-xs font-black text-white uppercase italic truncate">
+                                        {resultado.ultima_entrada_punto || 'HISTORIAL LIMPIO'}
+                                    </p>
+                                </div>
+                            </div>
+
+                            {/* Acciones de Comando Final */}
+                            <div className="flex gap-4 mt-8">
+                                <Boton 
+                                    onClick={() => setResultado(null)}
+                                    variant="outline" 
+                                    className="flex-1 h-16 rounded-2xl border-white/10 text-white/40 font-black uppercase text-[10px] tracking-widest hover:bg-white/5 hover:text-white transition-all"
+                                >
+                                    REANUDAR RADAR
+                                </Boton>
+                                <Boton 
+                                    disabled={cargando || !resultado.permitido}
+                                    onClick={handleConfirmar}
+                                    className="flex-[2] h-16 rounded-2xl bg-primary text-bg-app font-black uppercase text-sm tracking-[0.2em] hover:bg-primary/90 shadow-2xl shadow-primary/20 transition-all active:scale-95 flex items-center justify-center gap-3 disabled:opacity-50"
+                                >
+                                    {cargando ? <RefreshCw className="animate-spin" size={20} /> : (
+                                        <>
+                                            <Shield size={20} />
+                                            CONFIRMAR {tipoAcceso.toUpperCase()}
+                                        </>
+                                    )}
+                                </Boton>
+                            </div>
+                        </Card>
                     </div>
                 )}
                 

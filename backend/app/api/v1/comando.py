@@ -125,18 +125,51 @@ async def obtener_situacion_actual(
     entradas = (await db.execute(q_ent)).scalar() or 0
     salidas = (await db.execute(q_sal)).scalar() or 0
     
+    # Historial de eventos recientes para el guardia (últimos 5)
+    query_historial = select(Acceso).filter(
+        Acceso.punto_acceso == punto.nombre,
+        func.cast(Acceso.timestamp, Date) == hoy
+    ).order_by(Acceso.timestamp.desc()).limit(5)
+    
+    res_historial = await db.execute(query_historial)
+    historial_accesos = res_historial.scalars().all()
+    
+    from app.models.usuario import Usuario
+    eventos_historial = []
+    for h in historial_accesos:
+        # Rehidratar usuario
+        u_h = await db.get(Usuario, h.usuario_id)
+        # Rehidratar vehículo si existe
+        veh_h = None
+        if h.vehiculo_id:
+            from app.models.vehiculo import Vehiculo
+            veh_h = await db.get(Vehiculo, h.vehiculo_id)
+            
+        eventos_historial.append({
+            "id": str(h.id),
+            "tipo": h.tipo,
+            "timestamp": h.timestamp.isoformat(),
+            "socio_nombre": f"{u_h.nombre} {u_h.apellido}" if u_h else "Socio Desconocido",
+            "vehiculo": f"{veh_h.marca} [{veh_h.placa}]" if veh_h else "PEATÓN"
+        })
+
     return {
         "punto": {
-            "id": punto.id,
+            "id": str(punto.id),
             "nombre": punto.nombre,
             "ubicacion": punto.ubicacion
         },
         "identificado": identificacion is not None,
-        "datos_guardia": identificacion,
+        "datos_guardia": identificacion if identificacion else {
+            "nombre": usuario.nombre,
+            "apellido": usuario.apellido,
+            "grado": usuario.grado
+        },
         "stats": {
             "entradas": entradas,
             "salidas": salidas,
-            "infracciones": 0
+            "infracciones": 0,
+            "eventos_recientes": eventos_historial
         }
     }
 

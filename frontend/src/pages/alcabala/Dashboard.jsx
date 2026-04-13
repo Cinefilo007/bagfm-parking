@@ -178,26 +178,29 @@ const DashboardAlcabala = () => {
     // DASHBOARD OPERATIVO AEGIS V2
     return (
         <div className="min-h-screen bg-bg-app pb-32">
-            <Header titulo="Terminal Alcabala" subtitle={situacion?.punto?.nombre} />
+            <Header titulo={situacion?.punto?.nombre || 'Terminal Alcabala'} subtitle="Puesto de Control y Acceso" />
             
             <main className="max-w-4xl mx-auto p-6 flex flex-col gap-8 animate-in slide-in-from-bottom-4 duration-500">
                 
                 {/* Banner de Operador */}
-                <Card className="bg-bg-low/40 border-primary/10 overflow-hidden rounded-3xl">
-                    <CardContent className="p-6 flex items-center justify-between">
-                        <div className="flex items-center gap-4">
-                            <div className="h-12 w-12 rounded-2xl bg-primary/10 flex items-center justify-center text-primary shadow-lg border border-primary/20">
-                                <ShieldCheck size={28} />
+                <Card className="bg-bg-card/40 border-primary/10 backdrop-blur-md rounded-[2.5rem] p-6 shadow-xl relative overflow-hidden group">
+                    <div className="absolute top-0 right-0 p-8 opacity-5 group-hover:opacity-10 transition-opacity">
+                         <Shield size={120} className="text-primary" />
+                    </div>
+                    <div className="flex items-center justify-between relative z-10">
+                        <div className="flex items-center gap-6">
+                            <div className="h-16 w-16 rounded-2xl bg-primary/10 flex items-center justify-center text-primary shadow-inner border border-primary/20">
+                                <ShieldCheck size={32} />
                             </div>
-                            <div>
-                                <h3 className="text-xs font-black text-text-muted uppercase tracking-[0.2em] opacity-60">Operador en Servicio</h3>
-                                <p className="text-lg font-black text-text-main uppercase tracking-tight italic">
+                            <div className="min-w-0">
+                                <h3 className="text-[10px] font-black text-text-muted uppercase tracking-[0.3em] opacity-60 mb-1">Comandante de Guardia</h3>
+                                <p className="text-xl font-black text-text-main dark:text-white uppercase tracking-tight italic truncate">
                                     {situacion?.datos_guardia?.grado} {situacion?.datos_guardia?.nombre} {situacion?.datos_guardia?.apellido}
                                 </p>
                             </div>
                         </div>
-                        <Badge variant="activa" className="hidden sm:flex px-4 py-1">EN TURNO</Badge>
-                    </CardContent>
+                        <Badge variant="activa" className="hidden sm:flex px-5 py-1.5 shadow-lg shadow-primary/20 uppercase tracking-widest text-[9px] font-black">EN TURNO</Badge>
+                    </div>
                 </Card>
 
                 {/* Comando de Acceso (Botones Principales) */}
@@ -209,7 +212,7 @@ const DashboardAlcabala = () => {
                         <div className="h-16 w-16 rounded-full bg-primary/10 flex items-center justify-center text-primary group-hover:bg-primary group-hover:text-bg-app transition-colors shadow-inner">
                             <LogIn size={32} strokeWidth={2.5} />
                         </div>
-                        <span className="font-black text-text-main dark:text-white uppercase tracking-[0.2em] text-[10px] italic">Entrada</span>
+                        <span className="font-black text-text-main dark:text-white uppercase tracking-[0.2em] text-[10px] italic">Registrar Entrada</span>
                      </button>
 
                      <button 
@@ -219,66 +222,69 @@ const DashboardAlcabala = () => {
                         <div className="h-16 w-16 rounded-full bg-warning/10 flex items-center justify-center text-warning group-hover:bg-warning group-hover:text-bg-app transition-colors shadow-inner">
                             <LogOut size={32} strokeWidth={2.5} />
                         </div>
-                        <span className="font-black text-text-main dark:text-white uppercase tracking-[0.2em] text-[10px] italic">Salida</span>
+                        <span className="font-black text-text-main dark:text-white uppercase tracking-[0.2em] text-[10px] italic">Registrar Salida</span>
                      </button>
                 </div>
 
                 {/* Dashboard de Métricas */}
                 <div className="grid grid-cols-3 gap-4">
-                    <Card className="bg-bg-low/40 border-white/5 py-6">
+                    <Card className="bg-bg-low/40 border-white/5 py-8">
                          <div className="flex flex-col items-center">
-                             <span className="text-3xl font-black text-text-main dark:text-white leading-none tracking-tighter">{stats.entradas}</span>
-                             <span className="text-[10px] text-text-muted font-black uppercase mt-2 tracking-widest opacity-60">Entradas</span>
+                             <span className="text-4xl font-black text-text-main dark:text-white leading-none tracking-tighter italic">{stats.entradas}</span>
+                             <span className="text-[9px] text-text-muted font-black uppercase mt-3 tracking-[0.2em] opacity-40">Entradas</span>
                          </div>
                     </Card>
-                    <Card className="bg-bg-low/40 border-white/5 py-6">
+                    <Card className="bg-bg-low/40 border-white/5 py-8">
                          <div className="flex flex-col items-center">
-                             <span className="text-3xl font-black text-text-main dark:text-white leading-none tracking-tighter">{stats.salidas}</span>
-                             <span className="text-[10px] text-text-muted font-black uppercase mt-2 tracking-widest opacity-60">Salidas</span>
+                             <span className="text-4xl font-black text-text-main dark:text-white leading-none tracking-tighter italic">{stats.salidas}</span>
+                             <span className="text-[9px] text-text-muted font-black uppercase mt-3 tracking-[0.2em] opacity-40">Salidas</span>
                          </div>
                     </Card>
-                    <Card className={cn("bg-bg-low/40 border-white/5 py-6 transition-colors", stats.infracciones > 0 && "border-danger/30 bg-danger/5")}>
+                    <Card className={cn("bg-bg-low/40 border-white/5 py-8 transition-colors", stats.infracciones > 0 && "border-danger/30 bg-danger/5")}>
                          <div className="flex flex-col items-center">
-                             <span className={cn("text-3xl font-black leading-none tracking-tighter", stats.infracciones > 0 ? "text-danger" : "text-text-main dark:text-white")}>{stats.infracciones}</span>
-                             <span className={cn("text-[10px] font-black uppercase mt-2 tracking-widest opacity-60", stats.infracciones > 0 ? "text-danger/60" : "text-text-muted")}>Alertas</span>
+                             <span className={cn("text-4xl font-black leading-none tracking-tighter italic", stats.infracciones > 0 ? "text-danger" : "text-text-main dark:text-white")}>{stats.infracciones}</span>
+                             <span className={cn("text-[9px] font-black uppercase mt-3 tracking-[0.2em] opacity-40", stats.infracciones > 0 ? "text-danger/60" : "text-text-muted")}>Alertas</span>
                          </div>
                     </Card>
                 </div>
 
-                {/* Inteligencia de Alertas */}
+                {/* Bitácora en Tiempo Real */}
                 <section className="space-y-4">
-                    <div className="flex items-center justify-between px-2">
-                        <div className="flex items-center gap-3">
-                            <Activity size={18} className="text-primary animate-pulse" />
-                            <h3 className="text-xs font-black text-text-main dark:text-white uppercase tracking-[0.3em] italic">Monitor de Alertas</h3>
-                        </div>
-                        {alertasLocales.length > 0 && (
-                            <button onClick={() => setAlertasLocales([])} className="text-[10px] font-black text-text-muted hover:text-text-main dark:hover:text-white uppercase tracking-widest border-b border-white/5">Limpiar Historial</button>
-                        )}
+                    <div className="flex items-center gap-3 px-2">
+                        <Activity size={18} className="text-primary animate-pulse" />
+                        <h3 className="text-xs font-black text-text-main dark:text-white uppercase tracking-[0.4em] italic">Bitácora en Tiempo Real</h3>
                     </div>
                     
                     <div className="space-y-3">
-                        {alertasLocales.length === 0 ? (
-                            <div className="py-16 text-center border-2 border-dashed border-white/5 rounded-[2.5rem] bg-bg-low/10 group">
+                        {(!stats.eventos_recientes || stats.eventos_recientes.length === 0) ? (
+                            <div className="py-16 text-center border-2 border-dashed border-white/5 rounded-[3rem] bg-bg-low/10 group">
                                 <Info size={40} className="mx-auto text-white/5 mb-4 group-hover:scale-110 transition-transform" />
-                                <p className="text-[10px] font-black text-text-muted uppercase tracking-[0.2em] opacity-40">Zona Segura // Sin Incidentes</p>
+                                <p className="text-[10px] font-black text-text-muted uppercase tracking-[0.3em] opacity-30">A la espera de actividad operativa</p>
                             </div>
                         ) : (
-                            alertasLocales.map((alerta, idx) => (
-                                <Card key={idx} className="bg-danger/10 border-danger/20 p-5 animate-in slide-in-from-right duration-500 overflow-hidden relative">
-                                     <div className="absolute left-0 top-0 h-full w-1.5 bg-danger" />
+                            stats.eventos_recientes.map((evento, idx) => (
+                                <Card key={idx} className="bg-bg-card/40 border-white/5 p-5 animate-in slide-in-from-bottom-2 duration-300 rounded-[2rem] hover:border-primary/20 transition-all group">
                                      <div className="flex items-center gap-5">
-                                         <div className="bg-danger/20 p-3 rounded-2xl flex items-center justify-center shadow-lg">
-                                             <AlertTriangle className="text-danger" size={24} />
+                                         <div className={cn(
+                                             "w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 shadow-lg transition-transform group-hover:scale-105",
+                                             evento.tipo === 'entrada' ? "bg-primary/20 text-primary" : "bg-warning/20 text-warning"
+                                         )}>
+                                             {evento.tipo === 'entrada' ? <LogIn size={24} /> : <LogOut size={24} />}
                                          </div>
-                                         <div className="flex-1">
-                                              <div className="flex items-center justify-between">
-                                                   <h4 className="text-white font-black text-sm uppercase italic">Alerta de Seguridad</h4>
-                                                   <span className="text-[9px] font-black text-danger bg-danger/10 px-2 py-0.5 rounded-full uppercase">Crítico</span>
+                                         <div className="flex-1 min-w-0">
+                                              <div className="flex items-center justify-between mb-1">
+                                                   <h4 className="text-white font-black text-sm uppercase italic truncate">{evento.socio_nombre}</h4>
+                                                   <span className="text-[9px] font-black text-text-muted uppercase tracking-[0.2em] bg-white/5 px-2 py-0.5 rounded-full">
+                                                       {new Date(evento.timestamp).toLocaleTimeString('es-VE', { hour: '2-digit', minute: '2-digit' })}
+                                                   </span>
                                               </div>
-                                              <p className="text-text-muted text-xs mt-1 font-medium">{alerta.descripcion}</p>
+                                              <div className="flex items-center gap-4 text-[10px] font-bold uppercase tracking-widest text-text-muted/60">
+                                                  <div className="flex items-center gap-1.5">
+                                                      <Car size={14} className="opacity-40" />
+                                                      <span className={cn(evento.vehiculo === 'PEATÓN' ? "text-white/20" : "text-primary/70")}>{evento.vehiculo}</span>
+                                                  </div>
+                                              </div>
                                          </div>
-                                         <ChevronRight size={16} className="text-danger opacity-40" />
                                      </div>
                                  </Card>
                             ))
