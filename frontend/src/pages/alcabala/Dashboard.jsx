@@ -202,31 +202,31 @@ const DashboardAlcabala = () => {
                 </Card>
 
                 {/* Comando de Acceso (Botones Principales) */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="grid grid-cols-2 gap-4">
                      <button 
                         onClick={() => handleIniciarEscaneo('entrada')}
-                        className="group relative h-48 flex flex-col items-center justify-center gap-4 bg-bg-card border-2 border-primary/20 rounded-[3rem] shadow-2xl shadow-primary/5 hover:border-primary hover:scale-[1.02] active:scale-95 transition-all outline-none"
+                        className="group relative h-40 flex flex-col items-center justify-center gap-2 bg-bg-card border-2 border-primary/20 rounded-[2.5rem] shadow-2xl shadow-primary/5 hover:border-primary hover:scale-[1.02] active:scale-95 transition-all outline-none"
                      >
-                        <div className="absolute top-6 right-8 opacity-10 group-hover:opacity-20 transition-opacity">
-                             <Zap size={64} className="text-primary fill-primary" />
+                        <div className="absolute top-4 right-6 opacity-10 group-hover:opacity-20 transition-opacity">
+                             <Zap size={48} className="text-primary fill-primary" />
                         </div>
-                        <div className="h-20 w-20 rounded-full bg-primary/10 flex items-center justify-center text-primary group-hover:bg-primary group-hover:text-bg-app transition-colors shadow-inner">
-                            <LogIn size={40} strokeWidth={2.5} />
+                        <div className="h-16 w-16 rounded-full bg-primary/10 flex items-center justify-center text-primary group-hover:bg-primary group-hover:text-bg-app transition-colors shadow-inner">
+                            <LogIn size={32} strokeWidth={2.5} />
                         </div>
-                        <span className="font-black text-text-main dark:text-white uppercase tracking-[0.3em] text-sm italic">Registrar Entrada</span>
+                        <span className="font-black text-text-main dark:text-white uppercase tracking-[0.2em] text-[10px] italic">Entrada</span>
                      </button>
 
                      <button 
                         onClick={() => handleIniciarEscaneo('salida')}
-                        className="group relative h-48 flex flex-col items-center justify-center gap-4 bg-bg-card border-2 border-warning/20 rounded-[3rem] shadow-2xl shadow-warning/5 hover:border-warning hover:scale-[1.02] active:scale-95 transition-all outline-none"
+                        className="group relative h-40 flex flex-col items-center justify-center gap-2 bg-bg-card border-2 border-warning/20 rounded-[2.5rem] shadow-2xl shadow-warning/5 hover:border-warning hover:scale-[1.02] active:scale-95 transition-all outline-none"
                      >
-                        <div className="absolute top-6 right-8 opacity-10 group-hover:opacity-20 transition-opacity">
-                             <ShieldAlert size={64} className="text-warning fill-warning" />
+                        <div className="absolute top-4 right-6 opacity-10 group-hover:opacity-20 transition-opacity">
+                             <ShieldAlert size={48} className="text-warning fill-warning" />
                         </div>
-                        <div className="h-20 w-20 rounded-full bg-warning/10 flex items-center justify-center text-warning group-hover:bg-warning group-hover:text-bg-app transition-colors shadow-inner">
-                            <LogOut size={40} strokeWidth={2.5} />
+                        <div className="h-16 w-16 rounded-full bg-warning/10 flex items-center justify-center text-warning group-hover:bg-warning group-hover:text-bg-app transition-colors shadow-inner">
+                            <LogOut size={32} strokeWidth={2.5} />
                         </div>
-                        <span className="font-black text-text-main dark:text-white uppercase tracking-[0.3em] text-sm italic">Registrar Salida</span>
+                        <span className="font-black text-text-main dark:text-white uppercase tracking-[0.2em] text-[10px] italic">Salida</span>
                      </button>
                 </div>
 

@@ -89,6 +89,15 @@ class AccesoService:
                 query_veh = select(Vehiculo).where(Vehiculo.id == UUID(vehiculo_id), Vehiculo.activo == True)
                 res_veh = await db.execute(query_veh)
                 vehiculo = res_veh.scalar_one_or_none()
+            
+            # Si no hay vehículo en el QR, buscar el "primario" del socio
+            if not vehiculo:
+                query_veh_socio = select(Vehiculo).where(
+                    Vehiculo.usuario_id == socio.id,
+                    Vehiculo.activo == True
+                ).limit(1)
+                res_veh_socio = await db.execute(query_veh_socio)
+                vehiculo = res_veh_socio.scalar_one_or_none()
 
             # 6. Infracciones
             query_inf = select(Infraccion).where(
