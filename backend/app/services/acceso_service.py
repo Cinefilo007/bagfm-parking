@@ -140,7 +140,13 @@ class AccesoService:
                 usuario_id = socio.id,
                 vehiculo_id = vehiculo.id if vehiculo else None,
                 infracciones_activas = [{"tipo": i.tipo, "descripcion": i.descripcion, "bloquea": i.bloquea_salida} for i in infracciones],
-                membresia_info = membresia_service.calcular_progreso(membresia) if membresia else None,
+                membresia_info = {
+                    "id": membresia.id,
+                    "estado": membresia.estado,
+                    "fecha_inicio": membresia.fecha_inicio,
+                    "fecha_fin": membresia.fecha_fin,
+                    "progreso": membresia_service.calcular_progreso(membresia)
+                } if membresia else None,
                 ultima_entrada = ultima_entrada.timestamp if ultima_entrada else None
             )
 

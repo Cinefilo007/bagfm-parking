@@ -87,18 +87,10 @@ const ScannerAlcabala = () => {
         <div className={cn("min-h-screen pb-24 flex flex-col transition-colors duration-700", getBgColor())}>
             <Header titulo="Terminal de Escaneo" subtitle={`OPERACIÓN ${tipoAcceso.toUpperCase()}`} />
             
-            <main className="flex-1 max-w-2xl mx-auto w-full p-6 space-y-6 animate-in slide-in-from-bottom-4 duration-500">
+            <main className="flex-1 max-w-2xl mx-auto w-full px-6 pt-2 pb-6 space-y-4 animate-in slide-in-from-bottom-4 duration-500">
                 
-                {/* Cabecera Táctica Minimalista */}
-                <div className="flex items-center justify-between px-2 pt-2">
-                    <div className="flex items-center gap-3">
-                        <div className="w-2 h-2 rounded-full bg-primary animate-pulse shadow-[0_0_8px_var(--color-primary)]" />
-                        <span className="text-[10px] font-black text-white uppercase tracking-[0.3em] italic">Sistema Aegis Online</span>
-                    </div>
-                </div>
-
-                {/* Visor Táctil */}
-                <Card className="bg-black/60 border-white/5 rounded-[3rem] overflow-hidden shadow-2xl relative shadow-black/80">
+                {/* Visor Táctil - Subido y optimizado */}
+                <Card className="bg-black/60 border-white/5 rounded-[2.5rem] overflow-hidden shadow-2xl relative shadow-black/80">
                      <QRScanner 
                         ref={scannerRef}
                         onScanSuccess={handleScanSuccess} 
@@ -107,8 +99,8 @@ const ScannerAlcabala = () => {
                      />
                 </Card>
 
-                {/* Comandos de Seguridad (Reemplazan los botones de abajo) */}
-                <div className="grid grid-cols-2 gap-4">
+                {/* Comandos de Seguridad Compactos */}
+                <div className="grid grid-cols-2 gap-3">
                     <Boton 
                         onClick={() => scannerRef.current?.switchCamera()}
                         variant="outline" 

@@ -27,13 +27,20 @@ export const QRScanner = forwardRef(({ onScanSuccess, autoStart = false, status 
           const devices = await Html5Qrcode.getCameras();
           if (devices && devices.length > 0) {
               setCameras(devices);
+              // Filtrar cámaras traseras
               const backCameras = devices.filter(d => 
                 d.label.toLowerCase().includes('back') || 
-                d.label.toLowerCase().includes('rear') ||
-                d.label.toLowerCase().includes('0')
+                d.label.toLowerCase().includes('rear')
               );
+              
               if (backCameras.length > 0) {
-                  const targetIdx = devices.indexOf(backCameras[backCameras.length - 1]);
+                  // Intentar buscar la principal: Evitar las que digan "wide" o "ultra"
+                  const mainCamera = backCameras.find(d => 
+                    !d.label.toLowerCase().includes('wide') && 
+                    !d.label.toLowerCase().includes('ultra')
+                  ) || backCameras[0]; // Si no, la primera trasera suele ser la main en muchos dispositivos
+
+                  const targetIdx = devices.indexOf(mainCamera);
                   setCurrentCameraIndex(targetIdx > -1 ? targetIdx : 0);
               }
           }
