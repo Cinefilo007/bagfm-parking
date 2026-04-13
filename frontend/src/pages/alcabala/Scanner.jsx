@@ -133,7 +133,11 @@ const ScannerAlcabala = () => {
                          <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_transparent_0%,_rgba(0,0,0,0.4)_100%)]" />
                     </div>
                     <div className="relative z-10 w-full h-full p-2">
-                         <QRScanner onScanSuccess={handleScanSuccess} autoStart={true} />
+                         <QRScanner 
+                            onScanSuccess={handleScanSuccess} 
+                            autoStart={true} 
+                            status={resultado ? (resultado.permitido ? 'success' : 'error') : 'idle'}
+                         />
                     </div>
                     
                     {/* Guías Visuales del Scanner */}

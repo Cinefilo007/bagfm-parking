@@ -1,9 +1,13 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Html5Qrcode, Html5QrcodeSupportedFormats } from 'html5-qrcode';
+import { 
+  Html5Qrcode, 
+  // Html5QrcodeSupportedFormats 
+} from 'html5-qrcode';
 import { Camera, XCircle, RotateCcw } from 'lucide-react';
 import { Boton } from '../ui/Boton';
+import { cn } from '../../lib/utils';
 
-export const QRScanner = ({ onScanSuccess, onScanError, autoStart = false }) => {
+export const QRScanner = ({ onScanSuccess, onScanError, autoStart = false, status = 'idle' }) => {
   const [isScanning, setIsScanning] = useState(false);
   const [cameraError, setCameraError] = useState(null);
   const [successFlash, setSuccessFlash] = useState(false);
@@ -101,8 +105,11 @@ export const QRScanner = ({ onScanSuccess, onScanError, autoStart = false }) => 
       {/* Contenedor persistente para evitar error removeChild */}
       <div 
         className={cn(
-            "relative overflow-hidden rounded-3xl border-2 border-white/10 bg-black/20 shadow-xl w-full aspect-square flex items-center justify-center transition-all duration-500",
-            !isScanning ? "opacity-0 scale-95 pointer-events-none absolute" : "opacity-100 scale-100"
+            "relative overflow-hidden rounded-3xl border-2 shadow-xl w-full aspect-square flex items-center justify-center transition-all duration-700",
+            !isScanning ? "opacity-0 scale-95 pointer-events-none absolute" : "opacity-100 scale-100",
+            status === 'idle' && "border-white/10 bg-black/20",
+            status === 'success' && "border-primary bg-primary/10 shadow-[0_0_40px_rgba(var(--primary-rgb),0.2)]",
+            status === 'error' && "border-error bg-error/10 shadow-[0_0_40px_rgba(239,68,68,0.2)]"
         )}
       >
         <div id="reader-container" className="w-full h-full" />
