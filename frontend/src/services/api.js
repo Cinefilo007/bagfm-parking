@@ -48,10 +48,7 @@ api.interceptors.response.use(
       const url = error.config.url || '';
       const isLoginRequest = url.includes('auth/login');
       
-      console.log(">> Interceptor 401:", { url, isLoginRequest });
-
       if (!isLoginRequest) {
-        console.warn(">> 401 en ruta protegida, cerrando sesión...");
         localStorage.removeItem('token');
         localStorage.removeItem('user');
         window.location.href = '/login';

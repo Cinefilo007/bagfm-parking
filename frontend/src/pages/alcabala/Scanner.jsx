@@ -12,6 +12,7 @@ import {
     Camera
 } from 'lucide-react';
 import { Header } from '../../components/layout/Header';
+import { cn } from '../../lib/utils';
 import { toast } from 'react-hot-toast';
 
 // Componentes Locales (Hoisted explicitly)

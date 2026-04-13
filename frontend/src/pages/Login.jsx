@@ -32,15 +32,12 @@ export default function Login() {
     const cedulaLimpia = cedula.trim();
     const passwordLimpia = password.trim();
 
-    console.log("INTENTO LOGIN:", { usuario: cedulaLimpia, pass_len: passwordLimpia.length });
-
     try {
       await login(cedulaLimpia, passwordLimpia);
       // Redirigir basado en el rol (lo lee del store hidratado)
       // Como RutaProtegida se encarga de esto si vas a "/", lo enviamos al base
       navigate('/');
     } catch (err) {
-      console.error("Error en login:", err);
       const msg = err.response?.data?.detail || 'Error de credenciales o red.';
       setErrorLocal(msg);
       toast.error(msg, { duration: 20000 });
