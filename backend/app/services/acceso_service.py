@@ -147,7 +147,8 @@ class AccesoService:
                     "fecha_fin": membresia.fecha_fin,
                     "progreso": membresia_service.calcular_progreso(membresia)
                 } if membresia else None,
-                ultima_entrada = ultima_entrada.timestamp if ultima_entrada else None
+                ultima_entrada = ultima_entrada.timestamp if ultima_entrada else None,
+                ultima_entrada_punto = ultima_entrada.punto_acceso if hasattr(ultima_entrada, 'punto_acceso') else None
             )
 
         except Exception as e:

@@ -29,7 +29,7 @@ class AccesoSalida(AccesoBase):
     id: UUID
     usuario_id: UUID
     vehiculo_id: Optional[UUID] = None
-    registrado_by: UUID
+    registrado_por: UUID
     es_manual: bool
     timestamp: datetime
     
@@ -55,4 +55,5 @@ class ResultadoValidacion(BaseModel):
     infracciones_activas: List[dict] = []
     membresia_info: Optional[MembresiaInfo] = None
     ultima_entrada: Optional[datetime] = None
+    ultima_entrada_punto: Optional[str] = None
     mensaje_adicional: Optional[str] = None

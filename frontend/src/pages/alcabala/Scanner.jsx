@@ -89,116 +89,123 @@ const ScannerAlcabala = () => {
             
             <main className="flex-1 max-w-2xl mx-auto w-full px-6 pt-2 pb-6 space-y-4 animate-in slide-in-from-bottom-4 duration-500">
                 
-                {/* Visor Táctil - Subido y optimizado */}
-                <Card className="bg-black/60 border-white/5 rounded-[2.5rem] overflow-hidden shadow-2xl relative shadow-black/80">
-                     <QRScanner 
-                        ref={scannerRef}
-                        onScanSuccess={handleScanSuccess} 
-                        autoStart={true} 
-                        status={resultado ? (resultado.permitido ? 'success' : 'error') : 'idle'}
-                     />
-                </Card>
+                {/* VISOR: Solo visible si no hay resultado activo para obligar al foco */}
+                {!resultado ? (
+                    <>
+                        <Card className="bg-black/60 border-white/5 rounded-[2.5rem] overflow-hidden shadow-2xl relative shadow-black/80">
+                            <QRScanner 
+                                ref={scannerRef}
+                                onScanSuccess={handleScanSuccess} 
+                                autoStart={true} 
+                                status="idle"
+                            />
+                        </Card>
 
-                {/* Comandos de Seguridad Compactos */}
-                <div className="grid grid-cols-2 gap-3">
-                    <Boton 
-                        onClick={() => scannerRef.current?.switchCamera()}
-                        variant="outline" 
-                        className="h-16 rounded-2xl bg-white/5 border-white/5 flex items-center justify-center gap-3 hover:bg-white/10 active:scale-95 transition-all shadow-lg"
-                    >
-                        <RefreshCw size={20} className="text-primary" />
-                        <span className="text-[10px] font-black text-white uppercase tracking-widest">Cambiar Lente</span>
-                    </Boton>
-                    <Boton 
-                        onClick={() => scannerRef.current?.toggleScanner()}
-                        variant="outline" 
-                        className="h-16 rounded-2xl bg-white/5 border-white/5 flex items-center justify-center gap-3 hover:bg-white/10 active:scale-95 transition-all shadow-lg"
-                    >
-                        {scannerRef.current?.isScanning ? (
-                            <>
-                                <Power size={20} className="text-error" />
-                                <span className="text-[10px] font-black text-white uppercase tracking-widest">Apagar</span>
-                            </>
-                        ) : (
-                            <>
-                                <Zap size={20} className="text-primary" />
-                                <span className="text-[10px] font-black text-white uppercase tracking-widest">Activar</span>
-                            </>
-                        )}
-                    </Boton>
-                </div>
-
-                {/* RESULTADO INTEGRADO */}
-                {resultado && (
-                    <div className="animate-in slide-in-from-top-4 fade-in duration-500 space-y-4 pb-12">
+                        {/* Comandos de Seguridad Compactos */}
+                        <div className="grid grid-cols-2 gap-3">
+                            <Boton 
+                                onClick={() => scannerRef.current?.switchCamera()}
+                                variant="outline" 
+                                className="h-16 rounded-2xl bg-white/5 border-white/5 flex items-center justify-center gap-3 active:scale-95 transition-all"
+                            >
+                                <RefreshCw size={20} className="text-primary" />
+                                <span className="text-[10px] font-bold text-white uppercase tracking-widest">Lente</span>
+                            </Boton>
+                            <Boton 
+                                onClick={() => scannerRef.current?.toggleScanner()}
+                                variant="outline" 
+                                className="h-16 rounded-2xl bg-white/5 border-white/5 flex items-center justify-center gap-3 active:scale-95 transition-all"
+                            >
+                                {scannerRef.current?.isScanning ? (
+                                    <>
+                                        <Power size={20} className="text-error" />
+                                        <span className="text-[10px] font-bold text-white uppercase tracking-widest">Apagar</span>
+                                    </>
+                                ) : (
+                                    <>
+                                        <Zap size={20} className="text-primary" />
+                                        <span className="text-[10px] font-bold text-white uppercase tracking-widest">Activar</span>
+                                    </>
+                                )}
+                            </Boton>
+                        </div>
+                    </>
+                ) : (
+                    /* RESULTADO INTEGRADO: Ocupa todo el espacio visual */
+                    <div className="animate-in zoom-in-95 duration-500 space-y-4 pb-12">
                         {/* Banner de Estado */}
                         <div className={cn(
                             "p-6 rounded-3xl border-2 flex items-center gap-4 transition-all duration-500 backdrop-blur-md",
                             resultado.permitido ? "bg-primary/20 border-primary text-primary" : "bg-error/20 border-error text-error"
                         )}>
-                            {resultado.permitido ? <CheckCircle2 size={32} /> : <XCircle size={32} />}
+                            {resultado.permitido ? <CheckCircle2 size={36} /> : <XCircle size={36} />}
                             <div>
-                                <h4 className="text-xl font-black uppercase italic tracking-tighter leading-none">
+                                <h4 className="text-2xl font-black uppercase italic tracking-tighter leading-none">
                                     {resultado.permitido ? "Acceso Autorizado" : "Ingreso Denegado"}
                                 </h4>
-                                <p className="text-[10px] font-bold uppercase opacity-80 mt-1">{resultado.mensaje}</p>
+                                <p className="text-[10px] font-bold uppercase opacity-80 mt-1 tracking-wider">{resultado.mensaje}</p>
                             </div>
                         </div>
 
-                        {/* Ficha Social y Telemetría */}
+                        {/* Ficha Social y Telemetría Refinada */}
                         {resultado.socio && (
-                            <Card className="bg-black/40 backdrop-blur-xl border-white/10 rounded-[2.5rem] p-6 shadow-2xl relative overflow-hidden">
-                                <div className="flex items-center gap-6">
-                                    <div className="w-24 h-24 rounded-[2rem] bg-white/5 border-2 border-white/10 overflow-hidden shrink-0 shadow-2xl">
+                            <Card className="bg-black/60 backdrop-blur-3xl border-white/10 rounded-[2.5rem] p-5 shadow-2xl relative overflow-hidden">
+                                <div className="flex items-center gap-5">
+                                    <div className="w-20 h-20 rounded-[1.8rem] bg-white/5 border-2 border-white/10 overflow-hidden shrink-0 shadow-xl">
                                         {resultado.socio.foto_url ? (
                                             <img src={resultado.socio.foto_url} alt="Socio" className="w-full h-full object-cover" />
                                         ) : (
-                                            <div className="w-full h-full flex items-center justify-center"><User size={40} className="text-white/20" /></div>
+                                            <div className="w-full h-full flex items-center justify-center"><User size={32} className="text-white/20" /></div>
                                         )}
                                     </div>
                                     <div className="flex-1 min-w-0">
-                                        <h5 className="text-2xl font-black text-white uppercase italic tracking-tight leading-none truncate">
+                                        <h5 className="text-xl font-black text-white uppercase italic tracking-tight leading-none mb-2 truncate">
                                             {resultado.socio.nombre} {resultado.socio.apellido}
                                         </h5>
-                                        <div className="flex gap-2 mt-3">
-                                            <span className="text-[8px] font-black text-primary bg-primary/10 px-3 py-1.5 rounded-full uppercase tracking-widest border border-primary/20">{resultado.entidad_nombre}</span>
-                                            <span className="text-[8px] font-black text-white/40 bg-white/5 px-3 py-1.5 rounded-full uppercase tracking-widest border border-white/5">CI: {resultado.socio.cedula}</span>
+                                        <div className="flex flex-wrap gap-2">
+                                            <span className="text-[7px] font-black text-primary bg-primary/10 px-2.5 py-1 rounded-full uppercase tracking-widest border border-primary/20">{resultado.entidad_nombre}</span>
+                                            <span className="text-[7px] font-black text-white/40 bg-white/5 px-2.5 py-1 rounded-full uppercase tracking-widest border border-white/5">CI: {resultado.socio.cedula}</span>
                                         </div>
                                     </div>
                                 </div>
 
-                                {/* Telemetría de Accesos (Ultima Entrada) */}
-                                <div className="mt-6 p-4 bg-white/5 rounded-3xl border border-white/5 flex items-center gap-4 group">
-                                    <div className="w-10 h-10 bg-white/5 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform">
-                                        <Clock size={20} className="text-primary" />
+                                {/* Telemetría Espacial (Ultima Entrada + Punto) */}
+                                <div className="mt-5 p-4 bg-white/5 rounded-3xl border border-white/5 flex items-center gap-4">
+                                    <div className="w-10 h-10 bg-white/5 rounded-2xl flex items-center justify-center shrink-0">
+                                        <Clock size={20} className={resultado.ultima_entrada ? "text-primary" : "text-white/20"} />
                                     </div>
-                                    <div>
-                                        <span className="text-[8px] font-black text-text-muted uppercase tracking-widest block mb-0.5">Última Entrada Detectada (Caracas)</span>
-                                        <p className="text-sm font-black text-white uppercase italic tracking-tight">
+                                    <div className="min-w-0 flex-1">
+                                        <span className="text-[7px] font-black text-text-muted uppercase tracking-[0.2em] block mb-1">Último Ingreso Histórico</span>
+                                        <p className="text-xs font-black text-white uppercase italic truncate">
                                             {formatCaracas(resultado.ultima_entrada)}
                                         </p>
+                                        {resultado.ultima_entrada_punto && (
+                                            <p className="text-[8px] font-bold text-primary/60 uppercase mt-0.5 tracking-widest">
+                                                Detección en: {resultado.ultima_entrada_punto}
+                                            </p>
+                                        )}
                                     </div>
                                 </div>
 
-                                {/* Info Vehículo y Membresía */}
-                                <div className="grid grid-cols-2 gap-4 mt-4">
-                                    <div className="bg-white/5 p-4 rounded-3xl border border-white/5">
-                                        <div className="flex items-center gap-2 mb-1.5 opacity-60">
-                                            <Shield size={12} className="text-primary" />
-                                            <span className="text-[8px] font-black text-text-muted uppercase tracking-widest">Plan Base</span>
-                                        </div>
-                                        <p className="text-sm font-black text-white uppercase italic">
-                                            {resultado.membresia_info?.dias_restantes || 0} Días Vig.
-                                        </p>
+                                {/* Info Vehículo (Prioridad Operativa) */}
+                                <div className="mt-4 p-4 bg-primary/5 rounded-3xl border border-primary/10 flex items-center gap-4">
+                                    <div className="w-10 h-10 bg-primary/10 rounded-2xl flex items-center justify-center shrink-0">
+                                        <Car size={20} className="text-primary" />
                                     </div>
-                                    <div className="bg-white/5 p-4 rounded-3xl border border-white/5">
-                                        <div className="flex items-center gap-2 mb-1.5 opacity-60">
-                                            <Car size={12} className="text-warning" />
-                                            <span className="text-[8px] font-black text-text-muted uppercase tracking-widest">Vehículo</span>
-                                        </div>
-                                        <p className="text-sm font-black text-warning uppercase italic truncate leading-none">
-                                            {resultado.vehiculo?.placa || 'SIN PLACA'}
-                                        </p>
+                                    <div className="min-w-0 flex-1">
+                                        <span className="text-[7px] font-black text-primary/60 uppercase tracking-[0.2em] block mb-1">Unidad Identificada</span>
+                                        {resultado.vehiculo ? (
+                                            <div className="flex items-baseline gap-2 overflow-hidden">
+                                                <p className="text-sm font-black text-white uppercase italic leading-none truncate">
+                                                    {resultado.vehiculo.marca} {resultado.vehiculo.modelo}
+                                                </p>
+                                                <p className="text-lg font-black text-primary leading-none">
+                                                    [{resultado.vehiculo.placa}]
+                                                </p>
+                                            </div>
+                                        ) : (
+                                            <p className="text-xs font-black text-error uppercase italic">SIN VEHÍCULO REGISTRADO</p>
+                                        )}
                                     </div>
                                 </div>
 
@@ -207,7 +214,7 @@ const ScannerAlcabala = () => {
                                      <Boton 
                                         onClick={() => setResultado(null)}
                                         variant="outline" 
-                                        className="flex-1 h-14 rounded-2xl border-white/5 text-text-muted font-black uppercase text-[10px] tracking-widest hover:bg-white/5"
+                                        className="flex-1 h-14 rounded-2xl border-white/5 text-text-muted font-bold uppercase text-[9px] tracking-widest hover:bg-white/5"
                                      >
                                          REANUDAR RADAR
                                      </Boton>
@@ -217,7 +224,7 @@ const ScannerAlcabala = () => {
                                         className={cn(
                                             "flex-[1.5] h-14 rounded-2xl font-black uppercase text-xs tracking-[0.2em] transition-all",
                                             resultado.permitido 
-                                                ? "bg-primary text-bg-app shadow-lg shadow-black/40 scale-105 active:scale-100" 
+                                                ? "bg-primary text-bg-app shadow-xl shadow-black/40" 
                                                 : "bg-white/5 text-white/10 border-white/5 opacity-40 cursor-not-allowed"
                                         )}
                                      >
