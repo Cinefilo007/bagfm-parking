@@ -73,10 +73,16 @@ const ScannerAlcabala = () => {
                 es_manual: false
             });
             toast.success(`Acceso ${tipoAcceso} confirmado`, { position: 'bottom-center' });
+            
+            // Limpiar resultado para volver al modo escáner
             setResultado(null);
-            if (scannerRef.current && !scannerRef.current.isScanning) {
-                scannerRef.current.toggleScanner();
-            }
+            
+            // Forzar un pequeño delay para asegurar el remonte limpio del componente de cámara
+            setTimeout(() => {
+                if (scannerRef.current) {
+                    scannerRef.current.toggleScanner(true); // Método hipotético para forzar encendido
+                }
+            }, 100);
         } catch (error) {
             toast.error("Error al registrar acceso");
         }

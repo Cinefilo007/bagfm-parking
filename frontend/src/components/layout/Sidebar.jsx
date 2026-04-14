@@ -13,6 +13,7 @@ import { useThemeStore } from '../../store/theme.store';
 export const Sidebar = () => {
   const { user, logout } = useAuthStore();
   const { isDarkMode, toggleTheme } = useThemeStore();
+  const { tacticalIdentity } = useUIStore();
   
   const navItems = [];
   
@@ -38,6 +39,15 @@ export const Sidebar = () => {
     );
   }
 
+  // Identidad dinámica para Alcabala
+  const displayNombre = (user?.rol === 'ALCABALA' && tacticalIdentity) 
+    ? `${tacticalIdentity.grado} ${tacticalIdentity.nombre} ${tacticalIdentity.apellido}`
+    : `${user?.nombre} ${user?.apellido}`;
+  
+  const displaySub = (user?.rol === 'ALCABALA' && tacticalIdentity)
+    ? tacticalIdentity.punto
+    : user?.rol.replace('_', ' ');
+
   return (
     <aside className="w-72 bg-bg-low h-screen sticky top-0 hidden lg:flex flex-col border-r border-bg-high/20 shadow-2xl z-[1000]">
       {/* Brand Header */}
@@ -59,8 +69,8 @@ export const Sidebar = () => {
             <UserCircle size={24} className="text-text-muted" />
          </div>
           <div className="flex flex-col overflow-hidden">
-            <span className="text-xs font-bold text-text-main truncate uppercase">{user?.nombre} {user?.apellido}</span>
-            <span className="text-[10px] text-primary font-black tracking-widest uppercase opacity-80">{user?.rol.replace('_', ' ')}</span>
+            <span className="text-[11px] font-black text-text-main truncate uppercase leading-tight">{displayNombre}</span>
+            <span className="text-[9px] text-primary font-black tracking-widest uppercase opacity-80 mt-0.5 truncate">{displaySub}</span>
           </div>
       </div>
 

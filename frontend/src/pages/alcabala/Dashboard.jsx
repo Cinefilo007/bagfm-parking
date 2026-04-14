@@ -22,7 +22,7 @@ import { cn } from '../../lib/utils';
 const DashboardAlcabala = () => {
     const navigate = useNavigate();
     const { user } = useAuthStore();
-    const { lockNavigation } = useUIStore();
+    const { lockNavigation, setTacticalIdentity } = useUIStore();
     const { lastNotification } = useNotifications();
     
     const [situacion, setSituacion] = useState(null);
@@ -35,13 +35,24 @@ const DashboardAlcabala = () => {
             const data = await comandoService.getMiSituacion();
             setSituacion(data);
             if (data.stats) setStats(data.stats);
+            
+            // Sincronizar identidad con el store global para la barra lateral
+            if (data.identificado && data.datos_guardia) {
+                setTacticalIdentity({
+                    grado: data.datos_guardia.grado,
+                    nombre: data.datos_guardia.nombre,
+                    apellido: data.datos_guardia.apellido,
+                    punto: data.punto?.nombre
+                });
+            }
+            
             lockNavigation(!data.identificado);
         } catch (error) {
             console.error('Error sincronizando situación:', error);
         } finally {
             setLoading(false);
         }
-    }, [lockNavigation]);
+    }, [lockNavigation, setTacticalIdentity]);
 
     useEffect(() => {
         fetchSituacion(true);
@@ -102,145 +113,104 @@ const DashboardAlcabala = () => {
     }
 
     return (
-        <div className="p-4 md:p-6 space-y-6 pb-24 max-w-[1600px] mx-auto animate-in fade-in duration-500">
-            {/* Cabecera Táctica Estandarizada */}
-            <header className="flex flex-col sm:flex-row items-center justify-between gap-4 bg-bg-card/30 p-4 md:p-6 rounded-[2rem] border border-white/5 backdrop-blur-sm">
+        <div className="p-4 md:p-6 space-y-6 pb-24 max-w-[1400px] mx-auto animate-in fade-in duration-500">
+            {/* 1. Cabecera Principal - Identidad y Mando */}
+            <header className="flex flex-col sm:flex-row items-center justify-between gap-4 bg-bg-card/30 p-4 md:p-6 rounded-2xl border border-white/5 backdrop-blur-sm">
                 <div className="flex items-center gap-4">
-                    <div className="p-3 bg-primary/10 rounded-2xl shrink-0 border border-primary/20 shadow-lg shadow-primary/5">
+                    <div className="p-3 bg-primary/10 rounded-xl shrink-0 border border-primary/20">
                         <Shield className="text-primary" size={28} />
                     </div>
                     <div>
-                        <h1 className="text-2xl md:text-3xl font-black text-text-main tracking-tighter uppercase italic">
+                        <h1 className="text-2xl md:text-3xl font-black text-white tracking-tighter uppercase italic">
                             {situacion?.punto?.nombre || 'Terminal Alcabala'}
                         </h1>
-                        <p className="text-text-muted text-[10px] md:text-xs mt-0.5 flex items-center gap-1.5 font-black uppercase tracking-[0.2em]">
-                            <span className="w-2 h-2 rounded-full bg-success animate-pulse shrink-0" />
+                        <p className="text-text-muted text-xs mt-0.5 flex items-center gap-1.5 font-bold">
+                            <span className="w-1.5 h-1.5 rounded-full bg-success animate-pulse shrink-0" />
                             Puesto de control y acceso
                         </p>
                     </div>
                 </div>
 
-                <div className="flex items-center gap-3">
-                    <div className="hidden md:flex flex-col items-end mr-4">
-                        <span className="text-[10px] font-black text-text-muted uppercase tracking-widest opacity-40">Estado del Sistema</span>
-                        <span className="text-xs font-black text-success uppercase italic">Operativo // Aegis v4.2</span>
+                {/* Info del Profesional de Guardia (Derecha) */}
+                <div className="flex items-center gap-4 bg-white/5 p-3 rounded-xl border border-white/5">
+                    <div className="text-right hidden sm:block">
+                        <p className="text-[10px] font-black text-primary uppercase tracking-[0.2em]">Profesional de Guardia</p>
+                        <p className="text-sm font-black text-text-main italic uppercase tracking-tight">
+                            {situacion?.datos_guardia?.grado || 'S1'} {situacion?.datos_guardia?.nombre} {situacion?.datos_guardia?.apellido}
+                        </p>
                     </div>
-                    <Boton variant="outline" className="h-12 px-6 text-[10px] font-black uppercase tracking-[0.2em] rounded-xl border-white/10 gap-2 bg-white/5">
-                        <Activity size={18} className="text-primary" />
-                        Live
-                    </Boton>
+                    <div className="w-11 h-11 rounded-full bg-primary/10 flex items-center justify-center text-primary border border-primary/20">
+                        <ShieldCheck size={22} />
+                    </div>
                 </div>
             </header>
             
-            <div className="grid grid-cols-1 xl:grid-cols-12 gap-8">
-                
-                {/* LADO IZQUIERDO: Control y Métricas (8/12) */}
-                <div className="xl:col-span-8 flex flex-col gap-8">
-                    
-                    {/* Banner de Operador - Rediseño más compacto y elegante */}
-                    <Card className="bg-gradient-to-br from-bg-card to-bg-card/40 border-primary/10 backdrop-blur-xl rounded-[2.5rem] p-6 md:p-8 shadow-2xl relative overflow-hidden group border-white/5">
-                        <div className="absolute -top-10 -right-10 opacity-5 group-hover:opacity-10 transition-all duration-700">
-                             <Shield size={240} className="text-primary rotate-12" />
-                        </div>
-                        
-                        <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6 relative z-10">
-                            <div className="flex items-center gap-6">
-                                <div className="h-20 w-20 rounded-[1.5rem] bg-primary/10 flex items-center justify-center text-primary shadow-inner border border-primary/20 ring-4 ring-primary/5">
-                                    <ShieldCheck size={40} />
-                                </div>
-                                <div>
-                                    <h3 className="text-[10px] font-black text-primary uppercase tracking-[0.4em] mb-1 font-display">Comandante de guardia</h3>
-                                    <p className="text-2xl md:text-3xl font-black text-text-main uppercase tracking-tighter italic leading-none">
-                                        {situacion?.datos_guardia?.grado} {situacion?.datos_guardia?.nombre} {situacion?.datos_guardia?.apellido}
-                                    </p>
-                                    <div className="flex items-center gap-3 mt-2 text-[10px] font-bold text-text-muted/60 uppercase tracking-widest">
-                                        <span className="flex items-center gap-1.5"><Clock size={12}/> Inicio: {new Date().toLocaleTimeString('es-VE', {hour:'2-digit', minute:'2-digit'})}</span>
-                                        <span className="w-1 h-1 rounded-full bg-white/20" />
-                                        <span className="flex items-center gap-1.5"><Activity size={12}/> ID: #{situacion?.punto?.id?.slice(0,6)}</span>
-                                    </div>
-                                </div>
-                            </div>
-                            
-                            <div className="flex md:flex-col gap-2 w-full md:w-auto">
-                                <Badge variant="activa" className="px-6 py-2 shadow-xl shadow-primary/20 uppercase tracking-[0.2em] text-[10px] font-black italic flex-1 md:flex-none justify-center">EN TURNO</Badge>
-                                <Boton variant="ghost" className="h-10 text-[9px] font-black uppercase tracking-widest opacity-40 hover:opacity-100 flex-1 md:flex-none">Finalizar</Boton>
-                            </div>
-                        </div>
-                    </Card>
-
-                    {/* Comando de Acceso Principal */}
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                        <button 
-                            onClick={() => handleIniciarEscaneo('entrada')}
-                            className="group relative h-44 flex flex-col items-center justify-center gap-4 bg-bg-card border-2 border-primary/10 rounded-[3rem] p-8 hover:border-primary/40 hover:shadow-2xl hover:shadow-primary/10 transition-all outline-none"
-                        >
-                            <div className="absolute inset-0 bg-primary/5 opacity-0 group-hover:opacity-100 transition-opacity rounded-[3rem]" />
-                            <div className="h-20 w-20 rounded-full bg-primary/10 flex items-center justify-center text-primary group-hover:scale-110 group-hover:bg-primary group-hover:text-bg-app transition-all shadow-inner ring-8 ring-primary/5">
-                                <LogIn size={40} strokeWidth={2.5} />
-                            </div>
-                            <div className="text-center relative z-10">
-                                <p className="text-[10px] font-black text-primary/60 uppercase tracking-[0.4em] mb-1">Entrada</p>
-                                <h4 className="text-2xl font-black text-text-main uppercase italic tracking-tight">Registrar Ingreso</h4>
-                            </div>
-                        </button>
-
-                        <button 
-                            onClick={() => handleIniciarEscaneo('salida')}
-                            className="group relative h-44 flex flex-col items-center justify-center gap-4 bg-bg-card border-2 border-warning/10 rounded-[3rem] p-8 hover:border-warning/40 hover:shadow-2xl hover:shadow-warning/10 transition-all outline-none"
-                        >
-                            <div className="absolute inset-0 bg-warning/5 opacity-0 group-hover:opacity-100 transition-opacity rounded-[3rem]" />
-                            <div className="h-20 w-20 rounded-full bg-warning/10 flex items-center justify-center text-warning group-hover:scale-110 group-hover:bg-warning group-hover:text-bg-app transition-all shadow-inner ring-8 ring-warning/5">
-                                <LogOut size={40} strokeWidth={2.5} />
-                            </div>
-                            <div className="text-center relative z-10">
-                                <p className="text-[10px] font-black text-warning/60 uppercase tracking-[0.4em] mb-1">Salida</p>
-                                <h4 className="text-2xl font-black text-text-main uppercase italic tracking-tight">Registrar Egreso</h4>
-                            </div>
-                        </button>
-                    </div>
-
-                    {/* KPIs de Rendimiento */}
-                    <div className="grid grid-cols-2 md:grid-cols-3 gap-6">
-                        <Card className="bg-bg-card/40 border-white/5 p-8 rounded-[2rem] flex flex-col items-center justify-center text-center shadow-lg relative overflow-hidden">
-                             <div className="absolute -bottom-4 -left-4 opacity-[0.03] rotate-12"><LogIn size={80}/></div>
-                             <span className="text-4xl font-black text-text-main font-display italic tracking-tighter">{stats.entradas}</span>
-                             <span className="text-[10px] text-text-muted font-black uppercase mt-3 tracking-[0.3em] opacity-40">Total entradas ciclicas</span>
+            {/* 2. Fila de KPIs - Estandarizados (Igual al Comandante) */}
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                {[
+                    { label: 'Entradas Ciclo', valor: stats.entradas, icon: LogIn, color: 'text-primary' },
+                    { label: 'Salidas Ciclo', valor: stats.salidas, icon: LogOut, color: 'text-warning' },
+                    { label: 'Alertas Det.', valor: stats.infracciones, icon: AlertTriangle, color: stats.infracciones > 0 ? 'text-danger' : 'text-text-muted' },
+                    { label: 'Órdenes Táct.', valor: 0, icon: ClipboardList, color: 'text-sky-400' }
+                ].map((stat, i) => {
+                    const Icon = stat.icon;
+                    return (
+                        <Card key={i} className="flex flex-col p-4 md:p-6 relative overflow-hidden group hover:bg-bg-high transition-all border-white/5 rounded-2xl">
+                             <div className="flex justify-between items-start mb-4">
+                                <Icon size={24} className={stat.color} />
+                                <div className="w-1.5 h-1.5 rounded-full bg-primary/20 group-hover:bg-primary/50 transition-colors"></div>
+                             </div>
+                             <div className="font-display font-black text-2xl md:text-3xl tracking-tighter leading-none mb-1 text-text-main">
+                                {stat.valor}
+                             </div>
+                             <div className="text-[9px] md:text-[10px] uppercase font-black tracking-widest text-text-muted opacity-60">
+                                {stat.label}
+                             </div>
                         </Card>
-                        <Card className="bg-bg-card/40 border-white/5 p-8 rounded-[2rem] flex flex-col items-center justify-center text-center shadow-lg relative overflow-hidden">
-                             <div className="absolute -bottom-4 -left-4 opacity-[0.03] rotate-12"><LogOut size={80}/></div>
-                             <span className="text-4xl font-black text-text-main font-display italic tracking-tighter">{stats.salidas}</span>
-                             <span className="text-[10px] text-text-muted font-black uppercase mt-3 tracking-[0.3em] opacity-40">Total salidas ciclicas</span>
-                        </Card>
-                        <Card className={cn(
-                            "col-span-2 md:col-span-1 p-8 rounded-[2rem] flex flex-col items-center justify-center text-center border transition-all shadow-lg relative overflow-hidden",
-                            stats.infracciones > 0 ? "bg-danger/5 border-danger/30 shadow-danger/5" : "bg-bg-card/40 border-white/5"
-                        )}>
-                             <div className="absolute -bottom-4 -left-4 opacity-[0.03] rotate-12"><ShieldAlert size={80}/></div>
-                             <span className={cn("text-4xl font-black font-display italic tracking-tighter", stats.infracciones > 0 ? "text-danger" : "text-text-main")}>{stats.infracciones}</span>
-                             <span className={cn("text-[10px] font-black uppercase mt-3 tracking-[0.3em]", stats.infracciones > 0 ? "text-danger/60" : "text-text-muted opacity-40")}>Alertas detectadas</span>
-                        </Card>
-                    </div>
+                    );
+                })}
+            </div>
+
+            {/* 3. Acciones de Registro - Centradas y en una sola línea */}
+            <div className="flex flex-col items-center justify-center py-4 gap-6">
+                <div className="flex flex-row items-center gap-4 w-full max-w-2xl">
+                    <button 
+                        onClick={() => handleIniciarEscaneo('entrada')}
+                        className="flex-1 flex items-center justify-center gap-4 bg-primary text-bg-app h-16 md:h-20 rounded-2xl hover:scale-[1.02] active:scale-[0.98] transition-all shadow-tactica outline-none px-6"
+                    >
+                        <LogIn size={28} strokeWidth={3} />
+                        <span className="text-sm md:text-base font-black uppercase tracking-widest italic">Entrada</span>
+                    </button>
+
+                    <button 
+                        onClick={() => handleIniciarEscaneo('salida')}
+                        className="flex-1 flex items-center justify-center gap-4 bg-bg-card border-2 border-warning/30 text-warning h-16 md:h-20 rounded-2xl hover:scale-[1.02] active:scale-[0.98] transition-all outline-none px-6"
+                    >
+                        <LogOut size={28} strokeWidth={3} />
+                        <span className="text-sm md:text-base font-black uppercase tracking-widest italic">Salida</span>
+                    </button>
                 </div>
+            </div>
 
-                {/* LADO DERECHO: Historial / Bitácora (4/12) */}
-                <div className="xl:col-span-4 flex flex-col gap-5">
-                    <div className="flex items-center justify-between px-4">
-                        <div className="flex items-center gap-3">
-                            <div className="w-1.5 h-6 bg-primary rounded-full" />
-                            <h3 className="text-xs font-black text-text-main uppercase tracking-[0.4em] italic">Bitácora táctica</h3>
-                        </div>
-                        <span className="text-[8px] font-black text-success uppercase tracking-widest animate-pulse">En vivo</span>
+            {/* 4. Sección Inferior - Bitácora vs Órdenes Tácticas */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                
+                {/* Columna Izquierda: Bitácora Táctica */}
+                <div className="space-y-4 flex flex-col h-[500px]">
+                    <div className="flex items-center gap-3 px-2">
+                        <Activity size={18} className="text-primary" />
+                        <h3 className="text-xs font-black text-text-main uppercase tracking-[0.4em] italic">Bitácora en tiempo real</h3>
                     </div>
                     
-                    <div className="flex flex-col space-y-4 max-h-[700px] overflow-y-auto pr-2 custom-scrollbar">
+                    <div className="flex-1 overflow-y-auto pr-2 custom-scrollbar space-y-3">
                         {(!stats.eventos_recientes || stats.eventos_recientes.length === 0) ? (
-                            <div className="py-20 text-center border border-dashed border-white/5 rounded-[2.5rem] bg-bg-low/10">
-                                <Info size={32} className="mx-auto text-text-muted opacity-20 mb-3" />
+                            <div className="h-full flex flex-col items-center justify-center border border-dashed border-white/10 rounded-2xl bg-bg-card/20">
+                                <Info size={32} className="text-text-muted opacity-20 mb-3" />
                                 <p className="text-[10px] font-black text-text-muted uppercase tracking-[0.3em] opacity-40">Sin novedad en el frente</p>
                             </div>
                         ) : (
-                            stats.eventos_recientes.map((evento, idx) => (
-                                <div key={evento.id} className="bg-bg-card/40 border border-white/5 p-4 rounded-2xl flex items-center gap-4 hover:border-primary/20 transition-all group">
+                            stats.eventos_recientes.map((evento) => (
+                                <div key={evento.id} className="bg-bg-card/40 border border-white/5 p-4 rounded-xl flex items-center gap-4 hover:border-primary/20 transition-all">
                                      <div className={cn(
                                          "w-10 h-10 rounded-xl flex items-center justify-center shrink-0",
                                          evento.tipo === 'entrada' ? "bg-primary/20 text-primary" : "bg-warning/20 text-warning"
@@ -262,10 +232,42 @@ const DashboardAlcabala = () => {
                                 </div>
                             ))
                         )}
+                    </div>
+                </div>
+
+                {/* Columna Derecha: Órdenes Tácticas - Placeholder */}
+                <div className="space-y-4 flex flex-col h-[500px]">
+                    <div className="flex items-center gap-3 px-2">
+                        <ClipboardList size={18} className="text-sky-400" />
+                        <h3 className="text-xs font-black text-text-main uppercase tracking-[0.4em] italic">Órdenes Tácticas</h3>
+                    </div>
+                    
+                    <div className="flex-1 bg-bg-card/40 border border-sky-500/10 rounded-[2.5rem] relative overflow-hidden p-8 flex flex-col items-center justify-center text-center">
+                        <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-sky-500/20 to-transparent" />
                         
-                        <button className="w-full py-4 text-[9px] font-black text-text-muted uppercase tracking-[0.3em] border border-white/5 rounded-2xl hover:bg-white/5 transition-all">
-                            Ver bitácora completa
-                        </button>
+                        <div className="w-20 h-20 rounded-full bg-sky-500/10 flex items-center justify-center text-sky-400 mb-6 shadow-2xl shadow-sky-500/10 border border-sky-500/20">
+                             <AlertTriangle size={36} className="animate-pulse" />
+                        </div>
+                        
+                        <h4 className="text-lg font-black text-text-main uppercase italic mb-2 tracking-tight">Consigna de Mando</h4>
+                        <p className="text-[10px] md:text-xs font-bold text-text-muted uppercase tracking-widest max-w-xs leading-relaxed opacity-60">
+                            No hay órdenes restrictivas vigentes para este punto de control. 
+                            Mantenga vigilancia estándar y reporte toda novedad al centro de comando.
+                        </p>
+                        
+                        <div className="mt-8 pt-8 border-t border-white/5 w-full">
+                            <div className="flex items-center justify-center gap-6">
+                                <div className="text-center">
+                                    <p className="text-[8px] font-black text-text-muted uppercase tracking-widest mb-1">Nivel Alerta</p>
+                                    <span className="text-xs font-black text-success uppercase">Verde</span>
+                                </div>
+                                <div className="w-px h-8 bg-white/5" />
+                                <div className="text-center">
+                                    <p className="text-[8px] font-black text-text-muted uppercase tracking-widest mb-1">Sector</p>
+                                    <span className="text-xs font-black text-text-main uppercase">Alfa-1</span>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
