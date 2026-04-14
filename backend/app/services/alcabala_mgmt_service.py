@@ -309,7 +309,7 @@ class AlcabalaService:
                 "tipo": h.tipo,
                 "timestamp": h.timestamp.isoformat(),
                 "socio_nombre": f"{u_h.nombre} {u_h.apellido}" if u_h else "Socio Desconocido",
-                "vehiculo": f"{veh_h.marca} [{veh_h.placa}]" if veh_h else "PEATÓN"
+                "vehiculo": f"{veh_h.marca} {veh_h.modelo} [{veh_h.placa}]" if veh_h else "PEATÓN"
             })
 
         return {

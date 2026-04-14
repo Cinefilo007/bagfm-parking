@@ -53,7 +53,7 @@ const EventMonitor = ({ eventos = [] }) => {
                 </p>
                 {evento.vehiculo && (
                   <p className="text-[8px] font-black text-primary/60 uppercase tracking-widest mt-0.5 ml-3.5">
-                    Unidad: {evento.vehiculo}
+                    Vehículo: {evento.vehiculo}
                   </p>
                 )}
               </div>

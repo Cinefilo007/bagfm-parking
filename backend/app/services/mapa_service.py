@@ -115,7 +115,7 @@ async def get_situacion_actual(db: AsyncSession):
             from app.models.vehiculo import Vehiculo
             v = await db.get(Vehiculo, acc.vehiculo_id)
             if v:
-                vehiculo_str = f"{v.marca} [{v.placa}]"
+                vehiculo_str = f"{v.marca} {v.modelo} [{v.placa}]"
 
         eventos_data.append({
             "id": acc.id,
