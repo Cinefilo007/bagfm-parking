@@ -18,6 +18,7 @@ import { Input } from '../../components/ui/Input';
 import { comandoService } from '../../services/comando.service';
 import { toast } from 'react-hot-toast';
 import { cn } from '../../lib/utils';
+import LiveEventLog from '../../components/dashboard/LiveEventLog';
 
 const DashboardAlcabala = () => {
     const navigate = useNavigate();
