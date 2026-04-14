@@ -119,7 +119,7 @@ async def obtener_situacion_actual(
         "datos_guardia": identificacion if identificacion else {
             "nombre": usuario.nombre,
             "apellido": usuario.apellido,
-            "grado": usuario.grado
+            "grado": "" # El usuario base de alcabala no tiene grado, se define en el relevo
         },
         "stats": {
             **stats_data,
