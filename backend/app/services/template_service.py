@@ -43,4 +43,42 @@ class TemplateService:
         wb.save(output)
         return output.getvalue()
 
+    def generar_excel_pases_template(self) -> bytes:
+        """
+        Genera un archivo Excel con los encabezados necesarios para pases con identificación (Tipo B).
+        """
+        wb = openpyxl.Workbook()
+        ws = wb.active
+        ws.title = "DATOS_IDENTIFICACION"
+
+        # Encabezados solicitados
+        headers = [
+            "NOMBRE", "APELLIDO", "CEDULA", "TELEFONO", 
+            "MARCA_VEHICULO", "MODELO_VEHICULO", "PLACA", "COLOR", "AÑO"
+        ]
+        
+        # Estilos
+        header_fill = PatternFill(start_color="3B82F6", end_color="3B82F6", fill_type="solid") # Azul táctico
+        header_font = Font(bold=True, color="FFFFFF")
+        center_align = Alignment(horizontal="center")
+
+        for col_num, header in enumerate(headers, 1):
+            cell = ws.cell(row=1, column=col_num, value=header)
+            cell.fill = header_fill
+            cell.font = header_font
+            cell.alignment = center_align
+            ws.column_dimensions[openpyxl.utils.get_column_letter(col_num)].width = 18
+
+        # Ejemplo
+        ejemplo = [
+            "CARLOS", "RODRIGUEZ", "V10987654", "04245558899",
+            "CHERY", "ARAUCA", "AC123LL", "AZUL", "2015"
+        ]
+        for col_num, value in enumerate(ejemplo, 1):
+            ws.cell(row=2, column=col_num, value=value)
+
+        output = BytesIO()
+        wb.save(output)
+        return output.getvalue()
+
 template_service = TemplateService()

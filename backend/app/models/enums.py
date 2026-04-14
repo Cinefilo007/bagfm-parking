@@ -19,9 +19,17 @@ class MembresiaEstado(str, enum.Enum):
     vencida = "vencida"
     exonerada = "exonerada"
 
+class PasseTipo(str, enum.Enum):
+    simple = "simple"           # Tipo A
+    identificado = "identificado" # Tipo B
+    portal = "portal"           # Tipo C
+
 class QRTipo(str, enum.Enum):
     permanente = "permanente"
     temporal = "temporal"
+    evento_simple = "evento_simple"
+    evento_identificado = "evento_identificado"
+    evento_portal = "evento_portal"
 
 class AccesoTipo(str, enum.Enum):
     entrada = "entrada"

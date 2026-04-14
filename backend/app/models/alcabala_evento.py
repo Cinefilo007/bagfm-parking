@@ -7,7 +7,7 @@ from sqlalchemy import Column, String, Boolean, Text, DateTime, Date, ForeignKey
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.sql import func
 from app.core.database import Base
-from app.models.enums import SolicitudEstado
+from app.models.enums import SolicitudEstado, PasseTipo
 
 class PuntoAcceso(Base):
     __tablename__ = "puntos_acceso"
@@ -30,11 +30,34 @@ class PuntoAcceso(Base):
     activo = Column(Boolean, default=True, nullable=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
+class LotePaseMasivo(Base):
+    __tablename__ = "lotes_pase_masivo"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    codigo_serial = Column(String(50), unique=True, index=True, nullable=False) # BAGFM-26ABR-003
+    nombre_evento = Column(String(200), nullable=False)
+    tipo_pase = Column(SQLEnum(PasseTipo, name="passe_tipo", native_enum=True), nullable=False)
+    
+    fecha_inicio = Column(Date, nullable=False)
+    fecha_fin = Column(Date, nullable=False)
+    
+    # Restricción de accesos: NULL = sin límite
+    max_accesos_por_pase = Column(Integer, nullable=True)
+    cantidad_pases = Column(Integer, nullable=False)
+    
+    creado_por = Column(UUID(as_uuid=True), ForeignKey("usuarios.id", ondelete="RESTRICT"), nullable=False)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    
+    # Estado del ZIP y Almacenamiento
+    zip_generado = Column(Boolean, default=False, nullable=False)
+    zip_url = Column(Text, nullable=True) # URL de Supabase Storage
+    zip_listo_at = Column(DateTime(timezone=True), nullable=True)
+
 class SolicitudEvento(Base):
     __tablename__ = "solicitudes_evento"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    entidad_id = Column(UUID(as_uuid=True), ForeignKey("entidades_civiles.id", ondelete="RESTRICT"), nullable=False)
+    entidad_id = Column(UUID(as_uuid=True), ForeignKey("entidades_civiles.id", ondelete="RESTRICT"), nullable=True) # AHORA PERMITE NULL
     solicitado_por = Column(UUID(as_uuid=True), ForeignKey("usuarios.id", ondelete="RESTRICT"), nullable=False)
     
     nombre_evento = Column(String(200), nullable=False)
@@ -42,6 +65,9 @@ class SolicitudEvento(Base):
     cantidad_solicitada = Column(Integer, nullable=False)
     cantidad_aprobada = Column(Integer, nullable=True)
     motivo = Column(Text, nullable=False)
+    
+    tipo_pase = Column(SQLEnum(PasseTipo, name="passe_tipo", native_enum=True), default=PasseTipo.simple)
+    lote_id = Column(UUID(as_uuid=True), ForeignKey("lotes_pase_masivo.id", ondelete="SET NULL"), nullable=True)
     
     estado = Column(SQLEnum(SolicitudEstado, name="solicitud_estado", native_enum=False), default=SolicitudEstado.pendiente)
     

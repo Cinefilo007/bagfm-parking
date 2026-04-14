@@ -1,19 +1,40 @@
 import React, { useState, useEffect } from 'react';
-import { CalendarRange, CheckCircle2, XCircle, Clock, Users, ArrowUpRight, FileText, Check, ShieldAlert, Activity, Ticket } from 'lucide-react';
+import { 
+  CalendarRange, 
+  CheckCircle2, 
+  XCircle, 
+  Clock, 
+  Users, 
+  ArrowUpRight, 
+  FileText, 
+  Check, 
+  ShieldAlert, 
+  Activity, 
+  Ticket,
+  Plus,
+  Layers,
+  History
+} from 'lucide-react';
 import { Card, CardContent } from '../../components/ui/Card';
 import { Boton } from '../../components/ui/Boton';
 import { Modal } from '../../components/ui/Modal';
 import { Input } from '../../components/ui/Input';
 import { eventosService } from '../../services/eventos.service';
+import { pasesService } from '../../services/pasesService';
 import { toast } from 'react-hot-toast';
 import { cn } from '../../lib/utils';
+import LoteCard from '../../components/eventos/LoteCard';
+import ModalNuevoLote from '../../components/eventos/ModalNuevoLote';
 
 export default function EventosMando() {
+  const [activeTab, setActiveTab] = useState('solicitudes'); // 'solicitudes' o 'lotes'
   const [solicitudes, setSolicitudes] = useState([]);
+  const [lotes, setLotes] = useState([]);
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
   const [selectedSol, setSelectedSol] = useState(null);
-  const [showModal, setShowModal] = useState(false);
+  const [showProcesarModal, setShowProcesarModal] = useState(false);
+  const [showNuevoLoteModal, setShowNuevoLoteModal] = useState(false);
   const [procesando, setProcesando] = useState(false);
 
   const [formProc, setFormProc] = useState({
@@ -24,17 +45,22 @@ export default function EventosMando() {
 
   useEffect(() => {
     fetchData();
-  }, []);
+  }, [activeTab]);
 
   const fetchData = async () => {
     setLoading(true);
     try {
-      const [data, sData] = await Promise.all([
-        eventosService.getSolicitudes(),
-        eventosService.getStats()
-      ]);
-      setSolicitudes(data);
-      setStats(sData);
+      if (activeTab === 'solicitudes') {
+        const [sols, sData] = await Promise.all([
+          eventosService.getSolicitudes(),
+          eventosService.getStats()
+        ]);
+        setSolicitudes(sols);
+        setStats(sData);
+      } else {
+        const data = await pasesService.listarLotes();
+        setLotes(data);
+      }
     } catch (error) {
       toast.error('Error al sincronizar datos tácticos');
     } finally {
@@ -49,7 +75,7 @@ export default function EventosMando() {
       estado: 'aprobada',
       motivo_rechazo: ''
     });
-    setShowModal(true);
+    setShowProcesarModal(true);
   };
 
   const handleProcesar = async (e) => {
@@ -67,7 +93,7 @@ export default function EventosMando() {
       });
 
       toast.success('Protocolo de evento actualizado');
-      setShowModal(false);
+      setShowProcesarModal(false);
       fetchData();
     } catch (error) {
        toast.error('Error en el despliegue del protocolo');
@@ -96,156 +122,220 @@ export default function EventosMando() {
   return (
     <div className="max-w-[1400px] mx-auto p-4 lg:p-8 space-y-8 pb-32">
       {/* Cabecera Táctica v2 */}
-      <header className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-bg-card/30 p-4 rounded-3xl border border-white/5">
-        <div className="min-w-0">
-          <h1 className="text-2xl font-black text-text-main flex items-center gap-3 tracking-tight">
-            <div className="p-2 bg-primary/10 rounded-xl">
-                <CalendarRange className="text-primary shrink-0" size={24} />
+      <header className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6 bg-bg-card/30 p-6 rounded-[2rem] border border-white/5 relative overflow-hidden group">
+        <div className="absolute top-0 right-0 w-64 h-64 bg-primary/5 rounded-full -mr-32 -mt-32 blur-3xl opacity-50 group-hover:opacity-80 transition-opacity" />
+        
+        <div className="min-w-0 relative z-10">
+          <h1 className="text-3xl font-black text-text-main flex items-center gap-4 tracking-tighter">
+            <div className="p-3 bg-primary/10 rounded-2xl border border-primary/20">
+                <CalendarRange className="text-primary shrink-0" size={28} />
             </div>
-            <span className="truncate uppercase">Mando de Eventos</span>
+            <span className="uppercase italic">Mando de Eventos</span>
           </h1>
-          <p className="text-text-muted text-sm mt-1 flex items-center gap-1.5 px-1">
-            <span className={cn("w-1.5 h-1.5 rounded-full animate-pulse", loading ? "bg-warning" : "bg-success")} />
-            Protocolo de Aprobación de Pases Masivos (FL-08)
+          <p className="text-text-muted text-sm mt-2 flex items-center gap-2 px-1">
+            <span className={cn("w-2 h-2 rounded-full", loading ? "bg-warning animate-pulse" : "bg-success")} />
+            Gestión Integral de Credenciales Masivas (Aegis Tactical)
           </p>
+        </div>
+
+        <div className="flex gap-2 p-1.5 bg-background/50 backdrop-blur-xl rounded-2xl border border-white/5 relative z-10">
+           <button 
+             onClick={() => setActiveTab('solicitudes')}
+             className={cn(
+               "flex items-center gap-2 px-6 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all",
+               activeTab === 'solicitudes' ? "bg-primary text-on-primary shadow-tactica" : "text-text-muted hover:bg-white/5"
+             )}
+           >
+              <History size={14} /> Solicitudes
+           </button>
+           <button 
+             onClick={() => setActiveTab('lotes')}
+             className={cn(
+               "flex items-center gap-2 px-6 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all",
+               activeTab === 'lotes' ? "bg-primary text-on-primary shadow-tactica" : "text-text-muted hover:bg-white/5"
+             )}
+           >
+              <Layers size={14} /> Gestión de Lotes
+           </button>
         </div>
       </header>
 
-      {/* KPI Row */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        {statItems.map((stat, i) => {
-          const Icono = stat.icon;
-          return (
-            <Card key={i} className="flex flex-col relative overflow-hidden group hover:bg-bg-high transition-all border-bg-high/10 bg-bg-card/40 p-5">
-              <div className="flex justify-between items-start mb-4">
-                <Icono 
-                  size={20} 
-                  className={cn(
-                    stat.highlight === 'alerta' ? 'text-warning' : 
-                    stat.primary ? 'text-primary' : 'text-text-muted/70'
-                  )} 
-                />
-                <div className="w-1 h-1 rounded-full bg-primary/20 group-hover:bg-primary/50 transition-colors"></div>
-              </div>
-              
-              <div className={cn(
-                "font-display font-black text-4xl tracking-tighter leading-none mb-1",
-                stat.highlight === 'alerta' ? 'text-warning' : 
-                stat.primary ? 'text-primary' : 'text-text-main'
-              )}>
-                {stat.valor}
-              </div>
-              
-              <div className="text-[10px] uppercase font-black tracking-widest text-text-muted">
-                {stat.label}
-              </div>
-            </Card>
-          );
-        })}
-      </div>
-
-      {/* Listado de Solicitudes */}
-      <section className="space-y-4">
-        <div className="flex items-center justify-between px-2">
-          <h2 className="text-[11px] font-black uppercase tracking-[0.2em] text-text-muted flex items-center gap-2">
-            <Activity size={14} className="text-primary" />
-            Solicitudes en Tránsito
-          </h2>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {solicitudes.map(s => {
-            const Status = getStatusInfo(s.estado);
-            return (
-              <Card 
-                key={s.id} 
-                className="bg-bg-card/50 border-white/5 border-l-4 group hover:bg-bg-high transition-all" 
-                style={{ borderLeftColor: Status.color === 'text-primary' ? 'var(--primary)' : `var(--color-${Status.color.split('-')[1]})` }}
-              >
-                <CardContent className="p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-                  <div className="space-y-2 min-w-0 flex-1">
-                    <div className="flex items-center gap-3 flex-wrap">
-                       <p className="font-black text-text-main text-lg tracking-tight group-hover:text-primary transition-colors">{s.nombre_evento}</p>
-                       <span className={cn("text-[9px] font-black uppercase px-2 py-0.5 rounded-md border border-white/10", Status.color, "bg-black/20")}>
-                          {Status.label}
-                       </span>
-                    </div>
-                    <div className="flex items-center gap-4 text-[11px] text-text-muted">
-                       <div className="flex items-center gap-1.5">
-                          <Users size={14} className="opacity-50" />
-                          <span className="font-bold uppercase tracking-tight">Entidad ID: {s.entidad_id.slice(0, 8)}</span>
-                       </div>
-                       <div className="flex items-center gap-1.5">
-                          <Clock size={14} className="opacity-50" />
-                          <span className="font-mono">{new Date(s.fecha_evento).toLocaleDateString()}</span>
-                       </div>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center gap-6 w-full sm:w-auto justify-between sm:justify-end">
-                    <div className="text-right">
-                      <p className="text-[9px] text-text-muted uppercase font-black tracking-tighter">Solicitado</p>
-                      <p className="text-2xl font-display font-black text-text-main tracking-tighter">{s.cantidad_solicitada}</p>
-                    </div>
-
-                    <div className="h-8 w-px bg-white/5 hidden sm:block"></div>
-
-                    {s.estado === 'pendiente' ? (
-                      <Boton 
-                        size="sm" 
-                        onClick={() => handleAbrirProcesar(s)} 
-                        className="bg-primary/5 text-primary border-primary/20 hover:bg-primary text-on-primary font-bold shadow-tactica"
-                      >
-                        PROCESAR
-                      </Boton>
-                    ) : (
-                      <div className="text-right">
-                         <p className={cn("text-[9px] uppercase font-black tracking-tighter", s.estado === 'denegada' ? "text-danger" : "text-primary")}>
-                            {s.estado === 'denegada' ? "Denegado" : "Aprobado"}
-                         </p>
-                         <p className={cn("text-2xl font-display font-black tracking-tighter", s.estado === 'denegada' ? "text-danger" : "text-primary")}>
-                            {s.cantidad_aprobada}
-                         </p>
-                      </div>
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
-            );
-          })}
-
-          {solicitudes.length === 0 && !loading && (
-            <div className="col-span-full py-24 flex flex-col items-center gap-4 bg-bg-card/20 rounded-3xl border border-dashed border-white/10">
-              <ShieldAlert className="text-text-muted opacity-20" size={48} />
-              <p className="text-text-muted text-sm font-bold uppercase tracking-widest opacity-40">Sin solicitudes tácticas pendientes</p>
+      {activeTab === 'solicitudes' ? (
+         <>
+            {/* KPI Row */}
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+               {statItems.map((stat, i) => {
+               const Icono = stat.icon;
+               return (
+                  <Card key={i} className="flex flex-col relative overflow-hidden group hover:bg-bg-high transition-all border-bg-high/10 bg-bg-card/40 p-5">
+                     <div className="flex justify-between items-start mb-4">
+                     <Icono 
+                        size={20} 
+                        className={cn(
+                           stat.highlight === 'alerta' ? 'text-warning' : 
+                           stat.primary ? 'text-primary' : 'text-text-muted/70'
+                        )} 
+                     />
+                     <div className="w-1 h-1 rounded-full bg-primary/20 group-hover:bg-primary/50 transition-colors"></div>
+                     </div>
+                     
+                     <div className={cn(
+                     "font-display font-black text-4xl tracking-tighter leading-none mb-1",
+                     stat.highlight === 'alerta' ? 'text-warning' : 
+                     stat.primary ? 'text-primary' : 'text-text-main'
+                     )}>
+                     {stat.valor}
+                     </div>
+                     
+                     <div className="text-[10px] uppercase font-black tracking-widest text-text-muted">
+                     {stat.label}
+                     </div>
+                  </Card>
+               );
+               })}
             </div>
-          )}
-        </div>
-      </section>
 
-      {/* MODAL PROCESAR */}
+            {/* Listado de Solicitudes */}
+            <section className="space-y-4 animate-in fade-in slide-in-from-bottom-4">
+               <div className="flex items-center justify-between px-2">
+               <h2 className="text-[11px] font-black uppercase tracking-[0.2em] text-text-muted flex items-center gap-2">
+                  <Activity size={14} className="text-primary" />
+                  Bandeja de Despliegue
+               </h2>
+               </div>
+
+               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+               {solicitudes.map(s => {
+                  const Status = getStatusInfo(s.estado);
+                  return (
+                     <Card 
+                        key={s.id} 
+                        className="bg-bg-card/50 border-white/5 border-l-4 group hover:bg-bg-high transition-all" 
+                        style={{ borderLeftColor: Status.color === 'text-primary' ? 'var(--primary)' : `var(--color-${Status.color.split('-')[1]})` }}
+                     >
+                        <CardContent className="p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                        <div className="space-y-2 min-w-0 flex-1">
+                           <div className="flex items-center gap-3 flex-wrap">
+                              <p className="font-black text-text-main text-lg tracking-tight group-hover:text-primary transition-colors">{s.nombre_evento}</p>
+                              <span className={cn("text-[9px] font-black uppercase px-2 py-0.5 rounded-md border border-white/10", Status.color, "bg-black/20")}>
+                                 {Status.label}
+                              </span>
+                           </div>
+                           <div className="flex items-center gap-4 text-[11px] text-text-muted">
+                              <div className="flex items-center gap-1.5">
+                                 <Users size={14} className="opacity-50" />
+                                 <span className="font-bold uppercase tracking-tight">Solicitud: {s.id.slice(0, 8)}</span>
+                              </div>
+                              <div className="flex items-center gap-1.5">
+                                 <Clock size={14} className="opacity-50" />
+                                 <span className="font-mono">{new Date(s.fecha_evento).toLocaleDateString()}</span>
+                              </div>
+                           </div>
+                        </div>
+
+                        <div className="flex items-center gap-6 w-full sm:w-auto justify-between sm:justify-end">
+                           <div className="text-right">
+                              <p className="text-[9px] text-text-muted uppercase font-black tracking-tighter">Solicitado</p>
+                              <p className="text-2xl font-display font-black text-text-main tracking-tighter">{s.cantidad_solicitada}</p>
+                           </div>
+
+                           <div className="h-8 w-px bg-white/5 hidden sm:block"></div>
+
+                           {s.estado === 'pendiente' ? (
+                              <Boton 
+                              size="sm" 
+                              onClick={() => handleAbrirProcesar(s)} 
+                              className="bg-primary/5 text-primary border-primary/20 hover:bg-primary text-on-primary font-bold shadow-tactica"
+                              >
+                              PROCESAR
+                              </Boton>
+                           ) : (
+                              <div className="text-right">
+                                 <p className={cn("text-[9px] uppercase font-black tracking-tighter", s.estado === 'denegada' ? "text-danger" : "text-primary")}>
+                                    {s.estado === 'denegada' ? "Denegado" : "Aprobado"}
+                                 </p>
+                                 <p className={cn("text-2xl font-display font-black tracking-tighter", s.estado === 'denegada' ? "text-danger" : "text-primary")}>
+                                    {s.cantidad_aprobada}
+                                 </p>
+                              </div>
+                           )}
+                        </div>
+                        </CardContent>
+                     </Card>
+                  );
+               })}
+
+               {solicitudes.length === 0 && !loading && (
+                  <div className="col-span-full py-24 flex flex-col items-center gap-4 bg-bg-card/20 rounded-3xl border border-dashed border-white/10">
+                     <ShieldAlert className="text-text-muted opacity-20" size={48} />
+                     <p className="text-text-muted text-sm font-bold uppercase tracking-widest opacity-40">Sin solicitudes tácticas pendientes</p>
+                  </div>
+               )}
+               </div>
+            </section>
+         </>
+      ) : (
+         <section className="space-y-6 animate-in fade-in slide-in-from-bottom-4">
+            <div className="flex items-center justify-between px-2">
+               <h2 className="text-[11px] font-black uppercase tracking-[0.2em] text-text-muted flex items-center gap-2">
+                  <Layers size={14} className="text-primary" />
+                  Operativos en Despliegue
+               </h2>
+               <Boton 
+                  onClick={() => setShowNuevoLoteModal(true)}
+                  className="bg-primary/10 text-primary border-primary/20 hover:bg-primary hover:text-on-primary gap-2"
+               >
+                  <Plus size={16} /> NUEVO LOTE
+               </Boton>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+               {lotes.map(lote => (
+                  <LoteCard key={lote.id} lote={lote} onRefresh={fetchData} />
+               ))}
+
+               {lotes.length === 0 && !loading && (
+                  <div className="col-span-full py-24 flex flex-col items-center gap-4 bg-bg-card/20 rounded-[2rem] border border-dashed border-white/10">
+                     <PackageOpen className="text-text-muted opacity-20" size={64} />
+                     <div className="text-center">
+                        <p className="text-text-main font-black uppercase tracking-widest text-lg mb-1">Sin contingentes activos</p>
+                        <p className="text-text-muted text-sm max-w-xs mx-auto">Comience creando un nuevo lote para generar credenciales masivas de acceso.</p>
+                     </div>
+                  </div>
+               )}
+            </div>
+         </section>
+      )}
+
+      {/* MODALES */}
+      <ModalNuevoLote 
+         isOpen={showNuevoLoteModal} 
+         onClose={() => setShowNuevoLoteModal(false)} 
+         onSuccess={fetchData} 
+      />
+
       <Modal 
-         isOpen={showModal} 
-         onClose={() => !procesando && setShowModal(false)} 
+         isOpen={showProcesarModal} 
+         onClose={() => !procesando && setShowProcesarModal(false)} 
          title="REVISIÓN DE DESPLIEGUE MASIVO"
       >
         <form onSubmit={handleProcesar} className="space-y-6">
            {selectedSol && (
-             <div className="bg-bg-app/50 p-4 rounded-2xl border border-white/5 space-y-4">
-                <div className="flex items-start gap-4">
-                   <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary mt-1 shrink-0">
-                      <FileText size={20} />
-                   </div>
-                   <div>
-                      <p className="text-[10px] text-text-muted uppercase tracking-[0.15em] font-black mb-1">Motivo del Solicitante</p>
-                      <p className="text-sm text-text-sec italic leading-relaxed">"{selectedSol.motivo}"</p>
-                   </div>
-                </div>
-                <div className="pt-4 border-t border-white/5 flex justify-between items-center">
-                   <span className="text-[10px] text-text-muted uppercase font-black">Cuota Solicitada</span>
-                   <span className="text-lg font-display font-black text-text-main">{selectedSol.cantidad_solicitada} PASES</span>
-                </div>
-             </div>
+              <div className="bg-bg-app/50 p-4 rounded-2xl border border-white/5 space-y-4">
+                 <div className="flex items-start gap-4">
+                    <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary mt-1 shrink-0">
+                       <FileText size={20} />
+                    </div>
+                    <div>
+                       <p className="text-[10px] text-text-muted uppercase tracking-[0.15em] font-black mb-1">Motivo del Solicitante</p>
+                       <p className="text-sm text-text-sec italic leading-relaxed">"{selectedSol.motivo}"</p>
+                    </div>
+                 </div>
+                 <div className="pt-4 border-t border-white/5 flex justify-between items-center">
+                    <span className="text-[10px] text-text-muted uppercase font-black">Cuota Solicitada</span>
+                    <span className="text-lg font-display font-black text-text-main">{selectedSol.cantidad_solicitada} PASES</span>
+                 </div>
+              </div>
            )}
 
            <div className="space-y-4">
@@ -300,7 +390,7 @@ export default function EventosMando() {
            <Boton 
              type="submit" 
              className={cn("w-full h-14 text-sm font-black tracking-widest shadow-tactica", formProc.estado === 'denegada' ? 'bg-danger hover:bg-danger/90' : 'bg-primary hover:bg-primary/90 text-on-primary')}
-             loading={procesando}
+             isLoading={procesando}
            >
               EJECUTAR PROTOCOLO
            </Boton>
@@ -309,3 +399,20 @@ export default function EventosMando() {
     </div>
   );
 }
+
+const PackageOpen = ({ size, className }) => (
+   <svg 
+      xmlns="http://www.w3.org/2000/svg" 
+      width={size} 
+      height={size} 
+      viewBox="0 0 24 24" 
+      fill="none" 
+      stroke="currentColor" 
+      strokeWidth="2" 
+      strokeLinecap="round" 
+      strokeLinejoin="round" 
+      className={className}
+   >
+      <path d="m12 2 10 5-10 5-10-5Z"/><path d="m22 7-10 5-10-5"/><path d="m2 17 10 5 10-5"/><path d="m12 22v-10"/>
+   </svg>
+);

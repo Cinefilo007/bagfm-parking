@@ -16,6 +16,7 @@ import EventosEntidad from '../pages/entidad/Eventos';
 import Ajustes from '../pages/Ajustes';
 import Personal from '../pages/Personal';
 import PortalSocio from '../pages/socio/Portal';
+import PortalEvento from '../pages/PortalEvento';
 import { useAuthStore } from '../store/auth.store';
 
 const TemporaryPlaceholder = ({ name }) => (
@@ -100,6 +101,10 @@ export const router = createBrowserRouter([
           }
         ]
       },
+      {
+        path: 'portal-evento/:serial',
+        element: <PortalEvento />
+      }
     ],
   },
   {

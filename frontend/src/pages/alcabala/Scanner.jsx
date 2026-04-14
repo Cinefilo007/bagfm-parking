@@ -179,30 +179,42 @@ const ScannerAlcabala = () => {
                         <Card className="bg-bg-card/50 border-white/5 rounded-2xl overflow-hidden">
                             <div className="p-4 space-y-4">
                                 
-                                {/* Identidad del Socio */}
-                                <div className="flex items-center gap-4">
-                                    <div className="w-14 h-14 bg-bg-app rounded-2xl border-2 border-white/10 flex items-center justify-center shrink-0 overflow-hidden shadow-xl">
-                                        {resultado.socio?.foto_url ? (
-                                            <img src={resultado.socio.foto_url} alt="Socio" className="w-full h-full object-cover" />
-                                        ) : (
-                                            <User size={28} className="text-text-muted opacity-30" />
-                                        )}
-                                    </div>
-                                    <div className="flex-1 min-w-0">
-                                        {/* Nombre — sin truncado, wrapping permitido */}
-                                        <h3 className="text-xl font-black text-text-main uppercase italic leading-tight break-words">
-                                            {resultado.socio?.nombre} {resultado.socio?.apellido}
-                                        </h3>
-                                        <div className="flex flex-wrap items-center gap-2 mt-1">
-                                            <span className="px-2 py-0.5 rounded-md border border-primary/20 text-[8px] font-black text-primary uppercase tracking-widest bg-primary/5">
-                                                {resultado.socio?.tipo || 'SOCIO ACTIVO'}
-                                            </span>
-                                            <span className="text-[9px] font-bold text-text-muted uppercase tracking-wide">
-                                                CI: {resultado.socio?.cedula || 'N/A'}
-                                            </span>
+                                    {/* Identidad del Socio o Evento */}
+                                    <div className="flex items-center gap-4">
+                                        <div className={cn(
+                                            "w-14 h-14 rounded-2xl border-2 flex items-center justify-center shrink-0 overflow-hidden shadow-xl",
+                                            resultado.es_pase_masivo ? "bg-warning/10 border-warning/30" : "bg-bg-app border-white/10"
+                                        )}>
+                                            {resultado.es_pase_masivo ? (
+                                                <Ticket size={28} className="text-warning" />
+                                            ) : (
+                                                resultado.socio?.foto_url ? (
+                                                    <img src={resultado.socio.foto_url} alt="Socio" className="w-full h-full object-cover" />
+                                                ) : (
+                                                    <User size={28} className="text-text-muted opacity-30" />
+                                                )
+                                            )}
+                                        </div>
+                                        <div className="flex-1 min-w-0">
+                                            {/* Nombre / Evento */}
+                                            <h3 className="text-xl font-black text-text-main uppercase italic leading-tight break-words">
+                                                {resultado.es_pase_masivo ? resultado.nombre_evento : `${resultado.socio?.nombre} ${resultado.socio?.apellido}`}
+                                            </h3>
+                                            <div className="flex flex-wrap items-center gap-2 mt-1">
+                                                <span className={cn(
+                                                    "px-2 py-0.5 rounded-md border text-[8px] font-black uppercase tracking-widest",
+                                                    resultado.es_pase_masivo 
+                                                        ? "bg-warning/10 border-warning/20 text-warning" 
+                                                        : "bg-primary/5 border-primary/20 text-primary"
+                                                )}>
+                                                    {resultado.es_pase_masivo ? 'PASE MASIVO' : (resultado.socio?.tipo || 'SOCIO ACTIVO')}
+                                                </span>
+                                                <span className="text-[9px] font-bold text-text-muted uppercase tracking-wide">
+                                                    {resultado.es_pase_masivo ? `SERIAL: ${resultado.serial_legible}` : `CI: ${resultado.socio?.cedula || 'N/A'}`}
+                                                </span>
+                                            </div>
                                         </div>
                                     </div>
-                                </div>
 
                                 {/* Línea divisoria */}
                                 <div className="border-t border-white/5" />
@@ -233,15 +245,26 @@ const ScannerAlcabala = () => {
                                     </div>
                                 </div>
 
-                                {/* Historial Compacto */}
+                                {/* Historial / Info Adicional */}
                                 <div className="grid grid-cols-2 gap-2">
                                     <div className="bg-white/5 p-3 rounded-xl border border-white/5">
                                         <div className="flex items-center gap-1.5 mb-1.5">
-                                            <Clock size={12} className="text-primary opacity-70 shrink-0" />
-                                            <span className="text-[8px] font-black text-text-muted uppercase tracking-widest">Último Ingreso</span>
+                                            {resultado.es_pase_masivo ? (
+                                                <Zap size={12} className="text-warning opacity-70 shrink-0" />
+                                            ) : (
+                                                <Clock size={12} className="text-primary opacity-70 shrink-0" />
+                                            )}
+                                            <span className="text-[8px] font-black text-text-muted uppercase tracking-widest">
+                                                {resultado.es_pase_masivo ? 'Accesos Restantes' : 'Último Ingreso'}
+                                            </span>
                                         </div>
-                                        <p className="text-[10px] font-bold text-text-main uppercase leading-snug">
-                                            {formatCaracas(resultado.ultima_entrada)}
+                                        <p className={cn(
+                                            "text-[10px] font-bold uppercase leading-snug",
+                                            resultado.es_pase_masivo ? "text-warning animate-pulse" : "text-text-main"
+                                        )}>
+                                            {resultado.es_pase_masivo 
+                                                ? (resultado.accesos_restantes !== null ? `${resultado.accesos_restantes} DISPONIBLES` : 'SIN LÍMITE') 
+                                                : formatCaracas(resultado.ultima_entrada)}
                                         </p>
                                     </div>
                                     <div className="bg-white/5 p-3 rounded-xl border border-white/5">

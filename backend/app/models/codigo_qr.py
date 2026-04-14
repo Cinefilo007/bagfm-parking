@@ -3,7 +3,7 @@ Modelo CodigoQR.
 Representa un código asociado a un socio, vehículo o acceso temporal.
 """
 import uuid
-from sqlalchemy import Column, Boolean, Text, DateTime, ForeignKey, Enum as SQLEnum
+from sqlalchemy import Column, String, Integer, Boolean, Text, DateTime, ForeignKey, Enum as SQLEnum
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.sql import func
 from sqlalchemy.orm import relationship
@@ -25,7 +25,16 @@ class CodigoQR(Base):
     fecha_expiracion = Column(DateTime(timezone=True), nullable=True)
     
     activo = Column(Boolean, default=True, nullable=False)
+    
+    # Manejo de Eventos Masivos
     solicitud_id = Column(UUID(as_uuid=True), ForeignKey("solicitudes_evento.id", ondelete="CASCADE"), nullable=True)
+    lote_id = Column(UUID(as_uuid=True), ForeignKey("lotes_pase_masivo.id", ondelete="CASCADE"), nullable=True)
+    serial_legible = Column(String(50), nullable=True) # BAGFM-26ABR-003-0042
+    
+    # Restricciones operativas
+    accesos_usados = Column(Integer, default=0, nullable=False)
+    max_accesos = Column(Integer, nullable=True) # Si es NULL, es ilimitado
+    
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     created_by = Column(UUID(as_uuid=True), ForeignKey("usuarios.id", ondelete="RESTRICT"), nullable=True)
 
