@@ -31,12 +31,12 @@ export const Modal = ({ isOpen, onClose, title, children, className }) => {
       {/* Modal Content */}
       <div 
         className={cn(
-          "relative w-full max-w-md bg-bg-card border border-white/10 rounded-2xl shadow-2xl overflow-hidden animate-in zoom-in-95 fade-in duration-300 flex flex-col",
-          className
+          "relative w-full bg-bg-card border border-white/10 rounded-2xl shadow-2xl flex flex-col max-h-[90vh] animate-in zoom-in-95 fade-in duration-300",
+          className || "max-w-md"
         )}
       >
         {/* Header Táctico */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-white/5 bg-white/5">
+        <div className="flex-none flex items-center justify-between px-6 py-4 border-b border-white/5 bg-white/5">
           <h3 className="font-display font-bold text-sm tracking-widest text-text-main uppercase">
             {title}
           </h3>
@@ -49,7 +49,7 @@ export const Modal = ({ isOpen, onClose, title, children, className }) => {
         </div>
         
         {/* Body */}
-        <div className={cn("px-6 py-6", className)}>
+        <div className="px-6 py-6 overflow-y-auto min-h-0">
           {children}
         </div>
       </div>

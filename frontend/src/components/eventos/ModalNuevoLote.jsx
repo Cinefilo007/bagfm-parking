@@ -80,10 +80,10 @@ export default function ModalNuevoLote({ isOpen, onClose, onSuccess }) {
   ];
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title="NUEVO LOTE DE PASES">
+    <Modal isOpen={isOpen} onClose={onClose} title="NUEVO LOTE DE PASES" className="max-w-3xl">
       <form onSubmit={handleSubmit} className="space-y-6 pt-2">
          {/* Selección de Tipo */}
-         <div className="grid grid-cols-1 gap-3">
+         <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
             {tipoOpciones.map(opt => {
                const Icon = opt.icon;
                const selected = form.tipo_pase === opt.id;
@@ -121,7 +121,7 @@ export default function ModalNuevoLote({ isOpen, onClose, onSuccess }) {
                required
             />
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                <Input 
                   label="Fecha Inicio"
                   type="date"
@@ -138,7 +138,7 @@ export default function ModalNuevoLote({ isOpen, onClose, onSuccess }) {
                />
             </div>
 
-            <div className="grid grid-cols-2 gap-4 pt-2">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
                {form.tipo_pase !== 'identificado' ? (
                   <Input 
                      label="Cantidad de Pases"
@@ -163,26 +163,19 @@ export default function ModalNuevoLote({ isOpen, onClose, onSuccess }) {
 
                {/* Accesos por Pase + Toggle Sin Límite */}
                <div className="flex flex-col gap-1.5">
-                  <label className="text-[10px] font-black uppercase text-text-muted tracking-widest pl-1">
-                     Accesos por Pase
+                  <label className="text-[10px] font-black uppercase text-text-muted tracking-widest pl-1 flex items-center justify-between">
+                     <span>Accesos por Pase</span>
+                     <button
+                        type="button"
+                        onClick={() => setSinLimite(!sinLimite)}
+                        className={cn("flex items-center gap-1.5 bg-black/40 px-2 py-1 rounded-full border border-white/5 hover:border-white/20 transition-all", sinLimite ? "text-primary" : "text-text-muted")}
+                     >
+                        {sinLimite ? <Infinity size={10} /> : <Hash size={10} />}
+                        {sinLimite ? "SIN LÍMITE" : "MODO LÍMITE"}
+                     </button>
                   </label>
-                  
-                  {/* Toggle Sin Límite */}
-                  <button
-                     type="button"
-                     onClick={() => setSinLimite(!sinLimite)}
-                     className={cn(
-                        "h-12 rounded-2xl border-2 flex items-center justify-center gap-2 text-[10px] font-black uppercase tracking-widest transition-all mb-1",
-                        sinLimite 
-                           ? "bg-primary/10 border-primary text-primary" 
-                           : "bg-black/20 border-white/10 text-text-muted hover:border-white/20"
-                     )}
-                  >
-                     {sinLimite ? <Infinity size={16} /> : <Hash size={16} />}
-                     {sinLimite ? "Sin Límite" : "Con Límite"}
-                  </button>
 
-                  {!sinLimite && (
+                  {!sinLimite ? (
                      <Input 
                         type="number"
                         min={1}
@@ -191,6 +184,10 @@ export default function ModalNuevoLote({ isOpen, onClose, onSuccess }) {
                         onChange={e => setForm({...form, max_accesos_por_pase: parseInt(e.target.value)})}
                         className="animate-in fade-in slide-in-from-top-2"
                      />
+                  ) : (
+                     <div className="h-12 bg-black/20 border border-white/5 rounded-2xl flex items-center justify-center text-text-muted text-[10px] font-bold uppercase tracking-widest italic animate-in fade-in slide-in-from-top-2">
+                        Ilimitado (Accesos Infinitos)
+                     </div>
                   )}
                </div>
             </div>
