@@ -17,7 +17,8 @@ import {
   Phone,
   LogOut,
   Download,
-  Plus
+  Plus,
+  Edit3
 } from 'lucide-react';
 
 // Componentes Tácticos Locales
@@ -62,6 +63,17 @@ export default function PortalSocio() {
   });
   const [submitting, setSubmitting] = useState(false);
 
+  // Estado para edición de perfil
+  const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
+  const [perfilForm, setPerfilForm] = useState({
+    nombre: '',
+    apellido: '',
+    cedula: '',
+    telefono: '',
+    email: ''
+  });
+  const [submittingProfile, setSubmittingProfile] = useState(false);
+
   const fetchPortal = async () => {
     try {
       const res = await socioService.obtenerPortal();
@@ -85,23 +97,59 @@ export default function PortalSocio() {
     const svgData = new XMLSerializer().serializeToString(svg);
     const canvas = document.createElement("canvas");
     const ctx = canvas.getContext("2d");
+    
+    const svgBlob = new Blob([svgData], { type: "image/svg+xml;charset=utf-8" });
+    const url = URL.createObjectURL(svgBlob);
+    
     const img = new Image();
     
     img.onload = () => {
-      canvas.width = img.width + 40; // Margen
-      canvas.height = img.height + 40;
+      // Resolución forzada 800x800 según directiva táctica
+      canvas.width = 800;
+      canvas.height = 800;
       ctx.fillStyle = "white";
       ctx.fillRect(0, 0, canvas.width, canvas.height);
-      ctx.drawImage(img, 20, 20);
+      
+      // Dibujar escalado con margen de 40px (800 - 80 = 720)
+      ctx.drawImage(img, 40, 40, 720, 720);
+      
       const pngFile = canvas.toDataURL("image/png");
       const downloadLink = document.createElement("a");
       downloadLink.download = `QR_BAGFM_${data?.perfil?.cedula}.png`;
-      downloadLink.href = `${pngFile}`;
+      downloadLink.href = pngFile;
       downloadLink.click();
-      toast.success("Credencial descargada");
+      URL.revokeObjectURL(url);
+      toast.success("Credencial HQ descargada (800x800)");
     };
 
-    img.src = "data:image/svg+xml;base64," + btoa(svgData);
+    img.src = url;
+  };
+
+  const openProfileModal = () => {
+    const p = data?.perfil || user;
+    setPerfilForm({
+      nombre: p?.nombre?.startsWith('INVITADO') ? '' : (p?.nombre || ''),
+      apellido: p?.apellido || '',
+      cedula: p?.cedula?.startsWith('BAGFM-') ? '' : (p?.cedula || ''),
+      telefono: p?.telefono || '',
+      email: p?.email || ''
+    });
+    setIsProfileModalOpen(true);
+  };
+
+  const handleUpdateProfile = async (e) => {
+    e.preventDefault();
+    setSubmittingProfile(true);
+    try {
+      await socioService.actualizarPerfil(perfilForm);
+      toast.success("Perfil actualizado tácticamente");
+      setIsProfileModalOpen(false);
+      fetchPortal();
+    } catch (err) {
+      toast.error(err.response?.data?.detail || "Error al actualizar perfil");
+    } finally {
+      setSubmittingProfile(false);
+    }
   };
 
   const handleCreateVehiculo = async (e) => {
@@ -135,12 +183,13 @@ export default function PortalSocio() {
   const m = p?.membresia || {};
   const esActivo = String(m?.estado) === 'activa' || String(m?.estado) === 'exonerada';
   const vehiculos = p?.vehiculos || [];
+  const isInvitado = p?.cedula?.startsWith('BAGFM-');
 
   return (
     <div className="min-h-screen bg-bg-app pb-24 flex flex-col font-sans text-text-main">
       <LayoutHeader titulo="Mi Credencial" subtitle={String(data?.nombre_entidad || 'SISTEMA BAGFM')} />
 
-      <main className="flex-1 px-5 py-6 space-y-6 max-w-md mx-auto w-full">
+      <main className="flex-1 px-4 sm:px-5 py-6 space-y-6 max-w-md mx-auto w-full">
         <TacticalCard className="text-center py-8 relative overflow-hidden">
            {/* Decoración Táctica */}
            <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-full -mr-16 -mt-16 blur-3xl opacity-50" />
@@ -174,8 +223,18 @@ export default function PortalSocio() {
            </div>
 
            <div className="space-y-1">
-              <h2 className="text-xl font-display font-black tracking-tight uppercase text-white">{String(p?.nombre_completo || user?.nombre || 'SOCIO')}</h2>
-              <p className="text-[10px] font-mono text-text-muted tracking-[0.3em] font-bold">CÉDULA: {String(p?.cedula || user?.cedula || 'N/A')}</p>
+              <h2 className="text-xl font-display font-black tracking-tight uppercase text-white px-2 break-words">
+                {String(p?.nombre_completo || user?.nombre || 'SOCIO')}
+              </h2>
+              <p className="text-[10px] font-mono text-text-muted tracking-[0.3em] font-bold pb-2">
+                CÉDULA: {String(p?.cedula || user?.cedula || 'N/A')}
+              </p>
+              <button 
+                onClick={openProfileModal}
+                className="inline-flex items-center gap-1.5 text-[9px] font-black text-white/70 hover:text-white uppercase tracking-widest bg-white/5 hover:bg-white/10 px-3 py-1.5 rounded-full transition-colors border border-white/10"
+              >
+                <Edit3 size={10} /> Editar Perfil
+              </button>
            </div>
 
            <div className="mt-8 grid grid-cols-2 border-t border-white/5 pt-6 bg-black/10 -mx-4 -mb-4">
@@ -198,16 +257,18 @@ export default function PortalSocio() {
 
         {/* Vehículos Vinculados */}
         <div className="space-y-3">
-           <div className="flex items-center justify-between px-1">
+            <div className="flex items-center justify-between px-1">
               <h3 className="text-[10px] uppercase font-black text-text-muted tracking-[0.3em] flex items-center gap-2">
                 <Car size={12} /> Flota Autorizada
               </h3>
-              <button 
-                onClick={() => setIsModalOpen(true)}
-                className="flex items-center gap-1 text-[9px] font-black text-primary uppercase tracking-widest"
-              >
-                <Plus size={14} /> Vincular
-              </button>
+              {(!isInvitado || vehiculos.length === 0) && (
+                <button 
+                  onClick={() => setIsModalOpen(true)}
+                  className="flex items-center gap-1 text-[9px] font-black text-primary uppercase tracking-widest"
+                >
+                  <Plus size={14} /> Vincular
+                </button>
+              )}
            </div>
 
            <div className="space-y-3">
@@ -284,6 +345,60 @@ export default function PortalSocio() {
            <div className="pt-4">
               <Boton type="submit" className="w-full" isLoading={submitting}>
                  REGISTRAR EN FLOTA
+              </Boton>
+           </div>
+        </form>
+      </Modal>
+
+      {/* Modal para Editar Perfil */}
+      <Modal isOpen={isProfileModalOpen} onClose={() => setIsProfileModalOpen(false)} title="Completar Perfil">
+        <form onSubmit={handleUpdateProfile} className="space-y-4 pt-2">
+           <div className="bg-primary/10 p-3 rounded-lg border border-primary/20 flex gap-3 text-primary text-xs relative overflow-hidden mb-2">
+              <div className="relative z-10 w-full font-mono text-[9px] uppercase font-bold tracking-widest">
+                Importante: Se requiere información real para validar el acceso al evento. {isInvitado && 'Invitados solo pueden registrar 1 vehículo.'}
+              </div>
+           </div>
+           
+           <div className="grid grid-cols-2 gap-4">
+              <Input 
+                 label="Nombre"
+                 placeholder="JUAN"
+                 value={perfilForm.nombre}
+                 onChange={(e) => setPerfilForm({...perfilForm, nombre: e.target.value.toUpperCase()})}
+                 required
+              />
+              <Input 
+                 label="Apellido"
+                 placeholder="PEREZ"
+                 value={perfilForm.apellido}
+                 onChange={(e) => setPerfilForm({...perfilForm, apellido: e.target.value.toUpperCase()})}
+                 required
+              />
+           </div>
+           <Input 
+              label="Cédula de Identidad"
+              placeholder="V-12345678"
+              value={perfilForm.cedula}
+              onChange={(e) => setPerfilForm({...perfilForm, cedula: e.target.value.toUpperCase()})}
+              required
+           />
+           <Input 
+              label="Teléfono Móvil"
+              placeholder="0414-XXXXXXX"
+              value={perfilForm.telefono}
+              onChange={(e) => setPerfilForm({...perfilForm, telefono: e.target.value})}
+              required
+           />
+           <Input 
+              label="Correo Electrónico (Opcional)"
+              type="email"
+              placeholder="ejemplo@correo.com"
+              value={perfilForm.email}
+              onChange={(e) => setPerfilForm({...perfilForm, email: e.target.value})}
+           />
+           <div className="pt-4">
+              <Boton type="submit" className="w-full" isLoading={submittingProfile}>
+                 GUARDAR PERFIL
               </Boton>
            </div>
         </form>

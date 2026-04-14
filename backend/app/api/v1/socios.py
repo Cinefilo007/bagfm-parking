@@ -112,34 +112,56 @@ async def obtener_portal_socio(
 ):
     """
     Obtiene los datos para el portal del socio logueado.
+    Soporta Socios regulares (con membresía) y Temporales (Invitados de Evento, sin membresía).
     """
-    # Buscar su membresía activa y QR
+    from app.models.codigo_qr import CodigoQR
+    from app.models.enums import MembresiaEstado, QRTipo
+
+    # Buscar su membresía activa
     query_mem = select(Membresia).where(Membresia.socio_id == usuario_actual.id).order_by(Membresia.created_at.desc())
     res_mem = await db.execute(query_mem)
     membresia = res_mem.scalars().first()
-    
-    if not membresia:
-        raise HTTPException(status_code=404, detail="Membresía no encontrada")
         
     # Buscar su QR activo
-    from app.models.codigo_qr import CodigoQR
     query_qr = select(CodigoQR).where(CodigoQR.usuario_id == usuario_actual.id, CodigoQR.activo == True)
     res_qr = await db.execute(query_qr)
     qr = res_qr.scalars().first()
     
-    if not qr:
-        # Generar uno al vuelo si no existe
-        qr = await membresia_service.refrescar_qr_socio(db, usuario_actual.id, membresia.id, usuario_actual.id)
-        await db.commit()
+    if not membresia and not qr:
+        raise HTTPException(status_code=404, detail="Usuario sin accesos válidos")
+    
+    # Si no tiene membresia pero SI tiene QR de portal de evento, creamos una falsa al vuelo
+    if not membresia and qr and qr.tipo == QRTipo.evento_portal:
+        import datetime
+        from dateutil.relativedelta import relativedelta
+
+        fecha_inicio = qr.created_at.date() if qr.created_at else datetime.date.today()
+        fecha_fin = qr.fecha_expiracion.date() if qr.fecha_expiracion else datetime.date.today() + relativedelta(days=1)
+        
+        # Emular objeto membresia
+        class MockMembresia:
+            id = uuid.uuid4()
+            estado = MembresiaEstado.activa
+            fecha_inicio = fecha_inicio
+            fecha_fin = fecha_fin
+        
+        membresia = MockMembresia()
+        progreso = membresia_service.calcular_progreso(membresia)
+    elif not membresia:
+         raise HTTPException(status_code=404, detail="Membresía no encontrada")
+    else:
+        progreso = membresia_service.calcular_progreso(membresia)
+
+        if not qr:
+            # Generar uno al vuelo si no existe
+            qr = await membresia_service.refrescar_qr_socio(db, usuario_actual.id, membresia.id, usuario_actual.id)
+            await db.commit()
 
     # Obtener nombre de la entidad
     query_ent = select(EntidadCivil.nombre).where(EntidadCivil.id == usuario_actual.entidad_id)
     res_ent = await db.execute(query_ent)
     nombre_entidad = res_ent.scalar() or "BAGFM"
 
-    # Construir perfil
-    progreso = membresia_service.calcular_progreso(membresia)
-    
     # Obtener vehículos
     query_veh = select(Vehiculo).where(Vehiculo.socio_id == usuario_actual.id, Vehiculo.activo == True)
     res_veh = await db.execute(query_veh)
@@ -204,7 +226,22 @@ async def vincular_vehiculo_socio(
 ):
     """
     Permite a un socio registrar un vehículo para su propio uso.
+    Invitados de evento (sin membresía real) solo pueden registrar 1 vehículo.
     """
+    query_mem = select(Membresia).where(Membresia.socio_id == usuario_actual.id)
+    res_mem = await db.execute(query_mem)
+    membresia = res_mem.scalars().first()
+
+    query_veh = select(func.count(Vehiculo.id)).where(Vehiculo.socio_id == usuario_actual.id, Vehiculo.activo == True)
+    res_veh = await db.execute(query_veh)
+    count_vehiculos = res_veh.scalar() or 0
+
+    if not membresia and count_vehiculos >= 1:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Los pases de invitados solo permiten 1 vehículo registrado."
+        )
+
     try:
         return await socio_service.vincular_vehiculo(db, usuario_actual.id, vehiculo.model_dump())
     except Exception as e:
@@ -212,3 +249,33 @@ async def vincular_vehiculo_socio(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=str(e)
         )
+
+from app.schemas.usuario import UsuarioUpdatePerfil, UsuarioSalida
+
+@router.put("/me", response_model=UsuarioSalida, status_code=status.HTTP_200_OK)
+async def actualizar_perfil_me(
+    datos: UsuarioUpdatePerfil,
+    db: AsyncSession = Depends(obtener_db),
+    usuario_actual: Usuario = Depends(require_rol([RolTipo.SOCIO]))
+):
+    """
+    Permite a un usuario temporal o socio actualizar su perfil básico
+    """
+    if datos.nombre:
+        usuario_actual.nombre = datos.nombre.upper()
+    if datos.apellido:
+        usuario_actual.apellido = datos.apellido.upper()
+    if datos.cedula:
+        usuario_actual.cedula = datos.cedula
+    if datos.telefono:
+        usuario_actual.telefono = datos.telefono
+    if datos.email:
+        usuario_actual.email = datos.email
+
+    try:
+        await db.commit()
+        await db.refresh(usuario_actual)
+        return usuario_actual
+    except Exception as e:
+        await db.rollback()
+        raise HTTPException(status_code=400, detail="Cédula duplicada o datos inválidos")

@@ -51,6 +51,12 @@ const socioService = {
   vincularVehiculo: async (datos) => {
     const response = await api.post('/socios/me/vehiculos', datos);
     return response.data;
+  },
+
+  // Actualizar datos del perfil (nombre, apellido, cedula, telefono, email)
+  actualizarPerfil: async (datos) => {
+    const response = await api.put('/socios/me', datos);
+    return response.data;
   }
 };
 
