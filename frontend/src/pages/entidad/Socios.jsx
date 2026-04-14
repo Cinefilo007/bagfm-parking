@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Header } from '../../components/layout/Header';
 import { Boton } from '../../components/ui/Boton';
 import { Modal } from '../../components/ui/Modal';
 import { Input } from '../../components/ui/Input';
@@ -156,81 +155,78 @@ export default function SociosEntidad() {
   );
 
   return (
-    <div className="min-h-screen bg-bg-app animate-in fade-in duration-500">
-      <Header 
-        titulo="Gestión de Miembros" 
-        subtitle={user?.entidad_nombre || 'ADMINISTRACIÓN DE SOCIOS'} 
-      />
+    <div className="p-4 space-y-8 pb-24 max-w-[1400px] mx-auto animate-in fade-in duration-500">
+      {/* Cabecera Táctica v2: Gestión de Miembros */}
+      <header className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-bg-card/30 p-4 rounded-3xl border border-white/5">
+        <div className="min-w-0">
+          <h1 className="text-2xl font-black text-text-main flex items-center gap-3 tracking-tight">
+            <div className="p-2 bg-primary/10 rounded-xl">
+                <Users className="text-primary shrink-0" size={24} />
+            </div>
+            <span className="truncate uppercase">Gestión de Miembros</span>
+          </h1>
+          <p className="text-text-muted text-sm mt-1 flex items-center gap-1.5 px-1 font-bold uppercase tracking-wider">
+            <span className="w-1.5 h-1.5 rounded-full bg-success animate-pulse" />
+            {user?.entidad_nombre || 'ADMINISTRACIÓN'} // {sociosFiltrados.length} SOCIOS
+          </p>
+        </div>
+        <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
+           <Boton 
+             size="lg" 
+             onClick={() => setIsModalOpen(true)}
+             className="gap-2 h-12 px-6 bg-primary text-bg-app font-black uppercase tracking-widest text-[11px] shadow-tactica hover:scale-[1.02] transition-transform"
+           >
+             <UserPlus size={18} />
+             <span>Nuevo Miembro</span>
+           </Boton>
+        </div>
+      </header>
 
-      <main className="max-w-[1400px] mx-auto px-6 py-8 pb-32">
-        
-        {/* Barra de Herramientas Táctica */}
-        <section className="bg-bg-low/40 border border-white/5 rounded-3xl p-6 mb-8 backdrop-blur-md">
-           <div className="flex flex-col lg:flex-row gap-6 items-center justify-between">
-              
-              {/* Buscador */}
+      <main className="space-y-6">
+        {/* Barra de Herramientas Táctica Inline */}
+        <section className="bg-bg-card/40 border border-white/5 rounded-2xl p-4 backdrop-blur-md">
+           <div className="flex flex-col lg:flex-row gap-4 items-center justify-between">
+              {/* Buscador HUD */}
               <div className="w-full lg:max-w-md">
                  <Input 
-                   placeholder="BUSCAR MIEMBRO POR IDENTIDAD..."
+                   placeholder="BUSCAR POR IDENTIDAD O NOMBRE..."
                    icon={<Search size={18} className="text-primary" />}
                    value={searchTerm}
                    onChange={(e) => setSearchTerm(e.target.value.toUpperCase())}
-                   className="h-14 bg-bg-app/60 border-white/10"
+                   className="h-12 bg-bg-app border-white/10 text-sm font-bold"
                  />
               </div>
 
-              {/* Acciones de Lote y Registro */}
-              <div className="flex flex-wrap items-center gap-3 w-full lg:w-auto">
+              {/* Acciones de Lote */}
+              <div className="flex items-center gap-2 w-full lg:w-auto overflow-x-auto no-scrollbar">
                  <input type="file" ref={fileInputRef} className="hidden" accept=".xlsx" onChange={handleImportExcel} />
                  
                  <Boton 
                    variant="ghost" 
-                   className="h-14 px-6 gap-3 border-white/10 text-text-muted hover:text-primary transition-all font-black uppercase tracking-widest text-[11px]"
+                   className="h-12 px-4 gap-2 border-white/5 text-text-muted hover:text-primary transition-all font-black uppercase tracking-widest text-[10px]"
                    onClick={handleDownloadTemplate}
                  >
-                    <Download size={18} />
+                    <Download size={16} />
                     Plantilla
                  </Boton>
 
                  <Boton 
                    variant="ghost" 
-                   className="h-14 px-6 gap-3 border-white/10 text-text-muted hover:text-primary transition-all font-black uppercase tracking-widest text-[11px]"
+                   className="h-12 px-4 gap-2 border-white/5 text-text-muted hover:text-primary transition-all font-black uppercase tracking-widest text-[10px]"
                    onClick={() => fileInputRef.current?.click()}
                  >
-                    <FileSpreadsheet size={18} />
-                    Importar Excel
-                 </Boton>
-
-                 <Boton 
-                   onClick={() => setIsModalOpen(true)}
-                   className="h-14 px-8 gap-3 bg-primary text-bg-app font-black uppercase tracking-widest text-[11px] shadow-xl shadow-primary/10 hover:scale-105 active:scale-95 transition-all"
-                 >
-                    <UserPlus size={20} />
-                    Nuevo Miembro
+                    <FileSpreadsheet size={16} />
+                    Importar
                  </Boton>
               </div>
            </div>
         </section>
 
-        {/* Status Bar */}
-        <div className="flex items-center justify-between mb-6 px-4">
-           <div className="flex items-center gap-3">
-              <Users size={18} className="text-primary opacity-60" />
-              <h3 className="text-xs font-black text-white uppercase tracking-[0.3em] italic">
-                 Censo Institucional ({sociosFiltrados.length})
-              </h3>
-           </div>
-           <div className="flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_8px_#10b981]" />
-              <span className="text-[10px] text-text-muted font-bold uppercase tracking-widest">Base de Datos Activa</span>
-           </div>
-        </div>
-
-        {/* Lista de Registros */}
-        <section className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+        {/* Lista de Registros Aegis v2 */}
+        <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-4">
           {loading ? (
              Array(6).fill(0).map((_, i) => (
-               <div key={i} className="h-48 rounded-3xl bg-white/5 animate-pulse border border-white/5" />
+               <div key={i} className="h-48 rounded-2xl bg-white/5 animate-pulse border border-white/5" />
              ))
           ) : (
             <>
@@ -241,10 +237,10 @@ export default function SociosEntidad() {
               ))}
 
               {sociosFiltrados.length === 0 && (
-                <div className="col-span-full py-20 text-center border border-dashed border-white/10 rounded-3xl bg-bg-low/20 backdrop-blur-sm">
-                   <Users size={48} className="mx-auto text-white/5 mb-6" />
-                   <p className="text-text-muted text-[11px] font-black uppercase tracking-[0.3em]">
-                     {searchTerm ? 'Criterio de búsqueda sin coincidencias' : 'No se detectan socios vinculados a esta entidad'}
+                <div className="col-span-full py-20 text-center border border-dashed border-white/10 rounded-[32px] bg-bg-card/20 backdrop-blur-sm">
+                   <Users size={48} className="mx-auto text-white/5 mb-6 opacity-20" />
+                   <p className="text-text-muted text-[10px] font-black uppercase tracking-[0.3em] opacity-40">
+                     {searchTerm ? 'Criterio sin coincidencias tácticas' : 'Padrón de socios vacío'}
                    </p>
                 </div>
               )}
@@ -253,74 +249,70 @@ export default function SociosEntidad() {
         </section>
       </main>
 
-      {/* --- MODALES --- */}
-
-      {/* Modal Registro */}
+      {/* MODALES ESTANDARIZADOS */}
       <Modal 
         isOpen={isModalOpen} 
         onClose={() => setIsModalOpen(false)} 
-        title="Protocolo de Afiliación"
+        title="PROTOCOLO DE AFILIACIÓN"
       >
         <form onSubmit={handleCrearSocio} className="space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-             {/* Datos Personales */}
-             <div className="md:col-span-2 space-y-4">
-                <div className="flex items-center gap-2 border-b border-white/5 pb-2">
-                   <User size={14} className="text-primary" />
-                   <span className="text-[10px] font-black text-text-muted uppercase tracking-widest">Identidad del Miembro</span>
-                </div>
-                
-                <div className="grid grid-cols-2 gap-4">
-                   <Input 
-                      label="Cédula" required placeholder="V-000000"
-                      value={nuevoSocio.cedula}
-                      onChange={(e) => setNuevoSocio({...nuevoSocio, cedula: e.target.value.toUpperCase()})}
-                   />
-                   <Input 
-                      label="Teléfono" placeholder="0412-0000000"
-                      value={nuevoSocio.telefono}
-                      onChange={(e) => setNuevoSocio({...nuevoSocio, telefono: e.target.value})}
-                   />
-                </div>
-                
+          <div className="space-y-4">
+             <div className="flex items-center gap-2 border-b border-white/5 pb-2">
+                <User size={14} className="text-primary" />
+                <span className="text-[10px] font-black text-text-muted uppercase tracking-widest">Identidad Institucional</span>
+             </div>
+             
+             <div className="grid grid-cols-2 gap-4">
                 <Input 
-                  label="Nombres" required placeholder="IDENTIDAD COMPLETA"
-                  value={nuevoSocio.nombre}
-                  onChange={(e) => setNuevoSocio({...nuevoSocio, nombre: e.target.value.toUpperCase()})}
+                   label="Cédula" required placeholder="V-000000"
+                   value={nuevoSocio.cedula}
+                   onChange={(e) => setNuevoSocio({...nuevoSocio, cedula: e.target.value.toUpperCase()})}
                 />
-                
                 <Input 
-                  label="Apellidos" required
-                  value={nuevoSocio.apellido}
-                  onChange={(e) => setNuevoSocio({...nuevoSocio, apellido: e.target.value.toUpperCase()})}
-                />
-                
-                <Input 
-                  label="Correo Electrónico" type="email"
-                  value={nuevoSocio.email}
-                  onChange={(e) => setNuevoSocio({...nuevoSocio, email: e.target.value.toLowerCase()})}
+                   label="Teléfono" placeholder="0412-0000000"
+                   value={nuevoSocio.telefono}
+                   onChange={(e) => setNuevoSocio({...nuevoSocio, telefono: e.target.value})}
                 />
              </div>
+             
+             <div className="grid grid-cols-2 gap-4">
+               <Input 
+                 label="Nombres" required placeholder="NOMBRE"
+                 value={nuevoSocio.nombre}
+                 onChange={(e) => setNuevoSocio({...nuevoSocio, nombre: e.target.value.toUpperCase()})}
+               />
+               <Input 
+                 label="Apellidos" required placeholder="APELLIDO"
+                 value={nuevoSocio.apellido}
+                 onChange={(e) => setNuevoSocio({...nuevoSocio, apellido: e.target.value.toUpperCase()})}
+               />
+             </div>
+             
+             <Input 
+               label="Correo Electrónico" type="email" placeholder="socio@entidad.com"
+               value={nuevoSocio.email}
+               onChange={(e) => setNuevoSocio({...nuevoSocio, email: e.target.value.toLowerCase()})}
+             />
 
              {/* Vehículos */}
-             <div className="md:col-span-2 space-y-4 pt-4">
+             <div className="space-y-4 pt-4">
                 <div className="flex items-center justify-between border-b border-white/5 pb-2">
                    <div className="flex items-center gap-2">
                       <Car size={14} className="text-secondary" />
-                      <span className="text-[10px] font-black text-text-muted uppercase tracking-widest">Parque Automotor</span>
+                      <span className="text-[10px] font-black text-text-muted uppercase tracking-widest">Unidades Vinculadas</span>
                    </div>
-                   <Boton type="button" variant="ghost" className="h-8 px-4 text-[9px] border-secondary/20 text-secondary" onClick={addVehiculo}>
-                      <Plus size={14} /> AÑADIR VEHÍCULO
+                   <Boton type="button" variant="ghost" className="h-8 px-3 text-[9px] border-secondary/20 text-secondary font-black" onClick={addVehiculo}>
+                      <Plus size={14} /> ADJUNTAR
                    </Boton>
                 </div>
 
-                <div className="space-y-4">
+                <div className="space-y-3">
                   {nuevoSocio.vehiculos.map((v, i) => (
-                    <div key={i} className="p-4 bg-bg-app border border-white/10 rounded-2xl relative shadow-xl">
-                      <button type="button" onClick={() => removeVehiculo(i)} className="absolute top-4 right-4 text-danger/40 hover:text-danger">
+                    <div key={i} className="p-4 bg-bg-app border border-white/10 rounded-xl relative">
+                      <button type="button" onClick={() => removeVehiculo(i)} className="absolute top-4 right-4 text-text-muted hover:text-danger hover:scale-110 transition-all">
                         <Trash2 size={16} />
                       </button>
-                      <div className="grid grid-cols-2 gap-4">
+                      <div className="grid grid-cols-2 gap-3">
                         <Input label="Placa" value={v.placa} onChange={(e) => updateVehiculo(i, 'placa', e.target.value)} />
                         <Input label="Marca" value={v.marca} onChange={(e) => updateVehiculo(i, 'marca', e.target.value)} />
                         <Input label="Modelo" value={v.modelo} onChange={(e) => updateVehiculo(i, 'modelo', e.target.value)} />
@@ -333,8 +325,8 @@ export default function SociosEntidad() {
           </div>
 
           <div className="pt-6 border-t border-white/5 flex gap-4">
-             <Boton type="button" variant="ghost" className="flex-1" onClick={() => setIsModalOpen(false)}>Cancelar</Boton>
-             <Boton type="submit" className="flex-[2] bg-primary text-bg-app font-black uppercase tracking-[0.2em] h-14">
+             <Boton type="button" variant="ghost" className="flex-1" onClick={() => setIsModalOpen(false)}>Abortar</Boton>
+             <Boton type="submit" className="flex-[2] bg-primary text-bg-app font-black uppercase tracking-[0.2em] h-14 shadow-tactica">
                 Finalizar Registro
              </Boton>
           </div>
@@ -345,41 +337,41 @@ export default function SociosEntidad() {
       <Modal 
         isOpen={isRenovarModalOpen} 
         onClose={() => setIsRenovarModalOpen(false)} 
-        title="Protocolo de Renovación"
+        title="RENOVACIÓN DE MEMBRESÍA"
       >
-        <div className="space-y-8">
-          <div className="flex items-center gap-5 p-6 bg-bg-app border border-white/10 rounded-3xl">
-             <div className="h-16 w-16 rounded-2xl bg-primary/10 flex items-center justify-center text-primary shadow-2xl">
-                <RefreshCw size={32} />
+        <div className="space-y-6">
+          <div className="flex items-center gap-4 p-5 bg-bg-app border border-white/5 rounded-2xl">
+             <div className="h-12 w-12 rounded-xl bg-primary/10 flex items-center justify-center text-primary">
+                <RefreshCw size={24} />
              </div>
-             <div>
-                <p className="text-[10px] uppercase font-black text-primary tracking-[0.3em] mb-1">Membresía Activa</p>
-                <h4 className="text-xl font-black text-white italic uppercase tracking-tight">{socioSeleccionado?.nombre_completo}</h4>
+             <div className="min-w-0">
+                <p className="text-[10px] uppercase font-black text-primary tracking-[0.2em] mb-1">Renovación Táctica</p>
+                <h4 className="text-lg font-black text-text-main italic uppercase truncate">{socioSeleccionado?.nombre_completo}</h4>
              </div>
           </div>
 
-          <div className="space-y-4">
-             <label className="text-[10px] uppercase font-black text-text-muted tracking-[0.3em] ml-2 opacity-60">Seleccionar Ciclo Operativo</label>
-             <div className="grid grid-cols-2 gap-4">
+          <div className="space-y-3">
+             <label className="text-[10px] uppercase font-black text-text-muted tracking-[0.2em] px-1 opacity-60">Periodo de Extensión</label>
+             <div className="grid grid-cols-2 gap-3">
                 {[1, 3, 6, 12].map(num => (
                   <button
                     key={num}
                     onClick={() => setMesesRenovacion(num)}
-                    className={`h-20 rounded-3xl border-2 transition-all flex flex-col items-center justify-center gap-1 ${
+                    className={`h-16 rounded-xl border-2 transition-all flex flex-col items-center justify-center ${
                       mesesRenovacion === num 
-                      ? 'bg-primary/20 border-primary text-primary' 
-                      : 'bg-white/5 border-white/5 text-text-muted hover:border-white/20'
+                      ? 'bg-primary/10 border-primary text-primary' 
+                      : 'bg-black/20 border-white/5 text-text-muted hover:border-white/10'
                     }`}
                   >
-                    <span className="text-2xl font-black italic font-display leading-none">{num}</span>
-                    <span className="text-[9px] font-black uppercase tracking-widest">{num === 1 ? 'MES' : 'MESES'}</span>
+                    <span className="text-xl font-black italic leading-none">{num}</span>
+                    <span className="text-[8px] font-black uppercase tracking-widest opacity-60">{num === 1 ? 'MES' : 'MESES'}</span>
                   </button>
                 ))}
              </div>
           </div>
 
-          <Boton onClick={confirmarRenovacion} className="w-full h-16 bg-primary text-bg-app font-black uppercase tracking-[0.3em] shadow-2xl shadow-primary/10">
-            Confirmar Renovación
+          <Boton onClick={confirmarRenovacion} className="w-full h-14 bg-primary text-bg-app font-black uppercase tracking-[0.2em] shadow-tactica">
+            Confirmar Ciclo
           </Boton>
         </div>
       </Modal>
