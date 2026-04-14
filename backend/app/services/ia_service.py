@@ -2,12 +2,14 @@ import json
 import base64
 import google.generativeai as genai
 from typing import Dict, Any, Optional
-from app.core.config import settings
+from app.core.config import obtener_config
+
+config = obtener_config()
 
 class IAService:
     def __init__(self):
-        # La API Key debe estar en settings.GEMINI_API_KEY
-        genai.configure(api_key=settings.GEMINI_API_KEY)
+        # La API Key debe estar en config.gemini_api_key
+        genai.configure(api_key=config.gemini_api_key)
         # Usamos la versión 2.5 Flash solicitada para máxima precisión táctica
         self.model = genai.GenerativeModel('gemini-2.5-flash')
 
