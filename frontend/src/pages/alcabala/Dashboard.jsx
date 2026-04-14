@@ -5,7 +5,7 @@ import {
   ShieldCheck, ClipboardList, Info, 
   UserPlus, CheckCircle2, ShieldAlert,
   Zap, Activity, ChevronRight, Shield,
-  Car
+  Car, RefreshCw, Clock
 } from 'lucide-react';
 import { useNotifications } from '../../hooks/useNotifications';
 import { useAuthStore } from '../../store/auth.store';
