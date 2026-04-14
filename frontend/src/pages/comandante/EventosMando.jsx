@@ -276,17 +276,17 @@ export default function EventosMando() {
          </>
       ) : (
          <section className="space-y-6 animate-in fade-in slide-in-from-bottom-4">
-            <div className="flex items-center justify-between px-2">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between px-2 gap-4">
                <h2 className="text-[11px] font-black uppercase tracking-[0.2em] text-text-muted flex items-center gap-2">
                   <Layers size={14} className="text-primary" />
                   Operativos en Despliegue
                </h2>
-               <Boton 
+               <button 
                   onClick={() => setShowNuevoLoteModal(true)}
-                  className="bg-primary/10 text-primary border-primary/20 hover:bg-primary hover:text-on-primary gap-2"
+                  className="w-full sm:w-auto flex-none inline-flex items-center justify-center gap-2 px-6 py-3 bg-primary/10 border border-primary/20 text-primary text-[10px] font-black tracking-widest uppercase rounded-xl hover:bg-primary hover:text-on-primary hover:shadow-tactica transition-all"
                >
                   <Plus size={16} /> NUEVO LOTE
-               </Boton>
+               </button>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">

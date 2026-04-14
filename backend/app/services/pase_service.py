@@ -222,28 +222,50 @@ class PaseService:
         if titulo or subtitulo or serial:
             from PIL import Image, ImageDraw, ImageFont
             qr_width, qr_height = img.size
-            new_width = qr_width + 600
             
-            new_img = Image.new('RGB', (new_width, qr_height), 'white')
+            text_area_height = 80
+            new_width = qr_width
+            new_height = qr_height + text_area_height
+            
+            new_img = Image.new('RGB', (new_width, new_height), 'white')
             new_img.paste(img, (0, 0))
             
             draw = ImageDraw.Draw(new_img)
-            try:
-                font_title = ImageFont.truetype("arialbd.ttf", 36)
-                font_body = ImageFont.truetype("arial.ttf", 28)
-            except IOError:
-                font_title = ImageFont.load_default()
-                font_body = ImageFont.load_default()
+            
+            font_paths = [
+                "arialbd.ttf", 
+                "arial.ttf",
+                "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",
+                "/usr/share/fonts/truetype/liberation/LiberationSans-Bold.ttf"
+            ]
+            font = None
+            for p in font_paths:
+                try:
+                    font = ImageFont.truetype(p, 32)
+                    break
+                except IOError:
+                    continue
+            
+            if not font:
+                font = ImageFont.load_default()
                 
-            text_x = qr_width + 20
-            text_y = qr_height // 2 - 80
+            titulo_cortado = f"{titulo[:30]}..." if len(titulo) > 30 else titulo
+            text = f"{titulo_cortado}  |  SERIAL: {serial}"
             
-            titulo_cortado = f"{titulo[:25]}..." if len(titulo) > 25 else titulo
+            if hasattr(font, 'getbbox'):
+                bbox = draw.textbbox((0,0), text, font=font)
+                text_width = bbox[2] - bbox[0]
+                text_height = bbox[3] - bbox[1]
+            else:
+                try:
+                    text_width, text_height = font.getsize(text)
+                except Exception:
+                    text_width, text_height = (len(text)*20, 30)
+                
+            text_x = max((new_width - text_width) // 2, 10)
+            text_y = qr_height + (text_area_height - text_height) // 2 - 10
             
-            draw.text((text_x, text_y), f"EVENTO: {titulo_cortado}", fill="black", font=font_title)
-            draw.text((text_x, text_y + 50), f"TIPO: {subtitulo}", fill="black", font=font_body)
-            draw.text((text_x, text_y + 90), f"SERIAL: {serial}", fill="black", font=font_body)
-            draw.text((text_x, text_y + 140), "SISTEMA BAGFM TÁCTICO", fill=(100, 100, 100), font=font_body)
+            draw.text((text_x, text_y), text, fill="black", font=font)
             
             img_byte_arr = io.BytesIO()
             new_img.save(img_byte_arr, format='PNG')
