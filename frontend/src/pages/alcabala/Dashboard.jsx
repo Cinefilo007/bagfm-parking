@@ -194,13 +194,13 @@ const DashboardAlcabala = () => {
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                 
                 {/* Columna Izquierda: Bitácora Táctica */}
-                <div className="space-y-4 flex flex-col h-[500px]">
+                <div className="space-y-4 flex flex-col">
                     <div className="flex items-center gap-3 px-2">
                         <Activity size={18} className="text-primary" />
                         <h3 className="text-xs font-black text-text-main uppercase tracking-[0.4em] italic">Bitácora en tiempo real</h3>
                     </div>
                     
-                    <div className="flex-1 overflow-hidden pr-2 h-full">
+                    <div className="flex-1 overflow-hidden pr-2">
                         <LiveEventLog puntoNombre={situacion.punto.nombre} />
                     </div>
                 </div>
