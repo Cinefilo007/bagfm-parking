@@ -38,7 +38,11 @@ const ScannerAlcabala = () => {
     // Estados para registro manual de emergencia
     const [nombreManual, setNombreManual] = useState('');
     const [cedulaManual, setCedulaManual] = useState('');
-    const [vehiculoManual, setVehiculoManual] = useState('');
+    
+    const [placaManual, setPlacaManual] = useState('');
+    const [marcaManual, setMarcaManual] = useState('');
+    const [modeloManual, setModeloManual] = useState('');
+    const [colorManual, setColorManual] = useState('');
     
     const scannerRef = useRef(null);
 
@@ -86,9 +90,15 @@ const ScannerAlcabala = () => {
             }
 
             if (res.vehiculo) {
-                setVehiculoManual(`${res.vehiculo.marca} ${res.vehiculo.modelo} [${res.vehiculo.placa}]`);
+                setPlacaManual(res.vehiculo.placa);
+                setMarcaManual(res.vehiculo.marca);
+                setModeloManual(res.vehiculo.modelo);
+                setColorManual(res.vehiculo.color);
             } else {
-                setVehiculoManual('');
+                setPlacaManual('');
+                setMarcaManual('');
+                setModeloManual('');
+                setColorManual('');
             }
 
         } catch (error) {
@@ -112,7 +122,10 @@ const ScannerAlcabala = () => {
                 // Campos de registro manual si aplica
                 nombre_manual: nombreManual,
                 cedula_manual: cedulaManual,
-                vehiculo_manual: vehiculoManual
+                vehiculo_placa: placaManual,
+                vehiculo_marca: marcaManual,
+                vehiculo_modelo: modeloManual,
+                vehiculo_color: colorManual
             });
             toast.success(`Acceso ${tipoAcceso} confirmado`, { position: 'bottom-center' });
             
@@ -289,13 +302,33 @@ const ScannerAlcabala = () => {
                                     <div className="flex-1 min-w-0">
                                         <p className="text-[8px] font-black text-primary/60 uppercase tracking-[0.25em] mb-1">Unidad de Acceso</p>
                                         {resultado.requiere_datos_manuales && !resultado.vehiculo ? (
-                                             <InputManual 
-                                                label="Info del Vehículo" 
-                                                value={vehiculoManual} 
-                                                onChange={setVehiculoManual} 
-                                                placeholder="MARCA MODELO [PLACA]"
-                                                icon={Car}
-                                            />
+                                             <div className="grid grid-cols-2 gap-2 w-full">
+                                                <InputManual 
+                                                    label="Placa / Matrícula" 
+                                                    value={placaManual} 
+                                                    onChange={setPlacaManual} 
+                                                    placeholder="AC123LF"
+                                                    icon={Car}
+                                                />
+                                                <InputManual 
+                                                    label="Color" 
+                                                    value={colorManual} 
+                                                    onChange={setColorManual} 
+                                                    placeholder="BLANCO"
+                                                />
+                                                <InputManual 
+                                                    label="Marca" 
+                                                    value={marcaManual} 
+                                                    onChange={setMarcaManual} 
+                                                    placeholder="TOYOTA"
+                                                />
+                                                <InputManual 
+                                                    label="Modelo" 
+                                                    value={modeloManual} 
+                                                    onChange={setModeloManual} 
+                                                    placeholder="HILUX"
+                                                />
+                                             </div>
                                         ) : (
                                             resultado.vehiculo ? (
                                                 <div>

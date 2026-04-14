@@ -243,23 +243,20 @@ class AccesoService:
             
             final_usuario_id = usuario_existente.id
 
-            # Si hay datos de vehículo manual
-            if datos.vehiculo_manual:
-                # El formato esperado es "MARCA MODELO [PLACA]" o solo "PLACA"
-                placa = datos.vehiculo_manual
-                if "[" in datos.vehiculo_manual and "]" in datos.vehiculo_manual:
-                    placa = datos.vehiculo_manual.split("[")[1].split("]")[0]
-                
+            # Si hay datos de vehículo manual (al menos la placa es requerida si se envía algo)
+            if datos.vehiculo_placa:
                 # Buscar vehículo por placa
-                q_v = select(Vehiculo).where(Vehiculo.placa == placa)
+                q_v = select(Vehiculo).where(Vehiculo.placa == datos.vehiculo_placa)
                 res_v = await db.execute(q_v)
                 v_existente = res_v.scalar_one_or_none()
 
                 if not v_existente:
+                    # Crear vehículo con campos desglosados
                     v_existente = Vehiculo(
-                        placa=placa,
-                        marca="GENÉRICO",
-                        modelo=datos.vehiculo_manual,
+                        placa=datos.vehiculo_placa,
+                        marca=datos.vehiculo_marca or "GENÉRICO",
+                        modelo=datos.vehiculo_modelo or "GENÉRICO",
+                        color=datos.vehiculo_color or "SIN COLOR", # Evita NotNullViolation
                         socio_id=final_usuario_id,
                         activo=True
                     )

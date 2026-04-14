@@ -28,7 +28,12 @@ class AccesoRegistrar(BaseModel):
     # Datos manuales de contingencia
     nombre_manual: Optional[str] = None
     cedula_manual: Optional[str] = None
-    vehiculo_manual: Optional[str] = None
+    
+    # Desglose de vehículo manual
+    vehiculo_placa: Optional[str] = None
+    vehiculo_marca: Optional[str] = None
+    vehiculo_modelo: Optional[str] = None
+    vehiculo_color: Optional[str] = None
 
 class AccesoSalida(AccesoBase):
     id: UUID
