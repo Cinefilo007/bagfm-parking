@@ -11,7 +11,8 @@ import {
   ExternalLink,
   ShieldCheck,
   UserCheck,
-  Clock
+  Clock,
+  Users
 } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import { toast } from 'react-hot-toast';
