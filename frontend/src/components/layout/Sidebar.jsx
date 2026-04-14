@@ -9,6 +9,7 @@ import {
 import { cn } from '../../lib/utils';
 import { useAuthStore } from '../../store/auth.store';
 import { useThemeStore } from '../../store/theme.store';
+import { useUIStore } from '../../store/ui.store';
 
 export const Sidebar = () => {
   const { user, logout } = useAuthStore();
