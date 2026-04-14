@@ -232,21 +232,12 @@ class PaseService:
             
             draw = ImageDraw.Draw(new_img)
             
-            font_paths = [
-                "arialbd.ttf", 
-                "arial.ttf",
-                "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",
-                "/usr/share/fonts/truetype/liberation/LiberationSans-Bold.ttf"
-            ]
+            import os
+            font_path = os.path.join(os.path.dirname(__file__), "Roboto-Bold.ttf")
             font = None
-            for p in font_paths:
-                try:
-                    font = ImageFont.truetype(p, 32)
-                    break
-                except IOError:
-                    continue
-            
-            if not font:
+            try:
+                font = ImageFont.truetype(font_path, 36)
+            except IOError:
                 font = ImageFont.load_default()
                 
             titulo_cortado = f"{titulo[:30]}..." if len(titulo) > 30 else titulo
