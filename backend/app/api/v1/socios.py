@@ -136,15 +136,15 @@ async def obtener_portal_socio(
         import uuid
         from dateutil.relativedelta import relativedelta
 
-        fecha_inicio = qr.created_at.date() if qr.created_at else datetime.date.today()
-        fecha_fin = qr.fecha_expiracion.date() if qr.fecha_expiracion else datetime.date.today() + relativedelta(days=1)
+        _fecha_inicio = qr.created_at.date() if qr.created_at else datetime.date.today()
+        _fecha_fin = qr.fecha_expiracion.date() if qr.fecha_expiracion else datetime.date.today() + relativedelta(days=1)
         
         # Emular objeto membresia
         class MockMembresia:
             id = uuid.uuid4()
             estado = MembresiaEstado.activa
-            fecha_inicio = fecha_inicio
-            fecha_fin = fecha_fin
+            fecha_inicio = _fecha_inicio
+            fecha_fin = _fecha_fin
         
         membresia = MockMembresia()
         progreso = membresia_service.calcular_progreso(membresia)
