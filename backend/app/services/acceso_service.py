@@ -75,6 +75,13 @@ class AccesoService:
                 if qr_db.tipo in [QRTipo.evento_identificado, QRTipo.evento_portal] and not socio:
                     return ResultadoValidacion(permitido=False, mensaje="Socio de evento no encontrado", tipo_alerta="error")
 
+                # Buscar vehículo del socio temporal si aplica
+                vehiculo = None
+                if socio:
+                    query_veh_socio = select(Vehiculo).where(Vehiculo.socio_id == socio.id, Vehiculo.activo == True).limit(1)
+                    res_veh_socio = await db.execute(query_veh_socio)
+                    vehiculo = res_veh_socio.scalar_one_or_none()
+
                 return ResultadoValidacion(
                     permitido=True,
                     mensaje="Pase Masivo Válido",
@@ -85,7 +92,9 @@ class AccesoService:
                     accesos_restantes=qr_db.max_accesos - qr_db.accesos_usados if qr_db.max_accesos else None,
                     qr_id=qr_db.id,
                     usuario_id=socio.id if socio else None,
-                    socio=socio
+                    socio=socio,
+                    vehiculo=vehiculo,
+                    vehiculo_id=vehiculo.id if vehiculo else None
                 )
 
             # 5. Validación Estándar para Socios Permanentes
