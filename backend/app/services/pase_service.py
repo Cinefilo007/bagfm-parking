@@ -307,7 +307,9 @@ class PaseService:
         
         # Subir a Supabase Storage
         if self.supabase:
-            file_path = f"pases/{lote.codigo_serial}.zip"
+            import re
+            nombre_limpio = re.sub(r'[^a-zA-Z0-9_\-]', '_', lote.nombre_evento).strip('_')
+            file_path = f"pases/{nombre_limpio}_{lote.codigo_serial}.zip"
             # Limpiar si ya existe
             try:
                 self.supabase.storage.from_("bagfm-pases").remove([file_path])
