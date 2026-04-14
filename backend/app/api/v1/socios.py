@@ -16,7 +16,7 @@ from app.services.template_service import template_service
 from app.models.entidad_civil import EntidadCivil
 from app.models.membresia import Membresia
 from app.models.vehiculo import Vehiculo
-from sqlalchemy import select
+from sqlalchemy import select, func
 
 router = APIRouter()
 
