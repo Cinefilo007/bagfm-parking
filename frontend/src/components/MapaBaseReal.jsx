@@ -169,15 +169,15 @@ const MapaBaseReal = ({ situacion, onSelectEntity, assignmentMode, onMapClick, s
                     <Popup className="tactical-popup">
                         <div className="p-1">
                           <div className="text-[9px] font-black uppercase tracking-widest text-primary/70 mb-1">Punto de Control</div>
-                          <div className="text-[15px] font-display font-black uppercase text-text-main mb-3 tracking-tight">{alcabala.nombre}</div>
-                          <div className="grid grid-cols-2 gap-3 border-t border-bg-high/20 pt-3">
+                          <div className="text-[11px] font-display font-black uppercase text-text-main mb-2 tracking-tight">{alcabala.nombre}</div>
+                          <div className="grid grid-cols-2 gap-2 border-t border-bg-high/20 pt-2">
                              <div className="flex flex-col">
-                                <span className="text-[8px] text-text-muted uppercase font-bold">Entradas Hoy</span>
-                                <span className="text-[13px] font-mono font-bold text-primary">{alcabala.entradas_hoy || 0}</span>
+                                <span className="text-[7px] text-text-muted uppercase font-bold">Entradas</span>
+                                <span className="text-[11px] font-mono font-bold text-primary">{alcabala.entradas_hoy || 0}</span>
                              </div>
                              <div className="flex flex-col">
-                                <span className="text-[8px] text-text-muted uppercase font-bold">Salidas Hoy</span>
-                                <span className="text-[13px] font-mono font-bold text-text-main">{alcabala.salidas_hoy || 0}</span>
+                                <span className="text-[7px] text-text-muted uppercase font-bold">Salidas</span>
+                                <span className="text-[11px] font-mono font-bold text-text-main">{alcabala.salidas_hoy || 0}</span>
                              </div>
                           </div>
                       </div>
@@ -194,11 +194,11 @@ const MapaBaseReal = ({ situacion, onSelectEntity, assignmentMode, onMapClick, s
                   >
                     <Popup className="tactical-popup">
                         <div className="p-1">
-                            <div className="text-[9px] font-black uppercase tracking-widest text-text-muted mb-1">Sede Administrativa</div>
-                            <div className="text-[15px] font-display font-black uppercase text-text-main mb-3 tracking-tight">{entidad.nombre}</div>
-                            <div className="flex justify-between items-center text-[10px] font-mono border-t border-bg-high/20 pt-3">
-                               <span className="text-text-sec font-bold">OCUPACIÓN:</span>
-                               <span className="text-primary font-black text-[12px]">{entidad.ocupacion_actual || 0} / {entidad.capacidad_total || 0}</span>
+                            <div className="text-[9px] font-black uppercase tracking-widest text-text-muted mb-0.5">Sede Administrativa</div>
+                            <div className="text-[11px] font-display font-black uppercase text-text-main mb-2 tracking-tight">{entidad.nombre}</div>
+                            <div className="flex justify-between items-center text-[9px] font-mono border-t border-bg-high/20 pt-2">
+                               <span className="text-text-sec font-bold uppercase">Uso:</span>
+                               <span className="text-primary font-black text-[11px]">{entidad.ocupacion_actual || 0} / {entidad.capacidad_total || 0}</span>
                             </div>
                         </div>
                     </Popup>
@@ -229,11 +229,11 @@ const MapaBaseReal = ({ situacion, onSelectEntity, assignmentMode, onMapClick, s
                         >
                            <Popup className="tactical-popup">
                               <div className="p-1">
-                                  <div className="text-[10px] font-black uppercase tracking-widest text-warning mb-1">Zona Logística</div>
-                                  <div className="text-sm font-bold uppercase text-text-main mb-2">{zona.nombre}</div>
-                                  <div className="flex justify-between items-center text-[11px] font-mono border-t border-bg-high/20 pt-2">
-                                     <span className="text-text-sec">CAPACIDAD:</span>
-                                     <span className="text-text-main font-bold">{zona.ocupacion_actual} / {zona.capacidad_total}</span>
+                                  <div className="text-[10px] font-black uppercase tracking-widest text-warning mb-0.5">Zona Logística</div>
+                                  <div className="text-[11px] font-bold uppercase text-text-main mb-2">{zona.nombre}</div>
+                                  <div className="flex justify-between items-center text-[9px] font-mono border-t border-bg-high/20 pt-2">
+                                     <span className="text-text-sec uppercase font-bold">Uso:</span>
+                                     <span className="text-text-main font-black text-[11px]">{zona.ocupacion_actual} / {zona.capacidad_total}</span>
                                   </div>
                               </div>
                            </Popup>

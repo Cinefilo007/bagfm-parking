@@ -25,15 +25,27 @@ async def get_situacion_actual(db: AsyncSession):
     
     entidades_data = []
     for ent in entidades:
-        # Simplificación: Contar cuántos miembros de esta entidad han entrado hoy
-        query_ocupacion = select(func.count(Acceso.id)).join(
+        # Miembros de esta entidad que han entrado hoy
+        query_entradas = select(func.count(Acceso.id)).join(
             Usuario, Acceso.usuario_id == Usuario.id
         ).filter(
             Usuario.entidad_id == ent.id,
             Acceso.tipo == "entrada",
             func.cast(Acceso.timestamp, Date) == hoy
         )
-        ocupacion = (await db.execute(query_ocupacion)).scalar() or 0
+        
+        # Miembros de esta entidad que han salido hoy
+        query_salidas = select(func.count(Acceso.id)).join(
+            Usuario, Acceso.usuario_id == Usuario.id
+        ).filter(
+            Usuario.entidad_id == ent.id,
+            Acceso.tipo == "salida",
+            func.cast(Acceso.timestamp, Date) == hoy
+        )
+        
+        entradas = (await db.execute(query_entradas)).scalar() or 0
+        salidas = (await db.execute(query_salidas)).scalar() or 0
+        ocupacion = max(0, entradas - salidas)
         
         ent_dict = {
             "id": ent.id,
