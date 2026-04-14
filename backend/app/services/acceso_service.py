@@ -48,10 +48,10 @@ class AccesoService:
             if not qr_db.activo:
                 return ResultadoValidacion(permitido=False, mensaje="El QR ha sido revocado o ya no es válido", tipo_alerta="error")
 
-            # 3. Buscar Usuario (Socio) - Opcional para pases simples
+            # 3. Buscar Usuario (Socio) - Usa qr_db.usuario_id que siempre es seguro
             socio = None
-            if usuario_id_str and qr_db.tipo != QRTipo.evento_simple:
-                query_socio = select(Usuario).where(Usuario.id == UUID(usuario_id_str), Usuario.activo == True)
+            if qr_db.usuario_id:
+                query_socio = select(Usuario).where(Usuario.id == qr_db.usuario_id, Usuario.activo == True)
                 res_socio = await db.execute(query_socio)
                 socio = res_socio.scalar_one_or_none()
 
