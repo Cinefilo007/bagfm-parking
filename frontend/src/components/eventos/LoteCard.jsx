@@ -54,7 +54,7 @@ export default function LoteCard({ lote, onRefresh }) {
   const handleDescargar = () => {
     if (lote.zip_url) {
       window.open(lote.zip_url, '_blank');
-      toast.success('Descarga de contingente de seguridad iniciada');
+      toast.success('Descarga de lote de seguridad iniciada');
     }
   };
 

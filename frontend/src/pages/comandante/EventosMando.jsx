@@ -298,7 +298,7 @@ export default function EventosMando() {
                   <div className="col-span-full py-24 flex flex-col items-center gap-4 bg-bg-card/20 rounded-[2rem] border border-dashed border-white/10">
                      <PackageOpen className="text-text-muted opacity-20" size={64} />
                      <div className="text-center">
-                        <p className="text-text-main font-black uppercase tracking-widest text-lg mb-1">Sin contingentes activos</p>
+                        <p className="text-text-main font-black uppercase tracking-widest text-lg mb-1">Sin lotes activos</p>
                         <p className="text-text-muted text-sm max-w-xs mx-auto">Comience creando un nuevo lote para generar credenciales masivas de acceso.</p>
                      </div>
                   </div>

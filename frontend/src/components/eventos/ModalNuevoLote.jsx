@@ -6,10 +6,11 @@ import {
   Ticket, 
   UserCheck, 
   ExternalLink, 
-  Calendar, 
   ShieldCheck,
   AlertTriangle,
-  FileDown
+  FileDown,
+  Infinity,
+  Hash
 } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import { pasesService } from '../../services/pasesService';
@@ -17,6 +18,7 @@ import { toast } from 'react-hot-toast';
 
 export default function ModalNuevoLote({ isOpen, onClose, onSuccess }) {
   const [loading, setLoading] = useState(false);
+  const [sinLimite, setSinLimite] = useState(false);
   const [form, setForm] = useState({
     nombre_evento: '',
     tipo_pase: 'simple',
@@ -30,18 +32,24 @@ export default function ModalNuevoLote({ isOpen, onClose, onSuccess }) {
     e.preventDefault();
     setLoading(true);
     try {
-      // Si es identificado, el backend inicializará en 0 y pedirá Excel después
       const payload = { ...form };
+
+      // Sin límite = enviar null al backend
+      if (sinLimite) {
+        payload.max_accesos_por_pase = null;
+      }
+
+      // Para pases identificados, la cantidad la define el Excel
       if (form.tipo_pase === 'identificado') {
         payload.cantidad_pases = 0;
       }
 
       await pasesService.crearLote(payload);
-      toast.success('Lote táctico configurado');
+      toast.success('Lote táctico inicializado');
       onSuccess();
       onClose();
     } catch (error) {
-      toast.error('Error en la configuración del contingente');
+      toast.error('Error al configurar el lote de pases');
     } finally {
       setLoading(false);
     }
@@ -72,7 +80,7 @@ export default function ModalNuevoLote({ isOpen, onClose, onSuccess }) {
   ];
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title="NUEVO CONTINGENTE MASIVO">
+    <Modal isOpen={isOpen} onClose={onClose} title="NUEVO LOTE DE PASES">
       <form onSubmit={handleSubmit} className="space-y-6 pt-2">
          {/* Selección de Tipo */}
          <div className="grid grid-cols-1 gap-3">
@@ -153,22 +161,46 @@ export default function ModalNuevoLote({ isOpen, onClose, onSuccess }) {
                   </div>
                )}
 
-               <Input 
-                  label="Accesos por Pase"
-                  type="number"
-                  min={1}
-                  placeholder="Sin límite"
-                  value={form.max_accesos_por_pase}
-                  onChange={e => setForm({...form, max_accesos_por_pase: e.target.value ? parseInt(e.target.value) : ''})}
-               />
+               {/* Accesos por Pase + Toggle Sin Límite */}
+               <div className="flex flex-col gap-1.5">
+                  <label className="text-[10px] font-black uppercase text-text-muted tracking-widest pl-1">
+                     Accesos por Pase
+                  </label>
+                  
+                  {/* Toggle Sin Límite */}
+                  <button
+                     type="button"
+                     onClick={() => setSinLimite(!sinLimite)}
+                     className={cn(
+                        "h-12 rounded-2xl border-2 flex items-center justify-center gap-2 text-[10px] font-black uppercase tracking-widest transition-all mb-1",
+                        sinLimite 
+                           ? "bg-primary/10 border-primary text-primary" 
+                           : "bg-black/20 border-white/10 text-text-muted hover:border-white/20"
+                     )}
+                  >
+                     {sinLimite ? <Infinity size={16} /> : <Hash size={16} />}
+                     {sinLimite ? "Sin Límite" : "Con Límite"}
+                  </button>
+
+                  {!sinLimite && (
+                     <Input 
+                        type="number"
+                        min={1}
+                        placeholder="Ej: 3"
+                        value={form.max_accesos_por_pase}
+                        onChange={e => setForm({...form, max_accesos_por_pase: parseInt(e.target.value)})}
+                        className="animate-in fade-in slide-in-from-top-2"
+                     />
+                  )}
+               </div>
             </div>
          </div>
 
          {form.tipo_pase === 'identificado' && (
-            <div className="p-4 bg-info/5 border border-info/20 rounded-2xl flex gap-3 animate-in fade-in slide-in-from-bottom-2">
-               <AlertTriangle className="text-info shrink-0" size={20} />
-               <p className="text-[10px] text-info/80 font-bold uppercase leading-relaxed">
-                  NOTA: Al crear un lote identificado, deberá cargar el archivo Excel con los datos nominativos antes de generar los QRs.
+            <div className="p-4 bg-warning/5 border border-warning/20 rounded-2xl flex gap-3 animate-in fade-in slide-in-from-bottom-2">
+               <AlertTriangle className="text-warning shrink-0" size={20} />
+               <p className="text-[10px] text-warning/80 font-bold uppercase leading-relaxed">
+                  Al crear un lote identificado, deberá cargar el archivo Excel con los datos nominativos antes de generar los QRs.
                </p>
             </div>
          )}
@@ -179,7 +211,7 @@ export default function ModalNuevoLote({ isOpen, onClose, onSuccess }) {
                className="w-full h-14 text-sm font-black tracking-[0.2em] shadow-tactica bg-primary text-on-primary"
                isLoading={loading}
             >
-               INICIALIZAR DESPLIEGUE
+               INICIALIZAR LOTE
             </Boton>
          </div>
       </form>
