@@ -21,7 +21,14 @@ config = obtener_config()
 
 class PaseService:
     def __init__(self):
-        self.supabase: Client = create_client(config.supabase_url, config.supabase_service_key) if config.supabase_url else None
+        try:
+            if config.supabase_url and config.supabase_service_key and config.supabase_url.startswith("http"):
+                self.supabase: Client = create_client(config.supabase_url, config.supabase_service_key)
+            else:
+                self.supabase = None
+        except Exception as e:
+            print(f"ALERTA TÁCTICA: Fallo al inicializar Supabase Storage: {e}")
+            self.supabase = None
 
     async def crear_lote(
         self, 
