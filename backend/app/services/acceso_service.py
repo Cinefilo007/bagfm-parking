@@ -71,9 +71,23 @@ class AccesoService:
                 res_lote = await db.execute(query_lote)
                 lote = res_lote.scalar_one_or_none()
                 
-                # Si es un pase identificado o portal, el socio debe existir
-                if qr_db.tipo in [QRTipo.evento_identificado, QRTipo.evento_portal] and not socio:
-                    return ResultadoValidacion(permitido=False, mensaje="Socio de evento no encontrado", tipo_alerta="error")
+                # 4.c Validar Rango de Fechas del Evento
+                from datetime import date
+                hoy = date.today()
+                if lote:
+                    if hoy < lote.fecha_inicio:
+                        return ResultadoValidacion(
+                            permitido=False,
+                            mensaje=f"PASE FUERA DE FECHA. VÁLIDO DESDE: {lote.fecha_inicio.strftime('%d/%m/%Y')}",
+                            tipo_alerta="error",
+                            es_pase_adelantado=True
+                        )
+                    if hoy > lote.fecha_fin:
+                         return ResultadoValidacion(
+                            permitido=False,
+                            mensaje=f"PASE EXPIRADO EL: {lote.fecha_fin.strftime('%d/%m/%Y')}",
+                            tipo_alerta="error"
+                        )
 
                 # Buscar vehículo del socio temporal si aplica
                 vehiculo = None
@@ -81,6 +95,9 @@ class AccesoService:
                     query_veh_socio = select(Vehiculo).where(Vehiculo.socio_id == socio.id, Vehiculo.activo == True).limit(1)
                     res_veh_socio = await db.execute(query_veh_socio)
                     vehiculo = res_veh_socio.scalar_one_or_none()
+
+                # Determinar si requiere datos manuales (Tipo A o falta de datos en el registro)
+                necesita_datos = (qr_db.tipo == QRTipo.evento_simple) or (not socio) or (not vehiculo)
 
                 return ResultadoValidacion(
                     permitido=True,
@@ -94,7 +111,8 @@ class AccesoService:
                     usuario_id=socio.id if socio else None,
                     socio=socio,
                     vehiculo=vehiculo,
-                    vehiculo_id=vehiculo.id if vehiculo else None
+                    vehiculo_id=vehiculo.id if vehiculo else None,
+                    requiere_datos_manuales=necesita_datos
                 )
 
             # 5. Validación Estándar para Socios Permanentes
@@ -194,11 +212,67 @@ class AccesoService:
     async def registrar_acceso(self, db: AsyncSession, datos: AccesoRegistrar, registrado_por_id: UUID) -> Acceso:
         """
         Persiste el registro de acceso y actualiza contadores de pases masivos si aplica.
+        Maneja creación de usuarios ligeros si vienen datos manuales.
         """
+        final_usuario_id = datos.usuario_id
+        final_vehiculo_id = datos.vehiculo_id
+
+        # 1. Registro Ligero de Usuario/Vehículo si se proveen datos manuales
+        if datos.cedula_manual:
+            from app.models.usuario import Usuario
+            from app.models.vehiculo import Vehiculo
+            from app.models.enums import RolTipo
+
+            # Buscar si ya existe por cédula
+            q_u = select(Usuario).where(Usuario.cedula == datos.cedula_manual)
+            res_u = await db.execute(q_u)
+            usuario_existente = res_u.scalar_one_or_none()
+
+            if not usuario_existente:
+                # Crear usuario temporal ligero
+                usuario_existente = Usuario(
+                    cedula=datos.cedula_manual,
+                    nombre=datos.nombre_manual or "VISITANTE",
+                    apellido="TEMPORAL",
+                    rol=RolTipo.SOCIO,
+                    password_hash="MANUAL_REG", # No podrá loguearse sin reset
+                    activo=True
+                )
+                db.add(usuario_existente)
+                await db.flush()
+            
+            final_usuario_id = usuario_existente.id
+
+            # Si hay datos de vehículo manual
+            if datos.vehiculo_manual:
+                # El formato esperado es "MARCA MODELO [PLACA]" o solo "PLACA"
+                placa = datos.vehiculo_manual
+                if "[" in datos.vehiculo_manual and "]" in datos.vehiculo_manual:
+                    placa = datos.vehiculo_manual.split("[")[1].split("]")[0]
+                
+                # Buscar vehículo por placa
+                q_v = select(Vehiculo).where(Vehiculo.placa == placa)
+                res_v = await db.execute(q_v)
+                v_existente = res_v.scalar_one_or_none()
+
+                if not v_existente:
+                    v_existente = Vehiculo(
+                        placa=placa,
+                        marca="GENÉRICO",
+                        modelo=datos.vehiculo_manual,
+                        socio_id=final_usuario_id,
+                        activo=True
+                    )
+                    db.add(v_existente)
+                    await db.flush()
+                
+                final_vehiculo_id = v_existente.id
+
+        # 2. Persistir Acceso
         nuevo_acceso = Acceso(
             qr_id = datos.qr_id,
-            usuario_id = datos.usuario_id,
-            vehiculo_id = datos.vehiculo_id,
+            usuario_id = final_usuario_id,
+            vehiculo_id = final_vehiculo_id,
             tipo = datos.tipo,
             punto_acceso = datos.punto_acceso,
             registrado_por = registrado_por_id,
@@ -209,8 +283,13 @@ class AccesoService:
         # Si es un QR vinculado a un lote, incrementar accesos_usados
         if datos.qr_id:
             qr_db = await db.get(CodigoQR, datos.qr_id)
-            if qr_db and qr_db.lote_id:
-                qr_db.accesos_usados += 1
+            if qr_db:
+                if qr_db.lote_id:
+                    qr_db.accesos_usados += 1
+                
+                # Si el QR no tenía usuario_id (evento_simple), vincularlo al creado ahora para trazabilidad futura
+                if not qr_db.usuario_id and final_usuario_id:
+                    qr_db.usuario_id = final_usuario_id
         
         await db.commit()
         await db.refresh(nuevo_acceso)

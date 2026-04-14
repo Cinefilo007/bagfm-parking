@@ -6,10 +6,26 @@ import { Boton } from '../../components/ui/Boton';
 import { Card } from '../../components/ui/Card';
 import { 
     CheckCircle2, XCircle, User, Car, Shield,
-    Zap, Activity, RefreshCw, Power, Clock, Scan
+    Zap, Activity, RefreshCw, Power, Clock, Scan, Ticket
 } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import { toast } from 'react-hot-toast';
+
+const InputManual = ({ label, value, onChange, placeholder, icon: Icon }) => (
+    <div className="flex flex-col gap-1 w-full">
+        <label className="text-[8px] font-black text-primary/60 uppercase tracking-widest flex items-center gap-1">
+            {Icon && <Icon size={10} />}
+            {label}
+        </label>
+        <input 
+            type="text" 
+            value={value} 
+            onChange={(e) => onChange(e.target.value)}
+            placeholder={placeholder}
+            className="bg-bg-app/40 border border-white/10 rounded-xl px-3 py-2 text-xs font-bold text-text-main focus:border-primary/50 outline-none uppercase placeholder:opacity-20 transition-all"
+        />
+    </div>
+);
 
 const ScannerAlcabala = () => {
     const navigate = useNavigate();
@@ -18,6 +34,12 @@ const ScannerAlcabala = () => {
     const [resultado, setResultado] = useState(null);
     const [cargando, setCargando] = useState(false);
     const [operador, setOperador] = useState(null);
+    
+    // Estados para registro manual de emergencia
+    const [nombreManual, setNombreManual] = useState('');
+    const [cedulaManual, setCedulaManual] = useState('');
+    const [vehiculoManual, setVehiculoManual] = useState('');
+    
     const scannerRef = useRef(null);
 
     // Formato Caracas para fechas
@@ -53,6 +75,22 @@ const ScannerAlcabala = () => {
         try {
             const res = await alcabalaService.validarQR(qrToken, tipoAcceso);
             setResultado(res);
+            
+            // Pre-cargar datos si existen, o limpiar si requiere manual
+            if (res.socio) {
+                setNombreManual(`${res.socio.nombre} ${res.socio.apellido}`);
+                setCedulaManual(res.socio.cedula);
+            } else {
+                setNombreManual('');
+                setCedulaManual('');
+            }
+
+            if (res.vehiculo) {
+                setVehiculoManual(`${res.vehiculo.marca} ${res.vehiculo.modelo} [${res.vehiculo.placa}]`);
+            } else {
+                setVehiculoManual('');
+            }
+
         } catch (error) {
             const errorMsg = error.response?.data?.detail || "Error en protocolo";
             setResultado({ permitido: false, mensaje: errorMsg, tipo_alerta: "error" });
@@ -70,7 +108,11 @@ const ScannerAlcabala = () => {
                 vehiculo_id: resultado.vehiculo_id,
                 tipo: tipoAcceso,
                 punto_acceso: operador?.punto?.nombre || 'Alcabala Central',
-                es_manual: false
+                es_manual: false,
+                // Campos de registro manual si aplica
+                nombre_manual: nombreManual,
+                cedula_manual: cedulaManual,
+                vehiculo_manual: vehiculoManual
             });
             toast.success(`Acceso ${tipoAcceso} confirmado`, { position: 'bottom-center' });
             
@@ -197,22 +239,42 @@ const ScannerAlcabala = () => {
                                         </div>
                                         <div className="flex-1 min-w-0">
                                             {/* Nombre / Evento */}
-                                            <h3 className="text-xl font-black text-text-main uppercase italic leading-tight break-words">
-                                                {resultado.es_pase_masivo ? resultado.nombre_evento : `${resultado.socio?.nombre} ${resultado.socio?.apellido}`}
-                                            </h3>
-                                            <div className="flex flex-wrap items-center gap-2 mt-1">
-                                                <span className={cn(
-                                                    "px-2 py-0.5 rounded-md border text-[8px] font-black uppercase tracking-widest",
-                                                    resultado.es_pase_masivo 
-                                                        ? "bg-warning/10 border-warning/20 text-warning" 
-                                                        : "bg-primary/5 border-primary/20 text-primary"
-                                                )}>
-                                                    {resultado.es_pase_masivo ? 'PASE MASIVO' : (resultado.socio?.tipo || 'SOCIO ACTIVO')}
-                                                </span>
-                                                <span className="text-[9px] font-bold text-text-muted uppercase tracking-wide">
-                                                    {resultado.es_pase_masivo ? `SERIAL: ${resultado.serial_legible}` : `CI: ${resultado.socio?.cedula || 'N/A'}`}
-                                                </span>
-                                            </div>
+                                            {resultado.requiere_datos_manuales && !resultado.socio ? (
+                                                <div className="space-y-2">
+                                                    <InputManual 
+                                                        label="Nombre del Visitante" 
+                                                        value={nombreManual} 
+                                                        onChange={setNombreManual} 
+                                                        placeholder="Nombre y Apellido"
+                                                        icon={User}
+                                                    />
+                                                    <InputManual 
+                                                        label="Cédula de Identidad" 
+                                                        value={cedulaManual} 
+                                                        onChange={setCedulaManual} 
+                                                        placeholder="V-00000000"
+                                                    />
+                                                </div>
+                                            ) : (
+                                                <>
+                                                    <h3 className="text-xl font-black text-text-main uppercase italic leading-tight break-words">
+                                                        {resultado.es_pase_masivo ? resultado.nombre_evento : `${resultado.socio?.nombre} ${resultado.socio?.apellido}`}
+                                                    </h3>
+                                                    <div className="flex flex-wrap items-center gap-2 mt-1">
+                                                        <span className={cn(
+                                                            "px-2 py-0.5 rounded-md border text-[8px] font-black uppercase tracking-widest",
+                                                            resultado.es_pase_masivo 
+                                                                ? "bg-warning/10 border-warning/20 text-warning" 
+                                                                : "bg-primary/5 border-primary/20 text-primary"
+                                                        )}>
+                                                            {resultado.es_pase_masivo ? 'PASE MASIVO' : (resultado.socio?.tipo || 'SOCIO ACTIVO')}
+                                                        </span>
+                                                        <span className="text-[9px] font-bold text-text-muted uppercase tracking-wide">
+                                                            {resultado.es_pase_masivo ? `SERIAL: ${resultado.serial_legible}` : `CI: ${resultado.socio?.cedula || 'N/A'}`}
+                                                        </span>
+                                                    </div>
+                                                </>
+                                            )}
                                         </div>
                                     </div>
 
@@ -226,21 +288,29 @@ const ScannerAlcabala = () => {
                                     </div>
                                     <div className="flex-1 min-w-0">
                                         <p className="text-[8px] font-black text-primary/60 uppercase tracking-[0.25em] mb-1">Unidad de Acceso</p>
-                                        {resultado.vehiculo ? (
-                                            <div>
-                                                {/* Marca y Modelo — sin truncado */}
-                                                <p className="text-sm font-black text-text-main uppercase italic leading-tight break-words">
-                                                    {resultado.vehiculo.marca} {resultado.vehiculo.modelo}
-                                                </p>
-                                                {/* Placa — valor más importante, siempre visible */}
-                                                <p className="text-2xl font-black text-primary leading-none tracking-tighter mt-0.5">
-                                                    [{resultado.vehiculo.placa}]
-                                                </p>
-                                            </div>
+                                        {resultado.requiere_datos_manuales && !resultado.vehiculo ? (
+                                             <InputManual 
+                                                label="Info del Vehículo" 
+                                                value={vehiculoManual} 
+                                                onChange={setVehiculoManual} 
+                                                placeholder="MARCA MODELO [PLACA]"
+                                                icon={Car}
+                                            />
                                         ) : (
-                                            <p className="text-sm font-black text-danger uppercase italic">
-                                                SIN VEHÍCULO REGISTRADO
-                                            </p>
+                                            resultado.vehiculo ? (
+                                                <div>
+                                                    <p className="text-sm font-black text-text-main uppercase italic leading-tight break-words">
+                                                        {resultado.vehiculo.marca} {resultado.vehiculo.modelo}
+                                                    </p>
+                                                    <p className="text-2xl font-black text-primary leading-none tracking-tighter mt-0.5">
+                                                        [{resultado.vehiculo.placa}]
+                                                    </p>
+                                                </div>
+                                            ) : (
+                                                <p className="text-sm font-black text-danger uppercase italic">
+                                                    SIN VEHÍCULO REGISTRADO
+                                                </p>
+                                            )
                                         )}
                                     </div>
                                 </div>

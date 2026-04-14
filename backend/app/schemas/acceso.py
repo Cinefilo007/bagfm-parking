@@ -19,11 +19,16 @@ class AccesoValidar(BaseModel):
 class AccesoRegistrar(BaseModel):
     """Confirmación final del acceso"""
     qr_id: Optional[UUID] = None
-    usuario_id: UUID
+    usuario_id: Optional[UUID] = None # Puede ser nulo si es 100% manual inicial
     vehiculo_id: Optional[UUID] = None
     tipo: AccesoTipo
     punto_acceso: str = "Alcabala Principal"
     es_manual: bool = False
+
+    # Datos manuales de contingencia
+    nombre_manual: Optional[str] = None
+    cedula_manual: Optional[str] = None
+    vehiculo_manual: Optional[str] = None
 
 class AccesoSalida(AccesoBase):
     id: UUID
@@ -57,6 +62,10 @@ class ResultadoValidacion(BaseModel):
     ultima_entrada: Optional[datetime] = None
     ultima_entrada_punto: Optional[str] = None
     mensaje_adicional: Optional[str] = None
+    
+    # Flags de contingencia
+    requiere_datos_manuales: bool = False
+    es_pase_adelantado: bool = False
 
 
 class EventoTactico(BaseModel):
