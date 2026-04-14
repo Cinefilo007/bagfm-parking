@@ -15,6 +15,7 @@ import {
 import api from '../services/api';
 import { useAuthStore } from '../store/auth.store';
 import { toast } from 'react-hot-toast';
+import { cn } from '../lib/utils';
 
 export default function Personal() {
   const { user: userActual } = useAuthStore();
