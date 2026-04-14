@@ -13,13 +13,13 @@ import { toast } from 'react-hot-toast';
 
 const InputManual = ({ label, value, onChange, placeholder, icon: Icon, prefix = null, loading = false }) => (
     <div className="flex flex-col gap-1 w-full relative">
-        <label className="text-[8px] font-black text-primary/70 dark:text-primary/60 uppercase tracking-widest flex items-center gap-1">
+        <label className="text-[8px] font-black text-primary/60 uppercase tracking-widest flex items-center gap-1">
             {Icon && <Icon size={10} />}
             {label}
         </label>
         <div className="relative flex items-center">
             {prefix && (
-                <span className="absolute left-3 text-xs font-bold text-text-muted pointer-events-none">
+                <span className="absolute left-3 text-xs font-bold text-white/40 pointer-events-none">
                     {prefix}
                 </span>
             )}
@@ -29,7 +29,7 @@ const InputManual = ({ label, value, onChange, placeholder, icon: Icon, prefix =
                 onChange={(e) => onChange(e.target.value)}
                 placeholder={placeholder}
                 className={cn(
-                    "bg-bg-app dark:bg-bg-app/40 border border-text-main/10 rounded-xl px-3 py-2 text-xs font-bold text-text-main focus:border-primary/50 outline-none uppercase placeholder:text-text-muted/20 transition-all w-full",
+                    "bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-xs font-bold text-text-main focus:border-primary/50 outline-none uppercase placeholder:text-white/20 transition-all w-full",
                     prefix && "pl-10",
                     loading && "animate-pulse border-primary/30"
                 )}
@@ -274,142 +274,121 @@ const ScannerAlcabala = () => {
                         
                         {/* Estado de Autorización (Alerta) */}
                         <div className={cn(
-                            "flex flex-col items-center text-center p-6 rounded-2xl border-2 shadow-2xl",
-                            resultado.permitido ? "bg-success/5 border-success/30" : "bg-danger/20 border-danger/40"
+                            "flex flex-col items-center text-center p-5 rounded-2xl border-2",
+                            resultado.permitido ? "bg-success/5 border-success/30" : "bg-danger/5 border-danger/30"
                         )}>
                             <div className={cn(
-                                "w-14 h-14 rounded-full flex items-center justify-center mb-3",
-                                resultado.permitido ? "bg-success/20 text-success" : "bg-danger/40 text-white"
+                                "w-12 h-12 rounded-full flex items-center justify-center mb-2 shadow-lg",
+                                resultado.permitido ? "bg-success/20 text-success" : "bg-danger/20 text-danger"
                             )}>
-                                {resultado.permitido ? <CheckCircle2 size={32} /> : <XCircle size={32} />}
+                                {resultado.permitido ? <CheckCircle2 size={28} /> : <XCircle size={28} />}
                             </div>
-                            <h2 className={cn(
-                                "text-3xl font-black uppercase tracking-tighter italic leading-none",
-                                resultado.permitido ? "text-success" : "text-white"
-                            )}>
+                            <h2 className={cn("text-2xl font-black uppercase tracking-tight italic", resultado.permitido ? "text-success" : "text-danger")}>
                                 {resultado.permitido ? "AUTORIZADO" : "DENEGADO"}
                             </h2>
-                            <p className={cn(
-                                "text-[10px] font-bold uppercase tracking-widest mt-2",
-                                resultado.permitido ? "text-text-muted" : "text-white/80"
-                            )}>
-                                {resultado.mensaje || "Protocolo de Seguridad BAGFM"}
+                            <p className="text-[9px] font-bold text-text-muted uppercase tracking-widest mt-1">
+                                {resultado.mensaje || "Validación de Protocolo"}
                             </p>
                         </div>
-                             {/* Mostrar la ficha SOLO si el pase es válido o requiere registro manual */}
+
+                        {/* Ficha Táctica — solo si está autorizado o requiere datos manuales */}
                         {(resultado.permitido || resultado.requiere_datos_manuales) ? (
-                            <Card className="bg-bg-card/80 dark:bg-bg-card/40 backdrop-blur-md border border-text-main/10 rounded-2xl p-4 space-y-5 shadow-sm">
+                            <Card className="bg-bg-card/40 backdrop-blur-md border-white/5 rounded-2xl p-4 space-y-5">
                                 
-                                {/* Ciudadano */}
-                                <div className="space-y-4">
+                                {/* ── SECCIÓN: DATOS DEL CIUDADANO ── */}
+                                <div className="space-y-3">
                                     <div className="flex items-center justify-between">
                                         <div className="flex items-center gap-2">
                                             <div className="w-1 h-3 bg-primary rounded-full" />
-                                            <h4 className="text-[9px] font-black text-text-main uppercase tracking-widest">Identidad</h4>
+                                            <h4 className="text-[9px] font-black text-text-main uppercase tracking-widest">Datos del Ciudadano</h4>
                                         </div>
-                                        {resultado.requiere_datos_manuales && (
-                                            <Boton 
-                                                onClick={() => setModoEscaneoIA('cedula')}
-                                                className="h-7 px-3 rounded-lg bg-primary/10 dark:bg-primary/20 text-primary border border-primary/20 dark:border-primary/30 flex items-center gap-1.5"
-                                            >
-                                                <Camera size={12} />
-                                                <span className="text-[9px] font-black uppercase italic">Escanear Cédula</span>
-                                            </Boton>
-                                        )}
+                                        <button 
+                                            onClick={() => setModoEscaneoIA('cedula')}
+                                            className="h-7 px-3 rounded-lg bg-primary/20 text-primary border border-primary/30 flex items-center gap-1.5"
+                                        >
+                                            <Camera size={12} />
+                                            <span className="text-[9px] font-black uppercase italic">Escanear Cédula</span>
+                                        </button>
                                     </div>
 
-                                    <div className="flex items-center gap-4">
-                                        <div className="w-16 h-16 rounded-2xl bg-bg-app border border-text-main/10 flex items-center justify-center shrink-0">
+                                    <div className="flex items-start gap-3">
+                                        <div className="w-14 h-14 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center shrink-0 mt-1">
                                             {resultado.socio?.foto_url ? (
                                                 <img src={resultado.socio.foto_url} className="w-full h-full object-cover rounded-2xl" />
                                             ) : (
-                                                <User size={32} className="text-text-muted/30" />
+                                                <User size={28} className="text-white/20" />
                                             )}
                                         </div>
                                         <div className="flex-1 space-y-2">
-                                            {resultado.requiere_datos_manuales && !resultado.socio ? (
-                                                <div className="grid grid-cols-1 gap-2">
-                                                    <InputManual label="Nombre y Apellido" value={nombreManual} onChange={setNombreManual} />
-                                                    <InputManual label="Cédula" value={cedulaManual} onChange={setCedulaManual} />
-                                                </div>
-                                            ) : (
-                                                <>
-                                                    <h3 className="text-lg font-black text-text-main uppercase leading-none italic">
-                                                        {resultado.socio ? `${resultado.socio.nombre} ${resultado.socio.apellido}` : "SIN REGISTRO"}
-                                                    </h3>
-                                                    <p className="text-[10px] font-bold text-text-muted uppercase tracking-widest">CI: {resultado.socio?.cedula || "N/A"}</p>
-                                                </>
-                                            )}
+                                            <InputManual 
+                                                label="Nombre y Apellido" 
+                                                value={nombreManual} 
+                                                onChange={setNombreManual}
+                                                placeholder={resultado.socio ? `${resultado.socio.nombre} ${resultado.socio.apellido}` : "NOMBRE COMPLETO"}
+                                            />
+                                            <InputManual 
+                                                label="Número de Cédula" 
+                                                value={cedulaManual} 
+                                                onChange={setCedulaManual}
+                                                placeholder={resultado.socio?.cedula || "V-00000000"}
+                                            />
                                         </div>
                                     </div>
                                 </div>
 
-                                {/* Contacto */}
-                                <div className="p-3 bg-bg-app/50 dark:bg-white/5 rounded-xl border border-text-main/5 space-y-2">
-                                    <div className="flex items-center gap-2 text-primary/70">
-                                        <Phone size={12} />
-                                        <span className="text-[8px] font-black uppercase tracking-widest text-text-muted">Contacto de Seguridad (Obligatorio)</span>
+                                {/* ── SECCIÓN: DATOS DE CONTACTO ── */}
+                                <div className="p-3 bg-white/5 rounded-xl border border-white/5 space-y-2">
+                                    <div className="flex items-center gap-2">
+                                        <Phone size={12} className="text-primary/70" />
+                                        <span className="text-[8px] font-black uppercase tracking-widest text-text-muted">Datos de Contacto (Obligatorio)</span>
                                     </div>
-                                    <InputManual value={telefonoManual} onChange={setTelefonoManual} prefix="+58" placeholder="4121234567" />
+                                    <InputManual label="Teléfono Móvil" value={telefonoManual} onChange={setTelefonoManual} prefix="+58" placeholder="4121234567" />
                                 </div>
 
-                                {/* Vehículo */}
-                                <div className="space-y-4">
+                                {/* ── SECCIÓN: UNIDAD DE ACCESO ── */}
+                                <div className="space-y-3">
                                     <div className="flex items-center justify-between">
                                         <div className="flex items-center gap-2">
                                             <div className="w-1 h-3 bg-primary rounded-full" />
                                             <h4 className="text-[9px] font-black text-text-main uppercase tracking-widest">Unidad de Acceso</h4>
                                         </div>
-                                        {resultado.requiere_datos_manuales && (
-                                            <Boton 
-                                                onClick={() => setModoEscaneoIA('vehiculo')}
-                                                className="h-7 px-3 rounded-lg bg-primary/10 dark:bg-primary/20 text-primary border border-primary/20 dark:border-primary/30 flex items-center gap-1.5"
-                                            >
-                                                <Car size={12} />
-                                                <span className="text-[9px] font-black uppercase italic">Escanear Título</span>
-                                            </Boton>
-                                        )}
+                                        <button 
+                                            onClick={() => setModoEscaneoIA('vehiculo')}
+                                            className="h-7 px-3 rounded-lg bg-primary/20 text-primary border border-primary/30 flex items-center gap-1.5"
+                                        >
+                                            <Car size={12} />
+                                            <span className="text-[9px] font-black uppercase italic">Escanear Título</span>
+                                        </button>
                                     </div>
                                     
-                                    <div className="bg-bg-app border border-text-main/5 rounded-xl p-3 flex items-center gap-4">
-                                        <div className="w-10 h-10 bg-primary/5 dark:bg-primary/10 rounded-lg flex items-center justify-center shrink-0 border border-primary/10 dark:border-primary/20">
+                                    <div className="bg-bg-app border border-white/5 rounded-xl p-3 flex items-start gap-3">
+                                        <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center shrink-0 border border-primary/20 mt-1">
                                             <Car size={20} className="text-primary" />
                                         </div>
-                                        <div className="flex-1">
-                                            {resultado.requiere_datos_manuales && !resultado.vehiculo ? (
-                                                <div className="grid grid-cols-2 gap-2">
-                                                    <InputManual label="Placa" value={placaManual} onChange={setPlacaManual} />
-                                                    <InputManual label="Color" value={colorManual} onChange={setColorManual} />
-                                                    <InputManual label="Marca" value={marcaManual} onChange={setMarcaManual} />
-                                                    <InputManual label="Modelo" value={modeloManual} onChange={setModeloManual} />
-                                                </div>
-                                            ) : (
-                                                <>
-                                                    <p className="text-xs font-black text-text-main uppercase italic">{resultado.vehiculo?.marca} {resultado.vehiculo?.modelo || "N/A"}</p>
-                                                    <p className="text-xl font-black text-primary tracking-tighter leading-none mt-0.5">[{resultado.vehiculo?.placa || "S/V"}]</p>
-                                                </>
-                                            )}
+                                        <div className="flex-1 grid grid-cols-2 gap-2">
+                                            <InputManual label="Placa" value={placaManual} onChange={setPlacaManual} placeholder={resultado.vehiculo?.placa || "AB123CD"} />
+                                            <InputManual label="Color" value={colorManual} onChange={setColorManual} placeholder={resultado.vehiculo?.color || "BLANCO"} />
+                                            <InputManual label="Marca" value={marcaManual} onChange={setMarcaManual} placeholder={resultado.vehiculo?.marca || "TOYOTA"} />
+                                            <InputManual label="Modelo" value={modeloManual} onChange={setModeloManual} placeholder={resultado.vehiculo?.modelo || "HILUX"} />
                                         </div>
                                     </div>
                                 </div>
 
-                                {/* Acciones */}
+                                {/* ── ACCIONES ── */}
                                 <div className="pt-2 flex flex-col gap-2">
                                     {resultado.permitido && (
                                         <Boton onClick={handleConfirmar} disabled={cargando} className="h-14 rounded-xl bg-primary shadow-tactica-green w-full gap-2">
-                                            {cargando ? <RefreshCw className="animate-spin text-bg-app" size={20} /> : <><Shield size={18} className="text-bg-app" /><span className="text-sm font-black uppercase italic text-bg-app">Confirmar Protocolo</span></>}
+                                            {cargando ? <RefreshCw className="animate-spin" size={20} /> : <><Shield size={18} /><span className="text-sm font-black uppercase italic">Confirmar Protocolo</span></>}
                                         </Boton>
                                     )}
-                                    <button onClick={() => setResultado(null)} className="h-10 text-[9px] font-black uppercase text-text-muted/60 tracking-[0.3em] bg-bg-app/50 dark:bg-white/5 rounded-lg border border-text-main/10">Abortar Operación</button>
+                                    <button onClick={() => setResultado(null)} className="h-10 text-[9px] font-black uppercase text-text-muted/60 tracking-[0.3em] bg-white/5 rounded-lg border border-white/5">Abortar Operación</button>
                                 </div>
                             </Card>
                         ) : (
-                            // En error puro no manual, solo damos el botón de intentar de nuevo bien grande
-                            <div className="flex justify-center mt-4">
-                                <Boton onClick={() => setResultado(null)} className="w-full h-14 rounded-2xl border-white/20 text-white font-black uppercase tracking-widest bg-danger/80 hover:bg-danger">
-                                    Intentar de nuevo
-                                </Boton>
-                            </div>
+                            /* Pase denegado sin datos — solo botón para reintentar */
+                            <button onClick={() => setResultado(null)} className="w-full h-12 text-[9px] font-black uppercase text-white/60 tracking-[0.3em] bg-white/5 rounded-xl border border-white/10">
+                                Intentar de nuevo
+                            </button>
                         )}
                     </div>
                 )}
