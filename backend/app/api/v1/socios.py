@@ -133,6 +133,7 @@ async def obtener_portal_socio(
     # Si no tiene membresia pero SI tiene QR de portal de evento, creamos una falsa al vuelo
     if not membresia and qr and qr.tipo == QRTipo.evento_portal:
         import datetime
+        import uuid
         from dateutil.relativedelta import relativedelta
 
         fecha_inicio = qr.created_at.date() if qr.created_at else datetime.date.today()
