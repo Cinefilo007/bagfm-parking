@@ -80,7 +80,7 @@ El sistema BAGFM no es una aplicación de consumo masivo. Es un entorno de **mis
 | **H1 — Título de Módulo** | `text-2xl font-black uppercase tracking-tight` | Cabecera principal de cada vista |
 | **H2 — Título de Sección** | `text-lg font-black uppercase tracking-tight italic` | Subtítulos de secciones dentro de una vista |
 | **H3 — Título de Card** | `text-base font-black uppercase tracking-tight` | Nombre del elemento dentro de una card |
-| **Subtítulo de página** | `text-xs font-bold uppercase tracking-wider` | Línea debajo del H1 con info contextual |
+| **Subtítulo de página** | `text-sm font-bold text-text-muted` | Info contextual en Sentence case (no uppercase) |
 | **Label de campo** | `text-[10px] font-black uppercase tracking-widest opacity-60` | Labels de inputs y selectores |
 | **Metadato / Elemento menor** | `text-[9px] font-black uppercase tracking-widest opacity-70` | Cédula, teléfono, entidad en cards |
 | **Chip / Badge de rol** | `text-[8px] font-black uppercase tracking-widest` | Etiqueta de rol en card de personal |
@@ -127,9 +127,9 @@ Este patrón es **obligatorio** para todas las páginas de gestión. Es el únic
       </div>
       <span className="uppercase">NOMBRE DEL MÓDULO</span>
     </h1>
-    <p className="text-text-muted text-xs mt-1.5 flex items-center gap-1.5 px-1 font-bold uppercase tracking-wider">
+    <p className="text-text-muted text-sm mt-1 flex items-center gap-1.5 px-1 font-bold">
       <span className="w-1.5 h-1.5 rounded-full bg-success animate-pulse shrink-0" />
-      Descripción contextual del módulo
+      Descripción contextual del módulo (Ej: Módulo de Concesiones)
     </p>
   </div>
 
@@ -159,7 +159,7 @@ Este patrón es **obligatorio** para todas las páginas de gestión. Es el únic
 
 - `rounded-xl` (12px) para el borde de la card
 - El nombre no se trunca, usa `whitespace-normal break-words`
-- Grid: `grid-cols-1 xl:grid-cols-2` — máximo 2 columnas en desktop
+- Layout: `space-y-4` — Lista vertical completa (Full width) en PC
 
 ### 5.2 Card de Recurso KPI
 
@@ -192,7 +192,7 @@ Este patrón es **obligatorio** para todas las páginas de gestión. Es el únic
 
 | Uso | Grid | Detalle |
 |-----|------|---------|
-| Cards de lista (Personal, Operativos) | `grid-cols-1 xl:grid-cols-2` | Horizontal alargada en desktop |
+| Cards de lista (Personal, Operativos) | `flex flex-col space-y-4` | Lista vertical completa (Alargadas) |
 | Cards de galería (Socios) | `grid-cols-1 md:grid-cols-2 xl:grid-cols-3` | Permite foto |
 | KPIs / Métricas | `grid-cols-2 md:grid-cols-4` | Resumen numérico |
 | Metadatos (Últimas acciones, historial) | `grid-cols-2` | Siempre dos columnas iguales |

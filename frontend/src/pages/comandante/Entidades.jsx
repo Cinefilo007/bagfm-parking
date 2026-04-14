@@ -223,7 +223,7 @@ export default function Entidades() {
             <div className="p-2 bg-primary/10 rounded-xl">
                 <Network className="text-primary shrink-0" size={24} />
             </div>
-            <span className="truncate">Entidades Civiles</span>
+            <span className="truncate">Entidades Alojadas</span>
           </h1>
           <p className="text-text-muted text-sm mt-1 flex items-center gap-1.5 px-1">
             <span className="w-1.5 h-1.5 rounded-full bg-success animate-pulse" />

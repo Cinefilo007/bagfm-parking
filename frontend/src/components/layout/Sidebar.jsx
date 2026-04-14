@@ -19,7 +19,7 @@ export const Sidebar = () => {
   if (user?.rol === 'COMANDANTE' || user?.rol === 'ADMIN_BASE' || user?.rol === 'SUPERVISOR') {
     navItems.push(
       { to: '/comando/dashboard', label: 'Dashboard', icon: ShieldCheck },
-      { to: '/comando/entidades', label: 'Entidades Civiles', icon: Users },
+      { to: '/comando/entidades', label: 'Entidades Alojadas', icon: Users },
       { to: '/comando/personal', label: 'Gestión Personal', icon: UserCog },
       { to: '/comando/alcabalas', label: 'Gestión Alcabalas', icon: ClipboardList },
       { to: '/comando/eventos', label: 'Eventos Masivos', icon: CalendarRange },

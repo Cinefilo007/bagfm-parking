@@ -14,13 +14,17 @@ router = APIRouter()
 
 @router.get("/lista", response_model=List[UsuarioSalida])
 async def listar_personal(
+    skip: int = 0,
+    limit: int = 10,
+    search: str = None,
     db: AsyncSession = Depends(obtener_db),
     usuario_actual: Usuario = Depends(obtener_usuario_actual)
 ):
     """
     Retorna la lista de personal administrativo y operativo según permisos.
+    Soporta paginación y búsqueda por fragmento de nombre/cédula.
     """
-    return await personal_service.listar_personal(db, usuario_actual)
+    return await personal_service.listar_personal(db, usuario_actual, skip=skip, limit=limit, search=search)
 
 @router.post("/", response_model=UsuarioSalida)
 async def crear_personal(

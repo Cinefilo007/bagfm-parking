@@ -14,14 +14,26 @@ class PersonalService:
     async def listar_personal(
         self, 
         db: AsyncSession, 
-        usuario_actual: Usuario
+        usuario_actual: Usuario,
+        skip: int = 0,
+        limit: int = 10,
+        search: Optional[str] = None
     ) -> List[Usuario]:
         """
-        Lista el personal según el rol del usuario que consulta.
+        Lista el personal según el rol del usuario que consulta, con búsqueda y paginación.
         """
         # Incluimos la relación con la entidad para ver el nombre de forma eficiente
         query = select(Usuario).options(joinedload(Usuario.entidad_pertenece)).order_by(Usuario.nombre.asc())
         
+        # Filtro de búsqueda (Nombre, Apellido o Cédula)
+        if search:
+            search_pattern = f"%{search}%"
+            query = query.where(or_(
+                Usuario.nombre.ilike(search_pattern),
+                Usuario.apellido.ilike(search_pattern),
+                Usuario.cedula.ilike(search_pattern)
+            ))
+
         if usuario_actual.rol in [RolTipo.COMANDANTE, RolTipo.ADMIN_BASE]:
             # Comandante/AdminBase ven a todos los operativos y admins
             # EXCLUIMOS ALCABALA (según solicitud) y SOCIO (tienen su propia vista)
@@ -39,6 +51,9 @@ class PersonalService:
             )
         else:
             raise AccesoDenegado("No tiene permisos para ver la lista de personal")
+            
+        # Paginación
+        query = query.offset(skip).limit(limit)
             
         res = await db.execute(query)
         usuarios = res.scalars().all()

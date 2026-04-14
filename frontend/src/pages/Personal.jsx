@@ -5,7 +5,8 @@ import { Modal } from '../components/ui/Modal';
 import { Input } from '../components/ui/Input';
 import { 
   UserCircle, Plus, UserCog, Hash,
-  Phone, Building2, Power, RotateCcw, UserMinus, BadgeCheck
+  Phone, Building2, Power, RotateCcw, UserMinus, BadgeCheck,
+  Search, ChevronLeft, ChevronRight
 } from 'lucide-react';
 import api from '../services/api';
 import { useAuthStore } from '../store/auth.store';
@@ -24,11 +25,19 @@ export default function Personal() {
     telefono: '', rol: '', entidad_id: null, password: ''
   });
 
+  const [search, setSearch] = useState('');
+  const [page, setPage] = useState(0);
+  const [hasMore, setHasMore] = useState(true);
+  const limit = 10;
+
   const fetchData = async () => {
     setLoading(true);
     try {
-      const resPersonal = await api.get('/personal/lista');
+      const skip = page * limit;
+      const resPersonal = await api.get(`/personal/lista?skip=${skip}&limit=${limit}&search=${search}`);
       setPersonal(resPersonal.data);
+      setHasMore(resPersonal.data.length === limit);
+      
       if (userActual.rol === 'COMANDANTE' || userActual.rol === 'ADMIN_BASE') {
         try {
           const resEntidades = await api.get('/entidades');
@@ -44,7 +53,12 @@ export default function Personal() {
     }
   };
 
-  useEffect(() => { fetchData(); }, []);
+  useEffect(() => { 
+    const delayDebounce = setTimeout(() => {
+      fetchData();
+    }, search ? 500 : 0);
+    return () => clearTimeout(delayDebounce);
+  }, [page, search]);
 
   const handleCrearPersonal = async (e) => {
     e.preventDefault();
@@ -119,9 +133,9 @@ export default function Personal() {
             </div>
             <span className="uppercase">Fuerza de Tareas</span>
           </h1>
-          <p className="text-text-muted text-xs mt-1.5 flex items-center gap-1.5 px-1 font-bold uppercase tracking-wider">
+          <p className="text-text-muted text-sm mt-1 flex items-center gap-1.5 px-1 font-bold">
             <span className="w-1.5 h-1.5 rounded-full bg-success animate-pulse shrink-0" />
-            Control de Personal Operativo ({personal.length} Activos)
+            Control de personal operativo ({personal.length} en terminal)
           </p>
         </div>
         <Boton
@@ -133,8 +147,25 @@ export default function Personal() {
         </Boton>
       </header>
 
-      {/* ─── Grid de Tarjetas Horizontales ─── */}
-      <section className="grid grid-cols-1 xl:grid-cols-2 gap-4">
+      {/* ─── Barra de Búsqueda y Filtros ─── */}
+      <div className="flex flex-col md:flex-row gap-4 items-center bg-bg-card/20 p-2 rounded-2xl border border-white/5">
+        <div className="relative flex-1 w-full">
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-text-muted" size={18} />
+          <input 
+            type="text"
+            placeholder="Buscar por nombre, apellido o cédula..."
+            className="w-full h-12 bg-bg-card border border-bg-high/10 rounded-xl pl-12 pr-4 text-sm font-bold text-text-main focus:ring-1 focus:ring-primary outline-none transition-all placeholder:text-text-muted/40"
+            value={search}
+            onChange={(e) => {
+              setSearch(e.target.value);
+              setPage(0);
+            }}
+          />
+        </div>
+      </div>
+
+      {/* ─── Listado de Tarjetas Alargadas ─── */}
+      <section className="space-y-4">
         {loading ? (
           Array(4).fill(0).map((_, i) => (
             <div key={i} className="h-24 rounded-xl bg-white/5 animate-pulse border border-white/5" />
@@ -229,6 +260,36 @@ export default function Personal() {
           </>
         )}
       </section>
+
+      {/* ─── Controles de Paginación Táctica ─── */}
+      {!loading && (personal.length > 0 || page > 0) && (
+        <div className="flex items-center justify-between pt-6 border-t border-white/5 mt-4">
+          <Boton
+            variant="ghost"
+            disabled={page === 0}
+            onClick={() => setPage(p => Math.max(0, p - 1))}
+            className="gap-2 text-[10px] font-black uppercase tracking-widest disabled:opacity-30"
+          >
+            <ChevronLeft size={16} />
+            Anterior
+          </Boton>
+          
+          <div className="flex flex-col items-center">
+             <span className="text-[10px] font-black text-text-muted uppercase tracking-[0.3em]">Sector Acceso</span>
+             <span className="text-sm font-display font-black text-primary">PÁGINA {page + 1}</span>
+          </div>
+
+          <Boton
+            variant="ghost"
+            disabled={!hasMore}
+            onClick={() => setPage(p => p + 1)}
+            className="gap-2 text-[10px] font-black uppercase tracking-widest disabled:opacity-30"
+          >
+            Siguiente
+            <ChevronRight size={16} />
+          </Boton>
+        </div>
+      )}
 
       {/* ─── Modal Alta de Personal ─── */}
       <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title="PROTOCOLO DE ALTA — PERSONAL">
