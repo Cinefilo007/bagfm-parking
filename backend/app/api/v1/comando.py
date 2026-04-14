@@ -106,52 +106,8 @@ async def obtener_situacion_actual(
     
     identificacion = await alcabala_service.obtener_mi_identificacion_actual(db, usuario.id)
 
-    # Estadísticas para el dashboard del guardia
-    from datetime import date
-    from sqlalchemy import func, Date
-    from app.models.acceso import Acceso
-    
-    hoy = date.today()
-    q_ent = select(func.count(Acceso.id)).filter(
-        Acceso.punto_acceso == punto.nombre,
-        Acceso.tipo == "entrada",
-        func.cast(Acceso.timestamp, Date) == hoy
-    )
-    q_sal = select(func.count(Acceso.id)).filter(
-        Acceso.punto_acceso == punto.nombre,
-        Acceso.tipo == "salida",
-        func.cast(Acceso.timestamp, Date) == hoy
-    )
-    entradas = (await db.execute(q_ent)).scalar() or 0
-    salidas = (await db.execute(q_sal)).scalar() or 0
-    
-    # Historial de eventos recientes para el guardia (últimos 5)
-    query_historial = select(Acceso).filter(
-        Acceso.punto_acceso == punto.nombre,
-        func.cast(Acceso.timestamp, Date) == hoy
-    ).order_by(Acceso.timestamp.desc()).limit(5)
-    
-    res_historial = await db.execute(query_historial)
-    historial_accesos = res_historial.scalars().all()
-    
-    from app.models.usuario import Usuario
-    eventos_historial = []
-    for h in historial_accesos:
-        # Rehidratar usuario
-        u_h = await db.get(Usuario, h.usuario_id)
-        # Rehidratar vehículo si existe
-        veh_h = None
-        if h.vehiculo_id:
-            from app.models.vehiculo import Vehiculo
-            veh_h = await db.get(Vehiculo, h.vehiculo_id)
-            
-        eventos_historial.append({
-            "id": str(h.id),
-            "tipo": h.tipo,
-            "timestamp": h.timestamp.isoformat(),
-            "socio_nombre": f"{u_h.nombre} {u_h.apellido}" if u_h else "Socio Desconocido",
-            "vehiculo": f"{veh_h.marca} [{veh_h.placa}]" if veh_h else "PEATÓN"
-        })
+    is_guard = usuario.rol == RolTipo.ALCABALA
+    stats_data = await alcabala_service.obtener_metricas_punto(db, punto.nombre, tactico=is_guard)
 
     return {
         "punto": {
@@ -166,10 +122,8 @@ async def obtener_situacion_actual(
             "grado": usuario.grado
         },
         "stats": {
-            "entradas": entradas,
-            "salidas": salidas,
-            "infracciones": 0,
-            "eventos_recientes": eventos_historial
+            **stats_data,
+            "infracciones": 0, # TODO: Integrar con servicio de infracciones cuando esté disponible
         }
     }
 

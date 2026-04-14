@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams, useNavigate } from 'react-router-dom';
 import { QRScanner } from '../../components/alcabala/QRScanner';
 import { alcabalaService } from '../../services/alcabala.service';
 import { Boton } from '../../components/ui/Boton';
@@ -12,6 +12,7 @@ import { cn } from '../../lib/utils';
 import { toast } from 'react-hot-toast';
 
 const ScannerAlcabala = () => {
+    const navigate = useNavigate();
     const [searchParams] = useSearchParams();
     const tipoAcceso = searchParams.get('tipo') || 'entrada';
     const [resultado, setResultado] = useState(null);
@@ -30,10 +31,21 @@ const ScannerAlcabala = () => {
     };
 
     useEffect(() => {
-        alcabalaService.getMiSituacion()
-            .then(data => setOperador(data))
-            .catch(e => console.error("Fallo obteniendo punto:", e));
-    }, []);
+        const syncSituacion = async () => {
+            try {
+                const data = await alcabalaService.getMiSituacion();
+                setOperador(data);
+                if (!data.identificado) {
+                    toast.error('Sesión operativa no válida o relevo pendiente');
+                    navigate('/alcabala/dashboard');
+                }
+            } catch (e) {
+                console.error("Fallo sincronizando situación táctica:", e);
+                navigate('/alcabala/dashboard');
+            }
+        };
+        syncSituacion();
+    }, [navigate]);
 
     const handleScanSuccess = async (qrToken) => {
         if (cargando) return;

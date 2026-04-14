@@ -12,10 +12,11 @@ from app.models.acceso import Acceso
 from app.models.enums import RolTipo
 from app.core.security import hashear_password
 from app.core.password_rotativo import generar_password_diario, obtener_fecha_tactica
-from sqlalchemy import func, update, delete
+from sqlalchemy import func, update, delete, select, cast, Date
 import secrets
 import string
 import re
+from app.core.password_rotativo import VET, obtener_fecha_tactica
 
 class AlcabalaService:
     def _generar_slug(self, texto: str) -> str:
@@ -252,5 +253,69 @@ class AlcabalaService:
             }
             for p, g in rows
         ]
+
+    async def obtener_metricas_punto(self, db: AsyncSession, punto_nombre: str, tactico: bool = True):
+        """
+        Calcula entradas y salidas para un punto.
+        - tactico=True: Desde las 08:30 AM del ciclo actual.
+        - tactico=False: Desde las 00:00 AM del día actual.
+        """
+        ahora_vet = datetime.now(VET)
+        
+        if tactico:
+            fecha_t = obtener_fecha_tactica()
+            # Inicio del ciclo: fecha_t a las 08:30 AM VET
+            inicio_ciclo_vet = datetime.combine(fecha_t, time(8, 30)).replace(tzinfo=VET)
+            inicio_utc = inicio_ciclo_vet.astimezone(timezone.utc).replace(tzinfo=None)
+        else:
+            # Inicio del día calendario: hoy a las 00:00 AM VET
+            inicio_dia_vet = datetime.combine(ahora_vet.date(), time(0, 0)).replace(tzinfo=VET)
+            inicio_utc = inicio_dia_vet.astimezone(timezone.utc).replace(tzinfo=None)
+
+        q_ent = select(func.count(Acceso.id)).filter(
+            Acceso.punto_acceso == punto_nombre,
+            Acceso.tipo == "entrada",
+            Acceso.timestamp >= inicio_utc
+        )
+        q_sal = select(func.count(Acceso.id)).filter(
+            Acceso.punto_acceso == punto_nombre,
+            Acceso.tipo == "salida",
+            Acceso.timestamp >= inicio_utc
+        )
+        
+        entradas = (await db.execute(q_ent)).scalar() or 0
+        salidas = (await db.execute(q_sal)).scalar() or 0
+        
+        # Últimos 5 eventos en este rango
+        query_hist = select(Acceso).filter(
+            Acceso.punto_acceso == punto_nombre,
+            Acceso.timestamp >= inicio_utc
+        ).order_by(Acceso.timestamp.desc()).limit(5)
+        
+        result_h = await db.execute(query_hist)
+        historial = result_h.scalars().all()
+        
+        eventos_formateados = []
+        for h in historial:
+            # Rehidratar datos básicos para el dashboard
+            u_h = await db.get(Usuario, h.usuario_id)
+            veh_h = None
+            if h.vehiculo_id:
+                from app.models.vehiculo import Vehiculo
+                veh_h = await db.get(Vehiculo, h.vehiculo_id)
+            
+            eventos_formateados.append({
+                "id": str(h.id),
+                "tipo": h.tipo,
+                "timestamp": h.timestamp.isoformat(),
+                "socio_nombre": f"{u_h.nombre} {u_h.apellido}" if u_h else "Socio Desconocido",
+                "vehiculo": f"{veh_h.marca} [{veh_h.placa}]" if veh_h else "PEATÓN"
+            })
+
+        return {
+            "entradas": entradas,
+            "salidas": salidas,
+            "eventos_recientes": eventos_formateados
+        }
 
 alcabala_service = AlcabalaService()

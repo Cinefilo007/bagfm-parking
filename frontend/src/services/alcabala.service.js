@@ -24,6 +24,14 @@ export const alcabalaService = {
   async registrarAcceso(datos) {
     const { data } = await api.post('/accesos/registrar', datos);
     return data;
+  },
+
+  /**
+   * Obtiene la situación actual del guardia (Punto asignado, identificación, stats).
+   */
+  async getMiSituacion() {
+    const { data } = await api.get('/comando/mi-situacion');
+    return data;
   }
 };
 
