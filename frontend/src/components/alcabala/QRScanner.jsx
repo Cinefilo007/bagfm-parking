@@ -111,14 +111,31 @@ export const QRScanner = forwardRef(({ onScanSuccess, autoStart = false, status 
   };
 
   const stopScanner = async () => {
-    if (html5QrCode.current && html5QrCode.current.isScanning) {
+    if (html5QrCode.current) {
+      if (html5QrCode.current.isScanning) {
+          try {
+              await html5QrCode.current.stop();
+          } catch (e) {
+              console.warn("Error deteniendo el sensor:", e);
+          }
+      }
       try {
-          await html5QrCode.current.stop();
           await html5QrCode.current.clear();
       } catch (e) {}
+      html5QrCode.current = null;
       setIsScanning(false);
     }
   };
+
+  useEffect(() => {
+    return () => {
+      if (html5QrCode.current) {
+          html5QrCode.current.stop().catch(() => {}).finally(() => {
+              html5QrCode.current.clear().catch(() => {});
+          });
+      }
+    };
+  }, []);
 
   useEffect(() => {
     if (autoStart && cameras.length > 0) {

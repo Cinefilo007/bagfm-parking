@@ -76,13 +76,6 @@ const ScannerAlcabala = () => {
             
             // Limpiar resultado para volver al modo escáner
             setResultado(null);
-            
-            // Forzar un pequeño delay para asegurar el remonte limpio del componente de cámara
-            setTimeout(() => {
-                if (scannerRef.current) {
-                    scannerRef.current.toggleScanner(true); // Método hipotético para forzar encendido
-                }
-            }, 100);
         } catch (error) {
             toast.error("Error al registrar acceso");
         }
@@ -140,15 +133,15 @@ const ScannerAlcabala = () => {
                                 className="h-14 rounded-2xl bg-bg-card/40 border-white/5 flex flex-col items-center justify-center gap-1 active:scale-95 transition-all"
                             >
                                 <RefreshCw size={18} className="text-primary" />
-                                <span className="text-[8px] font-black text-text-muted uppercase tracking-widest">Rotar Lente</span>
+                                <span className="text-[8px] font-black text-text-muted uppercase tracking-widest">Cambiar Lente</span>
                             </Boton>
                             <Boton
                                 onClick={() => scannerRef.current?.toggleScanner()}
                                 variant="outline"
                                 className="h-14 rounded-2xl bg-bg-card/40 border-white/5 flex flex-col items-center justify-center gap-1 active:scale-95 transition-all"
                             >
-                                <Zap size={18} className="text-primary" />
-                                <span className="text-[8px] font-black text-text-muted uppercase tracking-widest">Radar</span>
+                                <Power size={18} className="text-primary" />
+                                <span className="text-[8px] font-black text-text-muted uppercase tracking-widest">Activar/Apagar</span>
                             </Boton>
                         </div>
                     </>

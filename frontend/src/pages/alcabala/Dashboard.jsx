@@ -121,7 +121,7 @@ const DashboardAlcabala = () => {
                         <Shield className="text-primary" size={28} />
                     </div>
                     <div>
-                        <h1 className="text-2xl md:text-3xl font-black text-white tracking-tighter uppercase italic">
+                        <h1 className="text-2xl md:text-3xl font-black dark:text-white text-text-main tracking-tighter uppercase italic">
                             {situacion?.punto?.nombre || 'Terminal Alcabala'}
                         </h1>
                         <p className="text-text-muted text-xs mt-0.5 flex items-center gap-1.5 font-bold">
@@ -132,15 +132,12 @@ const DashboardAlcabala = () => {
                 </div>
 
                 {/* Info del Profesional de Guardia (Derecha) */}
-                <div className="flex items-center gap-4 bg-white/5 p-3 rounded-xl border border-white/5">
-                    <div className="text-right hidden sm:block">
+                <div className="flex items-center gap-4 bg-primary/5 p-3 px-5 rounded-2xl border border-primary/20">
+                    <div className="text-right">
                         <p className="text-[10px] font-black text-primary uppercase tracking-[0.2em]">Profesional de Guardia</p>
                         <p className="text-sm font-black text-text-main italic uppercase tracking-tight">
                             {situacion?.datos_guardia?.grado || 'S1'} {situacion?.datos_guardia?.nombre} {situacion?.datos_guardia?.apellido}
                         </p>
-                    </div>
-                    <div className="w-11 h-11 rounded-full bg-primary/10 flex items-center justify-center text-primary border border-primary/20">
-                        <ShieldCheck size={22} />
                     </div>
                 </div>
             </header>
