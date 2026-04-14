@@ -2,7 +2,7 @@
 Servicio de Gestión de Alcabalas y Guardias Temporales (Asíncrono).
 Maneja la creación de puntos de control y usuarios con expiración automática.
 """
-from datetime import datetime, timedelta, time
+from datetime import datetime, timedelta, time, timezone
 from uuid import UUID
 from sqlalchemy.future import select
 from sqlalchemy.ext.asyncio import AsyncSession
