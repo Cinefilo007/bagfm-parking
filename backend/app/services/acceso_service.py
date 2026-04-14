@@ -234,12 +234,17 @@ class AccesoService:
                     cedula=datos.cedula_manual,
                     nombre=datos.nombre_manual or "VISITANTE",
                     apellido="TEMPORAL",
+                    telefono=datos.telefono_manual, # Nuevo campo de contacto
                     rol=RolTipo.SOCIO,
                     password_hash="MANUAL_REG", # No podrá loguearse sin reset
                     activo=True
                 )
                 db.add(usuario_existente)
                 await db.flush()
+            elif datos.telefono_manual:
+                # Si el usuario ya existe, actualizar su teléfono para futuras comunicaciones
+                usuario_existente.telefono = datos.telefono_manual
+
             
             final_usuario_id = usuario_existente.id
 

@@ -74,7 +74,7 @@ async def health_check():
 from app.api.v1 import (
     auth, entidades, socios, accesos, 
     infracciones, websocket, comando, eventos, mapa,
-    personal, pases
+    personal, pases, ia
 )
 
 app.include_router(auth.router, prefix="/api/v1/auth", tags=["Autenticación"])
@@ -88,3 +88,4 @@ app.include_router(accesos.router, prefix="/api/v1/accesos", tags=["Control de A
 app.include_router(infracciones.router, prefix="/api/v1/infracciones", tags=["Gestión de Infracciones"])
 app.include_router(mapa.router, prefix="/api/v1/mapa", tags=["Mapa Táctico"])
 app.include_router(websocket.router, prefix="/api/v1", tags=["Tiempo Real"])
+app.include_router(ia.router, prefix="/api/v1/ia", tags=["Inteligencia Artificial"])

@@ -42,6 +42,19 @@ export const alcabalaService = {
   async getMiSituacion() {
     const { data } = await api.get('/comando/mi-situacion');
     return data;
+  },
+
+  /**
+   * Envía una imagen para extracción de datos vía IA.
+   * @param {string} imageBase64 Imagen en base64.
+   * @param {string} tipo 'cedula' o 'vehiculo'.
+   */
+  async extraerDatosIA(imageBase64, tipo) {
+    const { data } = await api.post('/ia/extraer-datos', {
+      image_base64: imageBase64,
+      tipo: tipo
+    });
+    return data;
   }
 };
 

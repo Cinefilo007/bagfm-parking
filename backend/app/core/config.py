@@ -37,6 +37,9 @@ class Configuracion(BaseSettings):
 
     # CORS
     cors_origins: str = "https://bagfm-frontend-production.up.railway.app"
+    
+    # Inteligencia Artificial
+    gemini_api_key: str = ""
 
     @property
     def cors_lista(self) -> list[str]:
