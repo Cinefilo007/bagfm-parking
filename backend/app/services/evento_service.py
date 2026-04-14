@@ -9,10 +9,11 @@ from sqlalchemy import func
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.models.alcabala_evento import SolicitudEvento
 from app.models.codigo_qr import CodigoQR
-from app.models.enums import SolicitudEstado, QRTipo
+from app.models.enums import SolicitudEstado, QRTipo, PasseTipo
 from app.schemas.alcabala_evento import SolicitudEventoCrear, SolicitudEventoProcesar
 from app.core.security import crear_token_evento
 from app.core.config import obtener_config
+from app.services.pase_service import pase_service
 
 config = obtener_config()
 
@@ -26,6 +27,7 @@ class EventoService:
             fecha_evento=datos.fecha_evento,
             cantidad_solicitada=datos.cantidad_solicitada,
             motivo=datos.motivo,
+            tipo_pase=datos.tipo_pase,
             estado=SolicitudEstado.pendiente
         )
         db.add(nueva_solicitud)
@@ -57,7 +59,7 @@ class EventoService:
     ) -> SolicitudEvento:
         """
         El Comandante aprueba (total/parcial) o deniega la solicitud.
-        Si es aprobada, genera automáticamente los QRs masivos.
+        Si es aprobada, genera automáticamente el Lote de Pases Masivos.
         """
         solicitud = await self.obtener_solicitud(db, solicitud_id)
         if not solicitud:
@@ -69,41 +71,30 @@ class EventoService:
         solicitud.revisado_por = revisado_por_id
         solicitud.revisado_at = datetime.now(timezone.utc)
         
-        # Si fue aprobada (total o parcial), generar QRs
+        # Si fue aprobada (total o parcial), crear Lote en PaseService (v2)
         if datos.estado in [SolicitudEstado.aprobada, SolicitudEstado.aprobada_parcial]:
-            await self._generar_qrs_masivos(db, solicitud, revisado_por_id)
+            datos_lote = {
+                "nombre_evento": solicitud.nombre_evento,
+                "tipo_pase": solicitud.tipo_pase,
+                "fecha_inicio": solicitud.fecha_evento,
+                "fecha_fin": solicitud.fecha_evento + timedelta(days=1), # El evento dura 1 día por defecto
+                "cantidad_pases": solicitud.cantidad_aprobada,
+                "max_accesos_por_pase": 1 # Por defecto
+            }
+            # pase_service.crear_lote hará el commit
+            await pase_service.crear_lote(db, datos_lote, revisado_por_id, solicitud_id=solicitud.id)
             
         await db.commit()
         await db.refresh(solicitud)
         return solicitud
 
-    async def _generar_qrs_masivos(self, db: AsyncSession, solicitud: SolicitudEvento, creado_by_id: UUID):
-        """Genera N tokens QR genéricos para la solicitud."""
-        # Expiración: fecha del evento + config de horas
-        expiracion_horas = int(getattr(config, 'qr_expiracion_temporal_horas', 24))
-        # Asumimos que expira al final del día del evento + margen
-        expira_at = datetime.combine(solicitud.fecha_evento, datetime.max.time()) + timedelta(hours=expiracion_horas)
-        
-        qrs = []
-        for _ in range(solicitud.cantidad_aprobada):
-            token = crear_token_evento(str(solicitud.id), expira_at)
-            nuevo_qr = CodigoQR(
-                usuario_id=creado_by_id, # El QR pertenece al sistema/revisor en este caso genérico
-                solicitud_id=solicitud.id,
-                tipo=QRTipo.temporal,
-                token=token,
-                fecha_expiracion=expira_at,
-                activo=True,
-                created_by=creado_by_id
-            )
-            qrs.append(nuevo_qr)
-        
-        db.add_all(qrs)
-        # El commit se hace en procesar_solicitud
-
     async def obtener_qrs_solicitud(self, db: AsyncSession, solicitud_id: UUID):
-        """Retorna todos los QRs generados para una solicitud aprobada."""
-        query = select(CodigoQR).where(CodigoQR.solicitud_id == solicitud_id, CodigoQR.activo == True)
+        """Retorna QRs asociados al lote vinculado a la solicitud."""
+        solicitud = await self.obtener_solicitud(db, solicitud_id)
+        if not solicitud or not solicitud.lote_id:
+            return []
+        
+        query = select(CodigoQR).where(CodigoQR.lote_id == solicitud.lote_id, CodigoQR.activo == True)
         result = await db.execute(query)
         return result.scalars().all()
 
@@ -122,21 +113,17 @@ class EventoService:
             result = await db.execute(query)
             return result.scalar() or 0
 
-        # Ejecución secuencial para estabilidad de sesión async
         total = await _count()
         pendientes = await _count([SolicitudEstado.pendiente])
         aprobadas = await _count([SolicitudEstado.aprobada, SolicitudEstado.aprobada_parcial])
         denegadas = await _count([SolicitudEstado.denegada])
 
-        # Suma de pases otorgados (autorizados)
         query_pases = select(func.sum(SolicitudEvento.cantidad_aprobada))
         if filtros:
             query_pases = query_pases.where(*filtros)
         
         result_pases = await db.execute(query_pases)
-        pases_otorgados = result_pases.scalar()
-        if pases_otorgados is None:
-            pases_otorgados = 0
+        pases_otorgados = result_pases.scalar() or 0
 
         return {
             "total": total,

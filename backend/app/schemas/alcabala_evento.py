@@ -2,7 +2,7 @@ from typing import Optional, List
 from uuid import UUID
 from datetime import datetime, date
 from pydantic import BaseModel, ConfigDict
-from app.models.enums import SolicitudEstado
+from app.models.enums import SolicitudEstado, PasseTipo
 
 # --- Punto de Acceso (Alcabala) ---
 class PuntoAccesoBase(BaseModel):
@@ -62,6 +62,7 @@ class SolicitudEventoBase(BaseModel):
 
 class SolicitudEventoCrear(SolicitudEventoBase):
     entidad_id: UUID
+    tipo_pase: Optional[PasseTipo] = PasseTipo.simple
 
 class SolicitudEventoProcesar(BaseModel):
     cantidad_aprobada: int
@@ -74,6 +75,8 @@ class SolicitudEventoSalida(SolicitudEventoBase):
     solicitado_por: UUID
     cantidad_aprobada: Optional[int] = None
     estado: SolicitudEstado
+    tipo_pase: PasseTipo
+    lote_id: Optional[UUID] = None
     revisado_por: Optional[UUID] = None
     motivo_rechazo: Optional[str] = None
     created_at: datetime

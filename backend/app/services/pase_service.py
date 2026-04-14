@@ -200,11 +200,11 @@ class PaseService:
         await db.commit()
 
     def generar_qr_image(self, data: str) -> io.BytesIO:
-        """Genera una imagen QR de alta resolución."""
+        """Genera una imagen QR de resolución balanceada (aprox 800x800)."""
         qr = qrcode.QRCode(
-            version=1,
+            version=None,
             error_correction=qrcode.constants.ERROR_CORRECT_H,
-            box_size=15, # Mayor tamaño = mayor resolución
+            box_size=10, 
             border=4,
         )
         qr.add_data(data)
