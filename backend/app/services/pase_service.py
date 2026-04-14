@@ -206,20 +206,51 @@ class PaseService:
         lote.cantidad_pases = count
         await db.commit()
 
-    def generar_qr_image(self, data: str) -> io.BytesIO:
-        """Genera una imagen QR de resolución balanceada (aprox 800x800)."""
+    def generar_qr_image(self, data: str, titulo: str = "", subtitulo: str = "", serial: str = "") -> io.BytesIO:
+        """Genera una imagen QR de resolución balanceada (aprox 800x800) con texto descriptivo."""
         qr = qrcode.QRCode(
             version=None,
             error_correction=qrcode.constants.ERROR_CORRECT_H,
-            box_size=10, 
+            box_size=20, 
             border=4,
         )
         qr.add_data(data)
         qr.make(fit=True)
 
-        img = qr.make_image(fill_color="black", back_color="white")
-        img_byte_arr = io.BytesIO()
-        img.save(img_byte_arr, format='PNG')
+        img = qr.make_image(fill_color="black", back_color="white").convert('RGB')
+        
+        if titulo or subtitulo or serial:
+            from PIL import Image, ImageDraw, ImageFont
+            qr_width, qr_height = img.size
+            new_width = qr_width + 600
+            
+            new_img = Image.new('RGB', (new_width, qr_height), 'white')
+            new_img.paste(img, (0, 0))
+            
+            draw = ImageDraw.Draw(new_img)
+            try:
+                font_title = ImageFont.truetype("arialbd.ttf", 36)
+                font_body = ImageFont.truetype("arial.ttf", 28)
+            except IOError:
+                font_title = ImageFont.load_default()
+                font_body = ImageFont.load_default()
+                
+            text_x = qr_width + 20
+            text_y = qr_height // 2 - 80
+            
+            titulo_cortado = f"{titulo[:25]}..." if len(titulo) > 25 else titulo
+            
+            draw.text((text_x, text_y), f"EVENTO: {titulo_cortado}", fill="black", font=font_title)
+            draw.text((text_x, text_y + 50), f"TIPO: {subtitulo}", fill="black", font=font_body)
+            draw.text((text_x, text_y + 90), f"SERIAL: {serial}", fill="black", font=font_body)
+            draw.text((text_x, text_y + 140), "SISTEMA BAGFM TÁCTICO", fill=(100, 100, 100), font=font_body)
+            
+            img_byte_arr = io.BytesIO()
+            new_img.save(img_byte_arr, format='PNG')
+        else:
+            img_byte_arr = io.BytesIO()
+            img.save(img_byte_arr, format='PNG')
+            
         img_byte_arr.seek(0)
         return img_byte_arr
 
@@ -237,10 +268,17 @@ class PaseService:
         
         zip_buffer = io.BytesIO()
         with zipfile.ZipFile(zip_buffer, 'a', zipfile.ZIP_DEFLATED, False) as zip_file:
+            from app.models.enums import QRTipo
             for qr in qrs:
-                # Nombre del archivo: SerialLegible.png
                 filename = f"{qr.serial_legible}.png"
-                img_data = self.generar_qr_image(qr.token)
+                
+                tipo_str = "QR GENÉRICO"
+                if qr.tipo == QRTipo.evento_identificado:
+                    tipo_str = "IDENTIFICADO"
+                elif qr.tipo == QRTipo.evento_portal:
+                    tipo_str = "AUTO-REGISTRO"
+                    
+                img_data = self.generar_qr_image(qr.token, lote.nombre_evento, tipo_str, qr.serial_legible)
                 zip_file.writestr(filename, img_data.getvalue())
         
         zip_buffer.seek(0)
