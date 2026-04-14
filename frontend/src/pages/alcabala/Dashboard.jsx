@@ -4,7 +4,8 @@ import {
   Camera, LogIn, LogOut, AlertTriangle, 
   ShieldCheck, ClipboardList, Info, 
   UserPlus, CheckCircle2, ShieldAlert,
-  Zap, Activity, ChevronRight
+  Zap, Activity, ChevronRight, Shield,
+  Car
 } from 'lucide-react';
 import { useNotifications } from '../../hooks/useNotifications';
 import { useAuthStore } from '../../store/auth.store';

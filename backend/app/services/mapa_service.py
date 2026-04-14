@@ -147,6 +147,9 @@ async def get_situacion_actual(db: AsyncSession):
     )
     bloqueados_reales = (await db.execute(query_bloqueados)).scalar() or 0
 
+    # 6. Alertas (Deshabilitado temporalmente - Módulo no disponible)
+    alertas_activas = 0
+
     return {
         "entidades": entidades_data,
         "alcabalas": alcabalas_data,
