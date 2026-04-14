@@ -15,7 +15,7 @@ class CodigoQR(Base):
     __tablename__ = "codigos_qr"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    usuario_id = Column(UUID(as_uuid=True), ForeignKey("usuarios.id", ondelete="RESTRICT"), nullable=False, index=True)
+    usuario_id = Column(UUID(as_uuid=True), ForeignKey("usuarios.id", ondelete="RESTRICT"), nullable=True, index=True)
     vehiculo_id = Column(UUID(as_uuid=True), ForeignKey("vehiculos.id", ondelete="RESTRICT"), nullable=True)
     membresia_id = Column(UUID(as_uuid=True), ForeignKey("membresias.id", ondelete="RESTRICT"), nullable=True)
     
