@@ -281,20 +281,22 @@ const ScannerAlcabala = () => {
 
                             {/* Acciones de Firma — botones full-width para evitar truncado */}
                             <div className="p-4 pt-0 flex flex-col gap-2">
-                                <Boton
-                                    disabled={cargando || !resultado.permitido || !operador}
-                                    onClick={handleConfirmar}
-                                    className="w-full h-14 rounded-xl bg-primary text-bg-app font-black uppercase tracking-widest text-sm shadow-tactica hover:scale-[1.01] active:scale-[0.99] transition-all disabled:opacity-40 flex items-center justify-center gap-2"
-                                >
-                                    {cargando ? (
-                                        <RefreshCw className="animate-spin" size={20} />
-                                    ) : (
-                                        <>
-                                            <Shield size={18} />
-                                            <span>Confirmar {tipoAcceso.charAt(0).toUpperCase() + tipoAcceso.slice(1)}</span>
-                                        </>
-                                    )}
-                                </Boton>
+                                {resultado.permitido && (
+                                    <Boton
+                                        disabled={cargando || !operador}
+                                        onClick={handleConfirmar}
+                                        className="w-full h-14 rounded-xl bg-primary text-bg-app font-black uppercase tracking-widest text-sm shadow-tactica hover:scale-[1.01] active:scale-[0.99] transition-all disabled:opacity-40 flex items-center justify-center gap-2"
+                                    >
+                                        {cargando ? (
+                                            <RefreshCw className="animate-spin" size={20} />
+                                        ) : (
+                                            <>
+                                                <Shield size={18} />
+                                                <span>Confirmar {tipoAcceso.charAt(0).toUpperCase() + tipoAcceso.slice(1)}</span>
+                                            </>
+                                        )}
+                                    </Boton>
+                                )}
                                 <button
                                     onClick={() => setResultado(null)}
                                     className="w-full h-11 rounded-xl border border-white/10 text-text-muted font-black uppercase text-[9px] tracking-widest hover:bg-white/5 active:scale-[0.99] transition-all"
