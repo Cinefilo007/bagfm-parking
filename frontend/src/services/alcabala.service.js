@@ -27,6 +27,16 @@ export const alcabalaService = {
   },
 
   /**
+   * Obtiene la bitácora de eventos paginada y en tiempo real.
+   */
+  async getHistorialTactico(page = 1, size = 20, puntoNombre = null) {
+    const params = new URLSearchParams({ page, size });
+    if (puntoNombre) params.append('punto_nombre', puntoNombre);
+    const { data } = await api.get(`/accesos/historial/tactico?${params.toString()}`);
+    return data;
+  },
+
+  /**
    * Obtiene la situación actual del guardia (Punto asignado, identificación, stats).
    */
   async getMiSituacion() {

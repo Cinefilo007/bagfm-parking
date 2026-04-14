@@ -36,3 +36,17 @@ async def registrar_acceso(
     Confirma y persiste un registro de acceso (entrada o salida).
     """
     return await acceso_service.registrar_acceso(db, datos, usuario_actual.id)
+
+from app.schemas.acceso import PaginatedEventos
+from typing import Optional
+
+@router.get("/historial/tactico", response_model=PaginatedEventos)
+async def historial_tactico(
+    page: int = 1,
+    size: int = 20,
+    punto_nombre: Optional[str] = None,
+    db: AsyncSession = Depends(obtener_db),
+    usuario_actual: Usuario = DEPENDENCY_ALCABALA
+):
+    """Obtiene el historial de eventos paginado para monitores tácticos."""
+    return await acceso_service.obtener_historial_tactico(db, page, size, punto_nombre)

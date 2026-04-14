@@ -57,3 +57,19 @@ class ResultadoValidacion(BaseModel):
     ultima_entrada: Optional[datetime] = None
     ultima_entrada_punto: Optional[str] = None
     mensaje_adicional: Optional[str] = None
+
+
+class EventoTactico(BaseModel):
+    id: UUID
+    tipo: str
+    timestamp: datetime
+    usuario: str
+    vehiculo: str
+    punto: str
+    es_manual: bool
+
+class PaginatedEventos(BaseModel):
+    items: List[EventoTactico]
+    total: int
+    page: int
+    size: int

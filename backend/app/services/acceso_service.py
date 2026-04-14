@@ -216,4 +216,52 @@ class AccesoService:
         await db.refresh(nuevo_acceso)
         return nuevo_acceso
 
+    async def obtener_historial_tactico(self, db: AsyncSession, page: int, size: int, punto_nombre: str = None) -> dict:
+        """Obtiene la bitácora de eventos paginada"""
+        from sqlalchemy import select, func
+        from app.schemas.acceso import PaginatedEventos, EventoTactico
+
+        query = select(Acceso)
+        if punto_nombre:
+            query = query.where(func.trim(Acceso.punto_acceso) == punto_nombre.strip())
+
+        # Contar total
+        count_query = select(func.count()).select_from(query.subquery())
+        total = (await db.execute(count_query)).scalar() or 0
+
+        # Obtener página ordenada desc
+        query = query.order_by(Acceso.timestamp.desc()).offset((page - 1) * size).limit(size)
+        result = await db.execute(query)
+        accesos = result.scalars().all()
+
+        items = []
+        for acc in accesos:
+            # Rehydrate user
+            u_query = select(Usuario).where(Usuario.id == acc.usuario_id)
+            u = (await db.execute(u_query)).scalar_one_or_none()
+            
+            vehiculo_str = "SIN VEHÍCULO"
+            if acc.vehiculo_id:
+                from app.models.vehiculo import Vehiculo
+                v = await db.get(Vehiculo, acc.vehiculo_id)
+                if v:
+                    vehiculo_str = f"{v.marca} {v.modelo} [{v.placa}]"
+
+            items.append(EventoTactico(
+                id=acc.id,
+                tipo=acc.tipo,
+                timestamp=acc.timestamp,
+                usuario=f"{u.nombre} {u.apellido}" if u else "Socio Desconocido",
+                vehiculo=vehiculo_str,
+                punto=acc.punto_acceso,
+                es_manual=acc.es_manual
+            ))
+
+        return {
+            "items": items,
+            "total": total,
+            "page": page,
+            "size": size
+        }
+
 acceso_service = AccesoService()

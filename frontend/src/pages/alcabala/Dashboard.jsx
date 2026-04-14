@@ -199,36 +199,8 @@ const DashboardAlcabala = () => {
                         <h3 className="text-xs font-black text-text-main uppercase tracking-[0.4em] italic">Bitácora en tiempo real</h3>
                     </div>
                     
-                    <div className="flex-1 overflow-y-auto pr-2 custom-scrollbar space-y-3">
-                        {(!stats.eventos_recientes || stats.eventos_recientes.length === 0) ? (
-                            <div className="h-full flex flex-col items-center justify-center border border-dashed border-white/10 rounded-2xl bg-bg-card/20">
-                                <Info size={32} className="text-text-muted opacity-20 mb-3" />
-                                <p className="text-[10px] font-black text-text-muted uppercase tracking-[0.3em] opacity-40">Sin novedad en el frente</p>
-                            </div>
-                        ) : (
-                            stats.eventos_recientes.map((evento) => (
-                                <div key={evento.id} className="bg-bg-card/40 border border-white/5 p-4 rounded-xl flex items-center gap-4 hover:border-primary/20 transition-all">
-                                     <div className={cn(
-                                         "w-10 h-10 rounded-xl flex items-center justify-center shrink-0",
-                                         evento.tipo === 'entrada' ? "bg-primary/20 text-primary" : "bg-warning/20 text-warning"
-                                     )}>
-                                         {evento.tipo === 'entrada' ? <LogIn size={20} /> : <LogOut size={20} />}
-                                     </div>
-                                     <div className="flex-1 min-w-0">
-                                          <div className="flex items-center justify-between mb-0.5">
-                                               <h4 className="text-text-main font-black text-[11px] uppercase truncate">{evento.socio_nombre}</h4>
-                                               <span className="text-[8px] font-bold text-text-muted opacity-50">
-                                                   {new Date(evento.timestamp).toLocaleTimeString('es-VE', { hour: '2-digit', minute: '2-digit' })}
-                                               </span>
-                                          </div>
-                                          <div className="flex items-center gap-2 text-[9px] font-bold text-text-muted/60 uppercase">
-                                              <Car size={12} className="opacity-30" />
-                                              <span className="truncate">{evento.vehiculo}</span>
-                                          </div>
-                                     </div>
-                                </div>
-                            ))
-                        )}
+                    <div className="flex-1 overflow-hidden pr-2 h-full">
+                        <LiveEventLog puntoNombre={situacion.punto.nombre} />
                     </div>
                 </div>
 
