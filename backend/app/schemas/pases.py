@@ -27,6 +27,8 @@ class LotePaseMasivoSalida(LotePaseMasivoBase):
     zip_generado: bool
     zip_url: Optional[str] = None
     zip_listo_at: Optional[datetime] = None
+    tipo_acceso: str = "general"
+    tipo_acceso_custom_id: Optional[UUID] = None
     
     model_config = ConfigDict(from_attributes=True)
 

@@ -67,6 +67,10 @@ class PaseService:
             fecha_fin=datos['fecha_fin'],
             cantidad_pases=datos['cantidad_pases'],
             max_accesos_por_pase=datos.get('max_accesos_por_pase'),
+            entidad_id=usuario.entidad_id if usuario and usuario.rol == RolTipo.ADMIN_ENTIDAD else None,
+            tipo_acceso=datos.get('tipo_acceso', 'general'),
+            tipo_acceso_custom_id=datos.get('tipo_acceso_custom_id'),
+            zona_estacionamiento_id=datos.get('zona_asignada_id') or datos.get('zona_id'),
             creado_por=creado_por_id
         )
         db.add(nuevo_lote)

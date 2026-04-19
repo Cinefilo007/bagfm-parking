@@ -61,11 +61,12 @@ cuota_disponible = cuota_total - cuota_usada
 
 | Tipo | Descripción | Uso principal |
 |------|-------------|---------------|
+| `general` | Público del evento | Acceso estándar |
+| `vip` | Invitados especiales | Acceso preferencial |
+| `staff` | Personal de apoyo | Operaciones del evento |
+| `produccion` | Productores y equipo técnico | Gestión del evento |
 | `logistica` | Personal de montaje, producción | Antes del evento (preparativos) |
 | `prensa` | Medios de comunicación | Cobertura del evento |
-| `vip` | Invitados especiales | Acceso preferencial |
-| `general` | Público del evento | Acceso estándar |
-| `staff` | Personal de apoyo | Operaciones del evento |
 | `artista` | Performers / Artistas | Acceso backstage si aplica |
 
 ### Uso en el Flujo
@@ -167,20 +168,19 @@ Admin ve lista de lotes:
 ## 5. Tipos de Pases Existentes
 
 ### Tipo A — Simple (`simple`)
-- QR genérico sin datos pre-cargados
-- El guardia/parquero registra datos al momento del acceso (OPCIONAL)
-- Ideal para: público general, eventos masivos rápidos
+- QR genérico sin datos pre-cargados.
+- Generación rápida para repartir físicamente o digitalmente sin registro previo.
+- Ideal para: público general, eventos masivos rápidos.
 
 ### Tipo B — Identificado (`identificado`)
-- Cargado desde Excel con datos completos
-- Crea usuario + vehículo en el sistema
-- El QR ya tiene datos pre-vinculados
-- Ideal para: invitados pre-registrados, VIP
+- Cargado desde Excel con datos completos de los integrantes.
+- Crea usuario + vehículo vinculado en el sistema.
+- Ideal para: invitados pre-registrados, equipo de trabajo conocido (staff, vip).
 
 ### Tipo C — Portal (`portal`)
-- Genera un pre-usuario con login temporal
-- El portador accede al portal del socio y completa sus datos
-- Ideal para: eventos donde el invitado debe auto-registrarse
+- Genera un pase "vacío" con acceso a un portal.
+- El propio portador escanea el QR o accede al link para completar sus datos.
+- Ideal para: simplificar la carga de datos del admin.
 
 ---
 

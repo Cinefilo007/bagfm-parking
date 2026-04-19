@@ -12,7 +12,7 @@ import {
     Users, QrCode, ChevronRight, Share2, Mail,
     ParkingSquare, Car, Tag, Edit3, RefreshCw,
     Upload, CheckCircle2, MapPin, MoreVertical, Copy,
-    Shield
+    Shield, Camera, Star
 } from 'lucide-react';
 import { eventosService } from '../../services/eventos.service';
 import { pasesService } from '../../services/pasesService';
@@ -25,10 +25,14 @@ const TIPO_INFO = {
     simple: { label: 'Pase Simple', icon: Ticket, color: 'text-primary', bg: 'bg-primary/10' },
     identificado: { label: 'Identificado', icon: UserCheck, color: 'text-success', bg: 'bg-success/10' },
     portal: { label: 'Auto-Registro', icon: ExternalLink, color: 'text-warning', bg: 'bg-warning/10' },
+    general: { label: 'Público General', icon: Users, color: 'text-text-muted', bg: 'bg-white/5' },
     vip: { label: 'VIP', icon: Shield, color: 'text-yellow-400', bg: 'bg-yellow-400/10' },
-    staff: { label: 'Staff', icon: Users, color: 'text-sky-400', bg: 'bg-sky-400/10' },
+    staff: { label: 'Staff', icon: Shield, color: 'text-sky-400', bg: 'bg-sky-400/10' },
+    produccion: { label: 'Producción', icon: LayoutGrid, color: 'text-purple-400', bg: 'bg-purple-400/10' },
     logistica: { label: 'Logística', icon: Car, color: 'text-orange-400', bg: 'bg-orange-400/10' },
-    custom: { label: 'Personalizado', icon: Tag, color: 'text-purple-400', bg: 'bg-purple-400/10' },
+    prensa: { label: 'Prensa', icon: Camera, color: 'text-pink-400', bg: 'bg-pink-400/10' },
+    artista: { label: 'Artista', icon: Star, color: 'text-cyan-400', bg: 'bg-cyan-400/10' },
+    custom: { label: 'Personalizado', icon: Tag, color: 'text-white', bg: 'bg-white/10' },
 };
 
 const badgeTipo = (tipo, labelCustom) => {
@@ -181,9 +185,10 @@ const LoteCardV2 = ({ lote, zonas, tiposCustom, onRefresh }) => {
                     {/* Header */}
                     <div className="flex justify-between items-start">
                         <div className="space-y-1 flex-1 min-w-0">
-                            <div className="flex items-center gap-2 flex-wrap">
-                                {badgeTipo(lote.tipo_pase, lote.tipo_custom_label)}
-                                <span className="text-[10px] font-mono text-text-muted opacity-50">{lote.codigo_serial}</span>
+                            <div className="flex items-center gap-1 flex-wrap">
+                                {badgeTipo(lote.tipo_pase)}
+                                {lote.tipo_acceso && lote.tipo_acceso !== 'general' && badgeTipo(lote.tipo_acceso, lote.tipo_custom_label)}
+                                <span className="text-[9px] font-mono text-text-muted opacity-40 ml-1">#{lote.codigo_serial.split('-').pop()}</span>
                             </div>
                             <h3 className="text-lg font-black text-text-main uppercase leading-tight truncate">{lote.nombre_evento}</h3>
                         </div>
@@ -294,15 +299,21 @@ const LoteCardV2 = ({ lote, zonas, tiposCustom, onRefresh }) => {
     );
 };
 
-// ──── Modal: Crear lote v2 con asignación zona/puesto + multi-vehículo ─────────
+// ──── Modal: Crear lote con asignación zona/puesto + multi-vehículo ─────────
 
-const TIPOS_BASE = [
-    { id: 'simple', label: 'Simple', icon: Ticket },
-    { id: 'identificado', label: 'Identificado', icon: UserCheck },
-    { id: 'vip', label: 'VIP', icon: Shield },
-    { id: 'staff', label: 'Staff', icon: Users },
+const TIPOS_PASE_OPTIONS = [
+    { id: 'simple', label: 'Simple', icon: Ticket, desc: 'Sin datos previos' },
+    { id: 'identificado', label: 'Identificado', icon: UserCheck, desc: 'Carga vía Excel' },
+    { id: 'portal', label: 'Portal', icon: ExternalLink, desc: 'Auto-registro' },
+];
+
+const TIPOS_ACCESO_OPTIONS = [
+    { id: 'general', label: 'Público General', icon: Users },
+    { id: 'staff', label: 'Staff / Apoyo', icon: Shield },
+    { id: 'produccion', label: 'Productores', icon: LayoutGrid },
     { id: 'logistica', label: 'Logística', icon: Car },
-    { id: 'custom', label: 'Personalizado', icon: Tag },
+    { id: 'vip', label: 'Invitados VIP', icon: Tag },
+    { id: 'custom', label: 'Otro / Personalizado', icon: Plus },
 ];
 
 const ModalNuevoLote = ({ isOpen, onClose, zonas, tiposCustom, onCreated }) => {
@@ -313,6 +324,7 @@ const ModalNuevoLote = ({ isOpen, onClose, zonas, tiposCustom, onCreated }) => {
         fecha_fin: '',
         cantidad_pases: 10,
         tipo_pase: 'simple',
+        tipo_acceso: 'general',
         tipo_acceso_custom_id: '',
         multi_vehiculo: false,
         max_vehiculos: 1,
@@ -343,7 +355,7 @@ const ModalNuevoLote = ({ isOpen, onClose, zonas, tiposCustom, onCreated }) => {
             await pasesService.crearLote({
                 ...form,
                 entidad_id: user?.entidad_id,
-                tipo_acceso_custom_id: form.tipo_pase === 'custom' ? form.tipo_acceso_custom_id : null,
+                tipo_acceso_custom_id: form.tipo_acceso === 'custom' ? form.tipo_acceso_custom_id : null,
                 zona_asignada_id: form.zona_asignada_id || null,
                 puesto_asignado_id: form.puesto_asignado_id || null,
             });
@@ -358,33 +370,57 @@ const ModalNuevoLote = ({ isOpen, onClose, zonas, tiposCustom, onCreated }) => {
     };
 
     return (
-        <Modal isOpen={isOpen} onClose={onClose} title="NUEVO LOTE DE PASES v2">
-            <div className="space-y-5">
+        <Modal isOpen={isOpen} onClose={onClose} title="NUEVO LOTE DE PASES">
+            <div className="space-y-6">
                 {/* Tipo de pase */}
                 <div>
-                    <label className="text-[9px] font-black text-text-muted uppercase tracking-widest block mb-2">Tipo de Acceso</label>
+                    <label className="text-[10px] font-black text-text-muted uppercase tracking-widest block mb-3">1. Selecciona el Tipo de Pase</label>
                     <div className="grid grid-cols-3 gap-2">
-                        {TIPOS_BASE.map(t => {
+                        {TIPOS_PASE_OPTIONS.map(t => {
                             const Icon = t.icon;
                             const sel = form.tipo_pase === t.id;
                             return (
                                 <button key={t.id} onClick={() => setForm({ ...form, tipo_pase: t.id })}
                                     className={cn(
-                                        "flex flex-col items-center gap-1.5 p-3 rounded-xl border-2 text-[9px] font-black uppercase transition-all",
-                                        sel ? 'bg-primary/10 border-primary text-primary' : 'bg-white/5 border-white/10 text-text-muted hover:border-white/20'
+                                        "flex flex-col items-center gap-1.5 p-3 rounded-xl border-2 transition-all",
+                                        sel ? 'bg-primary/10 border-primary text-primary shadow-[0_0_15px_rgba(78,222,163,0.1)]' : 'bg-white/5 border-white/10 text-text-muted hover:border-white/20'
                                     )}>
-                                    <Icon size={16} />
-                                    {t.label}
+                                    <Icon size={18} />
+                                    <span className="text-[10px] font-black uppercase">{t.label}</span>
+                                    <span className="text-[7px] opacity-60 font-bold">{t.desc}</span>
+                                </button>
+                            );
+                        })}
+                    </div>
+                </div>
+
+                {/* Tipo de acceso */}
+                <div>
+                    <label className="text-[10px] font-black text-text-muted uppercase tracking-widest block mb-3">2. Tipo de Acceso / Público</label>
+                    <div className="grid grid-cols-3 gap-2">
+                        {TIPOS_ACCESO_OPTIONS.map(t => {
+                            const Icon = t.icon;
+                            const sel = form.tipo_acceso === t.id;
+                            return (
+                                <button key={t.id} onClick={() => setForm({ ...form, tipo_acceso: t.id })}
+                                    className={cn(
+                                        "flex items-center gap-2 p-2.5 rounded-xl border-2 transition-all text-left",
+                                        sel ? 'bg-white/10 border-white/40 text-text-main shadow-lg' : 'bg-white/5 border-white/5 text-text-muted hover:bg-white/8'
+                                    )}>
+                                    <div className={cn("p-1.5 rounded-lg shrink-0", sel ? 'bg-primary/20 text-primary' : 'bg-black/20')}>
+                                        <Icon size={14} />
+                                    </div>
+                                    <span className="text-[9px] font-black uppercase leading-tight">{t.label}</span>
                                 </button>
                             );
                         })}
                     </div>
                     {/* Tipo custom selector */}
-                    {form.tipo_pase === 'custom' && tiposCustom.length > 0 && (
+                    {form.tipo_acceso === 'custom' && tiposCustom.length > 0 && (
                         <select value={form.tipo_acceso_custom_id}
                             onChange={e => setForm({ ...form, tipo_acceso_custom_id: e.target.value })}
-                            className="mt-2 w-full bg-white/5 border border-primary/30 rounded-xl px-3 py-2 text-xs font-bold text-text-main focus:border-primary/60 outline-none">
-                            <option value="">— Seleccionar tipo —</option>
+                            className="mt-3 w-full bg-white/5 border border-primary/30 rounded-xl px-3 py-2.5 text-xs font-bold text-text-main focus:border-primary/60 outline-none animate-in slide-in-from-top-2">
+                            <option value="">— Seleccionar tipo personalizado —</option>
                             {tiposCustom.map(tc => (
                                 <option key={tc.id} value={tc.id}>{tc.nombre}</option>
                             ))}
@@ -393,86 +429,88 @@ const ModalNuevoLote = ({ isOpen, onClose, zonas, tiposCustom, onCreated }) => {
                 </div>
 
                 {/* Datos del lote */}
-                <div className="grid grid-cols-2 gap-3">
-                    <div className="col-span-2">
-                        <Input label="Nombre del Evento / Lote *"
-                            value={form.nombre_evento}
-                            onChange={e => setForm({ ...form, nombre_evento: e.target.value.toUpperCase() })}
-                            placeholder="EJ: CONCIERTO ANIVERSARIO 2026" />
+                <div className="space-y-4 pt-2 border-t border-white/5">
+                    <div className="grid grid-cols-2 gap-3">
+                        <div className="col-span-2">
+                            <Input label="Nombre del Evento / Lote *"
+                                value={form.nombre_evento}
+                                onChange={e => setForm({ ...form, nombre_evento: e.target.value.toUpperCase() })}
+                                placeholder="EJ: CONCIERTO ANIVERSARIO 2026" />
+                        </div>
+                        <Input label="Fecha inicio" type="date" value={form.fecha_inicio}
+                            onChange={e => setForm({ ...form, fecha_inicio: e.target.value })} />
+                        <Input label="Fecha fin *" type="date" value={form.fecha_fin}
+                            onChange={e => setForm({ ...form, fecha_fin: e.target.value })} />
+                        <Input label="Cantidad de pases" type="number" value={form.cantidad_pases}
+                            onChange={e => setForm({ ...form, cantidad_pases: parseInt(e.target.value) || 1 })} />
+                        <Input label="Máx. accesos por pase" type="number" value={form.max_accesos_por_pase}
+                            onChange={e => setForm({ ...form, max_accesos_por_pase: parseInt(e.target.value) || 1 })} />
                     </div>
-                    <Input label="Fecha inicio" type="date" value={form.fecha_inicio}
-                        onChange={e => setForm({ ...form, fecha_inicio: e.target.value })} />
-                    <Input label="Fecha fin *" type="date" value={form.fecha_fin}
-                        onChange={e => setForm({ ...form, fecha_fin: e.target.value })} />
-                    <Input label="Cantidad de pases" type="number" value={form.cantidad_pases}
-                        onChange={e => setForm({ ...form, cantidad_pases: parseInt(e.target.value) || 1 })} />
-                    <Input label="Máx. accesos por pase" type="number" value={form.max_accesos_por_pase}
-                        onChange={e => setForm({ ...form, max_accesos_por_pase: parseInt(e.target.value) || 1 })} />
-                </div>
 
-                {/* Asignación zona/puesto */}
-                {zonas.length > 0 && (
-                    <div className="space-y-3">
-                        <label className="text-[9px] font-black text-text-muted uppercase tracking-widest block">
-                            <ParkingSquare size={10} className="inline mr-1.5 text-primary" />
-                            Zona de Estacionamiento (opcional)
-                        </label>
-                        <div className="grid grid-cols-2 gap-3">
-                            <select value={form.zona_asignada_id}
-                                onChange={e => setForm({ ...form, zona_asignada_id: e.target.value, puesto_asignado_id: '' })}
-                                className="bg-white/5 border border-white/10 rounded-xl px-3 py-2.5 text-xs font-bold text-text-main focus:border-primary/50 outline-none">
-                                <option value="">— Sin zona —</option>
-                                {zonas.map(z => (
-                                    <option key={z.id} value={z.id}>{z.nombre}</option>
-                                ))}
-                            </select>
-                            {puestosDisponibles.length > 0 && (
-                                <select value={form.puesto_asignado_id}
-                                    onChange={e => setForm({ ...form, puesto_asignado_id: e.target.value })}
+                    {/* Asignación zona/puesto */}
+                    {zonas.length > 0 && (
+                        <div className="space-y-3">
+                            <label className="text-[9px] font-black text-text-muted uppercase tracking-widest block">
+                                <ParkingSquare size={10} className="inline mr-1.5 text-primary" />
+                                Zona de Estacionamiento (opcional)
+                            </label>
+                            <div className="grid grid-cols-2 gap-3">
+                                <select value={form.zona_asignada_id}
+                                    onChange={e => setForm({ ...form, zona_asignada_id: e.target.value, puesto_asignado_id: '' })}
                                     className="bg-white/5 border border-white/10 rounded-xl px-3 py-2.5 text-xs font-bold text-text-main focus:border-primary/50 outline-none">
-                                    <option value="">— Puesto libre —</option>
-                                    {puestosDisponibles.map(p => (
-                                        <option key={p.id} value={p.id}>{p.codigo}</option>
+                                    <option value="">— Sin zona —</option>
+                                    {zonas.map(z => (
+                                        <option key={z.id} value={z.id}>{z.nombre}</option>
                                     ))}
                                 </select>
-                            )}
+                                {puestosDisponibles.length > 0 && (
+                                    <select value={form.puesto_asignado_id}
+                                        onChange={e => setForm({ ...form, puesto_asignado_id: e.target.value })}
+                                        className="bg-white/5 border border-white/10 rounded-xl px-3 py-2.5 text-xs font-bold text-text-main focus:border-primary/50 outline-none">
+                                        <option value="">— Puesto libre —</option>
+                                        {puestosDisponibles.map(p => (
+                                            <option key={p.id} value={p.id}>{p.codigo}</option>
+                                        ))}
+                                    </select>
+                                )}
+                            </div>
                         </div>
-                    </div>
-                )}
+                    )}
 
-                {/* Multi-vehículo */}
-                <button onClick={() => setForm({ ...form, multi_vehiculo: !form.multi_vehiculo })}
-                    className="w-full flex items-center justify-between p-3 rounded-xl bg-white/5 border border-white/5 hover:bg-white/8 transition-all">
-                    <div className="flex items-center gap-2">
-                        <Car size={15} className="text-text-muted" />
-                        <span className="text-[10px] font-black uppercase tracking-wider text-text-main">Acceso Multi-Vehículo</span>
-                    </div>
-                    <span className={form.multi_vehiculo ? "text-success text-[10px] font-black" : "text-text-muted/40 text-[10px] font-black"}>
-                        {form.multi_vehiculo ? "ACTIVO" : "NO"}
-                    </span>
-                </button>
-
-                {form.multi_vehiculo && (
-                    <div>
-                        <label className="text-[9px] font-black text-text-muted uppercase tracking-widest block mb-2">
-                            Máx. vehículos por pase
-                        </label>
-                        <div className="flex gap-2">
-                            {[1, 2, 3, 4].map(n => (
-                                <button key={n} onClick={() => setForm({ ...form, max_vehiculos: n })}
-                                    className={cn("flex-1 h-10 rounded-xl border-2 text-sm font-black transition-all",
-                                        form.max_vehiculos === n ? 'bg-primary/10 border-primary text-primary' : 'bg-white/5 border-white/10 text-text-muted')}>
-                                    {n}
-                                </button>
-                            ))}
+                    {/* Multi-vehículo */}
+                    <button onClick={() => setForm({ ...form, multi_vehiculo: !form.multi_vehiculo })}
+                        className="w-full flex items-center justify-between p-3 rounded-xl bg-white/5 border border-white/5 hover:bg-white/8 transition-all">
+                        <div className="flex items-center gap-2">
+                            <Car size={15} className="text-text-muted" />
+                            <span className="text-[10px] font-black uppercase tracking-wider text-text-main">Acceso Multi-Vehículo</span>
                         </div>
-                    </div>
-                )}
+                        <span className={form.multi_vehiculo ? "text-success text-[10px] font-black" : "text-text-muted/40 text-[10px] font-black"}>
+                            {form.multi_vehiculo ? "ACTIVO" : "NO"}
+                        </span>
+                    </button>
 
-                <div className="flex gap-3 pt-2 border-t border-white/5">
-                    <Boton variant="ghost" className="flex-1" onClick={onClose}>Cancelar</Boton>
+                    {form.multi_vehiculo && (
+                        <div>
+                            <label className="text-[9px] font-black text-text-muted uppercase tracking-widest block mb-2">
+                                Máx. vehículos por pase
+                            </label>
+                            <div className="flex gap-2">
+                                {[1, 2, 3, 4].map(n => (
+                                    <button key={n} onClick={() => setForm({ ...form, max_vehiculos: n })}
+                                        className={cn("flex-1 h-10 rounded-xl border-2 text-sm font-black transition-all",
+                                            form.max_vehiculos === n ? 'bg-primary/10 border-primary text-primary' : 'bg-white/5 border-white/10 text-text-muted')}>
+                                        {n}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+                </div>
+
+                <div className="flex gap-3 pt-4">
+                    <Boton variant="ghost" className="flex-1 h-12" onClick={onClose}>Cancelar</Boton>
                     <Boton onClick={handleSubmit} disabled={guardando}
-                        className="flex-[2] bg-primary text-bg-app h-12 font-black uppercase tracking-wider">
+                        className="flex-[2] bg-primary text-bg-app h-12 font-black uppercase tracking-wider shadow-lg shadow-primary/20">
                         {guardando ? <RefreshCw size={16} className="animate-spin" /> : <><Plus size={15} /> Crear Lote</>}
                     </Boton>
                 </div>

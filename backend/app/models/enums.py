@@ -32,6 +32,7 @@ class TipoAccesoPase(str, enum.Enum):
     general = "general"
     staff = "staff"
     artista = "artista"
+    produccion = "produccion"
     custom = "custom"
 
 class QRTipo(str, enum.Enum):
