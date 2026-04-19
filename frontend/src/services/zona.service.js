@@ -23,7 +23,7 @@ export const zonaService = {
      * Trae todos los puestos de estacionamiento asignados a mi entidad.
      * El backend filtra por el entidad_id del usuario autenticado.
      */
-    async getMisCuotaPuestos() {
+    async getMisPuestos() {
         const { data } = await api.get('/zonas/mi-cuota');
         return data;
     },
@@ -34,7 +34,7 @@ export const zonaService = {
     },
 
     /**
-     * Asigna un puesto de mi cuota a un socio/pase específico.
+     * Asigna un puesto de mi cupo a un socio/pase específico.
      */
     async asignarPuestoASocio(puestoId, asignacionData) {
         const { data } = await api.post(`/zonas/puestos/${puestoId}/asignar`, asignacionData);
@@ -125,7 +125,7 @@ export const zonaService = {
         return data;
     },
 
-    // ──── Asignaciones de Cuota (Comandante → Entidad) ───────────────────────
+    // ──── Asignaciones de Puestos (Comandante → Entidad) ──────────────────────
 
     async listarAsignaciones() {
         const { data } = await api.get('/zonas/asignaciones');

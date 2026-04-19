@@ -2,7 +2,7 @@ import React, { useEffect } from 'react';
 import { X } from 'lucide-react';
 import { cn } from '../../lib/utils';
 
-export const Modal = ({ isOpen, onClose, title, children, className }) => {
+export const Modal = ({ isOpen, onClose, title, children, className, balanced = false }) => {
   // Cerrar al presionar Escape
   useEffect(() => {
     const handleEsc = (e) => {
@@ -21,7 +21,10 @@ export const Modal = ({ isOpen, onClose, title, children, className }) => {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-[2000] flex items-center justify-center p-4">
+    <div className={cn(
+      "fixed inset-0 z-[2000] flex items-center justify-center p-4 transition-all duration-300",
+      balanced && "lg:pl-72"
+    )}>
       {/* Backdrop */}
       <div 
         className="absolute inset-0 bg-black/80 backdrop-blur-sm animate-in fade-in duration-300" 

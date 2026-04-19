@@ -158,7 +158,7 @@ export default function EstacionamientosEntidad() {
     const cargarPuestos = useCallback(async () => {
         setCargandoPuestos(true);
         try {
-            const data = await zonaService.getMisCuotaPuestos();
+            const data = await zonaService.getMisPuestos();
             setPuestos(data);
         } catch (e) {
             // Datos demo si la API no responde
@@ -306,7 +306,7 @@ export default function EstacionamientosEntidad() {
                     </div>
                     <div>
                         <h1 className="text-xl font-black text-text-main uppercase tracking-tight">Estacionamientos</h1>
-                        <p className="text-[9px] text-text-muted font-bold uppercase tracking-widest">{user?.entidad_nombre} — Cuota de Puestos</p>
+                        <p className="text-[9px] text-text-muted font-bold uppercase tracking-widest">{user?.entidad_nombre} — Puestos Asignados</p>
                     </div>
                 </div>
             </header>
@@ -329,7 +329,7 @@ export default function EstacionamientosEntidad() {
             {/* Tabs */}
             <div className="flex bg-bg-card/40 rounded-xl p-1 border border-white/5 gap-1">
                 {[
-                    { id: TABS.PUESTOS, label: 'Mi Cuota de Puestos', icon: ParkingSquare },
+                    { id: TABS.PUESTOS, label: 'Mis Puestos Asignados', icon: ParkingSquare },
                     { id: TABS.TIPOS, label: 'Tipos de Acceso Custom', icon: Tag },
                 ].map(t => (
                     <button
@@ -374,7 +374,7 @@ export default function EstacionamientosEntidad() {
                                 Tu entidad no tiene puestos asignados aún
                             </p>
                             <p className="text-[9px] text-text-muted/30 mt-1">
-                                Contáctate con el Comandante de la base para solicitar una cuota
+                                Contáctate con el Comandante de la base para solicitar la asignación de puestos
                             </p>
                         </div>
                     ) : (

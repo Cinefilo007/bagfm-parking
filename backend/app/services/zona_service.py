@@ -63,16 +63,31 @@ class ZonaEstacionamientoService:
     async def generar_puestos_fisicos(
         self, db: AsyncSession, zona_id: UUID, prefijo: str, cantidad: int, user_id: UUID
     ) -> List[PuestoEstacionamiento]:
-        """Crea puestos identificados en lote para una zona."""
+        """Crea puestos identificados en lote para una zona con validación de capacidad."""
+        zona = await self.get_zona(db, zona_id)
+        if not zona:
+            raise ValueError("Zona no encontrada")
+        
+        # Contar puestos actuales
+        query_count = select(func.count(PuestoEstacionamiento.id)).filter(PuestoEstacionamiento.zona_id == zona_id)
+        resultado_count = await db.execute(query_count)
+        puestos_actuales = resultado_count.scalar() or 0
+        
+        if (puestos_actuales + cantidad) > zona.capacidad_total:
+            raise ValueError(f"Capacidad excedida. Capacidad total: {zona.capacidad_total}, Puestos actuales: {puestos_actuales}, Solicitado: {cantidad}")
+
         puestos = []
         for i in range(1, cantidad + 1):
+            # El número de puesto será correlativo al total
+            num_secuencial = puestos_actuales + i
             puesto = PuestoEstacionamiento(
                 zona_id=zona_id,
-                numero_puesto=f"{prefijo}-{i:03d}",
+                numero_puesto=f"{prefijo}-{num_secuencial:03d}",
                 estado=EstadoPuesto.libre,
                 registrado_por=user_id
             )
             puestos.append(puesto)
+        
         db.add_all(puestos)
         await db.commit()
         for p in puestos:

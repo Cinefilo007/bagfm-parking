@@ -186,7 +186,7 @@ export default function DashboardEntidad() {
                              </div>
                              <div>
                                 <h5 className="text-sm font-black text-white uppercase tracking-tight italic">Estacionamientos</h5>
-                                <p className="text-[10px] text-text-muted font-bold tracking-widest uppercase opacity-60">Cuota de Puestos y Tipos de Acceso</p>
+                                <p className="text-[10px] text-text-muted font-bold tracking-widest uppercase opacity-60">Puestos Asignados y Tipos de Acceso</p>
                              </div>
                           </div>
                           <ChevronRight size={20} className="text-text-muted group-hover:translate-x-1 transition-transform" />

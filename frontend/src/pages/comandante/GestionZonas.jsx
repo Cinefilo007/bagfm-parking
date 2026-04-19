@@ -62,8 +62,9 @@ const ZonaRow = ({ zona, entidades, asignaciones, onEditar, onEliminar, onGestio
     const totalAsignado = asignacionesZona.reduce((acc, a) => acc + (a.cupo_asignado || 0), 0);
     const reservadoBase = asignacionesZona.reduce((acc, a) => acc + (a.cupo_reservado_base || 0), 0);
 
-    const puestosLibres = puestos.filter(p => p.estado === 'libre').length;
+    const puestosLibres = puestos.filter(p => p.estado === 'libre' || p.estado === 'reservado_base').length;
     const puestosOcupados = puestos.filter(p => p.estado === 'ocupado').length;
+    const puestosReservados = puestos.filter(p => p.estado === 'reservado').length;
 
     return (
         <div className="bg-bg-card/40 border border-white/5 rounded-2xl overflow-hidden transition-all">
@@ -106,14 +107,14 @@ const ZonaRow = ({ zona, entidades, asignaciones, onEditar, onEliminar, onGestio
 
                 {/* Mini stats */}
                 <div className="hidden sm:flex items-center gap-4 px-4 border-l border-white/5">
-                    <StatBadge valor={puestosLibres} label="Libres" color="text-success" />
+                    <StatBadge valor={puestosLibres} label="Libres" color="text-success" subLabel="(Inc. Base)" />
                     <StatBadge valor={puestosOcupados} label="Ocup." color="text-danger" />
-                    <StatBadge valor={puestos.filter(p => p.reservado_base || p.estado === 'reservado_base').length} label="Res. Base" color="text-warning" />
+                    <StatBadge valor={puestosReservados} label="Reserv." color="text-warning" />
                 </div>
 
                 {/* Acciones */}
                 <div className="flex items-center gap-1 shrink-0">
-                    <button onClick={() => onAsignar(zona)} title="Asignar cuota a entidad"
+                    <button onClick={() => onAsignar(zona)} title="Asignar puestos a entidad"
                         className="p-2 rounded-lg hover:bg-primary/10 text-text-muted hover:text-primary transition-all">
                         <Building2 size={15} />
                     </button>
@@ -143,7 +144,7 @@ const ZonaRow = ({ zona, entidades, asignaciones, onEditar, onEliminar, onGestio
                     {asignacionesZona.length > 0 ? (
                         <div className="space-y-2">
                             <p className="text-[8px] font-black uppercase tracking-widest text-text-muted/50 flex items-center gap-1.5">
-                                <Building2 size={9} /> Cuotas por entidad
+                                <Building2 size={9} /> Puestos asignados por entidad
                             </p>
                             {asignacionesZona.map(asig => {
                                 const entidad = entidades.find(e => e.id === asig.entidad_id);
@@ -164,7 +165,7 @@ const ZonaRow = ({ zona, entidades, asignaciones, onEditar, onEliminar, onGestio
                             })}
                         </div>
                     ) : (
-                        <p className="text-[9px] text-text-muted/40 italic">Sin cuotas asignadas a entidades</p>
+                        <p className="text-[9px] text-text-muted/40 italic">Sin puestos asignados a entidades</p>
                     )}
 
                     {/* Puestos */}
@@ -235,7 +236,7 @@ export default function GestionZonas() {
     const [batchConfig, setBatchConfig] = useState({ prefijo: '', cantidad: 0 });
     const [creandoBatch, setCreandoBatch] = useState(false);
 
-    // Asignación cuota
+    // Asignación puestos
     const [formAsig, setFormAsig] = useState({ entidad_id: '', cupo_asignado: 1, cupo_reservado_base: 0, notas: '' });
     const [asignando, setAsignando] = useState(false);
 
@@ -337,7 +338,6 @@ export default function GestionZonas() {
 
     const abrirModalPuestos = async (zona) => {
         setZonaActiva(zona);
-        setNuevoCodigo('');
         try {
             const puestos = await zonaService.getPuestosZona(zona.id);
             setPuestosZona(puestos);
@@ -347,29 +347,17 @@ export default function GestionZonas() {
         setModalPuestos(true);
     };
 
-    const handleCrearPuesto = async () => {
-        if (!nuevoCodigo.trim()) { toast.error('Código requerido'); return; }
-        setCreandoPuesto(true);
-        try {
-            const nuevo = await zonaService.crearPuesto(zonaActiva.id, {
-                codigo: nuevoCodigo.toUpperCase(),
-                latitud: nuevaLatPuesto || null,
-                longitud: nuevaLonPuesto || null,
-            });
-            setPuestosZona(prev => [...prev, nuevo]);
-            setNuevoCodigo('');
-            setNuevaLatPuesto('');
-            setNuevaLonPuesto('');
-            toast.success(`Puesto ${nuevo.codigo} creado`);
-        } catch (e) {
-            toast.error('Error al crear puesto');
-        } finally {
-            setCreandoPuesto(false);
-        }
-    };
-
     const handleCrearBatch = async () => {
         if (!batchConfig.prefijo.trim() || !batchConfig.cantidad) { toast.error('Datos incompletos'); return; }
+        
+        const cantidad = parseInt(batchConfig.cantidad);
+        const totalSimulado = puestosZona.length + cantidad;
+        
+        if (totalSimulado > zonaActiva.capacidad_total) {
+            toast.error(`Error: Se excedería la capacidad total (${zonaActiva.capacidad_total}). Disponibles: ${zonaActiva.capacidad_total - puestosZona.length}`);
+            return;
+        }
+
         setCreandoBatch(true);
         try {
             await api.post(`/zonas/${zonaActiva.id}/puestos`, {
@@ -429,16 +417,16 @@ export default function GestionZonas() {
         setModalAsignar(true);
     };
 
-    const handleAsignarCuota = async () => {
+    const handleAsignarPuestos = async () => {
         if (!formAsig.entidad_id) { toast.error('Selecciona una entidad'); return; }
         setAsignando(true);
         try {
             await zonaService.crearAsignacion({ ...formAsig, zona_id: zonaActiva.id });
-            toast.success('Cuota asignada');
+            toast.success('Puestos asignados correctamente');
             setModalAsignar(false);
             cargarDatos();
         } catch (e) {
-            toast.error(e.response?.data?.detail || 'Error al asignar cuota');
+            toast.error(e.response?.data?.detail || 'Error al asignar puestos');
         } finally {
             setAsignando(false);
         }
@@ -469,6 +457,8 @@ export default function GestionZonas() {
     // ── Stats globales ───────────────────────────────────────────────────────
     const totalCapacidad = zonas.reduce((acc, z) => acc + (z.capacidad_total || 0), 0);
     const totalPuestos = zonas.reduce((acc, z) => acc + (z.puestos?.length || 0), 0);
+    const totalReservados = zonas.reduce((acc, z) => acc + (z.puestos?.filter(p => p.estado === 'reservado' || p.estado === 'reservado_base').length || 0), 0);
+
 
     // ── Render ───────────────────────────────────────────────────────────────
     return (
@@ -504,11 +494,12 @@ export default function GestionZonas() {
             </header>
 
             {/* KPIs */}
-            <div className="grid grid-cols-3 gap-3">
+            <div className="grid grid-cols-4 gap-3">
                 {[
                     { label: 'Zonas Activas', valor: zonas.length, color: 'text-primary', icon: ParkingSquare },
                     { label: 'Cap. Total', valor: totalCapacidad || '—', color: 'text-success', icon: Hash },
                     { label: 'Puestos Creados', valor: totalPuestos, color: 'text-sky-400', icon: LayoutGrid },
+                    { label: 'Reservados', valor: totalReservados, color: 'text-warning', icon: Shield },
                 ].map(s => (
                     <Card key={s.label} className="p-4 rounded-2xl border-white/5 flex items-center gap-3">
                         <div className="w-9 h-9 bg-white/5 rounded-xl flex items-center justify-center shrink-0">
@@ -526,7 +517,7 @@ export default function GestionZonas() {
             <div className="flex items-start gap-3 p-3 bg-primary/5 border border-primary/15 rounded-xl">
                 <Shield size={16} className="text-primary shrink-0 mt-0.5" />
                 <p className="text-[9px] text-text-muted leading-relaxed">
-                    Crea zonas de estacionamiento y asigna cuotas de puestos a las entidades alojadas. Puedes configurar el tiempo límite de llegada por zona, agregar puestos identificados con código y coordenadas GPS, y reservar puestos para el personal de la base.
+                    Crea zonas de estacionamiento y asigna puestos a las entidades alojadas. Puedes configurar el tiempo límite de llegada por zona, generar puestos por lotes habilitando georreferenciación GPS individual, y reservar puestos para el personal de la base.
                 </p>
             </div>
 
@@ -561,7 +552,7 @@ export default function GestionZonas() {
             )}
 
             {/* ── MODAL: Crear/Editar Zona ── */}
-            <Modal isOpen={modalZona} onClose={() => setModalZona(false)} title={editandoZona ? 'EDITAR ZONA' : 'NUEVA ZONA'}>
+            <Modal isOpen={modalZona} onClose={() => setModalZona(false)} title={editandoZona ? 'EDITAR ZONA' : 'NUEVA ZONA'} balanced={true}>
                 <div className="space-y-4">
                     <div className="grid grid-cols-2 gap-4">
                         <div className="col-span-2">
@@ -617,42 +608,24 @@ export default function GestionZonas() {
             </Modal>
 
             {/* ── MODAL: Gestión de Puestos ── */}
-            <Modal isOpen={modalPuestos} onClose={() => setModalPuestos(false)} title={`PUESTOS — ${zonaActiva?.nombre}`}>
+            <Modal isOpen={modalPuestos} onClose={() => setModalPuestos(false)} title={`GESTIÓN DE PUESTOS — ${zonaActiva?.nombre}`} balanced={true}>
                 <div className="space-y-4">
-                    <p className="text-[9px] text-text-muted uppercase tracking-widest">
-                        Agrega puestos identificados con código y coordenadas opcionales.
-                    </p>
-                    {/* Formulario nuevo puesto individual */}
-                    <div className="p-3 bg-white/5 rounded-xl border border-white/5 space-y-3">
-                        <p className="text-[7px] font-black text-primary uppercase tracking-widest">Añadir Individual</p>
-                        <div className="grid grid-cols-3 gap-2">
-                            <div className="col-span-1">
-                                <Input label="Código *" value={nuevoCodigo}
-                                    onChange={e => setNuevoCodigo(e.target.value.toUpperCase())}
-                                    placeholder="A-01" />
-                            </div>
-                            <div className="col-span-1">
-                                <Input label="Latitud" value={nuevaLatPuesto}
-                                    onChange={e => setNuevaLatPuesto(e.target.value)}
-                                    placeholder="10.1234" />
-                            </div>
-                            <div className="col-span-1">
-                                <Input label="Longitud" value={nuevaLonPuesto}
-                                    onChange={e => setNuevaLonPuesto(e.target.value)}
-                                    placeholder="-66.987" />
-                            </div>
+                    <div className="flex items-center justify-between">
+                        <p className="text-[9px] text-text-muted uppercase tracking-widest">
+                            Generación masiva y georreferenciación de puestos físicos.
+                        </p>
+                        <div className="text-[10px] font-black text-primary bg-primary/10 px-2 py-1 rounded-lg border border-primary/20">
+                           CAPACIDAD: {puestosZona.length} / {zonaActiva?.capacidad_total || 0}
                         </div>
-                        <Boton onClick={handleCrearPuesto} disabled={creandoPuesto || !nuevoCodigo.trim()}
-                            className="w-full h-9 bg-primary/20 text-primary border border-primary/30 rounded-xl text-[10px] font-black uppercase gap-1.5">
-                            {creandoPuesto ? <RefreshCw size={12} className="animate-spin" /> : <Plus size={12} />}
-                            Confirmar Puesto
-                        </Boton>
                     </div>
 
                     {/* Formulario LOTE (Batch) */}
-                    <div className="p-3 bg-primary/5 rounded-xl border border-primary/20 space-y-3">
-                        <p className="text-[7px] font-black text-primary uppercase tracking-widest">Creación por Lote (Batch)</p>
-                        <div className="grid grid-cols-2 gap-2">
+                    <div className="p-4 bg-primary/5 rounded-2xl border border-primary/20 space-y-4 shadow-inner">
+                        <div className="flex items-center gap-2">
+                             <Zap size={14} className="text-primary" />
+                             <p className="text-[8px] font-black text-primary uppercase tracking-[0.2em]">Generación por Lote (Optimizado)</p>
+                        </div>
+                        <div className="grid grid-cols-2 gap-3">
                             <Input label="Prefijo (Ex: A)" value={batchConfig.prefijo}
                                 onChange={e => setBatchConfig({ ...batchConfig, prefijo: e.target.value.toUpperCase() })}
                                 placeholder="A, B, VIP..." />
@@ -661,9 +634,9 @@ export default function GestionZonas() {
                                 placeholder="Ej: 50" />
                         </div>
                         <Boton onClick={handleCrearBatch} disabled={creandoBatch || !batchConfig.prefijo || !batchConfig.cantidad}
-                            className="w-full h-9 bg-primary text-bg-app rounded-xl text-[10px] font-black uppercase gap-1.5 shadow-lg shadow-primary/10">
-                            {creandoBatch ? <RefreshCw size={12} className="animate-spin" /> : <Zap size={12} />}
-                            Generar Batch de Puestos
+                            className="w-full h-11 bg-primary text-bg-app rounded-xl text-[11px] font-black uppercase gap-2 shadow-lg shadow-primary/20 hover:scale-[1.02] transition-all">
+                            {creandoBatch ? <RefreshCw size={14} className="animate-spin" /> : <Plus size={14} />}
+                            Generar Lote de Puestos
                         </Boton>
                     </div>
 
@@ -683,8 +656,8 @@ export default function GestionZonas() {
                 </div>
             </Modal>
 
-            {/* ── MODAL: Asignar Cuota a Entidad ── */}
-            <Modal isOpen={modalAsignar} onClose={() => setModalAsignar(false)} title={`ASIGNAR CUOTA — ${zonaActiva?.nombre}`}>
+            {/* ── MODAL: Asignar Puestos a Entidad ── */}
+            <Modal isOpen={modalAsignar} onClose={() => setModalAsignar(false)} title={`ASIGNAR PUESTOS — ${zonaActiva?.nombre}`} balanced={true}>
                 <div className="space-y-4">
                     <div className="p-3 bg-primary/5 border border-primary/20 rounded-xl">
                         <p className="text-[9px] text-text-muted">
@@ -703,28 +676,28 @@ export default function GestionZonas() {
                         </select>
                     </div>
                     <div className="grid grid-cols-2 gap-4">
-                        <Input label="Cupo asignado" type="number" value={formAsig.cupo_asignado}
+                        <Input label="Puestos asignados" type="number" value={formAsig.cupo_asignado}
                             onChange={e => setFormAsig({ ...formAsig, cupo_asignado: parseInt(e.target.value) })}
                             placeholder="Ej: 15" />
                         <Input label="Reservado base" type="number" value={formAsig.cupo_reservado_base}
                             onChange={e => setFormAsig({ ...formAsig, cupo_reservado_base: parseInt(e.target.value) || 0 })}
                             placeholder="0" />
                     </div>
-                    <Input label="Notas (opcional)" value={formAsig.notas}
-                        onChange={e => setFormAsig({ ...formAsig, notas: e.target.value })}
+                    <Input label="Notas (opcional)" value={formAsig.notes}
+                        onChange={e => setFormAsig({ ...formAsig, notes: e.target.value })}
                         placeholder="Observaciones..." />
                     <div className="flex gap-3 pt-2 border-t border-white/5">
                         <Boton variant="ghost" className="flex-1" onClick={() => setModalAsignar(false)}>Cancelar</Boton>
-                        <Boton onClick={handleAsignarCuota} disabled={asignando || !formAsig.entidad_id}
+                        <Boton onClick={handleAsignarPuestos} disabled={asignando || !formAsig.entidad_id}
                             className="flex-[2] bg-primary text-bg-app h-12 font-black uppercase">
-                            {asignando ? <RefreshCw size={16} className="animate-spin" /> : <><Building2 size={15} /> Asignar Cuota</>}
+                            {asignando ? <RefreshCw size={16} className="animate-spin" /> : <><Building2 size={15} /> Asignar Puestos</>}
                         </Boton>
                     </div>
                 </div>
             </Modal>
 
             {/* ── MODAL: Ajustar Tiempo Límite ── */}
-            <Modal isOpen={modalTiempo} onClose={() => setModalTiempo(false)} title={`TIEMPO LÍMITE — ${zonaActiva?.nombre}`}>
+            <Modal isOpen={modalTiempo} onClose={() => setModalTiempo(false)} title={`TIEMPO LÍMITE — ${zonaActiva?.nombre}`} balanced={true}>
                 <div className="space-y-5">
                     <div className="p-3 bg-warning/5 border border-warning/20 rounded-xl flex items-start gap-3">
                         <AlertTriangle size={16} className="text-warning shrink-0 mt-0.5" />
