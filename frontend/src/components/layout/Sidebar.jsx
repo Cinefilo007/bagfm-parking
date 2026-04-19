@@ -1,8 +1,7 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
 import { 
-  ShieldCheck, Users, ClipboardList, 
-  CalendarRange, LogOut, Settings,
+  LogOut, Settings, ShieldCheck,
   LayoutDashboard, UserCircle, Map as MapIcon,
   Camera, Sun, Moon, UserCog, ParkingCircle, Activity, Radio, AlertTriangle, Palette,
   ClipboardList, CalendarRange, Building2
