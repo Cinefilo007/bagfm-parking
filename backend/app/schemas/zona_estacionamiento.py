@@ -20,6 +20,20 @@ class ZonaEstacionamientoBase(BaseModel):
 class ZonaEstacionamientoCrear(ZonaEstacionamientoBase):
     pass
 
+class ZonaEstacionamientoActualizar(BaseModel):
+    nombre: Optional[str] = None
+    capacidad_total: Optional[int] = None
+    usa_puestos_identificados: Optional[bool] = None
+    tipo: Optional[str] = None
+    descripcion_ubicacion: Optional[str] = None
+    latitud: Optional[float] = None
+    longitud: Optional[float] = None
+    punto_acceso_lat: Optional[float] = None
+    punto_acceso_lon: Optional[float] = None
+    radio_cobertura: Optional[int] = None
+    tiempo_limite_llegada_min: Optional[int] = None
+    activo: Optional[bool] = None
+
 class ZonaEstacionamientoSalida(ZonaEstacionamientoBase):
     id: UUID
     ocupacion_actual: int

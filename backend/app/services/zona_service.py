@@ -27,6 +27,23 @@ class ZonaEstacionamientoService:
         await db.refresh(db_zona)
         return db_zona
 
+    async def actualizar_zona(
+        self, db: AsyncSession, zona_id: UUID, zona_in: dict
+    ) -> Optional[ZonaEstacionamiento]:
+        db_zona = await self.get_zona(db, zona_id)
+        if not db_zona:
+            return None
+        
+        # Eliminar nulos del dict para solo actualizar lo que viene
+        update_data = {k: v for k, v in zona_in.items() if v is not None}
+        
+        for key, value in update_data.items():
+            setattr(db_zona, key, value)
+            
+        await db.commit()
+        await db.refresh(db_zona)
+        return db_zona
+
     async def get_zona(self, db: AsyncSession, zona_id: UUID) -> Optional[ZonaEstacionamiento]:
         resultado = await db.execute(select(ZonaEstacionamiento).filter(ZonaEstacionamiento.id == zona_id))
         return resultado.scalars().first()

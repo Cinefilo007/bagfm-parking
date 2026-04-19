@@ -8,7 +8,7 @@ from app.core.dependencias import obtener_usuario_actual, require_rol
 from app.models.usuario import Usuario
 from app.services.zona_service import zona_service
 from app.schemas.zona_estacionamiento import (
-    ZonaEstacionamientoSalida, ZonaEstacionamientoCrear
+    ZonaEstacionamientoSalida, ZonaEstacionamientoCrear, ZonaEstacionamientoActualizar
 )
 from app.schemas.asignacion_zona import (
     AsignacionZonaCrear, AsignacionZonaSalida
@@ -24,9 +24,21 @@ async def crear_zona(
     current_user: Usuario = Depends(require_rol(["COMANDANTE", "ADMIN_BASE"]))
 ):
     try:
-        return await zona_service.crear_zona_estacionamiento(db, dict(datos), current_user.id)
+        return await zona_service.crear_zona_estacionamiento(db, datos.model_dump(), current_user.id)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
+
+@router.patch("/{zona_id}", response_model=ZonaEstacionamientoSalida)
+async def actualizar_zona(
+    zona_id: UUID,
+    datos: ZonaEstacionamientoActualizar,
+    db: AsyncSession = Depends(obtener_db),
+    current_user: Usuario = Depends(require_rol(["COMANDANTE", "ADMIN_BASE"]))
+):
+    zona = await zona_service.actualizar_zona(db, zona_id, datos.model_dump(exclude_unset=True))
+    if not zona:
+        raise HTTPException(status_code=404, detail="Zona no encontrada")
+    return zona
 
 @router.get("", response_model=List[ZonaEstacionamientoSalida])
 async def listar_zonas(

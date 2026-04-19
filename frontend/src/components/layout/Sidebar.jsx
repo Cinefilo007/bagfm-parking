@@ -123,8 +123,8 @@ export const Sidebar = () => {
       </nav>
 
       {/* Bottom Actions */}
-      <div className="mt-auto p-6 flex flex-col gap-2">
-          <div className="px-4 py-2 mb-2 border-t border-bg-high/10" />
+      <div className="mt-auto p-4 flex flex-col gap-1">
+          <div className="px-4 py-1 border-t border-bg-high/10" />
           <button 
             onClick={toggleTheme}
             className="flex items-center gap-3 px-4 py-2.5 rounded-lg text-text-muted hover:bg-bg-high/20 hover:text-text-sec transition-all group"

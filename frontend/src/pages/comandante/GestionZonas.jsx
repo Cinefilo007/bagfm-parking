@@ -79,7 +79,7 @@ const ZonaRow = ({ zona, entidades, asignaciones, onEditar, onEliminar, onGestio
                     </div>
                     <div className="flex items-center gap-3 mt-0.5">
                         <span className="text-[9px] text-text-muted flex items-center gap-1">
-                            <Hash size={9} /> Cap: {zona.capacidad || '∞'}
+                            <Hash size={9} /> Cap: {zona.capacidad_total || '∞'}
                         </span>
                         {zona.tiempo_limite_llegada_min && (
                             <span className="text-[9px] text-text-muted flex items-center gap-1">
@@ -190,7 +190,7 @@ const ZonaRow = ({ zona, entidades, asignaciones, onEditar, onEliminar, onGestio
 // ──── Página Principal ────────────────────────────────────────────────────────
 
 const FORM_ZONA_INICIAL = {
-    nombre: '', descripcion: '', capacidad: '',
+    nombre: '', descripcion_ubicacion: '', capacidad_total: '',
     latitud: '', longitud: '', tiempo_limite_llegada_min: 15,
 };
 
@@ -243,14 +243,14 @@ export default function GestionZonas() {
             // Demo fallback
             setZonas([
                 {
-                    id: 'z1', nombre: 'Zona VIP Norte', capacidad: 20, tiempo_limite_llegada_min: 15, es_perimetral: false, latitud: '10.1234', longitud: '-66.9876', puestos: [
+                    id: 'z1', nombre: 'Zona VIP Norte', capacidad_total: 20, tiempo_limite_llegada_min: 15, es_perimetral: false, latitud: '10.1234', longitud: '-66.9876', puestos: [
                         { id: 'p1', codigo: 'A-01', estado: 'libre' },
                         { id: 'p2', codigo: 'A-02', estado: 'ocupado' },
                         { id: 'p3', codigo: 'A-03', estado: 'libre' },
                     ]
                 },
-                { id: 'z2', nombre: 'Parqueo Logístico', capacidad: 50, tiempo_limite_llegada_min: 25, es_perimetral: true, puestos: [] },
-                { id: 'z3', nombre: 'Zona Staff', capacidad: 30, tiempo_limite_llegada_min: 15, es_perimetral: false, puestos: [] },
+                { id: 'z2', nombre: 'Parqueo Logístico', capacidad_total: 50, tiempo_limite_llegada_min: 25, es_perimetral: true, puestos: [] },
+                { id: 'z3', nombre: 'Zona Staff', capacidad_total: 30, tiempo_limite_llegada_min: 15, es_perimetral: false, puestos: [] },
             ]);
             setEntidades([
                 { id: 'e1', nombre: 'CÍRCULO MILITAR VEN' },
@@ -272,8 +272,8 @@ export default function GestionZonas() {
     const abrirModalZona = (zona = null) => {
         setEditandoZona(zona);
         setFormZona(zona ? {
-            nombre: zona.nombre, descripcion: zona.descripcion || '',
-            capacidad: zona.capacidad || '', es_perimetral: zona.es_perimetral,
+            nombre: zona.nombre, descripcion_ubicacion: zona.descripcion_ubicacion || '',
+            capacidad_total: zona.capacidad_total || '', es_perimetral: zona.es_perimetral,
             latitud: zona.latitud || '', longitud: zona.longitud || '',
             tiempo_limite_llegada_min: zona.tiempo_limite_llegada_min || 15,
         } : FORM_ZONA_INICIAL);
@@ -286,9 +286,9 @@ export default function GestionZonas() {
         try {
             const datos = {
                 ...formZona,
-                capacidad: formZona.capacidad ? parseInt(formZona.capacidad) : null,
-                latitud: formZona.latitud || null,
-                longitud: formZona.longitud || null,
+                capacidad_total: formZona.capacidad_total ? parseInt(formZona.capacidad_total) : 0,
+                latitud: formZona.latitud ? parseFloat(formZona.latitud) : null,
+                longitud: formZona.longitud ? parseFloat(formZona.longitud) : null,
                 tiempo_limite_llegada_min: parseInt(formZona.tiempo_limite_llegada_min),
             };
             if (editandoZona) {
@@ -409,7 +409,7 @@ export default function GestionZonas() {
     };
 
     // ── Stats globales ───────────────────────────────────────────────────────
-    const totalCapacidad = zonas.reduce((acc, z) => acc + (z.capacidad || 0), 0);
+    const totalCapacidad = zonas.reduce((acc, z) => acc + (z.capacidad_total || 0), 0);
     const totalPuestos = zonas.reduce((acc, z) => acc + (z.puestos?.length || 0), 0);
 
     // ── Render ───────────────────────────────────────────────────────────────
@@ -511,8 +511,8 @@ export default function GestionZonas() {
                                 onChange={e => setFormZona({ ...formZona, nombre: e.target.value })}
                                 placeholder="Ej: Zona VIP Norte, Parqueo Logístico..." />
                         </div>
-                        <Input label="Capacidad" type="number" value={formZona.capacidad}
-                            onChange={e => setFormZona({ ...formZona, capacidad: e.target.value })}
+                        <Input label="Capacidad *" type="number" value={formZona.capacidad_total}
+                            onChange={e => setFormZona({ ...formZona, capacidad_total: e.target.value })}
                             placeholder="Ej: 50" />
                         <Input label="Tiempo Límite (min)" type="number" value={formZona.tiempo_limite_llegada_min}
                             onChange={e => setFormZona({ ...formZona, tiempo_limite_llegada_min: e.target.value })}
@@ -524,8 +524,8 @@ export default function GestionZonas() {
                             onChange={e => setFormZona({ ...formZona, longitud: e.target.value })}
                             placeholder="-66.987654" />
                         <div className="col-span-2">
-                            <Input label="Descripción" value={formZona.descripcion}
-                                onChange={e => setFormZona({ ...formZona, descripcion: e.target.value })}
+                            <Input label="Descripción de Ubicación" value={formZona.descripcion_ubicacion}
+                                onChange={e => setFormZona({ ...formZona, descripcion_ubicacion: e.target.value })}
                                 placeholder="Descripción breve de la zona..." />
                         </div>
                     </div>

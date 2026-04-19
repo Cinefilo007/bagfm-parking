@@ -104,7 +104,7 @@ export const zonaService = {
      * Ajusta tiempo límite de llegada en una zona (temporal, reversible).
      */
     async ajustarTiempoLimite(zonaId, minutos) {
-        const { data } = await api.put(`/zonas/${zonaId}/tiempo-limite`, { minutos });
+        const { data } = await api.put(`/zonas/${zonaId}/tiempo-llegada`, { minutos });
         return data;
     },
 

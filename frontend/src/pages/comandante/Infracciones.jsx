@@ -10,9 +10,10 @@ import {
     CheckCircle2, XCircle, Filter, Search,
     Car, ChevronUp, Clock, Users, Hash,
     Ban, Scale, ChevronRight, Flame, Eye,
-    TrendingUp, Map
+    TrendingUp, Map, Plus, Upload, Trash2, Camera, Info
 } from 'lucide-react';
 import api from '../../services/api';
+import { useNotifications } from '../../hooks/useNotifications';
 
 // ──── Constantes ──────────────────────────────────────────────────────────────
 
@@ -150,6 +151,7 @@ const FILTROS_ESTADO = ['todas', 'activa', 'resuelta', 'apelada'];
 
 export default function DashboardInfracciones() {
     const { user } = useAuthStore();
+    const { lastNotification, setLastNotification } = useNotifications();
     const [infracciones, setInfracciones] = useState([]);
     const [listaNegra, setListaNegra] = useState([]);
     const [cargando, setCargando] = useState(true);
@@ -163,16 +165,34 @@ export default function DashboardInfracciones() {
     const [accionResolver, setAccionResolver] = useState('resolver');
     const [notasResolucion, setNotasResolucion] = useState('');
     const [resolviendo, setResolviendo] = useState(false);
+    const [zonas, setZonas] = useState([]);
+
+    // Modal Reporte (Nuevo)
+    const [modalReporte, setModalReporte] = useState(false);
+    const [enviandoReporte, setEnviandoReporte] = useState(false);
+    const [archivosEvidencia, setArchivosEvidencia] = useState([]);
+    const [previews, setPreviews] = useState([]);
+    const [formReporte, setFormReporte] = useState({
+        tipo: 'mal_estacionado',
+        gravedad: 'leve',
+        descripcion: '',
+        vehiculo_placa: '',
+        zona_id: '',
+        bloquea_salida: true,
+        bloquea_acceso_futuro: false
+    });
 
     const cargarDatos = useCallback(async () => {
         setCargando(true);
         try {
-            const [infData, lnData] = await Promise.allSettled([
+            const [infData, lnData, zonasData] = await Promise.allSettled([
                 api.get('/infracciones/').then(r => r.data),
                 api.get('/infracciones/lista-negra').then(r => r.data),
+                api.get('/zonas/').then(r => r.data),
             ]);
             if (infData.status === 'fulfilled') setInfracciones(infData.value);
             if (lnData.status === 'fulfilled') setListaNegra(lnData.value);
+            if (zonasData.status === 'fulfilled') setZonas(zonasData.value);
         } catch (_) {
             // Demo
             setInfracciones([
@@ -192,9 +212,20 @@ export default function DashboardInfracciones() {
 
     useEffect(() => {
         cargarDatos();
+        // El polling de 30s queda como respaldo, pero el WS es prioridad
         const iv = setInterval(cargarDatos, 30000);
         return () => clearInterval(iv);
     }, [cargarDatos]);
+
+    // Escucha de WebSocket para actualizaciones en tiempo real
+    useEffect(() => {
+        if (lastNotification?.evento === 'INFRACCION_REGISTRADA' || 
+            lastNotification?.evento === 'INFRACCION_RESUELTA' ||
+            lastNotification?.evento === 'INFRACCION_ESCALADA') {
+            cargarDatos();
+            setLastNotification(null); // Limpiar para no disparar de nuevo
+        }
+    }, [lastNotification, cargarDatos, setLastNotification]);
 
     const handleAbrirResolver = (inf, accion) => {
         setInfSeleccionada(inf);
@@ -210,6 +241,70 @@ export default function DashboardInfracciones() {
             cargarDatos();
         } catch (e) {
             toast.error('Error al escalar');
+        }
+    };
+
+    const handleFileChange = (e) => {
+        const selectedFiles = Array.from(e.target.files);
+        if (archivosEvidencia.length + selectedFiles.length > 3) {
+            toast.error("Máximo 3 fotos de evidencia permitidas");
+            return;
+        }
+
+        const newFiles = [...archivosEvidencia, ...selectedFiles].slice(0, 3);
+        setArchivosEvidencia(newFiles);
+
+        // Generar previews
+        const newPreviews = newFiles.map(file => URL.createObjectURL(file));
+        setPreviews(newPreviews);
+    };
+
+    const removeFile = (index) => {
+        const newFiles = archivosEvidencia.filter((_, i) => i !== index);
+        setArchivosEvidencia(newFiles);
+        const newPreviews = previews.filter((_, i) => i !== index);
+        setPreviews(newPreviews);
+    };
+
+    const handleEnviarReporte = async () => {
+        if (!formReporte.descripcion) return toast.error("La descripción es obligatoria");
+        
+        setEnviandoReporte(true);
+        const formData = new FormData();
+        formData.append('tipo', formReporte.tipo);
+        formData.append('gravedad', formReporte.gravedad);
+        formData.append('descripcion', formReporte.descripcion);
+        if (formReporte.vehiculo_placa) formData.append('vehiculo_placa', formReporte.vehiculo_placa);
+        if (formReporte.zona_id) formData.append('zona_id', formReporte.zona_id);
+        formData.append('bloquea_salida', formReporte.bloquea_salida);
+        formData.append('bloquea_acceso_futuro', formReporte.bloquea_acceso_futuro);
+        
+        archivosEvidencia.forEach(file => {
+            formData.append('archivos', file);
+        });
+
+        try {
+            await api.post('/infracciones/', formData, {
+                headers: { 'Content-Type': 'multipart/form-data' }
+            });
+            toast.success("Infracción reportada exitosamente");
+            setModalReporte(false);
+            setFormReporte({
+                tipo: 'mal_estacionado',
+                gravedad: 'leve',
+                descripcion: '',
+                vehiculo_placa: '',
+                zona_id: '',
+                bloquea_salida: true,
+                bloquea_acceso_futuro: false
+            });
+            setArchivosEvidencia([]);
+            setPreviews([]);
+            cargarDatos();
+        } catch (error) {
+            toast.error("Error al enviar el reporte");
+        } finally {
+            setEnviandoReporte(false);
         }
     };
 
@@ -261,9 +356,8 @@ export default function DashboardInfracciones() {
     return (
         <div className="p-4 md:p-6 space-y-6 pb-24 max-w-[1400px] mx-auto animate-in fade-in duration-500">
 
-            {/* Header Táctico Obligatorio */}
             <header className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 
-                               bg-bg-card/30 p-4 md:p-5 rounded-2xl border border-white/5">
+                               bg-bg-card/30 p-4 md:p-5 rounded-2xl border border-white/5 w-full">
                 <div className="min-w-0">
                     <h1 className="text-2xl font-black text-text-main flex items-center gap-3 tracking-tight">
                         <div className="p-2 bg-danger/10 rounded-xl shrink-0">
@@ -278,14 +372,11 @@ export default function DashboardInfracciones() {
                 </div>
 
                 <div className="flex items-center gap-2 w-full sm:w-auto self-end">
-                    <button onClick={cargarDatos} className="h-11 w-11 flex items-center justify-center rounded-xl bg-bg-high/20 hover:bg-bg-high/40 transition-all border border-white/5">
-                        <RefreshCw size={18} className={cn("text-text-muted", cargando && 'animate-spin')} />
-                    </button>
-                    <Boton onClick={cargarDatos} className="gap-2 h-11 px-6 w-full sm:w-auto shrink-0 
-                                                        bg-danger text-white font-black uppercase tracking-widest text-[11px]
+                    <Boton onClick={() => setModalReporte(true)} className="gap-2 h-11 px-6 w-full sm:w-auto shrink-0 
+                                                        bg-primary text-bg-app font-black uppercase tracking-widest text-[11px]
                                                         rounded-xl shadow-tactica hover:scale-[1.02] active:scale-[0.98] transition-all">
-                        <RefreshCw size={16} />
-                        <span>Sincronizar Radar</span>
+                        <Plus size={16} />
+                        <span>Reportar Infracción</span>
                     </Boton>
                 </div>
             </header>
@@ -453,6 +544,147 @@ export default function DashboardInfracciones() {
                         </div>
                     </div>
                 )}
+            </Modal>
+
+            {/* ── MODAL: Reportar Nueva Infracción ── */}
+            <Modal isOpen={modalReporte} onClose={() => setModalReporte(false)} title="REPORTAR NUEVA INFRACCIÓN" className="max-w-2xl">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {/* Columna Izquierda: Datos */}
+                    <div className="space-y-4">
+                        <div>
+                            <label className="text-[10px] font-black text-text-muted uppercase tracking-widest block mb-2">Vehículo y Ubicación</label>
+                            <div className="space-y-3">
+                                <div className="relative">
+                                    <Car className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted" size={16} />
+                                    <input 
+                                        type="text" 
+                                        placeholder="PLACA DEL VEHÍCULO"
+                                        value={formReporte.vehiculo_placa}
+                                        onChange={e => setFormReporte({...formReporte, vehiculo_placa: e.target.value.toUpperCase()})}
+                                        className="w-full h-11 bg-white/5 border border-white/10 rounded-xl pl-10 pr-4 text-sm font-bold text-text-main focus:border-primary/50 outline-none transition-all uppercase"
+                                    />
+                                </div>
+                                <select 
+                                    className="w-full h-11 bg-white/5 border border-white/10 rounded-xl px-4 text-sm font-bold text-text-main focus:border-primary/50 outline-none"
+                                    value={formReporte.zona_id}
+                                    onChange={e => setFormReporte({...formReporte, zona_id: e.target.value})}
+                                >
+                                    <option value="" className="bg-bg-modal">Seleccionar Zona (Opcional)</option>
+                                    {zonas.map(z => <option key={z.id} value={z.id} className="bg-bg-modal">{z.nombre}</option>)}
+                                </select>
+                            </div>
+                        </div>
+
+                        <div>
+                            <label className="text-[10px] font-black text-text-muted uppercase tracking-widest block mb-2">Clasificación de Falta</label>
+                            <div className="grid grid-cols-1 gap-3">
+                                <select 
+                                    className="w-full h-11 bg-white/5 border border-white/10 rounded-xl px-4 text-sm font-bold text-text-main focus:border-primary/50 outline-none uppercase"
+                                    value={formReporte.tipo}
+                                    onChange={e => setFormReporte({...formReporte, tipo: e.target.value})}
+                                >
+                                    <option value="mal_estacionado">Mal Estacionado</option>
+                                    <option value="exceso_velocidad">Exceso de Velocidad</option>
+                                    <option value="conducta_indebida">Conducta Indebida</option>
+                                    <option value="colision">Colisión</option>
+                                    <option value="zona_prohibida">Zona Prohibida</option>
+                                    <option value="acceso_no_autorizado">Acceso No Autorizado</option>
+                                    <option value="otro">Otro Motivo</option>
+                                </select>
+                                <div className="flex gap-2">
+                                    {['leve', 'moderada', 'grave', 'critica'].map(g => (
+                                        <button 
+                                            key={g}
+                                            onClick={() => setFormReporte({...formReporte, gravedad: g})}
+                                            className={cn(
+                                                "flex-1 h-9 rounded-lg text-[9px] font-black uppercase transition-all border",
+                                                formReporte.gravedad === g 
+                                                    ? `${GRAVEDAD_CONFIG[g].bg} ${GRAVEDAD_CONFIG[g].color} ${GRAVEDAD_CONFIG[g].border}` 
+                                                    : "bg-white/5 border-white/5 text-text-muted"
+                                            )}
+                                        >
+                                            {g}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div>
+                            <label className="text-[10px] font-black text-text-muted uppercase tracking-widest block mb-2">Descripción del Evento</label>
+                            <textarea 
+                                rows={3}
+                                value={formReporte.descripcion}
+                                onChange={e => setFormReporte({...formReporte, descripcion: e.target.value})}
+                                placeholder="Describa brevemente lo ocurrido..."
+                                className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm font-medium text-text-main focus:border-primary/50 outline-none resize-none"
+                            />
+                        </div>
+                    </div>
+
+                    {/* Columna Derecha: Multimedia y Acciones */}
+                    <div className="space-y-4">
+                        <div>
+                            <label className="text-[10px] font-black text-text-muted uppercase tracking-widest block mb-2">Evidencia Fotográfica (Max 3)</label>
+                            <div className="grid grid-cols-3 gap-2 mb-3">
+                                {previews.map((src, i) => (
+                                    <div key={i} className="relative aspect-square rounded-xl overflow-hidden border border-white/10 group">
+                                        <img src={src} alt="Evidencia" className="w-full h-full object-cover" />
+                                        <button 
+                                            onClick={() => removeFile(i)}
+                                            className="absolute top-1 right-1 p-1.5 bg-danger text-white rounded-lg opacity-0 group-hover:opacity-100 transition-opacity"
+                                        >
+                                            <Trash2 size={12} />
+                                        </button>
+                                    </div>
+                                ))}
+                                {previews.length < 3 && (
+                                    <label className="aspect-square rounded-xl border-2 border-dashed border-white/10 flex flex-col items-center justify-center gap-2 hover:bg-white/5 hover:border-primary/50 cursor-pointer transition-all">
+                                        <Upload size={18} className="text-text-muted" />
+                                        <span className="text-[8px] font-black text-text-muted uppercase">Subir</span>
+                                        <input type="file" multiple accept="image/*" onChange={handleFileChange} className="hidden" />
+                                    </label>
+                                )}
+                            </div>
+                            <div className="p-3 bg-primary/5 rounded-xl border border-primary/10 flex gap-2">
+                                <Info size={14} className="text-primary shrink-0" />
+                                <p className="text-[9px] text-text-muted leading-tight">Las fotos serán almacenadas en el bucket de seguridad y vinculadas al registro del vehículo.</p>
+                            </div>
+                        </div>
+
+                        <div className="space-y-2">
+                            <label className="text-[10px] font-black text-text-muted uppercase tracking-widest block mb-1">Medidas Inmediatas</label>
+                            <div className="flex flex-col gap-2">
+                                <label className="flex items-center justify-between p-3 bg-white/5 rounded-xl border border-white/10 cursor-pointer hover:bg-white/10 transition-all">
+                                    <span className="text-xs font-bold text-text-main">Bloquear Salida Automática</span>
+                                    <input 
+                                        type="checkbox" 
+                                        checked={formReporte.bloquea_salida} 
+                                        onChange={e => setFormReporte({...formReporte, bloquea_salida: e.target.checked})}
+                                        className="w-4 h-4 accent-primary"
+                                    />
+                                </label>
+                                <label className="flex items-center justify-between p-3 bg-white/5 rounded-xl border border-white/10 cursor-pointer hover:bg-white/10 transition-all">
+                                    <span className="text-xs font-bold text-text-main">Añadir a Lista Negra (Futuro)</span>
+                                    <input 
+                                        type="checkbox" 
+                                        checked={formReporte.bloquea_acceso_futuro} 
+                                        onChange={e => setFormReporte({...formReporte, bloquea_acceso_futuro: e.target.checked})}
+                                        className="w-4 h-4 accent-danger"
+                                    />
+                                </label>
+                            </div>
+                        </div>
+
+                        <Boton 
+                            onClick={handleEnviarReporte}
+                            disabled={enviandoReporte}
+                            className="w-full h-12 bg-primary text-bg-app font-black uppercase tracking-widest shadow-tactica"
+                        >
+                            {enviandoReporte ? <RefreshCw size={20} className="animate-spin" /> : <><Shield size={18} /> Registrar Infracción</>}
+                        </Boton>
+                    </div>
+                </div>
             </Modal>
         </div>
     );
