@@ -58,7 +58,7 @@ const PuestoChip = ({ puesto, onEliminar, onEditar, onGPS }) => {
     );
 };
 
-const ZonaRow = ({ zona, entidades, asignaciones, onEditar, onEliminar, onGestionarPuestos, onAjustarTiempo, onAsignar }) => {
+const ZonaRow = ({ zona, entidades, asignaciones, onEditar, onEliminar, onGestionarPuestos, onAjustarTiempo, onAsignar, onEliminarAsignacion, onEliminarPuesto, onCapturarGPSPuesto }) => {
     const [expandida, setExpandida] = useState(false);
     const puestos = zona.puestos || [];
     const asignacionesZona = asignaciones.filter(a => a.zona_id === zona.id);
@@ -170,11 +170,11 @@ const ZonaRow = ({ zona, entidades, asignaciones, onEditar, onEliminar, onGestio
                                             <span className="text-[9px] font-bold text-warning">+{asig.cupo_reservado_base} base</span>
                                         )}
                                         <div className="flex items-center gap-1 border-l border-white/10 pl-2 ml-1">
-                                            <button onClick={() => abrirModalAsignar(zona, asig)} title="Editar asignación"
+                                            <button onClick={() => onAsignar(zona, asig)} title="Editar asignación"
                                                 className="p-1.5 rounded-lg hover:bg-white/10 text-text-muted hover:text-text-main transition-all">
                                                 <Edit2 size={12} />
                                             </button>
-                                            <button onClick={() => handleEliminarAsignacion(asig)} title="Eliminar asignación"
+                                            <button onClick={() => onEliminarAsignacion(asig)} title="Eliminar asignación"
                                                 className="p-1.5 rounded-lg hover:bg-red-500/10 text-text-muted/40 hover:text-red-400 transition-all">
                                                 <X size={12} />
                                             </button>
@@ -198,9 +198,9 @@ const ZonaRow = ({ zona, entidades, asignaciones, onEditar, onEliminar, onGestio
                                     <PuestoChip
                                         key={p.id}
                                         puesto={p}
-                                        onEliminar={() => { }}
+                                        onEliminar={onEliminarPuesto}
                                         onEditar={() => { }}
-                                        onGPS={() => onGestionarPuestos(zona)} // Reutilizamos el modal para editarlo
+                                        onGPS={onCapturarGPSPuesto}
                                     />
                                 ))}
                             </div>
@@ -617,6 +617,9 @@ export default function GestionZonas() {
                             onGestionarPuestos={abrirModalPuestos}
                             onAjustarTiempo={abrirModalTiempo}
                             onAsignar={abrirModalAsignar}
+                            onEliminarAsignacion={handleEliminarAsignacion}
+                            onEliminarPuesto={handleEliminarPuesto}
+                            onCapturarGPSPuesto={handleCapturarGPSPuesto}
                         />
                     ))}
                 </div>
@@ -715,7 +718,7 @@ export default function GestionZonas() {
                     {puestosZona.length > 0 ? (
                         <div className="flex flex-wrap gap-2 max-h-48 overflow-y-auto p-1 bg-black/10 rounded-lg">
                             {puestosZona.map(p => (
-                                <PuestoChip key={p.id} puesto={p} onEliminar={handleEliminarPuesto} onEditar={() => { }} onGPS={handleCapturarGPSPuesto} />
+                                <PuestoChip key={p.id} puesto={p} onEliminar={onEliminarPuesto} onEditar={() => { }} onGPS={onCapturarGPSPuesto} />
                             ))}
                         </div>
                     ) : (
