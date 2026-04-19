@@ -168,9 +168,11 @@ async def obtener_mis_puestos(
     from sqlalchemy import select
     from sqlalchemy.orm import joinedload
     from app.models.puesto_estacionamiento import PuestoEstacionamiento
-    rs = await db.execute(select(PuestoEstacionamiento).options(joinedload(PuestoEstacionamiento.zona)).where(
-        PuestoEstacionamiento.reservado_entidad_id == current_user.entidad_id
-    ))
+    rs = await db.execute(
+        select(PuestoEstacionamiento)
+        .options(joinedload(PuestoEstacionamiento.zona), joinedload(PuestoEstacionamiento.tipo_acceso))
+        .where(PuestoEstacionamiento.reservado_entidad_id == current_user.entidad_id)
+    )
     return rs.scalars().all()
 
 @router.patch("/entidad/asignaciones/{asignacion_id}/distribucion", response_model=AsignacionZonaSalida)
@@ -213,3 +215,28 @@ async def generar_puestos_entidad(
         return await zona_service.generar_puestos_entidad(db, zona_id, current_user.entidad_id, prefijo, cantidad, current_user.id)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
+
+@router.patch("/puestos/{puesto_id}/tipo-acceso", response_model=PuestoEstacionamientoSalida)
+async def reasignar_tipo_puesto(
+    puesto_id: UUID,
+    tipo_acceso_id: Optional[UUID] = Body(None, embed=True),
+    db: AsyncSession = Depends(obtener_db),
+    current_user: Usuario = Depends(require_rol(["ADMIN_ENTIDAD"]))
+):
+    """Permite al admin de entidad reasignar manualmente el tipo de acceso de un puesto."""
+    puesto = await zona_service.get_puesto(db, puesto_id)
+    if not puesto or puesto.reservado_entidad_id != current_user.entidad_id:
+        raise HTTPException(status_code=404, detail="Puesto no encontrado o no pertenece a tu entidad.")
+    
+    puesto.tipo_acceso_id = tipo_acceso_id
+    await db.commit()
+    await db.refresh(puesto)
+    
+    # Recargar con relaciones para la respuesta
+    from sqlalchemy.orm import joinedload
+    rs = await db.execute(
+        select(PuestoEstacionamiento)
+        .options(joinedload(PuestoEstacionamiento.zona), joinedload(PuestoEstacionamiento.tipo_acceso))
+        .where(PuestoEstacionamiento.id == puesto_id)
+    )
+    return rs.scalars().first()

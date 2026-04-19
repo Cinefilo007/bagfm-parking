@@ -26,6 +26,8 @@ class PuestoEstacionamientoSalida(PuestoEstacionamientoBase):
     id: UUID
     zona_id: UUID
     zona_nombre: Optional[str] = None
+    tipo_acceso_id: Optional[UUID] = None
+    tipo_acceso_nombre: Optional[str] = None
     vehiculo_actual_id: Optional[UUID] = None
     qr_actual_id: Optional[UUID] = None
     ocupado_desde: Optional[datetime] = None

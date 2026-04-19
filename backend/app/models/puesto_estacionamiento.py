@@ -31,13 +31,19 @@ class PuestoEstacionamiento(Base):
     
     registrado_por = Column(UUID(as_uuid=True), ForeignKey("usuarios.id", ondelete="SET NULL"), nullable=True)
     reservado_por = Column(UUID(as_uuid=True), ForeignKey("usuarios.id", ondelete="SET NULL"), nullable=True)
+    tipo_acceso_id = Column(UUID(as_uuid=True), ForeignKey("tipos_acceso_custom.id", ondelete="SET NULL"), nullable=True)
     
     ocupado_desde = Column(DateTime(timezone=True), nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
 
     # Relaciones
     zona = relationship("ZonaEstacionamiento")
+    tipo_acceso = relationship("TipoAccesoCustom")
 
     @property
     def zona_nombre(self):
         return self.zona.nombre if self.zona else None
+
+    @property
+    def tipo_acceso_nombre(self):
+        return self.tipo_acceso.nombre if self.tipo_acceso else None

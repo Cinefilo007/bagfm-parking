@@ -73,6 +73,14 @@ export const zonaService = {
         return data;
     },
 
+    /**
+     * Reasigna el tipo de acceso lógico de un puesto físico.
+     */
+    async reasignarTipoPuesto(puestoId, tipoAccesoId) {
+        const { data } = await api.patch(`/zonas/puestos/${puestoId}/tipo-acceso`, { tipo_acceso_id: tipoAccesoId });
+        return data;
+    },
+
     // ──── Tipos de Acceso Custom ─────────────────────────────────────────────
 
     /**

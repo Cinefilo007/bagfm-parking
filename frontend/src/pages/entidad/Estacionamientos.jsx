@@ -31,7 +31,7 @@ const BadgeEstado = ({ estado }) => {
     );
 };
 
-const TarjetaPuesto = ({ puesto, onAsignar, onLiberar }) => (
+const TarjetaPuesto = ({ puesto, onAsignar, onLiberar, onReasignar, tipos }) => (
     <div className={cn(
         "flex items-center gap-3 p-3 rounded-xl border transition-all",
         puesto.estado === 'libre' && 'bg-success/5 border-success/20',
@@ -53,14 +53,21 @@ const TarjetaPuesto = ({ puesto, onAsignar, onLiberar }) => (
         </div>
         <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2">
-                <p className="text-xs font-black text-text-main uppercase">{puesto.codigo || puesto.numero_puesto || puesto.numero || `Puesto ${puesto.id?.slice(-4)}`}</p>
+                <p className="text-xs font-black text-text-main uppercase">{puesto.numero_puesto || puesto.codigo || `Puesto ${puesto.id?.slice(-4)}`}</p>
                 <BadgeEstado estado={puesto.estado} />
+                {puesto.tipo_acceso_nombre && (
+                    <span className="text-[7px] font-black bg-primary/10 text-primary px-1.5 py-0.5 rounded-full uppercase tracking-widest border border-primary/20">
+                        {puesto.tipo_acceso_nombre}
+                    </span>
+                )}
             </div>
-            {puesto.zona_nombre && (
-                <p className="text-[9px] text-text-muted font-bold flex items-center gap-1 mt-0.5">
-                    <MapPin size={9} /> {puesto.zona_nombre}
-                </p>
-            )}
+            <div className="flex items-center gap-2 mt-0.5">
+                {puesto.zona_nombre && (
+                    <p className="text-[9px] text-text-muted font-bold flex items-center gap-1">
+                        <MapPin size={9} /> {puesto.zona_nombre}
+                    </p>
+                )}
+            </div>
         </div>
         <div className="flex items-center gap-1 shrink-0">
             {puesto.estado === 'libre' || puesto.estado === 'reservado' ? (
@@ -78,6 +85,13 @@ const TarjetaPuesto = ({ puesto, onAsignar, onLiberar }) => (
                     <Circle size={10} /> Liberar
                 </button>
             ) : null}
+            <button 
+                onClick={() => onReasignar(puesto)}
+                className="p-1.5 rounded-lg hover:bg-white/10 text-text-muted/40 hover:text-text-main transition-all"
+                title="Configurar Distribución"
+            >
+                <Settings size={14} />
+            </button>
         </div>
     </div>
 );
@@ -164,6 +178,11 @@ export default function EstacionamientosEntidad() {
         activo: true,
     });
     const [guardandoTipo, setGuardandoTipo] = useState(false);
+    
+    // Modal Reasignar
+    const [modalReasignar, setModalReasignar] = useState(false);
+    const [puestoAReasignar, setPuestoAReasignar] = useState(null);
+    const [asignandoTipo, setAsignandoTipo] = useState(false);
 
     // ── Carga de datos ────────────────────────────────────────────────────────
 
@@ -274,11 +293,72 @@ export default function EstacionamientosEntidad() {
     const handleLiberar = async (puesto) => {
         try {
             await zonaService.liberarPuesto(puesto.id);
-            toast.success(`Puesto ${puesto.codigo} liberado`);
+            toast.success(`Puesto ${puesto.numero_puesto || puesto.codigo} liberado`);
             await cargarPuestos();
         } catch (e) {
             toast.error('Error al liberar puesto');
         }
+    };
+
+    const handleAbrirReasignar = (puesto) => {
+        setPuestoAReasignar(puesto);
+        setModalReasignar(true);
+    };
+
+    const handleReasignarTipo = async (tipoId) => {
+        setAsignandoTipo(true);
+        try {
+            await zonaService.reasignarTipoPuesto(puestoAReasignar.id, tipoId);
+            toast.success('Puesto reasignado');
+            setModalReasignar(false);
+            await cargarPuestos();
+        } catch (e) {
+            toast.error('Error al reasignar puesto');
+        } finally {
+            setAsignandoTipo(false);
+        }
+    };
+
+    const handleAutoDistribuir = async () => {
+        // Encontrar asignaciones con distribución lógica
+        const asigConDist = asignaciones.filter(a => a.distribucion_cupos && Object.keys(a.distribucion_cupos).length > 0);
+        if (asigConDist.length === 0) {
+            toast.error('No tienes configurada ninguna distribución lógica en tus zonas.');
+            return;
+        }
+
+        const confirm = window.confirm("¿Deseas aplicar la distribución inteligente a todos los puestos físicos vacíos? Esto sobrescribirá asignaciones lógicas manuales.");
+        if (!confirm) return;
+
+        toast.promise(
+            (async () => {
+                for (const asig of asigConDist) {
+                    const puestosZona = puestos.filter(p => p.zona_id === asig.zona_id).sort((a,b) => (a.numero_puesto||'').localeCompare(b.numero_puesto||'', undefined, {numeric: true}));
+                    let pointer = 0;
+                    
+                    for (const [tipoNombre, cupo] of Object.entries(asig.distribucion_cupos)) {
+                        const tipoObj = tipos.find(t => t.nombre === tipoNombre);
+                        if (!tipoObj) continue;
+                        
+                        for (let i = 0; i < cupo && pointer < puestosZona.length; i++) {
+                            await zonaService.reasignarTipoPuesto(puestosZona[pointer].id, tipoObj.id);
+                            pointer++;
+                        }
+                    }
+                    // Limpiar el resto
+                    while(pointer < puestosZona.length) {
+                        await zonaService.reasignarTipoPuesto(puestosZona[pointer].id, null);
+                        pointer++;
+                    }
+                }
+                await cargarPuestos();
+            })(),
+            {
+                loading: 'Aplicando distribución inteligente...',
+                success: 'Distribución aplicada con éxito',
+                error: 'Error durante la distribución',
+            }
+        );
     };
 
     // ── Acciones: Tipos de Acceso ─────────────────────────────────────────────
@@ -339,10 +419,10 @@ export default function EstacionamientosEntidad() {
     // ── Estadísticas rápidas ──────────────────────────────────────────────────
 
     const stats = {
-        total: puestos.length,
-        libres: puestos.filter(p => p.estado === 'libre').length,
+        total: asignaciones.reduce((acc, a) => acc + (a.cupo_asignado - a.cupo_reservado_base), 0),
+        libres: puestos.filter(p => p.estado === 'libre' && !p.tipo_acceso_id).length,
         ocupados: puestos.filter(p => p.estado === 'ocupado').length,
-        reservados: puestos.filter(p => p.estado === 'reservado').length,
+        reservados: puestos.filter(p => p.tipo_acceso_id).length,
     };
 
     // ── Render ────────────────────────────────────────────────────────────────
@@ -526,11 +606,19 @@ export default function EstacionamientosEntidad() {
                     <div className="flex items-center justify-between">
                         <p className="text-[9px] font-black text-text-muted uppercase tracking-widest flex items-center gap-2">
                             <Shield size={11} className="text-primary" />
-                            Puestos asignados por el Comandante
+                            Puestos físicos generados
                         </p>
-                        <button onClick={cargarPuestos} className="p-1.5 rounded-lg bg-white/5 hover:bg-white/10 transition-all">
-                            <RefreshCw size={14} className={cn("text-text-muted", cargandoPuestos && 'animate-spin')} />
-                        </button>
+                        <div className="flex items-center gap-2">
+                            <button 
+                                onClick={handleAutoDistribuir}
+                                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary/10 text-primary border border-primary/20 text-[9px] font-black uppercase hover:bg-primary/20 transition-all"
+                            >
+                                <Zap size={11} /> Auto-Distribución
+                            </button>
+                            <button onClick={cargarPuestos} className="p-1.5 rounded-lg bg-white/5 hover:bg-white/10 transition-all">
+                                <RefreshCw size={14} className={cn("text-text-muted", cargandoPuestos && 'animate-spin')} />
+                            </button>
+                        </div>
                     </div>
 
                     {cargandoPuestos ? (
@@ -575,8 +663,10 @@ export default function EstacionamientosEntidad() {
                                             <TarjetaPuesto
                                                 key={p.id}
                                                 puesto={p}
+                                                tipos={tipos}
                                                 onAsignar={handleAbrirAsignar}
                                                 onLiberar={handleLiberar}
+                                                onReasignar={handleAbrirReasignar}
                                             />
                                         ))}
                                     </div>
@@ -590,17 +680,23 @@ export default function EstacionamientosEntidad() {
             {/* ── TAB: TIPOS DE ACCESO ── */}
             {tab === TABS.TIPOS && (
                 <div className="space-y-3">
-                    <div className="flex items-center justify-between">
-                        <p className="text-[9px] font-black text-text-muted uppercase tracking-widest flex items-center gap-2">
-                            <Tag size={11} className="text-primary" />
-                            {tipos.length} tipos de acceso configurados
-                        </p>
-                        <Boton
+                    <div className="flex items-center justify-between bg-bg-card/40 border border-white/5 p-4 rounded-2xl">
+                        <div>
+                            <p className="text-[10px] font-black text-text-main uppercase tracking-widest flex items-center gap-2">
+                                <Tag size={12} className="text-primary" />
+                                Gestión de Accesos
+                            </p>
+                            <p className="text-[8px] text-text-muted font-bold uppercase tracking-widest mt-1">
+                                {tipos.length} tipos configurados
+                            </p>
+                        </div>
+                        <button
                             onClick={() => abrirModalTipo()}
-                            className="h-9 px-4 gap-1.5 text-[10px] font-black uppercase rounded-xl bg-primary text-bg-app"
+                            className="bg-primary/10 hover:bg-primary/20 text-primary border border-primary/30 h-10 px-4 rounded-xl flex items-center gap-2 transition-all group"
                         >
-                            <Plus size={14} /> Nuevo Tipo
-                        </Boton>
+                            <Plus size={16} className="group-hover:rotate-90 transition-transform" />
+                            <span className="text-[10px] font-black uppercase tracking-wider">Nuevo Tipo</span>
+                        </button>
                     </div>
 
                     {/* Info box */}
@@ -832,6 +928,59 @@ export default function EstacionamientosEntidad() {
                         >
                             {generando ? <RefreshCw size={16} className="animate-spin" /> : 'Generar Puestos'}
                         </Boton>
+                    </div>
+                </div>
+            </Modal>
+            {/* ── MODAL: Reasignar Distribución Lógica ── */}
+            <Modal
+                isOpen={modalReasignar}
+                onClose={() => setModalReasignar(false)}
+                title={`DISTRIBUCIÓN LÓGICA: ${puestoAReasignar?.numero_puesto || ''}`}
+            >
+                <div className="space-y-4">
+                    <p className="text-[10px] text-text-muted leading-relaxed">
+                        Selecciona el grupo al que pertenece este puesto para restringir su asignación en la generación de pases.
+                    </p>
+
+                    <div className="grid grid-cols-1 gap-2">
+                        <button
+                            onClick={() => handleReasignarTipo(null)}
+                            className={cn(
+                                "flex items-center justify-between p-4 rounded-xl border transition-all",
+                                !puestoAReasignar?.tipo_acceso_id 
+                                    ? 'bg-primary/10 border-primary shadow-lg shadow-primary/5' 
+                                    : 'bg-white/5 border-white/5 hover:bg-white/10'
+                            )}
+                        >
+                            <div className="flex items-center gap-3">
+                                <Shield size={16} className={!puestoAReasignar?.tipo_acceso_id ? 'text-primary' : 'text-text-muted'} />
+                                <span className="text-[11px] font-black uppercase tracking-wider">Ninguno / Disponible</span>
+                            </div>
+                            {!puestoAReasignar?.tipo_acceso_id && <CheckCircle2 size={16} className="text-primary" />}
+                        </button>
+
+                        {tipos.map(tipo => (
+                            <button
+                                key={tipo.id}
+                                onClick={() => handleReasignarTipo(tipo.id)}
+                                className={cn(
+                                    "flex items-center justify-between p-4 rounded-xl border transition-all",
+                                    puestoAReasignar?.tipo_acceso_id === tipo.id 
+                                        ? 'bg-primary/10 border-primary shadow-lg shadow-primary/5' 
+                                        : 'bg-white/5 border-white/5 hover:bg-white/10'
+                                )}
+                            >
+                                <div className="flex items-center gap-3">
+                                    <Tag size={16} style={{ color: tipo.color_badge || '#fff' }} />
+                                    <span className="text-[11px] font-black uppercase tracking-wider">{tipo.nombre}</span>
+                                </div>
+                                {puestoAReasignar?.tipo_acceso_id === tipo.id && <CheckCircle2 size={16} className="text-primary" />}
+                            </button>
+                        ))}
+                    </div>
+
+                    <div className="pt-2 border-t border-white/5">
+                        <Boton variant="ghost" className="w-full" onClick={() => setModalReasignar(false)}>Cerrar</Boton>
                     </div>
                 </div>
             </Modal>
