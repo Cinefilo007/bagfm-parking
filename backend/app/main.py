@@ -81,7 +81,7 @@ async def health_check():
 from app.api.v1 import (
     auth, entidades, socios, accesos, 
     infracciones, websocket, comando, eventos, mapa,
-    personal, pases, ia, zonas, parqueros, fantasmas, cron
+    personal, pases, ia, zonas, parqueros, fantasmas, cron, tipos_acceso
 )
 
 app.include_router(auth.router, prefix="/api/v1/auth", tags=["Autenticación"])
@@ -100,3 +100,4 @@ app.include_router(zonas.router, prefix="/api/v1/zonas", tags=["Zonas de Estacio
 app.include_router(parqueros.router, prefix="/api/v1", tags=["Parqueros Operaciones"])
 app.include_router(fantasmas.router, prefix="/api/v1", tags=["Control de Vehículos Fantasma"])
 app.include_router(cron.router, prefix="/api/v1/cron", tags=["Sistema Cron"])
+app.include_router(tipos_acceso.router, prefix="/api/v1/tipos-acceso", tags=["Tipos de Acceso"])

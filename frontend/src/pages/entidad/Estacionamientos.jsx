@@ -52,7 +52,7 @@ const TarjetaPuesto = ({ puesto, onAsignar, onLiberar }) => (
         </div>
         <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2">
-                <p className="text-xs font-black text-text-main uppercase">{puesto.codigo || puesto.numero || `Puesto ${puesto.id?.slice(-4)}`}</p>
+                <p className="text-xs font-black text-text-main uppercase">{puesto.codigo || puesto.numero_puesto || puesto.numero || `Puesto ${puesto.id?.slice(-4)}`}</p>
                 <BadgeEstado estado={puesto.estado} />
             </div>
             {puesto.zona_nombre && (
@@ -172,15 +172,8 @@ export default function EstacionamientosEntidad() {
             const data = await zonaService.getMisPuestos();
             setPuestos(data);
         } catch (e) {
-            // Datos demo si la API no responde
-            setPuestos([
-                { id: '1', codigo: 'E-01', estado: 'libre', zona_nombre: 'Zona VIP Norte' },
-                { id: '2', codigo: 'E-02', estado: 'ocupado', zona_nombre: 'Zona VIP Norte' },
-                { id: '3', codigo: 'E-03', estado: 'reservado', zona_nombre: 'Zona VIP Norte' },
-                { id: '4', codigo: 'E-04', estado: 'libre', zona_nombre: 'Parqueo Logístico' },
-                { id: '5', codigo: 'E-05', estado: 'libre', zona_nombre: 'Parqueo Logístico' },
-                { id: '6', codigo: 'E-06', estado: 'mantenimiento', zona_nombre: 'Parqueo Logístico' },
-            ]);
+            toast.error(e.response?.data?.detail || 'Error cargando puestos');
+            setPuestos([]);
         } finally {
             setCargandoPuestos(false);
         }
@@ -193,12 +186,8 @@ export default function EstacionamientosEntidad() {
             const data = await zonaService.listarTiposAcceso(user.entidad_id);
             setTipos(data);
         } catch (e) {
-            // Datos demo
-            setTipos([
-                { id: 't1', nombre: 'Staff Técnico', descripcion: 'Personal técnico de producción', requiere_vehiculo: true, max_vehiculos: 1, color_badge: '#4EDEA3', activo: true },
-                { id: 't2', nombre: 'Productor VIP', descripcion: 'Acceso preferencial con zona asignada', requiere_vehiculo: true, max_vehiculos: 2, color_badge: '#F59E0B', activo: true },
-                { id: 't3', nombre: 'Logístico', descripcion: 'Vehículos de carga y apoyo', requiere_vehiculo: true, max_vehiculos: 3, color_badge: '#60A5FA', activo: false },
-            ]);
+            toast.error(e.response?.data?.detail || 'Error cargando tipos de acceso');
+            setTipos([]);
         } finally {
             setCargandoTipos(false);
         }

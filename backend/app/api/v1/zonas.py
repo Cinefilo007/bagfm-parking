@@ -156,6 +156,21 @@ async def obtener_mis_asignaciones(
     ))
     return rs.scalars().all()
 
+@router.get("/mi-cuota", response_model=List[PuestoEstacionamientoSalida])
+async def obtener_mis_puestos(
+    db: AsyncSession = Depends(obtener_db),
+    current_user: Usuario = Depends(require_rol(["ADMIN_ENTIDAD"]))
+):
+    """Retorna los puestos físicos específicos asignados a la entidad del usuario."""
+    if not current_user.entidad_id:
+        return []
+    from sqlalchemy import select
+    from app.models.puesto_estacionamiento import PuestoEstacionamiento
+    rs = await db.execute(select(PuestoEstacionamiento).where(
+        PuestoEstacionamiento.reservado_entidad_id == current_user.entidad_id
+    ))
+    return rs.scalars().all()
+
 @router.patch("/entidad/asignaciones/{asignacion_id}/distribucion", response_model=AsignacionZonaSalida)
 async def configurar_distribucion_cupos(
     asignacion_id: UUID,
