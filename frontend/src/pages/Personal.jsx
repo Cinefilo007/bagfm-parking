@@ -63,13 +63,24 @@ export default function Personal() {
   const handleCrearPersonal = async (e) => {
     e.preventDefault();
     try {
-      await api.post('/personal/', { ...nuevoMiembro, password: nuevoMiembro.cedula });
+      // Inyectar entidad_id automáticamente si es admin de entidad
+      const payload = { 
+        ...nuevoMiembro, 
+        password: nuevoMiembro.cedula 
+      };
+      
+      if (userActual.rol === 'ADMIN_ENTIDAD' && userActual.entidad_id) {
+        payload.entidad_id = userActual.entidad_id;
+      }
+
+      await api.post('/personal/', payload);
       setIsModalOpen(false);
       setNuevoMiembro({ cedula: '', nombre: '', apellido: '', email: '', telefono: '', rol: '', entidad_id: null, password: '' });
       fetchData();
       toast.success('Alta de personal completada');
     } catch (err) {
-      toast.error(err.response?.data?.detail || "Error en protocolo de alta");
+      const errorMsg = err.response?.data?.detail || "Error en protocolo de alta";
+      toast.error(errorMsg);
     }
   };
 
