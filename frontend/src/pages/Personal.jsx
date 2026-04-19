@@ -102,6 +102,7 @@ export default function Personal() {
       case 'PARQUERO':      return { badge: 'text-emerald-400 bg-emerald-400/10 border-emerald-400/20', avatar: 'text-emerald-400 bg-emerald-400/10 border-emerald-400/20', bar: 'bg-emerald-400' };
       case 'ALCABALA':      return { badge: 'text-sky-400 bg-sky-400/10 border-sky-400/20',     avatar: 'text-sky-400 bg-sky-400/10 border-sky-400/20',     bar: 'bg-sky-400' };
       case 'ADMIN_ENTIDAD': return { badge: 'text-purple-400 bg-purple-400/10 border-purple-400/20', avatar: 'text-purple-400 bg-purple-400/10 border-purple-400/20', bar: 'bg-purple-400' };
+      case 'SUPERVISOR_PARQUEROS': return { badge: 'text-amber-500 bg-amber-500/10 border-amber-500/20', avatar: 'text-amber-500 bg-amber-500/10 border-amber-500/20', bar: 'bg-amber-500' };
       default:              return { badge: 'text-text-muted bg-white/5 border-white/5',        avatar: 'text-text-muted bg-white/5 border-white/5',        bar: 'bg-text-muted' };
     }
   };
@@ -115,10 +116,17 @@ export default function Personal() {
           <option value="PARQUERO">PERSONA DE ACCESO (PARQUERO)</option>
           <option value="ALCABALA">OPERADOR DE ALCABALA</option>
           <option value="ADMIN_ENTIDAD">ADMINISTRADOR DE ENTIDAD</option>
+          <option value="SUPERVISOR_PARQUEROS">SUPERVISOR DE PARQUEROS</option>
+          <option value="SOCIO">SOCIO</option>
         </>
       );
     }
-    return <option value="PARQUERO">OPERADOR AUXILIAR (PARQUERO)</option>;
+    return (
+      <>
+        <option value="SUPERVISOR_PARQUEROS">DIRECTOR DE OPERACIONES (SUPERVISOR)</option>
+        <option value="PARQUERO">OPERADOR AUXILIAR (PARQUERO)</option>
+      </>
+    );
   };
 
   return (
@@ -341,7 +349,7 @@ export default function Personal() {
               />
             </div>
 
-            {(nuevoMiembro.rol === 'PARQUERO' || nuevoMiembro.rol === 'ADMIN_ENTIDAD' || nuevoMiembro.rol === 'ALCABALA') &&
+            {(nuevoMiembro.rol === 'PARQUERO' || nuevoMiembro.rol === 'SUPERVISOR_PARQUEROS' || nuevoMiembro.rol === 'ADMIN_ENTIDAD' || nuevoMiembro.rol === 'ALCABALA') &&
              (userActual.rol === 'COMANDANTE' || userActual.rol === 'ADMIN_BASE') && (
               <div className="space-y-1 animate-in slide-in-from-top-2 duration-300">
                 <label className="text-[10px] font-black text-text-muted uppercase tracking-widest px-1 opacity-60">Asignación de Destino</label>
