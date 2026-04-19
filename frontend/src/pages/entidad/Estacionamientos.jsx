@@ -453,7 +453,8 @@ export default function EstacionamientosEntidad() {
 
     const stats = {
         total: asignaciones.reduce((acc, a) => acc + (a.cupo_asignado - a.cupo_reservado_base), 0),
-        reservados: puestos.filter(p => !!p.tipo_acceso_id).length,
+        reservados: asignaciones.reduce((acc, asig) => 
+            acc + Object.values(asig.distribucion_cupos || {}).reduce((sum, val) => sum + val, 0), 0),
         ocupados: puestos.filter(p => p.estado === 'ocupado').length,
     };
     stats.libres = Math.max(0, stats.total - (stats.reservados + stats.ocupados));
@@ -851,10 +852,10 @@ export default function EstacionamientosEntidad() {
                         </div>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 gap-4">
                         <div>
                             <label className="text-[9px] font-black text-text-muted uppercase tracking-widest block mb-2">
-                                Máx. Vehículos
+                                Máx. Vehículos por Socio
                             </label>
                             <div className="flex gap-2">
                                 {[1, 2, 3, 4].map(n => (
@@ -873,37 +874,6 @@ export default function EstacionamientosEntidad() {
                                 ))}
                             </div>
                         </div>
-                        <div>
-                            <label className="text-[9px] font-black text-text-muted uppercase tracking-widest block mb-2">
-                                Color Badge
-                            </label>
-                            <div className="flex items-center gap-2">
-                                <input
-                                    type="color"
-                                    value={formTipo.color_badge}
-                                    onChange={e => setFormTipo({ ...formTipo, color_badge: e.target.value })}
-                                    className="w-10 h-10 rounded-xl border border-white/10 bg-transparent cursor-pointer"
-                                />
-                                <span className="text-xs font-black text-text-muted">{formTipo.color_badge}</span>
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Toggles */}
-                    <div className="space-y-3">
-                        <button
-                            onClick={() => setFormTipo({ ...formTipo, requiere_vehiculo: !formTipo.requiere_vehiculo })}
-                            className="w-full flex items-center justify-between p-3 rounded-xl bg-white/5 border border-white/5 hover:bg-white/10 transition-all"
-                        >
-                            <div className="flex items-center gap-2">
-                                <Car size={16} className="text-text-muted" />
-                                <span className="text-[10px] font-black uppercase tracking-wider text-text-main">Requiere Vehículo</span>
-                            </div>
-                            {formTipo.requiere_vehiculo
-                                ? <ToggleRight size={22} className="text-success" />
-                                : <ToggleLeft size={22} className="text-text-muted/40" />
-                            }
-                        </button>
                     </div>
 
                     <div className="flex gap-3 pt-2 border-t border-white/5">
