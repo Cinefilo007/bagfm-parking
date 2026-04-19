@@ -718,7 +718,7 @@ export default function GestionZonas() {
                     {puestosZona.length > 0 ? (
                         <div className="flex flex-wrap gap-2 max-h-48 overflow-y-auto p-1 bg-black/10 rounded-lg">
                             {puestosZona.map(p => (
-                                <PuestoChip key={p.id} puesto={p} onEliminar={onEliminarPuesto} onEditar={() => { }} onGPS={onCapturarGPSPuesto} />
+                                <PuestoChip key={p.id} puesto={p} onEliminar={handleEliminarPuesto} onEditar={() => { }} onGPS={handleCapturarGPSPuesto} />
                             ))}
                         </div>
                     ) : (
