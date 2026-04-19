@@ -498,19 +498,33 @@ export default function EventosV2() {
 
     const fetchData = useCallback(async () => {
         setLoading(true);
+        
+        const fetchSafe = async (fn, fallback = []) => {
+            try {
+                const res = await fn();
+                return res;
+            } catch (err) {
+                console.warn("Fallo táctico en carga (Eventos):", err);
+                return fallback;
+            }
+        };
+
         try {
-            const [sData, lData, zData, tData] = await Promise.allSettled([
-                eventosService.getSolicitudes(),
-                pasesService.listarLotes(),
-                zonaService.getMisCuotaPuestos().then(() => zonaService.listarZonas()).catch(() => []),
-                zonaService.listarTiposAcceso(user?.entidad_id).catch(() => []),
+            const [sData, lData, zData, tData] = await Promise.all([
+                fetchSafe(() => eventosService.getSolicitudes()),
+                fetchSafe(() => pasesService.listarLotes()),
+                fetchSafe(() => zonaService.getMisCuotaPuestos().then(() => zonaService.listarZonas()), []),
+                fetchSafe(() => zonaService.listarTiposAcceso(user?.entidad_id), []),
             ]);
-            if (sData.status === 'fulfilled') setSolicitudes(sData.value);
-            if (lData.status === 'fulfilled') setLotes(lData.value);
-            if (zData.status === 'fulfilled') setZonas(zData.value);
-            if (tData.status === 'fulfilled') setTiposCustom(tData.value);
+
+            setSolicitudes(sData);
+            setLotes(lData);
+            setZonas(zData);
+            setTiposCustom(tData);
         } catch (e) {
-            toast.error('Error de sincronización');
+            console.error("Error crítico en sincronización de eventos:", e);
+            // Solo mostramos error si algo realmente rompe el flujo de JS
+            // toast.error('Error de sincronización'); 
         } finally {
             setLoading(false);
         }
@@ -535,27 +549,27 @@ export default function EventosV2() {
     return (
         <div className="p-4 space-y-6 pb-32 max-w-[1400px] mx-auto animate-in fade-in duration-500">
             {/* Cabecera */}
-            <header className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-bg-card/30 p-5 rounded-[2rem] border border-white/5">
-                <div>
-                    <h1 className="text-2xl font-black text-text-main uppercase tracking-tighter flex items-center gap-3">
-                        <div className="p-2 bg-primary/10 rounded-xl border border-primary/20">
-                            <Calendar className="text-primary" size={22} />
+            <header className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4 bg-bg-card/30 p-4 md:p-5 rounded-2xl md:rounded-[2rem] border border-white/5 overflow-hidden">
+                <div className="min-w-0">
+                    <h1 className="text-xl md:text-2xl font-black text-text-main uppercase tracking-tighter flex items-center gap-3">
+                        <div className="p-2 bg-primary/10 rounded-xl border border-primary/20 shrink-0">
+                            <Calendar className="text-primary" size={20} />
                         </div>
-                        Eventos y Pases
+                        <span className="truncate">Eventos y Pases</span>
                     </h1>
-                    <p className="text-text-muted text-xs mt-1 flex items-center gap-2 font-bold">
-                        <span className="w-1.5 h-1.5 rounded-full bg-success animate-pulse" />
-                        {user?.entidad_nombre} — Gestión FL-08 v2.0
+                    <p className="text-text-muted text-[10px] md:text-xs mt-1 flex items-center gap-2 font-bold truncate">
+                        <span className="w-1.5 h-1.5 rounded-full bg-success animate-pulse shrink-0" />
+                        {user?.entidad_nombre}
                     </p>
                 </div>
-                <div className="flex gap-2 w-full sm:w-auto">
+                <div className="flex flex-wrap items-center gap-2 w-full lg:w-auto">
                     <Boton onClick={() => setShowSolicitudModal(true)} variant="ghost"
-                        className="flex-1 sm:flex-none h-11 px-5 gap-2 text-[10px] font-black uppercase border-white/10 rounded-xl">
-                        <Clock size={15} /> Solicitar Evento
+                        className="flex-1 lg:flex-none h-11 px-4 gap-2 text-[9px] md:text-[10px] font-black uppercase border-white/10 rounded-xl">
+                        <Clock size={14} /> Solicitar
                     </Boton>
                     <Boton onClick={() => setShowModal(true)}
-                        className="flex-1 sm:flex-none h-11 px-5 gap-2 text-[10px] font-black uppercase bg-primary text-bg-app rounded-xl shadow-tactica">
-                        <Plus size={15} /> Crear Lote
+                        className="flex-1 lg:flex-none h-11 px-4 gap-2 text-[9px] md:text-[10px] font-black uppercase bg-primary text-bg-app rounded-xl shadow-tactica">
+                        <Plus size={14} /> Crear Lote
                     </Boton>
                 </div>
             </header>
@@ -605,13 +619,10 @@ export default function EventosV2() {
                 ) : (
                     <div className="py-16 flex flex-col items-center gap-4 bg-bg-card/20 rounded-3xl border border-dashed border-white/10">
                         <PackageOpen className="text-text-muted opacity-20" size={48} />
-                        <div className="text-center">
+                        <div className="text-center px-6">
                             <p className="text-text-main font-black uppercase tracking-widest text-sm">Sin lotes de pases</p>
-                            <p className="text-text-muted text-xs mt-1">Crea tu primer lote de pases con zonas y tipos personalizados</p>
+                            <p className="text-text-muted text-xs mt-1 max-w-xs mx-auto">Utiliza los controles de la cabecera para solicitar un evento o crear un lote de acceso.</p>
                         </div>
-                        <Boton onClick={() => setShowModal(true)} className="h-10 px-6 bg-primary/10 text-primary border border-primary/30 rounded-xl text-[10px] font-black">
-                            <Plus size={13} /> Crear primer lote
-                        </Boton>
                     </div>
                 )}
             </section>
