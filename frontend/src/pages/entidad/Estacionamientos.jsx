@@ -10,17 +10,27 @@ import {
     ParkingSquare, Car, Plus, Trash2, RefreshCw,
     Shield, MapPin, Users, Tag, CheckCircle2,
     Circle, Edit3, ToggleLeft, ToggleRight, Zap, AlertTriangle,
-    ChevronDown, LayoutGrid, Settings, Activity, Hash
+    ChevronDown, LayoutGrid, Settings, Activity, Hash, PackagePlus, Palette
 } from 'lucide-react';
 import { zonaService } from '../../services/zona.service';
+import { ModalConfirmacion } from '../../components/ui/ModalConfirmacion';
+
+const PRESET_COLORS = [
+    '#4EDEA3', '#3B82F6', '#F59E0B', '#EF4444', 
+    '#8B5CF6', '#EC4899', '#10B981', '#6B7280',
+    '#00D1FF', '#FF6B00'
+];
 
 // ──── Componentes internos ────────────────────────────────────────────────────
 
-const BadgeEstado = ({ estado }) => {
+const BadgeEstado = ({ estado, tieneTipo = false }) => {
     const cfg = {
         libre: { color: 'bg-success/15 text-success border-success/30', label: 'Libre' },
         ocupado: { color: 'bg-danger/15 text-danger border-danger/30', label: 'Ocupado' },
-        reservado: { color: 'bg-warning/15 text-warning border-warning/30', label: 'Reservado' },
+        reservado: { 
+            color: tieneTipo ? 'bg-warning/15 text-warning border-warning/30' : 'bg-primary/15 text-primary border-primary/30', 
+            label: tieneTipo ? 'Reservado' : 'Disponible' 
+        },
         mantenimiento: { color: 'bg-text-muted/15 text-text-muted border-text-muted/20', label: 'Mant.' },
     };
     const c = cfg[estado] || cfg.libre;
@@ -30,6 +40,7 @@ const BadgeEstado = ({ estado }) => {
         </span>
     );
 };
+
 
 const TarjetaPuesto = ({ puesto, onAsignar, onLiberar, onReasignar, tipos }) => (
     <div className={cn(
@@ -54,7 +65,7 @@ const TarjetaPuesto = ({ puesto, onAsignar, onLiberar, onReasignar, tipos }) => 
         <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2">
                 <p className="text-xs font-black text-text-main uppercase">{puesto.numero_puesto || puesto.codigo || `Puesto ${puesto.id?.slice(-4)}`}</p>
-                <BadgeEstado estado={puesto.estado} />
+                <BadgeEstado estado={puesto.estado} tieneTipo={!!puesto.tipo_acceso_id} />
                 {puesto.tipo_acceso_nombre && (
                     <span className="text-[7px] font-black bg-primary/10 text-primary px-1.5 py-0.5 rounded-full uppercase tracking-widest border border-primary/20">
                         {puesto.tipo_acceso_nombre}
@@ -183,6 +194,9 @@ export default function EstacionamientosEntidad() {
     const [modalReasignar, setModalReasignar] = useState(false);
     const [puestoAReasignar, setPuestoAReasignar] = useState(null);
     const [asignandoTipo, setAsignandoTipo] = useState(false);
+
+    // Modal Confirmación Auto-Distribución
+    const [modalAutoDistConfirm, setModalAutoDistConfirm] = useState(false);
 
     // ── Carga de datos ────────────────────────────────────────────────────────
 
@@ -326,10 +340,13 @@ export default function EstacionamientosEntidad() {
             toast.error('No tienes configurada ninguna distribución lógica en tus zonas.');
             return;
         }
+        setModalAutoDistConfirm(true);
+    };
 
-        const confirm = window.confirm("¿Deseas aplicar la distribución inteligente a todos los puestos físicos vacíos? Esto sobrescribirá asignaciones lógicas manuales.");
-        if (!confirm) return;
-
+    const confirmAutoDistribuir = async () => {
+        setModalAutoDistConfirm(false);
+        const asigConDist = asignaciones.filter(a => a.distribucion_cupos && Object.keys(a.distribucion_cupos).length > 0);
+        
         toast.promise(
             (async () => {
                 for (const asig of asigConDist) {
@@ -341,16 +358,32 @@ export default function EstacionamientosEntidad() {
                         if (!tipoObj) continue;
                         
                         for (let i = 0; i < cupo && pointer < puestosZona.length; i++) {
-                            await zonaService.reasignarTipoPuesto(puestosZona[pointer].id, tipoObj.id);
+                            const puesto = puestosZona[pointer];
+                            await zonaService.reasignarTipoPuesto(puesto.id, tipoObj.id);
+                            
+                            // Actualización reactiva inmediata en la UI
+                            setPuestos(prev => prev.map(p => p.id === puesto.id ? { 
+                                ...p, 
+                                tipo_acceso_id: tipoObj.id, 
+                                tipo_acceso_nombre: tipoObj.nombre 
+                            } : p));
+                            
                             pointer++;
                         }
                     }
                     // Limpiar el resto
                     while(pointer < puestosZona.length) {
-                        await zonaService.reasignarTipoPuesto(puestosZona[pointer].id, null);
+                        const puesto = puestosZona[pointer];
+                        await zonaService.reasignarTipoPuesto(puesto.id, null);
+                        setPuestos(prev => prev.map(p => p.id === puesto.id ? { 
+                            ...p, 
+                            tipo_acceso_id: null, 
+                            tipo_acceso_nombre: null 
+                        } : p));
                         pointer++;
                     }
                 }
+                // Refresco final de seguridad
                 await cargarPuestos();
             })(),
             {
@@ -420,10 +453,10 @@ export default function EstacionamientosEntidad() {
 
     const stats = {
         total: asignaciones.reduce((acc, a) => acc + (a.cupo_asignado - a.cupo_reservado_base), 0),
-        libres: puestos.filter(p => p.estado === 'libre' && !p.tipo_acceso_id).length,
+        reservados: puestos.filter(p => !!p.tipo_acceso_id).length,
         ocupados: puestos.filter(p => p.estado === 'ocupado').length,
-        reservados: puestos.filter(p => p.tipo_acceso_id).length,
     };
+    stats.libres = Math.max(0, stats.total - (stats.reservados + stats.ocupados));
 
     // ── Render ────────────────────────────────────────────────────────────────
 
@@ -552,10 +585,11 @@ export default function EstacionamientosEntidad() {
                                                 <div className="flex items-center gap-1 shrink-0 ml-2">
                                                     <button 
                                                         onClick={(e) => { e.stopPropagation(); handleAbrirGenerar(asig); }}
-                                                        className="p-2 justify-center rounded-lg hover:bg-white/10 text-primary transition-all flex items-center"
+                                                        className="h-9 px-3 rounded-xl bg-primary/10 hover:bg-primary/20 text-primary border border-primary/20 flex items-center gap-2 transition-all group"
                                                         title="Crear Puestos"
                                                     >
-                                                        <Plus size={15} />
+                                                        <PackagePlus size={16} className="group-hover:scale-110 transition-transform" />
+                                                        <span className="text-[10px] font-black uppercase tracking-wider">Crear Puestos</span>
                                                     </button>
                                                 </div>
                                             </div>
@@ -797,6 +831,26 @@ export default function EstacionamientosEntidad() {
                         onChange={e => setFormTipo({ ...formTipo, descripcion: e.target.value })}
                     />
 
+                    {/* Selector de color circular */}
+                    <div className="space-y-2">
+                        <label className="text-[10px] font-black text-text-muted uppercase tracking-widest flex items-center gap-2">
+                            <Palette size={11} className="text-primary" /> Color del Badge
+                        </label>
+                        <div className="flex flex-wrap gap-2.5 p-3 bg-white/5 rounded-xl border border-white/5">
+                            {PRESET_COLORS.map(color => (
+                                <button
+                                    key={color}
+                                    onClick={() => setFormTipo({ ...formTipo, color_badge: color })}
+                                    className={cn(
+                                        "w-8 h-8 rounded-full border-2 transition-all hover:scale-110",
+                                        formTipo.color_badge === color ? "border-primary scale-110 shadow-lg" : "border-transparent"
+                                    )}
+                                    style={{ backgroundColor: color }}
+                                />
+                            ))}
+                        </div>
+                    </div>
+
                     <div className="grid grid-cols-2 gap-4">
                         <div>
                             <label className="text-[9px] font-black text-text-muted uppercase tracking-widest block mb-2">
@@ -984,6 +1038,17 @@ export default function EstacionamientosEntidad() {
                     </div>
                 </div>
             </Modal>
+
+            {/* ── MODAL: Confirmar Auto-Distribución ── */}
+            <ModalConfirmacion
+                isOpen={modalAutoDistConfirm}
+                onClose={() => setModalAutoDistConfirm(false)}
+                onConfirm={confirmAutoDistribuir}
+                type="warning"
+                title="DISTRIBUCIÓN INTELIGENTE"
+                message="¿Deseas aplicar la distribución inteligente a todos los puestos físicos vacíos? Esto sobrescribirá las asignaciones lógicas manuales actuales."
+                confirmText="APLICAR DISTRIBUCIÓN"
+            />
         </div>
     );
 }
