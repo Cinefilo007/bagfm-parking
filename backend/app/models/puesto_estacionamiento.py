@@ -23,8 +23,14 @@ class PuestoEstacionamiento(Base):
     reservado_base = Column(Boolean, default=False, nullable=False)
     reservado_entidad_id = Column(UUID(as_uuid=True), ForeignKey("entidades_civiles.id", ondelete="SET NULL"), nullable=True)
     
+    latitud = Column(String(50), nullable=True)
+    longitud = Column(String(50), nullable=True)
+    
     vehiculo_actual_id = Column(UUID(as_uuid=True), ForeignKey("vehiculos.id", ondelete="SET NULL"), nullable=True)
     qr_actual_id = Column(UUID(as_uuid=True), ForeignKey("codigos_qr.id", ondelete="SET NULL"), nullable=True)
+    
+    registrado_por = Column(UUID(as_uuid=True), ForeignKey("usuarios.id", ondelete="SET NULL"), nullable=True)
+    reservado_por = Column(UUID(as_uuid=True), ForeignKey("usuarios.id", ondelete="SET NULL"), nullable=True)
     
     ocupado_desde = Column(DateTime(timezone=True), nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)

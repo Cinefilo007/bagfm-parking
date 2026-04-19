@@ -18,29 +18,39 @@ import api from '../../services/api';
 
 // ──── Sub-componentes ─────────────────────────────────────────────────────────
 
-const StatBadge = ({ valor, label, color = 'text-text-muted' }) => (
-    <div className="text-center">
-        <div className={cn("text-xl font-black tracking-tighter", color)}>{valor}</div>
+const StatBadge = ({ valor, label, color = 'text-text-muted', subLabel }) => (
+    <div className="text-center group">
+        <div className={cn("text-xl font-black tracking-tighter transition-transform group-hover:scale-110", color)}>{valor}</div>
         <div className="text-[7px] font-black uppercase tracking-widest text-text-muted/50">{label}</div>
+        {subLabel && <div className="text-[6px] font-bold text-text-muted/30 uppercase">{subLabel}</div>}
     </div>
 );
 
-const PuestoChip = ({ puesto, onEliminar, onEditar }) => {
+const PuestoChip = ({ puesto, onEliminar, onEditar, onGPS }) => {
     const colorMap = {
         libre: 'bg-success/15 border-success/30 text-success',
         ocupado: 'bg-danger/15 border-danger/20 text-danger',
         reservado: 'bg-warning/15 border-warning/20 text-warning',
+        reservado_base: 'bg-warning/30 border-warning/50 text-warning ring-1 ring-warning/30',
         mantenimiento: 'bg-text-muted/10 border-text-muted/20 text-text-muted/60',
     };
     return (
         <div className={cn(
-            "flex items-center gap-1.5 px-2 py-1 rounded-lg border text-[9px] font-black uppercase",
+            "flex items-center gap-1.5 px-2 py-1 rounded-lg border text-[9px] font-black uppercase transition-all hover:bg-white/5",
             colorMap[puesto.estado] || colorMap.libre
         )}>
-            <span>{puesto.codigo}</span>
-            <button onClick={() => onEliminar(puesto)} className="hover:text-danger/80 transition-all ml-0.5 opacity-50 hover:opacity-100">
-                <Trash2 size={9} />
-            </button>
+            <span>{puesto.numero_puesto || puesto.codigo}</span>
+            {puesto.latitud && <MapPin size={8} className="text-primary animate-pulse" />}
+            <div className="flex items-center gap-1 ml-1 pl-1 border-l border-white/10">
+                <button onClick={() => onGPS(puesto)} title="Capturar GPS para este puesto"
+                    className="hover:text-primary transition-all opacity-50 hover:opacity-100">
+                    <Zap size={9} />
+                </button>
+                <button onClick={() => onEliminar(puesto)} title="Eliminar puesto"
+                    className="hover:text-danger transition-all opacity-50 hover:opacity-100">
+                    <Trash2 size={9} />
+                </button>
+            </div>
         </div>
     );
 };
@@ -98,7 +108,7 @@ const ZonaRow = ({ zona, entidades, asignaciones, onEditar, onEliminar, onGestio
                 <div className="hidden sm:flex items-center gap-4 px-4 border-l border-white/5">
                     <StatBadge valor={puestosLibres} label="Libres" color="text-success" />
                     <StatBadge valor={puestosOcupados} label="Ocup." color="text-danger" />
-                    <StatBadge valor={asignacionesZona.length} label="Entids." color="text-primary" />
+                    <StatBadge valor={puestos.filter(p => p.reservado_base || p.estado === 'reservado_base').length} label="Res. Base" color="text-warning" />
                 </div>
 
                 {/* Acciones */}
@@ -170,6 +180,7 @@ const ZonaRow = ({ zona, entidades, asignaciones, onEditar, onEliminar, onGestio
                                         puesto={p}
                                         onEliminar={() => { }}
                                         onEditar={() => { }}
+                                        onGPS={() => onGestionarPuestos(zona)} // Reutilizamos el modal para editarlo
                                     />
                                 ))}
                             </div>
@@ -219,6 +230,10 @@ export default function GestionZonas() {
     const [nuevaLatPuesto, setNuevaLatPuesto] = useState('');
     const [nuevaLonPuesto, setNuevaLonPuesto] = useState('');
     const [creandoPuesto, setCreandoPuesto] = useState(false);
+    
+    // Batch Puestos
+    const [batchConfig, setBatchConfig] = useState({ prefijo: '', cantidad: 0 });
+    const [creandoBatch, setCreandoBatch] = useState(false);
 
     // Asignación cuota
     const [formAsig, setFormAsig] = useState({ entidad_id: '', cupo_asignado: 1, cupo_reservado_base: 0, notas: '' });
@@ -351,6 +366,49 @@ export default function GestionZonas() {
         } finally {
             setCreandoPuesto(false);
         }
+    };
+
+    const handleCrearBatch = async () => {
+        if (!batchConfig.prefijo.trim() || !batchConfig.cantidad) { toast.error('Datos incompletos'); return; }
+        setCreandoBatch(true);
+        try {
+            await api.post(`/zonas/${zonaActiva.id}/puestos`, {
+                prefijo: batchConfig.prefijo.toUpperCase(),
+                cantidad: parseInt(batchConfig.cantidad)
+            });
+            const puestos = await zonaService.getPuestosZona(zonaActiva.id);
+            setPuestosZona(puestos);
+            setBatchConfig({ prefijo: '', cantidad: 0 });
+            toast.success(`${batchConfig.cantidad} puestos generados`);
+            cargarDatos();
+        } catch (e) {
+            toast.error(e.response?.data?.detail || 'Error al generar lote');
+        } finally {
+            setCreandoBatch(false);
+        }
+    };
+
+    const handleCapturarGPSPuesto = async (puesto) => {
+        if (!("geolocation" in navigator)) return toast.error("GPS no disponible");
+        
+        const loadingToast = toast.loading(`Capturando GPS para ${puesto.numero_puesto}...`);
+        navigator.geolocation.getCurrentPosition(async (pos) => {
+            try {
+                const lat = pos.coords.latitude.toFixed(6);
+                const lon = pos.coords.longitude.toFixed(6);
+                await api.patch(`/zonas/puestos/${puesto.id}`, { latitud: lat, longitud: lon });
+                
+                setPuestosZona(prev => prev.map(p => p.id === puesto.id ? { ...p, latitud: lat, longitud: lon } : p));
+                toast.dismiss(loadingToast);
+                toast.success(`GPS de puesto ${puesto.numero_puesto} actualizado`);
+            } catch (e) {
+                toast.dismiss(loadingToast);
+                toast.error("Error al guardar coordenadas");
+            }
+        }, (err) => {
+            toast.dismiss(loadingToast);
+            toast.error("Error GPS: Permiso denegado");
+        });
     };
 
     const handleEliminarPuesto = async (puesto) => {
@@ -564,8 +622,9 @@ export default function GestionZonas() {
                     <p className="text-[9px] text-text-muted uppercase tracking-widest">
                         Agrega puestos identificados con código y coordenadas opcionales.
                     </p>
-                    {/* Formulario nuevo puesto */}
+                    {/* Formulario nuevo puesto individual */}
                     <div className="p-3 bg-white/5 rounded-xl border border-white/5 space-y-3">
+                        <p className="text-[7px] font-black text-primary uppercase tracking-widest">Añadir Individual</p>
                         <div className="grid grid-cols-3 gap-2">
                             <div className="col-span-1">
                                 <Input label="Código *" value={nuevoCodigo}
@@ -573,27 +632,46 @@ export default function GestionZonas() {
                                     placeholder="A-01" />
                             </div>
                             <div className="col-span-1">
-                                <Input label="Latitud (opc.)" value={nuevaLatPuesto}
+                                <Input label="Latitud" value={nuevaLatPuesto}
                                     onChange={e => setNuevaLatPuesto(e.target.value)}
                                     placeholder="10.1234" />
                             </div>
                             <div className="col-span-1">
-                                <Input label="Longitud (opc.)" value={nuevaLonPuesto}
+                                <Input label="Longitud" value={nuevaLonPuesto}
                                     onChange={e => setNuevaLonPuesto(e.target.value)}
                                     placeholder="-66.987" />
                             </div>
                         </div>
                         <Boton onClick={handleCrearPuesto} disabled={creandoPuesto || !nuevoCodigo.trim()}
-                            className="w-full h-10 bg-primary/20 text-primary border border-primary/30 rounded-xl text-[10px] font-black uppercase gap-1.5">
-                            {creandoPuesto ? <RefreshCw size={13} className="animate-spin" /> : <Plus size={13} />}
-                            Agregar Puesto
+                            className="w-full h-9 bg-primary/20 text-primary border border-primary/30 rounded-xl text-[10px] font-black uppercase gap-1.5">
+                            {creandoPuesto ? <RefreshCw size={12} className="animate-spin" /> : <Plus size={12} />}
+                            Confirmar Puesto
                         </Boton>
                     </div>
+
+                    {/* Formulario LOTE (Batch) */}
+                    <div className="p-3 bg-primary/5 rounded-xl border border-primary/20 space-y-3">
+                        <p className="text-[7px] font-black text-primary uppercase tracking-widest">Creación por Lote (Batch)</p>
+                        <div className="grid grid-cols-2 gap-2">
+                            <Input label="Prefijo (Ex: A)" value={batchConfig.prefijo}
+                                onChange={e => setBatchConfig({ ...batchConfig, prefijo: e.target.value.toUpperCase() })}
+                                placeholder="A, B, VIP..." />
+                            <Input label="Cantidad" type="number" value={batchConfig.cantidad || ''}
+                                onChange={e => setBatchConfig({ ...batchConfig, cantidad: e.target.value })}
+                                placeholder="Ej: 50" />
+                        </div>
+                        <Boton onClick={handleCrearBatch} disabled={creandoBatch || !batchConfig.prefijo || !batchConfig.cantidad}
+                            className="w-full h-9 bg-primary text-bg-app rounded-xl text-[10px] font-black uppercase gap-1.5 shadow-lg shadow-primary/10">
+                            {creandoBatch ? <RefreshCw size={12} className="animate-spin" /> : <Zap size={12} />}
+                            Generar Batch de Puestos
+                        </Boton>
+                    </div>
+
                     {/* Lista de puestos */}
                     {puestosZona.length > 0 ? (
-                        <div className="flex flex-wrap gap-2">
+                        <div className="flex flex-wrap gap-2 max-h-48 overflow-y-auto p-1 bg-black/10 rounded-lg">
                             {puestosZona.map(p => (
-                                <PuestoChip key={p.id} puesto={p} onEliminar={handleEliminarPuesto} onEditar={() => { }} />
+                                <PuestoChip key={p.id} puesto={p} onEliminar={handleEliminarPuesto} onEditar={() => { }} onGPS={handleCapturarGPSPuesto} />
                             ))}
                         </div>
                     ) : (

@@ -78,7 +78,7 @@ export const Sidebar = () => {
       </div>
 
       {/* User Info Brief */}
-      <div className="px-6 py-4 flex items-center gap-3 border-b border-bg-high/10 mx-2 my-2 rounded-xl bg-bg-high/20">
+      <div className="px-4 py-3 flex items-center gap-3 border border-bg-high/10 mx-2 my-2 rounded-xl bg-bg-high/20">
          <div className="w-10 h-10 rounded-full bg-surface-variant flex items-center justify-center border border-bg-high/20 shrink-0">
             <UserCircle size={24} className="text-text-muted" />
          </div>
@@ -123,8 +123,8 @@ export const Sidebar = () => {
       </nav>
 
       {/* Bottom Actions */}
-      <div className="mt-auto p-4 flex flex-col gap-1">
-          <div className="px-4 py-1 border-t border-bg-high/10" />
+      <div className="mt-auto p-2 flex flex-col gap-0.5 shadow-[0_-10px_20px_rgba(0,0,0,0.2)]">
+          <div className="px-4 py-0.5 border-t border-bg-high/5 mb-1" />
           <button 
             onClick={toggleTheme}
             className="flex items-center gap-3 px-4 py-2.5 rounded-lg text-text-muted hover:bg-bg-high/20 hover:text-text-sec transition-all group"

@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Body
 from sqlalchemy.ext.asyncio import AsyncSession
 from uuid import UUID
 from typing import List
@@ -13,7 +13,7 @@ from app.schemas.zona_estacionamiento import (
 from app.schemas.asignacion_zona import (
     AsignacionZonaCrear, AsignacionZonaSalida
 )
-from app.schemas.puesto_estacionamiento import PuestoEstacionamientoSalida
+from app.schemas.puesto_estacionamiento import PuestoEstacionamientoSalida, PuestoEstacionamientoActualizar
 
 router = APIRouter()
 
@@ -51,7 +51,7 @@ async def listar_zonas(
 @router.put("/{zona_id}/tiempo-llegada")
 async def modificar_tiempo_limite(
     zona_id: UUID, 
-    minutos: int,
+    minutos: int = Body(..., embed=True),
     db: AsyncSession = Depends(obtener_db),
     current_user: Usuario = Depends(require_rol(["COMANDANTE", "ADMIN_BASE", "SUPERVISOR", "SUPERVISOR_PARQUEROS", "ADMIN_ENTIDAD"]))
 ):
@@ -77,8 +77,8 @@ async def obtener_puestos(
 @router.post("/{zona_id}/puestos", response_model=List[PuestoEstacionamientoSalida])
 async def generar_puestos(
     zona_id: UUID,
-    prefijo: str,
-    cantidad: int,
+    prefijo: str = Body(...),
+    cantidad: int = Body(...),
     db: AsyncSession = Depends(obtener_db),
     current_user: Usuario = Depends(require_rol(["COMANDANTE", "ADMIN_BASE"]))
 ):
@@ -87,7 +87,19 @@ async def generar_puestos(
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
 
-@router.post("/asignar", response_model=AsignacionZonaSalida)
+@router.patch("/puestos/{puesto_id}", response_model=PuestoEstacionamientoSalida)
+async def actualizar_puesto(
+    puesto_id: UUID,
+    datos: PuestoEstacionamientoActualizar,
+    db: AsyncSession = Depends(obtener_db),
+    current_user: Usuario = Depends(require_rol(["COMANDANTE", "ADMIN_BASE", "PARQUERO"]))
+):
+    try:
+        return await zona_service.actualizar_puesto_fisico(db, puesto_id, datos.model_dump(exclude_unset=True))
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+@router.post("/asignaciones", response_model=AsignacionZonaSalida)
 async def asignar_zona_entidad(
     datos: AsignacionZonaCrear,
     db: AsyncSession = Depends(obtener_db),
@@ -97,6 +109,7 @@ async def asignar_zona_entidad(
         return await zona_service.asignar_zona_a_entidad(db, dict(datos), current_user.id)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
+
 @router.get("/asignaciones", response_model=List[AsignacionZonaSalida])
 async def obtener_todas_las_asignaciones(
     db: AsyncSession = Depends(obtener_db),

@@ -17,7 +17,6 @@ class ZonaEstacionamientoService:
     async def crear_zona_estacionamiento(
         self, db: AsyncSession, zona_in: dict, user_id: UUID
     ) -> ZonaEstacionamiento:
-        # Aquí zona_in es un dict porque lo pasamos desde el endpoint API
         db_zona = ZonaEstacionamiento(
             **zona_in,
             created_by=user_id
@@ -34,7 +33,6 @@ class ZonaEstacionamientoService:
         if not db_zona:
             return None
         
-        # Eliminar nulos del dict para solo actualizar lo que viene
         update_data = {k: v for k, v in zona_in.items() if v is not None}
         
         for key, value in update_data.items():
@@ -59,15 +57,13 @@ class ZonaEstacionamientoService:
         return resultado.scalars().all()
 
     async def obtener_puestos_zona(self, db: AsyncSession, zona_id: UUID) -> List[PuestoEstacionamiento]:
-        resultado = await db.execute(select(PuestoEstacionamiento).filter(PuestoEstacionamiento.zona_id == zona_id))
+        resultado = await db.execute(select(PuestoEstacionamiento).filter(PuestoEstacionamiento.zona_id == zona_id).order_by(PuestoEstacionamiento.numero_puesto))
         return resultado.scalars().all()
 
     async def generar_puestos_fisicos(
         self, db: AsyncSession, zona_id: UUID, prefijo: str, cantidad: int, user_id: UUID
     ) -> List[PuestoEstacionamiento]:
-        """
-        Crea puestos identificados en lote para una zona.
-        """
+        """Crea puestos identificados en lote para una zona."""
         puestos = []
         for i in range(1, cantidad + 1):
             puesto = PuestoEstacionamiento(
@@ -83,12 +79,29 @@ class ZonaEstacionamientoService:
             await db.refresh(p)
         return puestos
 
+    async def get_puesto(self, db: AsyncSession, puesto_id: UUID) -> Optional[PuestoEstacionamiento]:
+        resultado = await db.execute(select(PuestoEstacionamiento).filter(PuestoEstacionamiento.id == puesto_id))
+        return resultado.scalars().first()
+
+    async def actualizar_puesto_fisico(
+        self, db: AsyncSession, puesto_id: UUID, datos_in: dict
+    ) -> Optional[PuestoEstacionamiento]:
+        """Actualiza datos de un puesto (como coordenadas GPS)."""
+        puesto = await self.get_puesto(db, puesto_id)
+        if not puesto:
+            return None
+        
+        for key, value in datos_in.items():
+            setattr(puesto, key, value)
+            
+        await db.commit()
+        await db.refresh(puesto)
+        return puesto
+
     async def reservar_puestos_base(
-        self, db: AsyncSession, zona_id: UUID, cantidad: int, entidad_id: Optional[UUID] = None
+        self, db: AsyncSession, zona_id: UUID, cantidad: int, entidad_id: Optional[UUID] = None, user_id: Optional[UUID] = None
     ) -> List[PuestoEstacionamiento]:
-        """
-        Reserva puestos aleatorios libres en una zona para la base o para una entidad en específico.
-        """
+        """Reserva puestos aleatorios libres en una zona."""
         query = select(PuestoEstacionamiento).filter(
             and_(
                 PuestoEstacionamiento.zona_id == zona_id,
@@ -104,7 +117,7 @@ class ZonaEstacionamientoService:
 
         for puesto in puestos_libres:
             puesto.estado = EstadoPuesto.reservado if entidad_id else EstadoPuesto.reservado_base
-            puesto.reservado_por = None # TODO: O quien llama
+            puesto.reservado_por = user_id
             puesto.reservado_para_entidad_id = entidad_id
 
         await db.commit()
@@ -115,9 +128,7 @@ class ZonaEstacionamientoService:
     async def asignar_zona_a_entidad(
         self, db: AsyncSession, asignacion_in: dict, user_id: UUID
     ) -> AsignacionZona:
-        """
-        Asigna a una entidad civil una porción de la capacidad de la zona.
-        """
+        """Asigna a una entidad civil una porción de la capacidad de la zona."""
         db_asignacion = AsignacionZona(**asignacion_in, asignado_por=user_id)
         db.add(db_asignacion)
         await db.commit()
@@ -125,9 +136,6 @@ class ZonaEstacionamientoService:
         return db_asignacion
 
     async def verificar_capacidad_disponible(self, db: AsyncSession, zona_id: UUID) -> bool:
-        """
-        Verifica si hay capacidad total disponible o puestos libres en la zona.
-        """
         zona = await self.get_zona(db, zona_id)
         if not zona:
             return False
@@ -146,9 +154,6 @@ class ZonaEstacionamientoService:
             return zona.ocupacion_actual < zona.capacidad_total
 
     async def obtener_asignaciones_globales(self, db: AsyncSession) -> List[AsignacionZona]:
-        """
-        Retorna todas las asignaciones de cupos vigentes en el sistema.
-        """
         resultado = await db.execute(select(AsignacionZona))
         return resultado.scalars().all()
 

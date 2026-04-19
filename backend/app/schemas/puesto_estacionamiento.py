@@ -9,6 +9,8 @@ class PuestoEstacionamientoBase(BaseModel):
     estado: EstadoPuesto = EstadoPuesto.libre
     reservado_base: bool = False
     reservado_entidad_id: Optional[UUID] = None
+    latitud: Optional[str] = None
+    longitud: Optional[str] = None
 
 class PuestoEstacionamientoCrear(PuestoEstacionamientoBase):
     pass

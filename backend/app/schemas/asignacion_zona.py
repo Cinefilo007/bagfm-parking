@@ -5,7 +5,9 @@ from pydantic import BaseModel, ConfigDict
 
 class AsignacionZonaBase(BaseModel):
     entidad_id: UUID
-    capacidad_asignada: int
+    cupo_asignado: int
+    cupo_reservado_base: int = 0
+    notas: Optional[str] = None
     activa: bool = True
     fecha_fin: Optional[datetime] = None
 
