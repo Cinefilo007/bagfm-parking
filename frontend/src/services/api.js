@@ -2,21 +2,25 @@ import axios from 'axios';
 
 // Axios Instance Configuration
 const getBaseURL = () => {
+  // 1. Obtener URL desde variables de entorno o fallback seguro
   let url = import.meta.env.VITE_API_URL || 'https://bagfm-backend-production.up.railway.app/api/v1';
   
-  // NORMALIZE: Asegurar que NO haya espacios y que el protocolo sea HTTPS 
-  // en producción (Railway) o si el sitio principal es seguro.
-  const esLocal = url.includes('localhost') || url.includes('127.0.0.1');
+  // 2. Normalización básica
+  url = url.trim();
 
-  if (!esLocal) {
+  // 3. AGRESSIVE HTTPS: Force HTTPS if we are not in localhost
+  const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+  
+  if (!isLocal) {
     if (url.startsWith('http:')) {
       url = url.replace('http:', 'https:');
     } else if (!url.startsWith('https:')) {
+      // Si no tiene protocolo, asumimos https para producción
       url = 'https://' + url.replace(/^\/+/, '');
     }
   }
   
-  return url.trim();
+  return url;
 };
 
 const api = axios.create({
