@@ -213,4 +213,20 @@ Antes de hacer merge de cualquier vista, verificar:
 
 ---
 
-*Versión: 2.1 | Actualizada: 2026-04-14 | Autor: Antigravity*
+## SECCIÓN 9 — SCROLLBAR TÁCTICO MODERNO
+
+Para mantener la estética premium y evitar las barras grises genéricas del navegador, todo contenedor desplazable (especialmente modales y paneles laterales) debe usar el estilo de scrollbar táctico:
+
+### 9.1 Configuración Visual (CSS Global)
+- **Ancho/Alto:** `6px` (minimalista).
+- **Track:** `rgba(255, 255, 255, 0.02)` (casi invisible).
+- **Thumb (Barra):** `rgba(255, 255, 255, 0.1)` en reposo.
+- **Hover Thumb:** `var(--primary)` (esmeralda táctico) al pasar el cursor.
+- **Radio:** `10px` (bordes redondeados).
+
+### 9.2 Implementación
+El estilo se aplica globalmente en `index.css`. Si se requiere ocultar el scrollbar pero mantener el scroll funcional, usar la clase `.no-scrollbar`.
+
+---
+
+*Versión: 2.2 | Actualizada: 2026-04-18 | Autor: Antigravity*

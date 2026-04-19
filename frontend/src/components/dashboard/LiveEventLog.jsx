@@ -108,7 +108,7 @@ const LiveEventLog = ({ puntoNombre = null }) => {
             <div 
                 ref={containerRef}
                 onScroll={handleScroll}
-                className="flex-1 overflow-y-auto pr-1 custom-scrollbar space-y-3 pb-4"
+                className="flex-1 overflow-y-auto pr-1 space-y-3 pb-4"
             >
                 {eventos.length === 0 && !loading && !polling ? (
                     <div className="h-full min-h-[150px] flex flex-col items-center justify-center border border-dashed border-white/5 rounded-2xl">

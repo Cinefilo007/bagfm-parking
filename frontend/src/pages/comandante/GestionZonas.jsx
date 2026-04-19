@@ -168,8 +168,8 @@ const ZonaRow = ({ zona, entidades, asignaciones, onEditar, onEliminar, onGestio
                                     <PuestoChip
                                         key={p.id}
                                         puesto={p}
-                                        onEliminar={() => {}}
-                                        onEditar={() => {}}
+                                        onEliminar={() => { }}
+                                        onEditar={() => { }}
                                     />
                                 ))}
                             </div>
@@ -190,7 +190,7 @@ const ZonaRow = ({ zona, entidades, asignaciones, onEditar, onEliminar, onGestio
 // ──── Página Principal ────────────────────────────────────────────────────────
 
 const FORM_ZONA_INICIAL = {
-    nombre: '', descripcion: '', capacidad: '', es_perimetral: false,
+    nombre: '', descripcion: '', capacidad: '',
     latitud: '', longitud: '', tiempo_limite_llegada_min: 15,
 };
 
@@ -242,11 +242,13 @@ export default function GestionZonas() {
         } catch (e) {
             // Demo fallback
             setZonas([
-                { id: 'z1', nombre: 'Zona VIP Norte', capacidad: 20, tiempo_limite_llegada_min: 15, es_perimetral: false, latitud: '10.1234', longitud: '-66.9876', puestos: [
-                    { id: 'p1', codigo: 'A-01', estado: 'libre' },
-                    { id: 'p2', codigo: 'A-02', estado: 'ocupado' },
-                    { id: 'p3', codigo: 'A-03', estado: 'libre' },
-                ]},
+                {
+                    id: 'z1', nombre: 'Zona VIP Norte', capacidad: 20, tiempo_limite_llegada_min: 15, es_perimetral: false, latitud: '10.1234', longitud: '-66.9876', puestos: [
+                        { id: 'p1', codigo: 'A-01', estado: 'libre' },
+                        { id: 'p2', codigo: 'A-02', estado: 'ocupado' },
+                        { id: 'p3', codigo: 'A-03', estado: 'libre' },
+                    ]
+                },
                 { id: 'z2', nombre: 'Parqueo Logístico', capacidad: 50, tiempo_limite_llegada_min: 25, es_perimetral: true, puestos: [] },
                 { id: 'z3', nombre: 'Zona Staff', capacidad: 30, tiempo_limite_llegada_min: 15, es_perimetral: false, puestos: [] },
             ]);
@@ -473,9 +475,6 @@ export default function GestionZonas() {
                 <div className="text-center py-16 border border-dashed border-white/10 rounded-2xl">
                     <ParkingSquare size={48} className="mx-auto text-white/10 mb-4" />
                     <p className="text-[10px] font-black uppercase tracking-widest text-text-muted/40">No hay zonas registradas</p>
-                    <Boton onClick={() => abrirModalZona()} className="mt-6 h-10 px-6 bg-primary/10 text-primary border border-primary/30 rounded-xl text-[10px] font-black">
-                        <Plus size={14} /> Crear primera zona
-                    </Boton>
                 </div>
             ) : (
                 <div className="space-y-3">
@@ -522,16 +521,25 @@ export default function GestionZonas() {
                                 placeholder="Descripción breve de la zona..." />
                         </div>
                     </div>
-                    <button onClick={() => setFormZona({ ...formZona, es_perimetral: !formZona.es_perimetral })}
-                        className="w-full flex items-center justify-between p-3 rounded-xl bg-white/5 border border-white/5 hover:bg-white/10 transition-all">
-                        <div className="flex items-center gap-2">
-                            <MapPin size={16} className="text-text-muted" />
-                            <span className="text-[10px] font-black uppercase tracking-wider text-text-main">Zona Perimetral</span>
-                        </div>
-                        <span className={formZona.es_perimetral ? "text-success text-[10px] font-black" : "text-text-muted/40 text-[10px] font-black"}>
-                            {formZona.es_perimetral ? "SÍ" : "NO"}
-                        </span>
-                    </button>
+                    <div className="col-span-2">
+                        <Boton onClick={() => {
+                            if ("geolocation" in navigator) {
+                                toast.loading("Obteniendo ubicación GPS...");
+                                navigator.geolocation.getCurrentPosition((pos) => {
+                                    setFormZona(f => ({ ...f, latitud: pos.coords.latitude.toFixed(6), longitud: pos.coords.longitude.toFixed(6) }));
+                                    toast.dismiss();
+                                    toast.success("Ubicación capturada");
+                                }, (err) => {
+                                    toast.dismiss();
+                                    toast.error("Error al obtener GPS: Permiso denegado");
+                                });
+                            } else {
+                                toast.error("GPS no disponible en este navegador");
+                            }
+                        }} className="w-full h-11 bg-warning/10 text-warning border border-warning/20 text-[10px] gap-2 font-black uppercase">
+                            <MapPin size={14} /> Usar mi ubicación actual (GPS Móvil)
+                        </Boton>
+                    </div>
                     <div className="flex gap-3 pt-2 border-t border-white/5">
                         <Boton variant="ghost" className="flex-1" onClick={() => setModalZona(false)}>Cancelar</Boton>
                         <Boton onClick={handleGuardarZona} disabled={guardando}
@@ -577,7 +585,7 @@ export default function GestionZonas() {
                     {puestosZona.length > 0 ? (
                         <div className="flex flex-wrap gap-2">
                             {puestosZona.map(p => (
-                                <PuestoChip key={p.id} puesto={p} onEliminar={handleEliminarPuesto} onEditar={() => {}} />
+                                <PuestoChip key={p.id} puesto={p} onEliminar={handleEliminarPuesto} onEditar={() => { }} />
                             ))}
                         </div>
                     ) : (
