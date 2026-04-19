@@ -1,7 +1,10 @@
 from fastapi import APIRouter, Depends, HTTPException, status, Body
 from sqlalchemy.ext.asyncio import AsyncSession
 from uuid import UUID
-from typing import List
+from typing import List, Optional
+from sqlalchemy import select
+from sqlalchemy.orm import joinedload
+from app.models.puesto_estacionamiento import PuestoEstacionamiento
 
 from app.core.database import obtener_db
 from app.core.dependencias import obtener_usuario_actual, require_rol
@@ -148,8 +151,8 @@ async def obtener_mis_asignaciones(
     """Obtiene las asignaciones de zona vinculadas a la entidad del usuario."""
     if not current_user.entidad_id:
         return []
-    from sqlalchemy import select
-    from sqlalchemy.orm import joinedload
+    if not current_user.entidad_id:
+        return []
     from app.models.asignacion_zona import AsignacionZona
     rs = await db.execute(select(AsignacionZona).options(joinedload(AsignacionZona.zona)).where(
         AsignacionZona.entidad_id == current_user.entidad_id,
@@ -165,9 +168,6 @@ async def obtener_mis_puestos(
     """Retorna los puestos físicos específicos asignados a la entidad del usuario."""
     if not current_user.entidad_id:
         return []
-    from sqlalchemy import select
-    from sqlalchemy.orm import joinedload
-    from app.models.puesto_estacionamiento import PuestoEstacionamiento
     rs = await db.execute(
         select(PuestoEstacionamiento)
         .options(joinedload(PuestoEstacionamiento.zona), joinedload(PuestoEstacionamiento.tipo_acceso))
@@ -233,7 +233,6 @@ async def reasignar_tipo_puesto(
     await db.refresh(puesto)
     
     # Recargar con relaciones para la respuesta
-    from sqlalchemy.orm import joinedload
     rs = await db.execute(
         select(PuestoEstacionamiento)
         .options(joinedload(PuestoEstacionamiento.zona), joinedload(PuestoEstacionamiento.tipo_acceso))
