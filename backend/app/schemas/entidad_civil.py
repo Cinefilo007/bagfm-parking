@@ -30,5 +30,6 @@ class EntidadCivilSalida(EntidadCivilBase):
     # Métricas Operativas (Opcionales dependiendo del endpoint)
     total_usuarios: Optional[int] = 0
     total_vehiculos: Optional[int] = 0
+    total_capacidad: Optional[int] = 0
     
     model_config = ConfigDict(from_attributes=True)

@@ -28,5 +28,6 @@ class EntidadCivil(Base):
 
     # Relaciones
     usuarios = relationship("Usuario", foreign_keys="Usuario.entidad_id", back_populates="entidad_pertenece")
+    asignaciones = relationship("AsignacionZona", backref="entidad", cascade="all, delete-orphan")
     # membresias = relationship("Membresia", back_populates="entidad")
     # solicitudes_evento = relationship("SolicitudEvento", back_populates="entidad")

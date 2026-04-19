@@ -13,6 +13,7 @@ import {
     AlertTriangle, CheckCircle2, Timer, Hash,
     Lock, Unlock, Zap, Activity
 } from 'lucide-react';
+import SelectTactivo from '../../components/ui/SelectTactivo';
 import zonaService from '../../services/zona.service';
 import api from '../../services/api';
 import { ModalConfirmacion } from '../../components/ui/ModalConfirmacion';
@@ -470,7 +471,10 @@ export default function GestionZonas() {
     // ── Stats globales ───────────────────────────────────────────────────────
     const totalCapacidad = zonas.reduce((acc, z) => acc + (z.capacidad_total || 0), 0);
     const totalOcupados = zonas.reduce((acc, z) => acc + (z.puestos?.filter(p => p.estado === 'ocupado').length || 0), 0);
-    const totalReservados = zonas.reduce((acc, z) => acc + (z.puestos?.filter(p => p.estado === 'reservado' || p.estado === 'reservado_base').length || 0), 0);
+    
+    // Sumamos puestos físicos reservados + reservas lógicas en asignaciones (evitando duplicar si ya existen puestos físicos)
+    const totalReservados = asignaciones.reduce((acc, a) => acc + (a.cupo_reservado_base || 0), 0) + 
+                          zonas.reduce((acc, z) => acc + (z.puestos?.filter(p => p.estado === 'reservado' && !p.reservado_para_entidad_id).length || 0), 0);
 
 
 
@@ -676,17 +680,15 @@ export default function GestionZonas() {
                             Asigna una cantidad de puestos de esta zona a una entidad alojada. También puedes reservar puestos para uso exclusivo del personal de la base dentro de esa asignación.
                         </p>
                     </div>
-                    <div>
-                        <label className="text-[9px] font-black text-text-muted uppercase tracking-widest block mb-2">Entidad *</label>
-                        <select value={formAsig.entidad_id}
-                            onChange={e => setFormAsig({ ...formAsig, entidad_id: e.target.value })}
-                            className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2.5 text-xs font-bold text-text-main focus:border-primary/50 outline-none">
-                            <option value="">— Seleccionar entidad —</option>
-                            {entidades.map(e => (
-                                <option key={e.id} value={e.id}>{e.nombre}</option>
-                            ))}
-                        </select>
-                    </div>
+                    <SelectTactivo 
+                        label="Entidad *"
+                        icon={<Building2 size={12} />}
+                        placeholder="Buscar y seleccionar entidad..."
+                        options={entidades.map(e => ({ value: e.id, label: e.nombre }))}
+                        value={entidades.filter(e => e.id === formAsig.entidad_id).map(e => ({ value: e.id, label: e.nombre }))[0] || null}
+                        onChange={(opt) => setFormAsig({ ...formAsig, entidad_id: opt ? opt.value : '' })}
+                    />
+
                     <div className="grid grid-cols-2 gap-4">
                         <Input label="Puestos asignados" type="number" value={formAsig.cupo_asignado}
                             onChange={e => setFormAsig({ ...formAsig, cupo_asignado: parseInt(e.target.value) })}

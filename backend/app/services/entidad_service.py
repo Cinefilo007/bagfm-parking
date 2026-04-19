@@ -12,6 +12,7 @@ from app.models.vehiculo import Vehiculo
 from app.models.codigo_qr import CodigoQR
 from app.models.alcabala_evento import SolicitudEvento
 from app.models.acceso import Acceso
+from app.models.asignacion_zona import AsignacionZona
 from app.models.enums import RolTipo
 from app.schemas.entidad_civil import EntidadCivilCrear
 from app.core.excepciones import EntidadDuplicada, EntidadNoEncontrada
@@ -98,15 +99,24 @@ class EntidadCivilService:
         ).join(Vehiculo, Vehiculo.socio_id == Usuario.id
         ).group_by(Usuario.entidad_id).subquery()
 
+        # Subconsulta para sumar capacidad asignada por entidad
+        capacidad_sub = select(
+            AsignacionZona.entidad_id,
+            func.sum(AsignacionZona.cupo_asignado).label("total_capacidad")
+        ).where(AsignacionZona.activa == True).group_by(AsignacionZona.entidad_id).subquery()
+
         # Consulta principal con JOINS externos
         query = select(
             EntidadCivil,
             func.coalesce(usuarios_sub.c.total_usuarios, 0).label("total_usuarios"),
-            func.coalesce(vehiculos_sub.c.total_vehiculos, 0).label("total_vehiculos")
+            func.coalesce(vehiculos_sub.c.total_vehiculos, 0).label("total_vehiculos"),
+            func.coalesce(capacidad_sub.c.total_capacidad, 0).label("total_capacidad")
         ).outerjoin(
             usuarios_sub, EntidadCivil.id == usuarios_sub.c.entidad_id
         ).outerjoin(
             vehiculos_sub, EntidadCivil.id == vehiculos_sub.c.entidad_id
+        ).outerjoin(
+            capacidad_sub, EntidadCivil.id == capacidad_sub.c.entidad_id
         )
 
         if activas_solo:
@@ -123,6 +133,7 @@ class EntidadCivilService:
             ent = row.EntidadCivil
             ent.total_usuarios = row.total_usuarios
             ent.total_vehiculos = row.total_vehiculos
+            ent.total_capacidad = row.total_capacidad
             entidades.append(ent)
             
         return entidades
@@ -150,6 +161,12 @@ class EntidadCivilService:
             Usuario, Vehiculo.socio_id == Usuario.id
         ).where(Usuario.entidad_id == entidad_id)
         entidad.total_vehiculos = (await db.execute(q_v)).scalar() or 0
+        
+        q_c = select(func.sum(AsignacionZona.cupo_asignado)).where(
+            AsignacionZona.entidad_id == entidad_id,
+            AsignacionZona.activa == True
+        )
+        entidad.total_capacidad = (await db.execute(q_c)).scalar() or 0
         
         return entidad
 

@@ -178,7 +178,7 @@ export default function Entidades() {
                        Capacidad
                      </span>
                      <span className="text-text-main font-mono font-bold text-sm">
-                       {ent.capacidad_vehiculos} <span className="text-[9px] text-text-muted">VEH</span>
+                       {ent.total_capacidad} <span className="text-[9px] text-text-muted">VEH</span>
                      </span>
                   </div>
                   <div className="flex flex-col border-r border-bg-high/10 pl-2">
