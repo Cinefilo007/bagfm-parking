@@ -259,22 +259,35 @@ export default function DashboardInfracciones() {
     };
 
     return (
-        <div className="p-4 md:p-6 pb-24 max-w-4xl mx-auto animate-in fade-in duration-500 space-y-5">
+        <div className="p-4 md:p-6 space-y-6 pb-24 max-w-[1400px] mx-auto animate-in fade-in duration-500">
 
-            {/* Header */}
-            <header className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 bg-danger/10 rounded-xl flex items-center justify-center border border-danger/20">
-                        <AlertTriangle className="text-danger" size={20} />
-                    </div>
-                    <div>
-                        <h1 className="text-xl font-black text-text-main uppercase tracking-tight">Infracciones</h1>
-                        <p className="text-[9px] text-text-muted font-bold uppercase tracking-widest">Centro de Comando — Registro de Sanciones</p>
-                    </div>
+            {/* Header Táctico Obligatorio */}
+            <header className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 
+                               bg-bg-card/30 p-4 md:p-5 rounded-2xl border border-white/5">
+                <div className="min-w-0">
+                    <h1 className="text-2xl font-black text-text-main flex items-center gap-3 tracking-tight">
+                        <div className="p-2 bg-danger/10 rounded-xl shrink-0">
+                            <AlertTriangle className="text-danger" size={24} />
+                        </div>
+                        <span className="uppercase">Gestión de Infracciones</span>
+                    </h1>
+                    <p className="text-text-muted text-sm mt-1 flex items-center gap-1.5 px-1 font-bold">
+                        <span className="w-1.5 h-1.5 rounded-full bg-danger animate-pulse shrink-0" />
+                        Centro de Control de Sanciones y Vigilancia de Base
+                    </p>
                 </div>
-                <button onClick={cargarDatos} className="p-2 rounded-lg bg-white/5 hover:bg-white/10 transition-all">
-                    <RefreshCw size={16} className={cn("text-text-muted", cargando && 'animate-spin')} />
-                </button>
+
+                <div className="flex items-center gap-2 w-full sm:w-auto self-end">
+                    <button onClick={cargarDatos} className="h-11 w-11 flex items-center justify-center rounded-xl bg-bg-high/20 hover:bg-bg-high/40 transition-all border border-white/5">
+                        <RefreshCw size={18} className={cn("text-text-muted", cargando && 'animate-spin')} />
+                    </button>
+                    <Boton onClick={cargarDatos} className="gap-2 h-11 px-6 w-full sm:w-auto shrink-0 
+                                                        bg-danger text-white font-black uppercase tracking-widest text-[11px]
+                                                        rounded-xl shadow-tactica hover:scale-[1.02] active:scale-[0.98] transition-all">
+                        <RefreshCw size={16} />
+                        <span>Sincronizar Radar</span>
+                    </Boton>
+                </div>
             </header>
 
             {/* KPIs */}

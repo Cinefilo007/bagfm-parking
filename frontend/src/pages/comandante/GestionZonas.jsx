@@ -417,22 +417,30 @@ export default function GestionZonas() {
         <div className="p-4 md:p-6 space-y-5 pb-24 max-w-5xl mx-auto animate-in fade-in duration-500">
 
             {/* Header */}
-            <header className="flex items-center justify-between gap-4">
-                <div className="flex items-center gap-3">
-                    <div className="w-11 h-11 bg-primary/10 rounded-xl flex items-center justify-center border border-primary/20">
-                        <ParkingSquare className="text-primary" size={22} />
-                    </div>
-                    <div>
-                        <h1 className="text-xl font-black text-text-main uppercase tracking-tight">Gestión de Zonas</h1>
-                        <p className="text-[9px] text-text-muted font-bold uppercase tracking-widest">Centro de Comando — Distribución de Estacionamientos</p>
-                    </div>
+            <header className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 
+                               bg-bg-card/30 p-4 md:p-5 rounded-2xl border border-white/5">
+                <div className="min-w-0">
+                    <h1 className="text-2xl font-black text-text-main flex items-center gap-3 tracking-tight">
+                        <div className="p-2 bg-primary/10 rounded-xl shrink-0">
+                            <ParkingSquare className="text-primary" size={24} />
+                        </div>
+                        <span className="uppercase">Gestión de Zonas</span>
+                    </h1>
+                    <p className="text-text-muted text-sm mt-1 flex items-center gap-1.5 px-1 font-bold">
+                        <span className="w-1.5 h-1.5 rounded-full bg-success animate-pulse shrink-0" />
+                        Distribución y Georreferenciación de Estacionamientos
+                    </p>
                 </div>
-                <div className="flex items-center gap-2">
-                    <button onClick={cargarDatos} className="p-2 rounded-lg bg-white/5 hover:bg-white/10 transition-all">
-                        <RefreshCw size={16} className={cn("text-text-muted", cargando && 'animate-spin')} />
+
+                <div className="flex items-center gap-2 w-full sm:w-auto self-end">
+                    <button onClick={cargarDatos} className="h-11 w-11 flex items-center justify-center rounded-xl bg-bg-high/20 hover:bg-bg-high/40 transition-all border border-white/5">
+                        <RefreshCw size={18} className={cn("text-text-muted", cargando && 'animate-spin')} />
                     </button>
-                    <Boton onClick={() => abrirModalZona()} className="h-10 px-4 gap-1.5 text-[10px] font-black uppercase bg-primary text-bg-app rounded-xl">
-                        <Plus size={14} /> Nueva Zona
+                    <Boton onClick={() => abrirModalZona()} className="gap-2 h-11 px-6 w-full sm:w-auto shrink-0 
+                                                        bg-primary text-bg-app font-black uppercase tracking-widest text-[11px]
+                                                        rounded-xl shadow-tactica hover:scale-[1.02] active:scale-[0.98] transition-all">
+                        <Plus size={16} />
+                        <span>Nueva Zona Táctica</span>
                     </Boton>
                 </div>
             </header>
@@ -500,23 +508,23 @@ export default function GestionZonas() {
                     <div className="grid grid-cols-2 gap-4">
                         <div className="col-span-2">
                             <Input label="Nombre de la Zona *" value={formZona.nombre}
-                                onChange={e => setFormZona({ ...formZona, nombre: e.target.value.toUpperCase() })}
-                                placeholder="ZONA VIP NORTE, PARQUEO LOGÍSTICO..." />
+                                onChange={e => setFormZona({ ...formZona, nombre: e.target.value })}
+                                placeholder="Ej: Zona VIP Norte, Parqueo Logístico..." />
                         </div>
-                        <Input label="Capacidad (vehículos)" type="number" value={formZona.capacidad}
+                        <Input label="Capacidad" type="number" value={formZona.capacidad}
                             onChange={e => setFormZona({ ...formZona, capacidad: e.target.value })}
                             placeholder="Ej: 50" />
-                        <Input label="Tiempo límite llegada (min)" type="number" value={formZona.tiempo_limite_llegada_min}
+                        <Input label="Tiempo Límite (min)" type="number" value={formZona.tiempo_limite_llegada_min}
                             onChange={e => setFormZona({ ...formZona, tiempo_limite_llegada_min: e.target.value })}
                             placeholder="15" />
-                        <Input label="Latitud (entrada/referencia)" value={formZona.latitud}
+                        <Input label="Latitud" value={formZona.latitud}
                             onChange={e => setFormZona({ ...formZona, latitud: e.target.value })}
                             placeholder="10.123456" />
-                        <Input label="Longitud (entrada/referencia)" value={formZona.longitud}
+                        <Input label="Longitud" value={formZona.longitud}
                             onChange={e => setFormZona({ ...formZona, longitud: e.target.value })}
                             placeholder="-66.987654" />
                         <div className="col-span-2">
-                            <Input label="Descripción (opcional)" value={formZona.descripcion}
+                            <Input label="Descripción" value={formZona.descripcion}
                                 onChange={e => setFormZona({ ...formZona, descripcion: e.target.value })}
                                 placeholder="Descripción breve de la zona..." />
                         </div>
@@ -536,7 +544,7 @@ export default function GestionZonas() {
                             } else {
                                 toast.error("GPS no disponible en este navegador");
                             }
-                        }} className="w-full h-11 bg-warning/10 text-warning border border-warning/20 text-[10px] gap-2 font-black uppercase">
+                        }} className="w-full h-11 bg-primary text-bg-app border border-primary/20 text-[10px] gap-2 font-black uppercase shadow-[0_0_15px_rgba(78,222,163,0.2)] hover:scale-[1.01] transition-all">
                             <MapPin size={14} /> Usar mi ubicación actual (GPS Móvil)
                         </Boton>
                     </div>

@@ -4,7 +4,8 @@ import {
   ShieldCheck, Users, ClipboardList, 
   CalendarRange, LogOut, Settings,
   LayoutDashboard, UserCircle, Map as MapIcon,
-  Camera, Sun, Moon, UserCog, ParkingSquare, Activity, Radio, AlertTriangle, Palette
+  Camera, Sun, Moon, UserCog, ParkingCircle, Activity, Radio, AlertTriangle, Palette,
+  ClipboardList, CalendarRange, Building2
 } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import { useAuthStore } from '../../store/auth.store';
@@ -20,13 +21,13 @@ export const Sidebar = () => {
   
   if (user?.rol === 'COMANDANTE' || user?.rol === 'ADMIN_BASE' || user?.rol === 'SUPERVISOR') {
     navItems.push(
-      { to: '/comando/dashboard', label: 'Dashboard', icon: ShieldCheck },
-      { to: '/comando/entidades', label: 'Entidades Alojadas', icon: Users },
-      { to: '/comando/personal', label: 'Gestión Personal', icon: UserCog },
+      { to: '/comando/dashboard', label: 'Dashboard', icon: LayoutDashboard },
+      { to: '/comando/zonas', label: 'Zonas Estacionamiento', icon: ParkingCircle },
+      { to: '/comando/entidades', label: 'Entidades Alojadas', icon: Building2 },
       { to: '/comando/alcabalas', label: 'Gestión Alcabalas', icon: ClipboardList },
       { to: '/comando/eventos', label: 'Eventos Masivos', icon: CalendarRange },
-      { to: '/comando/zonas', label: 'Zonas de Estacionamiento', icon: ParkingSquare },
       { to: '/comando/infracciones', label: 'Infracciones', icon: AlertTriangle },
+      { to: '/comando/personal', label: 'Gestión Personal', icon: UserCog },
     );
   } else if (user?.rol === 'ADMIN_ENTIDAD') {
     navItems.push(
@@ -123,7 +124,8 @@ export const Sidebar = () => {
       </nav>
 
       {/* Bottom Actions */}
-      <div className="p-6 border-t border-bg-high/10 flex flex-col gap-2">
+      <div className="mt-auto p-6 flex flex-col gap-2">
+          <div className="px-4 py-2 mb-2 border-t border-bg-high/10" />
           <button 
             onClick={toggleTheme}
             className="flex items-center gap-3 px-4 py-2.5 rounded-lg text-text-muted hover:bg-bg-high/20 hover:text-text-sec transition-all group"
@@ -149,13 +151,6 @@ export const Sidebar = () => {
             <LogOut size={18} className="group-hover:-translate-x-1 transition-transform" />
             <span className="text-xs font-bold uppercase tracking-tight">Cerrar Sesión</span>
          </button>
-      </div>
-
-      {/* Footer Branding */}
-      <div className="px-8 pb-6 pt-2">
-         <p className="text-[7px] font-mono text-text-muted/40 uppercase tracking-widest text-center">
-            Aegis Tactical Design System // v4.2.1
-         </p>
       </div>
     </aside>
   );

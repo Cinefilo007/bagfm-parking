@@ -17,7 +17,7 @@ from app.schemas.puesto_estacionamiento import PuestoEstacionamientoSalida
 
 router = APIRouter()
 
-@router.post("/", response_model=ZonaEstacionamientoSalida)
+@router.post("", response_model=ZonaEstacionamientoSalida)
 async def crear_zona(
     datos: ZonaEstacionamientoCrear,
     db: AsyncSession = Depends(obtener_db),

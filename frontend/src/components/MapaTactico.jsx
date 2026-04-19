@@ -108,7 +108,7 @@ const MapaTactico = ({ pollingEnabled = true, situacionPreload = null }) => {
             {/* Modal de Selección */}
             {showSelectionModal && (
                  <div className="fixed inset-0 z-[6000] flex items-center justify-center p-4 bg-bg-app/50 backdrop-blur-md animate-in fade-in duration-300">
-                   <div className="bg-bg-modal w-full max-w-lg rounded-[2.5rem] border border-primary/20 shadow-[0_0_80px_rgba(0,0,0,0.6)] overflow-hidden max-h-[85vh] flex flex-col animate-in zoom-in-95 duration-200">
+                   <div className="bg-bg-modal w-full max-w-lg rounded-2xl border border-primary/20 shadow-[0_0_80px_rgba(0,0,0,0.6)] overflow-hidden max-h-[85vh] flex flex-col animate-in zoom-in-95 duration-200">
                       <div className="p-8 border-b border-white/5 flex justify-between items-center bg-bg-low/30">
                          <div>
                             <h4 className="text-sm font-display font-black uppercase tracking-[0.3em] text-primary">Georreferenciación Táctica</h4>
@@ -138,7 +138,7 @@ const MapaTactico = ({ pollingEnabled = true, situacionPreload = null }) => {
                                       style: { background: '#161B2B', color: '#DEE1F7', border: '1px solid #4EDEA3' }
                                   });
                                }}
-                               className="flex items-center justify-between p-5 bg-white/5 rounded-[2rem] border border-white/5 hover:bg-primary/5 hover:border-primary/40 transition-all text-left outline-none group"
+                               className="flex items-center justify-between p-5 bg-white/5 rounded-xl border border-white/5 hover:bg-primary/5 hover:border-primary/40 transition-all text-left outline-none group"
                             >
                                <div className="flex items-center gap-5">
                                   <div className={`p-4 rounded-2xl bg-bg-app border border-white/5 group-hover:border-primary/30 transition-all shadow-inner ${item.color}`}>
