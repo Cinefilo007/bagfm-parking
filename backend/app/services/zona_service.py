@@ -94,6 +94,45 @@ class ZonaEstacionamientoService:
             await db.refresh(p)
         return puestos
 
+    async def generar_puestos_entidad(
+        self, db: AsyncSession, zona_id: UUID, entidad_id: UUID, prefijo: str, cantidad: int, user_id: UUID
+    ) -> List[PuestoEstacionamiento]:
+        """Crea puestos identificados reservados para una entidad, respetando su cupo asignado."""
+        # 1. Verificar asignacion
+        query_asig = select(AsignacionZona).filter(
+            and_(AsignacionZona.zona_id == zona_id, AsignacionZona.entidad_id == entidad_id, AsignacionZona.activa == True)
+        )
+        asig = (await db.execute(query_asig)).scalars().first()
+        if not asig:
+            raise ValueError("No tienes asignación activa en esta zona")
+
+        # 2. Contar puestos actuales de esta entidad en esta zona
+        query_count = select(func.count(PuestoEstacionamiento.id)).filter(
+            and_(PuestoEstacionamiento.zona_id == zona_id, PuestoEstacionamiento.reservado_para_entidad_id == entidad_id)
+        )
+        puestos_actuales = (await db.execute(query_count)).scalar() or 0
+
+        if (puestos_actuales + cantidad) > asig.cupo_asignado:
+            raise ValueError(f"Capacidad excedida. Tienes un cupo asignado de {asig.cupo_asignado}. Puestos actuales generados: {puestos_actuales}. Intentando generar: {cantidad}")
+
+        puestos = []
+        for i in range(1, cantidad + 1):
+            num_secuencial = puestos_actuales + i
+            puesto = PuestoEstacionamiento(
+                zona_id=zona_id,
+                numero_puesto=f"{prefijo}-{num_secuencial:03d}",
+                estado=EstadoPuesto.reservado,
+                reservado_para_entidad_id=entidad_id,
+                registrado_por=user_id
+            )
+            puestos.append(puesto)
+        
+        db.add_all(puestos)
+        await db.commit()
+        for p in puestos:
+            await db.refresh(p)
+        return puestos
+
     async def get_puesto(self, db: AsyncSession, puesto_id: UUID) -> Optional[PuestoEstacionamiento]:
         resultado = await db.execute(select(PuestoEstacionamiento).filter(PuestoEstacionamiento.id == puesto_id))
         return resultado.scalars().first()

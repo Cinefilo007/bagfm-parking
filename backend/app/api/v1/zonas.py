@@ -139,3 +139,60 @@ async def eliminar_asignacion(
     if not await zona_service.eliminar_asignacion_zona(db, asignacion_id):
         raise HTTPException(status_code=404, detail="Asignación no encontrada")
     return {"mensaje": "Asignación eliminada correctamente"}
+
+@router.get("/entidad/mis-asignaciones", response_model=List[AsignacionZonaSalida])
+async def obtener_mis_asignaciones(
+    db: AsyncSession = Depends(obtener_db),
+    current_user: Usuario = Depends(require_rol(["ADMIN_ENTIDAD"]))
+):
+    """Obtiene las asignaciones de zona vinculadas a la entidad del usuario."""
+    if not current_user.entidad_id:
+        return []
+    from sqlalchemy import select
+    from app.models.asignacion_zona import AsignacionZona
+    rs = await db.execute(select(AsignacionZona).where(
+        AsignacionZona.entidad_id == current_user.entidad_id,
+        AsignacionZona.activa == True
+    ))
+    return rs.scalars().all()
+
+@router.patch("/entidad/asignaciones/{asignacion_id}/distribucion", response_model=AsignacionZonaSalida)
+async def configurar_distribucion_cupos(
+    asignacion_id: UUID,
+    distribucion_cupos: dict = Body(..., embed=True),
+    db: AsyncSession = Depends(obtener_db),
+    current_user: Usuario = Depends(require_rol(["ADMIN_ENTIDAD"]))
+):
+    """Permite al admin de entidad configurar cómo se subdivide su cupo lógico (ej. VIP: 20, Staff: 15)."""
+    if not current_user.entidad_id:
+        raise HTTPException(status_code=403, detail="No perteneces a una entidad civil activa.")
+    asig = await zona_service.get_asignacion(db, asignacion_id)
+    if not asig or asig.entidad_id != current_user.entidad_id:
+        raise HTTPException(status_code=404, detail="Asignación no encontrada o no pertenece a tu entidad.")
+    
+    # Validar que los montos propuestos no excedan el cupo total utilizable
+    total_reservado = sum(int(v) for v in distribucion_cupos.values() if isinstance(v, (int, float)) or (isinstance(v, str) and v.isdigit()))
+    cupo_utilizable = asig.cupo_asignado - asig.cupo_reservado_base
+    if total_reservado > cupo_utilizable:
+        raise HTTPException(status_code=400, detail=f"Distribuición excedida. Tienes {cupo_utilizable} cupos utilizables y tratas de reservar {total_reservado}.")
+
+    asig.distribucion_cupos = distribucion_cupos
+    await db.commit()
+    await db.refresh(asig)
+    return asig
+
+@router.post("/{zona_id}/puestos-entidad", response_model=List[PuestoEstacionamientoSalida])
+async def generar_puestos_entidad(
+    zona_id: UUID,
+    prefijo: str = Body(...),
+    cantidad: int = Body(...),
+    db: AsyncSession = Depends(obtener_db),
+    current_user: Usuario = Depends(require_rol(["ADMIN_ENTIDAD"]))
+):
+    """Permite a la Entidad generar puestos físicos individuales limitados a su cupo."""
+    if not current_user.entidad_id:
+        raise HTTPException(status_code=403, detail="No perteneces a una entidad civil activa.")
+    try:
+        return await zona_service.generar_puestos_entidad(db, zona_id, current_user.entidad_id, prefijo, cantidad, current_user.id)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))

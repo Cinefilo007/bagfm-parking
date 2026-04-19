@@ -124,11 +124,22 @@ const TarjetaTipoAcceso = ({ tipo, onEditar, onEliminar, onToggle }) => (
 
 // ──── Página Principal ────────────────────────────────────────────────────────
 
-const TABS = { PUESTOS: 'puestos', TIPOS: 'tipos' };
+const TABS = { ZONAS: 'zonas', PUESTOS: 'puestos', TIPOS: 'tipos' };
 
 export default function EstacionamientosEntidad() {
     const { user } = useAuthStore();
-    const [tab, setTab] = useState(TABS.PUESTOS);
+    const [tab, setTab] = useState(TABS.ZONAS);
+
+    // Estado asignaciones/zonas
+    const [asignaciones, setAsignaciones] = useState([]);
+    const [cargandoAsignaciones, setCargandoAsignaciones] = useState(true);
+    const [modalDistribucion, setModalDistribucion] = useState(false);
+    const [asignacionEdicion, setAsignacionEdicion] = useState(null);
+    const [formDistribucion, setFormDistribucion] = useState({});
+
+    const [modalGenerar, setModalGenerar] = useState(false);
+    const [formGenerar, setFormGenerar] = useState({ cantidad: 1, prefijo: 'V' });
+    const [generando, setGenerando] = useState(false);
 
     // Estado de puestos
     const [puestos, setPuestos] = useState([]);
@@ -193,8 +204,59 @@ export default function EstacionamientosEntidad() {
         }
     }, [user?.entidad_id]);
 
+    const cargarAsignaciones = useCallback(async () => {
+        setCargandoAsignaciones(true);
+        try {
+            const data = await zonaService.getMisAsignaciones();
+            setAsignaciones(data || []);
+        } catch (e) {
+            toast.error('Error cargando zonas asignadas');
+        } finally {
+            setCargandoAsignaciones(false);
+        }
+    }, []);
+
+    const handleAbrirDistribucion = (asig) => {
+        setAsignacionEdicion(asig);
+        setFormDistribucion(asig.distribucion_cupos || {});
+        setModalDistribucion(true);
+    };
+
+    const handleGuardarDistribucion = async () => {
+        try {
+            await zonaService.configurarDistribucionCupos(asignacionEdicion.id, formDistribucion);
+            toast.success('Distribución de cupos actualizada');
+            setModalDistribucion(false);
+            await cargarAsignaciones();
+        } catch (e) {
+            toast.error(e.response?.data?.detail || 'Error al actualizar distribución');
+        }
+    };
+
+    const handleAbrirGenerar = (asig) => {
+        setAsignacionEdicion(asig);
+        setFormGenerar({ cantidad: 1, prefijo: 'V' });
+        setModalGenerar(true);
+    };
+
+    const handleGenerarPuestos = async () => {
+        setGenerando(true);
+        try {
+            await zonaService.generarPuestosEntidad(asignacionEdicion.zona_id, formGenerar);
+            toast.success('Puestos generados correctamente');
+            setModalGenerar(false);
+            await cargarPuestos();
+            setTab(TABS.PUESTOS);
+        } catch (e) {
+            toast.error(e.response?.data?.detail || 'Error al generar puestos');
+        } finally {
+            setGenerando(false);
+        }
+    };
+
     useEffect(() => { cargarPuestos(); }, [cargarPuestos]);
     useEffect(() => { cargarTipos(); }, [cargarTipos]);
+    useEffect(() => { cargarAsignaciones(); }, [cargarAsignaciones]);
 
     // ── Acciones: Puestos ─────────────────────────────────────────────────────
 
@@ -329,8 +391,9 @@ export default function EstacionamientosEntidad() {
             {/* Tabs */}
             <div className="flex bg-bg-card/40 rounded-xl p-1 border border-white/5 gap-1">
                 {[
-                    { id: TABS.PUESTOS, label: 'Mis Puestos Asignados', icon: ParkingSquare },
-                    { id: TABS.TIPOS, label: 'Tipos de Acceso Custom', icon: Tag },
+                    { id: TABS.ZONAS, label: 'Zonas Asignadas', icon: MapPin },
+                    { id: TABS.PUESTOS, label: 'Puestos Físicos', icon: ParkingSquare },
+                    { id: TABS.TIPOS, label: 'Tipos Custom', icon: Tag },
                 ].map(t => (
                     <button
                         key={t.id}
@@ -347,6 +410,81 @@ export default function EstacionamientosEntidad() {
                     </button>
                 ))}
             </div>
+
+            {/* ── TAB: ZONAS ASIGNADAS ── */}
+            {tab === TABS.ZONAS && (
+                <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                        <p className="text-[9px] font-black text-text-muted uppercase tracking-widest flex items-center gap-2">
+                            <MapPin size={11} className="text-primary" />
+                            {asignaciones.length} Zonas asignadas por el Comandante
+                        </p>
+                        <button onClick={cargarAsignaciones} className="p-1.5 rounded-lg bg-white/5 hover:bg-white/10 transition-all">
+                            <RefreshCw size={14} className={cn("text-text-muted", cargandoAsignaciones && 'animate-spin')} />
+                        </button>
+                    </div>
+
+                    {cargandoAsignaciones ? (
+                        <div className="space-y-2">
+                            {Array(2).fill(0).map((_, i) => (
+                                <div key={i} className="h-24 rounded-xl bg-white/5 animate-pulse border border-white/5" />
+                            ))}
+                        </div>
+                    ) : asignaciones.length === 0 ? (
+                        <div className="text-center py-12 border border-dashed border-white/10 rounded-2xl">
+                            <MapPin size={40} className="mx-auto text-white/10 mb-3" />
+                            <p className="text-[10px] font-black uppercase tracking-widest text-text-muted/40">
+                                Tu entidad no tiene zonas de estacionamiento asignadas
+                            </p>
+                        </div>
+                    ) : (
+                        <div className="space-y-3">
+                            {asignaciones.map(asig => {
+                                const utilizable = asig.cupo_asignado - asig.cupo_reservado_base;
+                                return (
+                                    <div key={asig.id} className="p-4 rounded-xl border border-white/10 bg-bg-card/50 flex flex-col gap-3">
+                                        <div className="flex justify-between items-start">
+                                            <div>
+                                                <p className="text-xs font-black text-primary flex items-center gap-1.5 uppercase">
+                                                    <ParkingSquare size={13} /> Asignación en Zona {asig.zona_id?.slice(-4)}
+                                                </p>
+                                                <p className="text-[10px] text-text-muted mt-0.5">Cupo Total: {asig.cupo_asignado} | Res. Base: {asig.cupo_reservado_base}</p>
+                                            </div>
+                                            <div className="text-right">
+                                                <p className="text-2xl font-black text-text-main leading-none">{utilizable}</p>
+                                                <p className="text-[8px] font-black text-text-muted uppercase tracking-widest">Utilizables</p>
+                                            </div>
+                                        </div>
+                                        
+                                        {/* Distribución */}
+                                        <div className="bg-black/20 rounded-lg p-2.5 border border-white/5">
+                                            <p className="text-[9px] font-black uppercase text-text-muted mb-2 tracking-widest flex items-center justify-between">
+                                                <span>Distribución Lógica (Simple)</span>
+                                                <button onClick={() => handleAbrirDistribucion(asig)} className="text-primary hover:text-primary/80 transition-all">Configurar</button>
+                                            </p>
+                                            {asig.distribucion_cupos && Object.keys(asig.distribucion_cupos).length > 0 ? (
+                                                <div className="flex flex-wrap gap-2">
+                                                    {Object.entries(asig.distribucion_cupos).map(([k, v]) => (
+                                                        <span key={k} className="text-[10px] font-bold bg-white/5 px-2 py-1 rounded">
+                                                            {k}: <span className="text-primary">{v}</span>
+                                                        </span>
+                                                    ))}
+                                                </div>
+                                            ) : (
+                                                <p className="text-[10px] text-text-muted italic">Sin distribución configurada. (Todos disponibles para General)</p>
+                                            )}
+                                        </div>
+
+                                        <div className="flex gap-2">
+                                            <Boton onClick={() => handleAbrirGenerar(asig)} className="flex-1 h-8 text-[9px] uppercase font-black bg-white/5 text-text-muted border border-white/10 hover:bg-white/10">Generar Puestos Físicos</Boton>
+                                        </div>
+                                    </div>
+                                )
+                            })}
+                        </div>
+                    )}
+                </div>
+            )}
 
             {/* ── TAB: PUESTOS ── */}
             {tab === TABS.PUESTOS && (
@@ -585,6 +723,73 @@ export default function EstacionamientosEntidad() {
                             className="flex-[2] bg-primary text-bg-app h-12 font-black uppercase tracking-wider"
                         >
                             {guardandoTipo ? <RefreshCw size={16} className="animate-spin" /> : tipoEditar ? 'Guardar Cambios' : 'Crear Tipo'}
+                        </Boton>
+                    </div>
+                </div>
+            </Modal>
+
+            {/* ── MODAL: Configurar Distribución ── */}
+            <Modal isOpen={modalDistribucion} onClose={() => setModalDistribucion(false)} title="CONFIGURAR DISTRIBUCIÓN">
+                <div className="space-y-4">
+                    <p className="text-[10px] text-text-muted leading-relaxed">
+                        Define los cupos reservados para cada Tipo de Acceso. El remanente quedará disponible de forma general/pública.
+                    </p>
+                    
+                    {tipos.map(tipo => (
+                        <div key={tipo.nombre} className="flex justify-between items-center bg-white/5 p-3 rounded-lg border border-white/5">
+                            <span className="text-xs font-bold uppercase">{tipo.nombre}</span>
+                            <input 
+                                type="number" 
+                                min="0" 
+                                value={formDistribucion[tipo.nombre] || 0}
+                                onChange={(e) => setFormDistribucion({...formDistribucion, [tipo.nombre]: parseInt(e.target.value) || 0})}
+                                className="w-20 bg-black/30 border border-white/10 rounded px-2 py-1 text-right text-sm font-bold"
+                            />
+                        </div>
+                    ))}
+
+                    <div className="flex gap-3 pt-2 mt-4 border-t border-white/5 pt-4">
+                        <Boton variant="ghost" className="flex-1" onClick={() => setModalDistribucion(false)}>Cancelar</Boton>
+                        <Boton
+                            onClick={handleGuardarDistribucion}
+                            className="flex-[2] bg-primary text-bg-app h-12 font-black uppercase tracking-wider"
+                        >
+                            Guardar Distribución
+                        </Boton>
+                    </div>
+                </div>
+            </Modal>
+
+            {/* ── MODAL: Generar Puestos ── */}
+            <Modal isOpen={modalGenerar} onClose={() => setModalGenerar(false)} title="GENERAR PUESTOS FÍSICOS">
+                <div className="space-y-4">
+                    <p className="text-[10px] text-text-muted leading-relaxed">
+                        Genera registros de puestos individuales atados a tu entidad. Esto te permitirá asignarlos uno a uno a placas especificas.
+                    </p>
+
+                    <Input
+                        label="Prefijo"
+                        placeholder="Ej: VIP, STAFF..."
+                        value={formGenerar.prefijo}
+                        onChange={e => setFormGenerar({ ...formGenerar, prefijo: e.target.value.toUpperCase() })}
+                    />
+                    
+                    <Input
+                        label="Cantidad de puestos a generar"
+                        type="number"
+                        min="1"
+                        value={formGenerar.cantidad}
+                        onChange={e => setFormGenerar({ ...formGenerar, cantidad: parseInt(e.target.value) || 1 })}
+                    />
+
+                    <div className="flex gap-3 pt-2 mt-4 border-t border-white/5 pt-4">
+                        <Boton variant="ghost" className="flex-1" onClick={() => setModalGenerar(false)}>Cancelar</Boton>
+                        <Boton
+                            onClick={handleGenerarPuestos}
+                            disabled={generando || formGenerar.cantidad < 1}
+                            className="flex-[2] bg-primary text-bg-app h-12 font-black uppercase tracking-wider"
+                        >
+                            {generando ? <RefreshCw size={16} className="animate-spin" /> : 'Generar Puestos'}
                         </Boton>
                     </div>
                 </div>

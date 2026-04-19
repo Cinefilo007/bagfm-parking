@@ -28,6 +28,30 @@ export const zonaService = {
         return data;
     },
 
+    /**
+     * Trae las asignaciones de zona (zonas a las que la entidad tiene acceso).
+     */
+    async getMisAsignaciones() {
+        const { data } = await api.get('/zonas/entidad/mis-asignaciones');
+        return data;
+    },
+
+    /**
+     * Permite a la entidad configurar cómo subdivide su cupo lógico.
+     */
+    async configurarDistribucionCupos(asignacionId, distribucion) {
+        const { data } = await api.patch(`/zonas/entidad/asignaciones/${asignacionId}/distribucion`, { distribucion_cupos: distribucion });
+        return data;
+    },
+
+    /**
+     * Permite a la entidad generar puestos físicos pre-reservados a su nombre limitados a su cupo.
+     */
+    async generarPuestosEntidad(zonaId, payload) {
+        const { data } = await api.post(`/zonas/${zonaId}/puestos-entidad`, payload);
+        return data;
+    },
+
     async getPuestosZona(zonaId) {
         const { data } = await api.get(`/zonas/${zonaId}/puestos`);
         return data;

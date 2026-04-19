@@ -15,7 +15,7 @@ import DashboardAlcabala from '../pages/alcabala/Dashboard';
 import ScannerAlcabala from '../pages/alcabala/Scanner';
 import Alcabalas from '../pages/comandante/Alcabalas';
 import EventosMando from '../pages/comandante/EventosMando';
-import EventosEntidad from '../pages/entidad/Eventos';
+import PasesMasivosEntidad from '../pages/entidad/PasesMasivos';
 import EditorCarnets from '../pages/entidad/EditorCarnets';
 import Ajustes from '../pages/Ajustes';
 import Personal from '../pages/Personal';
@@ -84,7 +84,7 @@ export const router = createBrowserRouter([
               { path: 'dashboard', element: <DashboardEntidad /> },
               { path: 'socios', element: <SociosEntidad /> },
               { path: 'personal', element: <Personal /> },
-              { path: 'eventos', element: <EventosEntidad /> },
+              { path: 'pases-masivos', element: <PasesMasivosEntidad /> },
               { path: 'estacionamientos', element: <EstacionamientosEntidad /> },
               { path: 'carnets', element: <EditorCarnets /> }
             ]

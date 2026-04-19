@@ -21,8 +21,9 @@ export const BottomNav = () => {
   } else if (user?.rol === 'ADMIN_ENTIDAD') {
     navItems.push(
        { to: '/entidad/dashboard', label: 'Panel', icon: ShieldCheck },
-       { to: '/entidad/socios', label: 'Socios', icon: Users },
        { to: '/entidad/estacionamientos', label: 'Parking', icon: ParkingSquare },
+       { to: '/entidad/pases-masivos', label: 'Pases', icon: ClipboardList },
+       { to: '/entidad/socios', label: 'Socios', icon: Users },
        { to: '/ajustes', label: 'Más', icon: Menu }
     );
   } else if (user?.rol === 'ALCABALA') {

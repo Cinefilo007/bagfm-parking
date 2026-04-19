@@ -31,11 +31,11 @@ export const Sidebar = () => {
   } else if (user?.rol === 'ADMIN_ENTIDAD') {
     navItems.push(
        { to: '/entidad/dashboard', label: 'Panel Control', icon: LayoutDashboard },
-       { to: '/entidad/socios', label: 'Gestión Socios', icon: Users },
-       { to: '/entidad/personal', label: 'Gestión Personal', icon: UserCog },
-       { to: '/entidad/eventos', label: 'Mis Eventos', icon: CalendarRange },
        { to: '/entidad/estacionamientos', label: 'Estacionamientos', icon: ParkingSquare },
-       { to: '/entidad/carnets', label: 'Editor Carnets', icon: Palette },
+       { to: '/entidad/pases-masivos', label: 'Pases Masivos', icon: CalendarRange },
+       { to: '/entidad/socios', label: 'Socios Permanentes', icon: Users },
+       { to: '/entidad/personal', label: 'Personal Interno', icon: UserCog },
+       { to: '/entidad/carnets', label: 'Editor de carnets', icon: Palette },
     );
   } else if (user?.rol === 'ALCABALA') {
     navItems.push(

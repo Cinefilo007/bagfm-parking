@@ -7,6 +7,7 @@ class AsignacionZonaBase(BaseModel):
     entidad_id: UUID
     cupo_asignado: int
     cupo_reservado_base: int = 0
+    distribucion_cupos: dict = {}
     notas: Optional[str] = None
     activa: bool = True
     fecha_fin: Optional[datetime] = None
@@ -17,6 +18,7 @@ class AsignacionZonaCrear(AsignacionZonaBase):
 class AsignacionZonaActualizar(BaseModel):
     cupo_asignado: Optional[int] = None
     cupo_reservado_base: Optional[int] = None
+    distribucion_cupos: Optional[dict] = None
     notas: Optional[str] = None
     activa: Optional[bool] = None
     fecha_fin: Optional[datetime] = None

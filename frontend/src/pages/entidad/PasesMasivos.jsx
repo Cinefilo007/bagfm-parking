@@ -18,6 +18,7 @@ import { eventosService } from '../../services/eventos.service';
 import { pasesService } from '../../services/pasesService';
 import zonaService from '../../services/zona.service';
 import api from '../../services/api';
+import * as XLSX from 'xlsx';
 
 // ──── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -150,16 +151,42 @@ const LoteCardV2 = ({ lote, zonas, tiposCustom, onRefresh }) => {
         const file = e.target.files[0];
         if (!file) return;
         setImportando(true);
-        try {
-            await pasesService.importarExcel(lote.id, file);
-            toast.success('Datos importados con éxito');
-            onRefresh?.();
-        } catch (err) {
-            toast.error('Error en la importación');
-        } finally {
+        
+        const reader = new FileReader();
+        reader.onload = async (evt) => {
+            try {
+                const data = evt.target.result;
+                const workbook = XLSX.read(data, { type: 'binary' });
+                const sheetName = workbook.SheetNames[0];
+                const sheet = workbook.Sheets[sheetName];
+                const rows = XLSX.utils.sheet_to_json(sheet, { defval: "" }); // Ignorar el header que ya quita SheetJS para object
+                
+                // Remover filas vacias
+                const validRows = rows.filter(r => Object.values(r).some(v => v));
+
+                if (validRows.length !== lote.cantidad_pases) {
+                    toast.error(`Error: El Excel tiene ${validRows.length} registros, el lote requiere exactamente ${lote.cantidad_pases}.`);
+                    setImportando(false);
+                    return;
+                }
+
+                await pasesService.importarExcel(lote.id, file);
+                toast.success('Datos importados con éxito');
+                onRefresh?.();
+            } catch (err) {
+                toast.error(err.response?.data?.detail || 'Error en la importación');
+            } finally {
+                setImportando(false);
+                e.target.value = '';
+            }
+        };
+
+        reader.onerror = () => {
+            toast.error('Error al leer el archivo');
             setImportando(false);
-            e.target.value = '';
-        }
+        };
+        
+        reader.readAsBinaryString(file);
     };
 
     const handleCompartir = async (pase) => {
@@ -334,16 +361,45 @@ const ModalNuevoLote = ({ isOpen, onClose, zonas, tiposCustom, onCreated }) => {
     });
     const [puestosDisponibles, setPuestosDisponibles] = useState([]);
     const [guardando, setGuardando] = useState(false);
+    const [maxPasesZona, setMaxPasesZona] = useState(9999);
 
     useEffect(() => {
         if (form.zona_asignada_id) {
             zonaService.getPuestosZona(form.zona_asignada_id)
                 .then(p => setPuestosDisponibles(p.filter(px => px.estado === 'libre' || px.estado === 'reservado')))
                 .catch(() => setPuestosDisponibles([]));
+                
+            // Calcular límite de pases si hay zona asignada
+            const asig = zonas.find(z => z.zona_id === form.zona_asignada_id);
+            if (asig) {
+                let cupoParaTipo = 0;
+                let nombreTipo = '';
+                if (form.tipo_acceso === 'custom' && form.tipo_acceso_custom_id) {
+                    const custom = tiposCustom.find(t => t.id === form.tipo_acceso_custom_id);
+                    if (custom) nombreTipo = custom.nombre.toUpperCase();
+                } else if (form.tipo_acceso !== 'custom') {
+                    const opt = TIPOS_ACCESO_OPTIONS.find(t => t.id === form.tipo_acceso);
+                    if (opt) nombreTipo = opt.label.toUpperCase();
+                }
+
+                if (nombreTipo && asig.distribucion_cupos && asig.distribucion_cupos[nombreTipo]) {
+                    cupoParaTipo = parseInt(asig.distribucion_cupos[nombreTipo]);
+                } else {
+                    // Si no tiene distribución específica, asume el general remanente
+                    const reservado = Object.values(asig.distribucion_cupos || {}).reduce((acc, v) => acc + parseInt(v), 0);
+                    cupoParaTipo = asig.cupo_asignado - asig.cupo_reservado_base - reservado;
+                }
+                
+                setMaxPasesZona(Math.max(0, cupoParaTipo));
+                if (form.cantidad_pases > cupoParaTipo) {
+                    setForm(prev => ({...prev, cantidad_pases: Math.max(0, cupoParaTipo)}));
+                }
+            }
         } else {
             setPuestosDisponibles([]);
+            setMaxPasesZona(9999);
         }
-    }, [form.zona_asignada_id]);
+    }, [form.zona_asignada_id, form.tipo_acceso, form.tipo_acceso_custom_id, zonas, tiposCustom]);
 
     const handleSubmit = async () => {
         if (!form.nombre_evento.trim() || !form.fecha_fin) {
@@ -441,8 +497,17 @@ const ModalNuevoLote = ({ isOpen, onClose, zonas, tiposCustom, onCreated }) => {
                             onChange={e => setForm({ ...form, fecha_inicio: e.target.value })} />
                         <Input label="Fecha fin *" type="date" value={form.fecha_fin}
                             onChange={e => setForm({ ...form, fecha_fin: e.target.value })} />
-                        <Input label="Cantidad de pases" type="number" value={form.cantidad_pases}
-                            onChange={e => setForm({ ...form, cantidad_pases: parseInt(e.target.value) || 1 })} />
+                        <div className="space-y-1">
+                            <Input label="Cantidad de pases" type="number" min="1" max={maxPasesZona} value={form.cantidad_pases}
+                                onChange={e => {
+                                    let v = parseInt(e.target.value) || 1;
+                                    if (v > maxPasesZona) v = maxPasesZona;
+                                    setForm({ ...form, cantidad_pases: v });
+                                }} />
+                            {maxPasesZona !== 9999 && (
+                                <p className="text-[8px] text-warning uppercase font-bold px-1">Límite por zona: {maxPasesZona}</p>
+                            )}
+                        </div>
                         <Input label="Máx. accesos por pase" type="number" value={form.max_accesos_por_pase}
                             onChange={e => setForm({ ...form, max_accesos_por_pase: parseInt(e.target.value) || 1 })} />
                     </div>
@@ -548,21 +613,19 @@ export default function EventosV2() {
         };
 
         try {
-            const [sData, lData, zData, tData] = await Promise.all([
+            const [sData, lData, asigData, tData] = await Promise.all([
                 fetchSafe(() => eventosService.getSolicitudes()),
                 fetchSafe(() => pasesService.listarLotes()),
-                fetchSafe(() => zonaService.getMisCuotaPuestos().then(() => zonaService.listarZonas()), []),
+                fetchSafe(() => zonaService.getMisAsignaciones(), []),
                 fetchSafe(() => zonaService.listarTiposAcceso(user?.entidad_id), []),
             ]);
 
             setSolicitudes(sData);
             setLotes(lData);
-            setZonas(zData);
+            setZonas(asigData);
             setTiposCustom(tData);
         } catch (e) {
             console.error("Error crítico en sincronización de eventos:", e);
-            // Solo mostramos error si algo realmente rompe el flujo de JS
-            // toast.error('Error de sincronización'); 
         } finally {
             setLoading(false);
         }
@@ -605,12 +668,25 @@ export default function EventosV2() {
                         className="flex-1 lg:flex-none h-11 px-4 gap-2 text-[9px] md:text-[10px] font-black uppercase border-white/10 rounded-xl">
                         <Clock size={14} /> Solicitar
                     </Boton>
-                    <Boton onClick={() => setShowModal(true)}
-                        className="flex-1 lg:flex-none h-11 px-4 gap-2 text-[9px] md:text-[10px] font-black uppercase bg-primary text-bg-app rounded-xl shadow-tactica">
+                    <Boton onClick={() => setShowModal(true)} disabled={zonas.length === 0}
+                        className="flex-1 lg:flex-none h-11 px-4 gap-2 text-[9px] md:text-[10px] font-black uppercase bg-primary text-bg-app rounded-xl shadow-tactica disabled:opacity-50 disabled:cursor-not-allowed">
                         <Plus size={14} /> Crear Lote
                     </Boton>
                 </div>
             </header>
+
+            {/* ERROR NO PARKING */}
+            {zonas.length === 0 && !loading && (
+                <div className="bg-warning/10 border border-warning/30 rounded-xl p-4 flex gap-3 text-warning">
+                    <Shield className="shrink-0 mt-0.5" size={20} />
+                    <div>
+                        <p className="text-xs font-black uppercase tracking-wider">Configuración de Estacionamiento Incompleta</p>
+                        <p className="text-[10px] mt-1 font-bold opacity-80 leading-relaxed">
+                            No puedes generar pases masivos en este momento. Debes tener asignaciones de estacionamiento activas. Si ya el Comando Central te asignó espacios, asegúrate de consolidar tu esquema de estacionamientos en el panel de Estacionamientos.
+                        </p>
+                    </div>
+                </div>
+            )}
 
             {/* Solicitudes Pendientes */}
             {pendientes.length > 0 && (
