@@ -16,7 +16,7 @@ from app.models.enums import PasseTipo, QRTipo, RolTipo
 from app.models.usuario import Usuario
 from app.models.vehiculo import Vehiculo
 from app.core.security import crear_token_evento
-from app.services.pdf_service import pdf_service
+# Importación diferida para evitar ciclos
 
 config = obtener_config()
 
@@ -351,6 +351,7 @@ class PaseService:
         Genera el PDF masivo del lote y lo sube a Supabase.
         Retorna la URL.
         """
+        from app.services.pdf_service import pdf_service
         lote = await db.get(LotePaseMasivo, lote_id)
         if not lote: return None
         

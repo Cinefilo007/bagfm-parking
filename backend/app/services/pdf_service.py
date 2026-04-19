@@ -18,7 +18,7 @@ from app.models.alcabala_evento import LotePaseMasivo
 from app.models.codigo_qr import CodigoQR
 from app.models.plantilla_carnet import PlantillaCarnet
 from app.models.enums import TipoCarnet
-from app.services.pase_service import pase_service
+# Importamos pase_service localmente para evitar importación circular
 
 class PDFService:
     def __init__(self):
@@ -92,6 +92,7 @@ class PDFService:
         return buffer
 
     def _dibujar_carnet(self, c, x, y, w, h, lote, qr, cp, cs, ct, logo_url):
+        from app.services.pase_service import pase_service
         # Borde y Fondo
         c.setStrokeColor(HexColor("#334155"))
         c.setLineWidth(0.5)
