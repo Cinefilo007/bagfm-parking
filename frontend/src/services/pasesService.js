@@ -36,6 +36,11 @@ export const pasesService = {
     return res.data;
   },
 
+  async importarExcelJson(loteId, data) {
+    const res = await api.post(`/pases/lotes/${loteId}/importar-json`, data);
+    return res.data;
+  },
+
   async descargarPlantilla() {
     const res = await api.get('/pases/template', { responseType: 'blob' });
     const url = window.URL.createObjectURL(new Blob([res.data]));

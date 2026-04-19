@@ -19,7 +19,7 @@ class AsignacionZona(Base):
     
     cupo_asignado = Column(Integer, nullable=False)
     cupo_reservado_base = Column(Integer, default=0, nullable=False)
-    distribucion_cupos = Column(JSONB, default='{}', nullable=False)
+    distribucion_cupos = Column(JSONB, default='{}', server_default='{}', nullable=False)
     notas = Column(String(500), nullable=True)
     
     fecha_inicio = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)

@@ -159,10 +159,11 @@ const LoteCardV2 = ({ lote, zonas, tiposCustom, onRefresh }) => {
                 const workbook = XLSX.read(data, { type: 'binary' });
                 const sheetName = workbook.SheetNames[0];
                 const sheet = workbook.Sheets[sheetName];
-                const rows = XLSX.utils.sheet_to_json(sheet, { defval: "" }); // Ignorar el header que ya quita SheetJS para object
+                const rows = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: "" });
                 
-                // Remover filas vacias
-                const validRows = rows.filter(r => Object.values(r).some(v => v));
+                // Remover el header y las filas vacias
+                const dataRows = rows.slice(1);
+                const validRows = dataRows.filter(r => r.some(v => v));
 
                 if (validRows.length !== lote.cantidad_pases) {
                     toast.error(`Error: El Excel tiene ${validRows.length} registros, el lote requiere exactamente ${lote.cantidad_pases}.`);
@@ -170,7 +171,7 @@ const LoteCardV2 = ({ lote, zonas, tiposCustom, onRefresh }) => {
                     return;
                 }
 
-                await pasesService.importarExcel(lote.id, file);
+                await pasesService.importarExcelJson(lote.id, { pases: validRows });
                 toast.success('Datos importados con éxito');
                 onRefresh?.();
             } catch (err) {

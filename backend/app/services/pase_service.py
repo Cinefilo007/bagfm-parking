@@ -235,6 +235,66 @@ class PaseService:
         lote.cantidad_pases = count
         await db.commit()
 
+    async def procesar_json_identificado(self, db: AsyncSession, lote: LotePaseMasivo, filas: List[list], creado_por_id: uuid.UUID):
+        """Parsea arreglo JSON (proveniente de Excel prevalidado) y crea pases identificados."""
+        from app.core.security import hashear_password
+        
+        expira_at = datetime.combine(lote.fecha_fin, datetime.max.time()).replace(tzinfo=timezone.utc) + timedelta(hours=24)
+        count = 0
+        
+        for row in filas:
+            if not len(row) > 0 or not row[0]: continue # Nombre mandatorio
+            
+            # Aseguramos que tenga al menos 9 columnas iterando o rellenando con None
+            row_data = (list(row) + [None]*9)[:9]
+            nombre, apellido, cedula, telefono, marca, modelo, placa, color, año = row_data
+            
+            serial_qr = f"{lote.codigo_serial}-{str(count + 1).zfill(4)}"
+            
+            # 1. Crear Usuario
+            nuevo_u = Usuario(
+                cedula=str(cedula) if cedula else serial_qr,
+                nombre=str(nombre).upper(),
+                apellido=str(apellido).upper(),
+                telefono=str(telefono) if telefono else None,
+                rol=RolTipo.SOCIO,
+                password_hash=hashear_password(str(cedula) if cedula else serial_qr),
+                debe_cambiar_password=False
+            )
+            db.add(nuevo_u)
+            await db.flush()
+            
+            # 2. Crear Vehículo
+            if placa:
+                nuevo_v = Vehiculo(
+                    socio_id=nuevo_u.id,
+                    placa=str(placa).upper(),
+                    marca=str(marca).upper() if marca else "GENERICO",
+                    modelo=str(modelo).upper() if modelo else "GENERICO",
+                    color=str(color).upper() if color else "DESCONOCIDO",
+                    año=int(año) if año else None
+                )
+                db.add(nuevo_v)
+            
+            # 3. Crear QR
+            token = crear_token_evento(serial_qr, expira_at)
+            nuevo_qr = CodigoQR(
+                usuario_id=nuevo_u.id,
+                token=token,
+                tipo=QRTipo.evento_identificado,
+                lote_id=lote.id,
+                serial_legible=serial_qr,
+                max_accesos=lote.max_accesos_por_pase,
+                fecha_expiracion=expira_at,
+                created_by=creado_por_id,
+                activo=True
+            )
+            db.add(nuevo_qr)
+            count += 1
+            
+        lote.cantidad_pases = count
+        await db.commit()
+
     def generar_qr_image(self, data: str, titulo: str = "", subtitulo: str = "", serial: str = "") -> io.BytesIO:
         """Genera una imagen QR de resolución balanceada (aprox 800x800) con texto descriptivo."""
         qr = qrcode.QRCode(

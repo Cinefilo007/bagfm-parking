@@ -119,6 +119,22 @@ async def importar_excel_lote(
     await pase_service.procesar_excel_identificado(db, lote, contenido, usuario_actual.id)
     return {"status": "ok", "pases_generados": lote.cantidad_pases}
 
+@router.post("/lotes/{lote_id}/importar-json")
+async def importar_json_lote(
+    lote_id: UUID,
+    payload: dict,
+    db: AsyncSession = Depends(obtener_db),
+    usuario_actual: Usuario = Depends(require_rol(ADMIN_ROLES))
+):
+    """Importa identificaciones para un lote Tipo B desde JSON prevalidado en el Frontend."""
+    lote = await db.get(LotePaseMasivo, lote_id)
+    if not lote:
+        raise HTTPException(status_code=404, detail="Lote no encontrado")
+        
+    filas = payload.get("pases", [])
+    await pase_service.procesar_json_identificado(db, lote, filas, usuario_actual.id)
+    return {"status": "ok", "pases_generados": lote.cantidad_pases}
+
 @router.get("/template", status_code=status.HTTP_200_OK)
 async def descargar_plantilla_pases(
     usuario_actual: Usuario = Depends(require_rol(ADMIN_ROLES))
