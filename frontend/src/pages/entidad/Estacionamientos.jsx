@@ -435,14 +435,32 @@ export default function EstacionamientosEntidad() {
                                         <div className="flex justify-between items-start">
                                             <div>
                                                 <p className="text-xs font-black text-primary flex items-center gap-1.5 uppercase">
-                                                    <ParkingSquare size={13} /> Asignación en Zona {asig.zona_id?.slice(-4)}
+                                                    <ParkingSquare size={13} /> {asig.zona_nombre || `Zona ${asig.zona_id?.slice(-4)}`}
                                                 </p>
                                                 <p className="text-[10px] text-text-muted mt-0.5">Cupo Total: {asig.cupo_asignado} | Res. Base: {asig.cupo_reservado_base}</p>
                                             </div>
-                                            <div className="text-right">
-                                                <p className="text-2xl font-black text-text-main leading-none">{utilizable}</p>
-                                                <p className="text-[8px] font-black text-text-muted uppercase tracking-widest">Utilizables</p>
+                                            <div className="flex items-center gap-3">
+                                                <div className="text-right">
+                                                    <p className="text-2xl font-black text-text-main leading-none">{utilizable}</p>
+                                                    <p className="text-[8px] font-black text-text-muted uppercase tracking-widest">Utilizables</p>
+                                                </div>
+                                                <button 
+                                                    onClick={() => handleAbrirGenerar(asig)}
+                                                    className="h-9 px-3 rounded-xl bg-primary/10 text-primary border border-primary/20 hover:bg-primary/20 text-[10px] font-black flex items-center gap-1.5 uppercase transition-all"
+                                                >
+                                                    <Plus size={14} /> Crear Puestos
+                                                </button>
                                             </div>
+                                        </div>
+                                        
+                                        {/* Barra de progreso visual de cupo */}
+                                        <div className="h-1.5 w-full bg-black/40 rounded-full overflow-hidden flex mb-2">
+                                            {asig.cupo_reservado_base > 0 && (
+                                                <div style={{ width: `${(asig.cupo_reservado_base / asig.cupo_asignado) * 100}%` }} className="bg-danger/80" title={`Reserva Base: ${asig.cupo_reservado_base}`} />
+                                            )}
+                                            {utilizable > 0 && (
+                                                <div style={{ width: `${(utilizable / asig.cupo_asignado) * 100}%` }} className="bg-primary" title={`Utilizables: ${utilizable}`} />
+                                            )}
                                         </div>
                                         
                                         {/* Distribución */}
@@ -462,10 +480,6 @@ export default function EstacionamientosEntidad() {
                                             ) : (
                                                 <p className="text-[10px] text-text-muted italic">Sin distribución configurada. (Todos disponibles para General)</p>
                                             )}
-                                        </div>
-
-                                        <div className="flex gap-2">
-                                            <Boton onClick={() => handleAbrirGenerar(asig)} className="flex-1 h-8 text-[9px] uppercase font-black bg-white/5 text-text-muted border border-white/10 hover:bg-white/10">Generar Puestos Físicos</Boton>
                                         </div>
                                     </div>
                                 )

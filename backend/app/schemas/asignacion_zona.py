@@ -27,5 +27,13 @@ class AsignacionZonaSalida(AsignacionZonaBase):
     id: UUID
     zona_id: UUID
     fecha_inicio: datetime
+    zona_nombre: Optional[str] = None
     
     model_config = ConfigDict(from_attributes=True)
+
+    @classmethod
+    def model_validate(cls, obj, *args, **kwargs):
+        data = super().model_validate(obj, *args, **kwargs)
+        if hasattr(obj, 'zona') and obj.zona:
+            data.zona_nombre = obj.zona.nombre
+        return data

@@ -149,8 +149,9 @@ async def obtener_mis_asignaciones(
     if not current_user.entidad_id:
         return []
     from sqlalchemy import select
+    from sqlalchemy.orm import joinedload
     from app.models.asignacion_zona import AsignacionZona
-    rs = await db.execute(select(AsignacionZona).where(
+    rs = await db.execute(select(AsignacionZona).options(joinedload(AsignacionZona.zona)).where(
         AsignacionZona.entidad_id == current_user.entidad_id,
         AsignacionZona.activa == True
     ))
