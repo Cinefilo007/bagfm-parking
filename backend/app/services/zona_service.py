@@ -240,7 +240,12 @@ class ZonaEstacionamientoService:
         return resultado.scalars().all()
 
     async def get_asignacion(self, db: AsyncSession, asignacion_id: UUID) -> Optional[AsignacionZona]:
-        resultado = await db.execute(select(AsignacionZona).filter(AsignacionZona.id == asignacion_id))
+        from sqlalchemy.orm import joinedload
+        resultado = await db.execute(
+            select(AsignacionZona)
+            .options(joinedload(AsignacionZona.zona))
+            .filter(AsignacionZona.id == asignacion_id)
+        )
         return resultado.scalars().first()
 
     async def actualizar_asignacion_zona(
