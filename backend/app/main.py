@@ -89,6 +89,6 @@ app.include_router(infracciones.router, prefix="/api/v1/infracciones", tags=["Ge
 app.include_router(mapa.router, prefix="/api/v1/mapa", tags=["Mapa Táctico"])
 app.include_router(websocket.router, prefix="/api/v1", tags=["Tiempo Real"])
 app.include_router(ia.router, prefix="/api/v1/ia", tags=["Inteligencia Artificial"])
-app.include_router(zonas.router, prefix="/api/v1", tags=["Zonas de Estacionamiento"])
+app.include_router(zonas.router, prefix="/api/v1/zonas", tags=["Zonas de Estacionamiento"])
 app.include_router(parqueros.router, prefix="/api/v1", tags=["Parqueros Operaciones"])
 app.include_router(fantasmas.router, prefix="/api/v1", tags=["Control de Vehículos Fantasma"])

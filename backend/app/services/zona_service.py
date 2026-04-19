@@ -128,4 +128,11 @@ class ZonaEstacionamientoService:
         else:
             return zona.ocupacion_actual < zona.capacidad_total
 
+    async def obtener_asignaciones_globales(self, db: AsyncSession) -> List[AsignacionZona]:
+        """
+        Retorna todas las asignaciones de cupos vigentes en el sistema.
+        """
+        resultado = await db.execute(select(AsignacionZona))
+        return resultado.scalars().all()
+
 zona_service = ZonaEstacionamientoService()

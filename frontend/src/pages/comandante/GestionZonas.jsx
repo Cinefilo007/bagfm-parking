@@ -233,7 +233,7 @@ export default function GestionZonas() {
         try {
             const [zonasData, entidadesData, asigData] = await Promise.all([
                 zonaService.listarZonas(),
-                api.get('/entidades/').then(r => r.data).catch(() => []),
+                api.get('/entidades').then(r => r.data).catch(() => []),
                 zonaService.listarAsignaciones().catch(() => []),
             ]);
             setZonas(zonasData);

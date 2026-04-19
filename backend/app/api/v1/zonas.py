@@ -85,3 +85,10 @@ async def asignar_zona_entidad(
         return await zona_service.asignar_zona_a_entidad(db, dict(datos), current_user.id)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
+@router.get("/asignaciones", response_model=List[AsignacionZonaSalida])
+async def obtener_todas_las_asignaciones(
+    db: AsyncSession = Depends(obtener_db),
+    current_user: Usuario = Depends(require_rol(["COMANDANTE", "ADMIN_BASE"]))
+):
+    """Retorna todas las asignaciones de cupos en el sistema."""
+    return await zona_service.obtener_asignaciones_globales(db)

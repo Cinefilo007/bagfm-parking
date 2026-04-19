@@ -8,7 +8,7 @@ export const zonaService = {
     // ──── Zonas ─────────────────────────────────────────────────────────────
 
     async listarZonas() {
-        const { data } = await api.get('/zonas/');
+        const { data } = await api.get('/zonas');
         return data;
     },
 
@@ -63,7 +63,7 @@ export const zonaService = {
      * Crea un nuevo tipo de acceso custom.
      */
     async crearTipoAcceso(datos) {
-        const { data } = await api.post('/tipos-acceso/', datos);
+        const { data } = await api.post('/tipos-acceso', datos);
         return data;
     },
 
@@ -86,7 +86,7 @@ export const zonaService = {
     // ──── Gestión de Zonas (Comandante / Admin Base) ─────────────────────────
 
     async crearZona(datos) {
-        const { data } = await api.post('/zonas/', datos);
+        const { data } = await api.post('/zonas', datos);
         return data;
     },
 

@@ -8,14 +8,15 @@ const getBaseURL = () => {
   // 2. Normalización básica
   url = url.trim();
 
-  // 3. AGRESSIVE HTTPS: Force HTTPS if we are not in localhost
+  // 3. AGRESSIVE HTTPS: Force HTTPS matches the current site protocol
+  // Si entramos por HTTPS (Producción), forzamos que la API sea HTTPS.
+  const isHttps = window.location.protocol === 'https:';
   const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
   
-  if (!isLocal) {
+  if (isHttps && !isLocal) {
     if (url.startsWith('http:')) {
       url = url.replace('http:', 'https:');
     } else if (!url.startsWith('https:')) {
-      // Si no tiene protocolo, asumimos https para producción
       url = 'https://' + url.replace(/^\/+/, '');
     }
   }
