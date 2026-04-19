@@ -456,8 +456,9 @@ export default function GestionZonas() {
 
     // ── Stats globales ───────────────────────────────────────────────────────
     const totalCapacidad = zonas.reduce((acc, z) => acc + (z.capacidad_total || 0), 0);
-    const totalPuestos = zonas.reduce((acc, z) => acc + (z.puestos?.length || 0), 0);
+    const totalOcupados = zonas.reduce((acc, z) => acc + (z.puestos?.filter(p => p.estado === 'ocupado').length || 0), 0);
     const totalReservados = zonas.reduce((acc, z) => acc + (z.puestos?.filter(p => p.estado === 'reservado' || p.estado === 'reservado_base').length || 0), 0);
+
 
 
     // ── Render ───────────────────────────────────────────────────────────────
@@ -481,9 +482,6 @@ export default function GestionZonas() {
                 </div>
 
                 <div className="flex items-center gap-2 w-full sm:w-auto self-end">
-                    <button onClick={cargarDatos} className="h-11 w-11 flex items-center justify-center rounded-xl bg-bg-high/20 hover:bg-bg-high/40 transition-all border border-white/5">
-                        <RefreshCw size={18} className={cn("text-text-muted", cargando && 'animate-spin')} />
-                    </button>
                     <Boton onClick={() => abrirModalZona()} className="gap-2 h-11 px-6 w-full sm:w-auto shrink-0 
                                                         bg-primary text-bg-app font-black uppercase tracking-widest text-[11px]
                                                         rounded-xl shadow-tactica hover:scale-[1.02] active:scale-[0.98] transition-all">
@@ -498,8 +496,9 @@ export default function GestionZonas() {
                 {[
                     { label: 'Zonas Activas', valor: zonas.length, color: 'text-primary', icon: ParkingSquare },
                     { label: 'Cap. Total', valor: totalCapacidad || '—', color: 'text-success', icon: Hash },
-                    { label: 'Puestos Creados', valor: totalPuestos, color: 'text-sky-400', icon: LayoutGrid },
+                    { label: 'Ocupación Total', valor: totalOcupados, color: 'text-danger', icon: Activity },
                     { label: 'Reservados', valor: totalReservados, color: 'text-warning', icon: Shield },
+
                 ].map(s => (
                     <Card key={s.label} className="p-4 rounded-2xl border-white/5 flex items-center gap-3">
                         <div className="w-9 h-9 bg-white/5 rounded-xl flex items-center justify-center shrink-0">
