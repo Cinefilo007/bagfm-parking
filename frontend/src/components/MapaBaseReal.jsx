@@ -14,9 +14,29 @@ L.Icon.Default.mergeOptions({
   shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
 });
 
-const createTacticalPin = (color, label = "", isSelected = false, isDarkMode = true) => {
+const createTacticalPin = (color, label = "", isSelected = false, isDarkMode = true, type = 'default') => {
   const pinBgColor = isDarkMode ? 'rgba(13, 17, 23, 0.8)' : 'rgba(255, 255, 255, 0.9)';
   const pinTextColor = isDarkMode ? 'white' : '#0F172A';
+  
+  const innerContent = type === 'parking' ? (
+    <span style={{
+      color: pinBgColor,
+      fontSize: '14px',
+      fontWeight: '900',
+      fontFamily: 'Space Grotesk, sans-serif',
+      transform: 'rotate(45deg)',
+    }}>P</span>
+  ) : (
+    <div style={{
+      width: '10px',
+      height: '10px',
+      background: pinBgColor,
+      borderRadius: '50%',
+      transform: 'rotate(45deg)',
+      border: `2px solid ${isSelected ? color : (isDarkMode ? '#FFF' : '#FFF')}`
+    }} />
+  );
+
   const html = renderToString(
     <div style={{
       display: 'flex',
@@ -41,15 +61,7 @@ const createTacticalPin = (color, label = "", isSelected = false, isDarkMode = t
         alignItems: 'center',
         justifyContent: 'center'
       }}>
-        {/* Inner Circle / Icon Dot */}
-        <div style={{
-          width: '10px',
-          height: '10px',
-          background: pinBgColor,
-          borderRadius: '50%',
-          transform: 'rotate(45deg)',
-          border: `2px solid ${isSelected ? color : (isDarkMode ? '#FFF' : '#FFF')}`
-        }} />
+        {innerContent}
       </div>
 
       {/* Label Box */}
@@ -206,39 +218,24 @@ const MapaBaseReal = ({ situacion, onSelectEntity, assignmentMode, onMapClick, s
                 ))}
 
                 {situacion.zonas_estacionamiento?.filter(hasCoords).map(zona => {
-                   const perc = Math.min((zona.ocupacion_actual / zona.capacidad_total) || 0, 1);
-                   const color = perc > 0.9 ? '#FFAB4B' : perc > 0.7 ? '#F59E0B' : '#4EDEA3';
-                   
                    return (
-                     <React.Fragment key={`zona-${zona.id}`}>
-                        <Circle 
-                          center={[zona.latitud, zona.longitud]} 
-                          radius={60}
-                          pathOptions={{
-                            color: color,
-                            fillColor: color,
-                            fillOpacity: 0.1,
-                            weight: 2,
-                            dashArray: '8, 8'
-                          }}
-                        />
-                        <Marker 
-                          position={[zona.latitud, zona.longitud]}
-                          icon={createTacticalPin('#F59E0B', zona.nombre, selectedForMove?.id === zona.id && selectedForMove?.tipo === 'zona', isDarkMode)}
-                          eventHandlers={{ click: () => !assignmentMode && onSelectEntity(zona) }}
-                        >
-                           <Popup className="tactical-popup">
-                              <div className="p-1">
-                                  <div className="text-[10px] font-black uppercase tracking-widest text-warning mb-0.5">Zona Logística</div>
-                                  <div className="text-[11px] font-bold uppercase text-text-main mb-2">{zona.nombre}</div>
-                                  <div className="flex justify-between items-center text-[9px] font-mono border-t border-bg-high/20 pt-2">
-                                     <span className="text-text-sec uppercase font-bold">Uso:</span>
-                                     <span className="text-text-main font-black text-[11px]">{zona.ocupacion_actual} / {zona.capacidad_total}</span>
-                                  </div>
-                              </div>
-                           </Popup>
-                        </Marker>
-                     </React.Fragment>
+                     <Marker 
+                       key={`zona-${zona.id}`}
+                       position={[zona.latitud, zona.longitud]}
+                       icon={createTacticalPin('#F59E0B', zona.nombre, selectedForMove?.id === zona.id && selectedForMove?.tipo === 'zona', isDarkMode, 'parking')}
+                       eventHandlers={{ click: () => !assignmentMode && onSelectEntity(zona) }}
+                     >
+                        <Popup className="tactical-popup">
+                           <div className="p-1">
+                               <div className="text-[10px] font-black uppercase tracking-widest text-warning mb-0.5">Zona Logística</div>
+                               <div className="text-[11px] font-bold uppercase text-text-main mb-2">{zona.nombre}</div>
+                               <div className="flex justify-between items-center text-[9px] font-mono border-t border-bg-high/20 pt-2">
+                                  <span className="text-text-sec uppercase font-bold">Uso:</span>
+                                  <span className="text-text-main font-black text-[11px]">{zona.ocupacion_actual} / {zona.capacidad_total}</span>
+                               </div>
+                           </div>
+                        </Popup>
+                     </Marker>
                    );
                 })}
               </>

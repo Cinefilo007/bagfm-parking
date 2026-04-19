@@ -735,10 +735,31 @@ export default function GestionZonas() {
                    title={editandoAsig ? `EDITAR ASIGNACIÓN — ${zonaActiva?.nombre}` : `ASIGNAR PUESTOS — ${zonaActiva?.nombre}`} 
                    balanced={true}>
                 <div className="space-y-4">
-                    <div className="p-3 bg-primary/5 border border-primary/20 rounded-xl">
-                        <p className="text-[9px] text-text-muted">
+                    <div className="p-3 bg-primary/5 border border-primary/20 rounded-xl relative overflow-hidden group">
+                        <div className="absolute top-0 right-0 p-2 opacity-10 group-hover:opacity-20 transition-opacity">
+                            <ParkingSquare size={40} />
+                        </div>
+                        <p className="text-[9px] text-text-muted relative z-10">
                             Asigna una cantidad de puestos de esta zona a una entidad alojada. También puedes reservar puestos para uso exclusivo del personal de la base dentro de esa asignación.
                         </p>
+                        
+                        {zonaActiva && (
+                            <div className="mt-3 pt-3 border-t border-primary/10 flex items-center justify-between relative z-10">
+                                <div className="flex flex-col">
+                                    <span className="text-[7px] font-black uppercase tracking-widest text-text-muted/50">Disponibilidad Actual</span>
+                                    <span className={cn(
+                                        "text-lg font-black tracking-tight",
+                                        (zonaActiva.capacidad_total - (asignaciones.filter(a => a.zona_id === zonaActiva.id && a.id !== editandoAsig?.id).reduce((acc, a) => acc + (a.cupo_asignado || 0) + (a.cupo_reservado_base || 0), 0))) <= 0 ? 'text-danger' : 'text-primary'
+                                    )}>
+                                        {zonaActiva.capacidad_total - (asignaciones.filter(a => a.zona_id === zonaActiva.id && a.id !== editandoAsig?.id).reduce((acc, a) => acc + (a.cupo_asignado || 0) + (a.cupo_reservado_base || 0), 0))} PUESTOS LIBRES
+                                    </span>
+                                </div>
+                                <div className="text-right">
+                                    <span className="text-[7px] font-black uppercase tracking-widest text-text-muted/50">Capacidad Total</span>
+                                    <div className="text-sm font-bold text-text-main">{zonaActiva.capacidad_total} PUESTOS</div>
+                                </div>
+                            </div>
+                        )}
                     </div>
                     <SelectTactivo 
                         label="Entidad *"
