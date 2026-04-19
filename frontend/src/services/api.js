@@ -1,5 +1,8 @@
 import axios from 'axios';
 
+// API Service — Aegis Tactical v3 [Fix: Proxy Trust & Trailing Slash]
+// Last Sync: 2026-04-18T23:33:00-04:00
+
 // Axios Instance Configuration
 const getBaseURL = () => {
   // 1. Obtener URL desde variables de entorno o fallback seguro

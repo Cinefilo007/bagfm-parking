@@ -28,7 +28,7 @@ async def crear_zona(
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
 
-@router.get("/", response_model=List[ZonaEstacionamientoSalida])
+@router.get("", response_model=List[ZonaEstacionamientoSalida])
 async def listar_zonas(
     skip: int = 0, limit: int = 100, activa: bool = None,
     db: AsyncSession = Depends(obtener_db),

@@ -1,6 +1,7 @@
 from fastapi import FastAPI, Request, status
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
+from starlette.middleware.proxy_headers import ProxyHeadersMiddleware
 from app.core.excepciones import BagfmError, EntidadNoEncontrada, EntidadDuplicada, AccesoDenegado
 from app.core.config import obtener_config
 
@@ -26,6 +27,9 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Soporte para Proxy (Railway HTTPS)
+app.add_middleware(ProxyHeadersMiddleware, trusted_hosts="*")
 
 # Capturador de Errores de Negocio (BagfmError -> 400/404/403)
 @app.exception_handler(BagfmError)
