@@ -70,10 +70,10 @@ El sistema tiene 8 roles organizados jerárquicamente:
 | Comandante, Admin Base | Cédula + contraseña | Permanente |
 | Supervisor de Ronda | Cédula + contraseña | Permanente |
 | Alcabala (Guardia) | Código de alcabala + contraseña diaria | Sesión temporal |
-| Admin Entidad | Cédula + contraseña | Permanente |
-| Supervisor Parqueros | Cédula + contraseña | Permanente |
-| Parquero | Cédula + contraseña | Permanente |
-| Socio | Cédula + contraseña (o pase portal) | Según tipo de acceso |
+| Admin Entidad | Cédula + contraseña (Default: Cédula) | Permanente |
+| Supervisor Parqueros | Cédula + contraseña (Default: Cédula) | Permanente |
+| Parquero | Cédula + contraseña (Default: Cédula) | Permanente |
+| Socio | Cédula + contraseña (Default: Cédula) | Según tipo de acceso |
 
 ---
 
@@ -131,10 +131,11 @@ Cada zona tiene un campo `tiempo_limite_llegada_min` que define cuánto puede ta
 ## 4.1 Onboarding de una Entidad (FL-01)
 
 ```
-1. Comandante crea la Entidad Civil (nombre, código, descripción, capacidad máxima)
+1. Comandante crea la Entidad Civil (nombre, código, descripción)
+   → La capacidad se calcula dinámicamente según puestos asignados.
 2. Comandante crea Zona(s) de Estacionamiento
 3. Comandante asigna Zona(s) a la Entidad con cupo + opcionalmente aparta para base
-4. Comandante crea Admin Entidad (email + contraseña temporal)
+4. Comandante crea Admin Entidad (email + password por defecto: cédula)
 5. Admin Entidad ingresa, cambia contraseña, completa perfil
 6. Admin Entidad registra Supervisor de Parqueros
 7. Admin Entidad registra Parqueros y asigna zonas
@@ -365,6 +366,8 @@ a. RESOLVER → Desbloquea salida, reactiva acceso si aplica
 b. PERDONAR → Desbloquea + registra como perdonada + observaciones
 c. ESCALAR → Envía a un rol superior (estado: en_revision)
 d. APELAR → El socio solicita revisión (estado: apelada)
+
+**SOP de Credenciales**: Por seguridad y simplicidad táctica, toda alta de personal nuevo (Operativos o Admins) utiliza el número de cédula como contraseña inicial. Se insta al usuario a cambiarla tras el primer ingreso exitoso.
 ```
 
 ## 5.7 Reincidencia

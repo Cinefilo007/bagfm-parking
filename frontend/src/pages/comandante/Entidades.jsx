@@ -20,14 +20,13 @@ export default function Entidades() {
   const [hasMore, setHasMore] = useState(true);
   const [nuevaEntidad, setNuevaEntidad] = useState({
     nombre: '',
-    capacidad_vehiculos: 20,
     codigo_slug: null,
     admin_cedula: '',
     admin_nombre: '',
     admin_apellido: '',
-    admin_email: '',
-    admin_password: ''
+    admin_email: ''
   });
+
 
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [entidadADelete, setEntidadADelete] = useState(null);
@@ -76,7 +75,8 @@ export default function Entidades() {
     try {
       const payload = {
         ...nuevaEntidad,
-        capacidad_vehiculos: parseInt(nuevaEntidad.capacidad_vehiculos) || 0
+        capacidad_vehiculos: 1, // Capacidad base, se expande por zonas asignadas
+        admin_password: nuevaEntidad.admin_cedula // Default a la cédula
       };
       if (!payload.codigo_slug) {
         delete payload.codigo_slug;
@@ -85,14 +85,13 @@ export default function Entidades() {
       setIsModalOpen(false);
       setNuevaEntidad({ 
         nombre: '', 
-        capacidad_vehiculos: 20,
         codigo_slug: null,
         admin_cedula: '',
         admin_nombre: '',
         admin_apellido: '',
-        admin_email: '',
-        admin_password: ''
+        admin_email: ''
       });
+
       fetchEntidades();
     } catch (err) {
       console.error("Error creando entidad", err);
@@ -283,15 +282,30 @@ export default function Entidades() {
         {loading ? (
             <p className="text-center text-text-muted text-sm tracking-widest uppercase">Cargando Tácticas...</p>
         ) : (
-           <div className="space-y-4">
-             {entidades.map(ent => (
-                 <EntidadCard 
-                   key={ent.id} 
-                   ent={ent} 
-                   handleToggleEstado={handleToggleEstado} 
-                 />
-             ))}
-           </div>
+            <div className="space-y-4">
+              {entidades.map(ent => (
+                  <EntidadCard 
+                    key={ent.id} 
+                    ent={ent} 
+                    handleToggleEstado={handleToggleEstado} 
+                  />
+              ))}
+              
+              {entidades.length === 0 && (
+                <div className="py-24 text-center border-2 border-dashed border-white/5 rounded-3xl bg-bg-card/20 animate-in fade-in zoom-in-95 duration-700">
+                  <div className="w-20 h-20 bg-white/5 rounded-full flex items-center justify-center mx-auto mb-6 border border-white/5">
+                    <Network size={40} className="text-text-muted opacity-20" />
+                  </div>
+                  <h3 className="text-sm font-black text-text-muted uppercase tracking-[0.3em] opacity-40">
+                    Sin entidades alojadas en la base
+                  </h3>
+                  <p className="text-[10px] text-text-muted/30 mt-2 font-bold uppercase tracking-widest">
+                    Inicie el protocolo de alta para habilitar concesiones
+                  </p>
+                </div>
+              )}
+            </div>
+
         )}
         
         {/* Controles de Paginación */}
@@ -322,29 +336,23 @@ export default function Entidades() {
       <Modal 
         isOpen={isModalOpen} 
         onClose={() => !creando && setIsModalOpen(false)} 
-        title="Nueva Entidad Civil"
+        title="NUEVA ENTIDAD"
       >
+
         <form onSubmit={handleCrearEntidad} className="space-y-4 max-h-[70vh] overflow-y-auto px-1 no-scrollbar">
            <div className="space-y-3">
              <h3 className="text-[10px] uppercase font-bold text-primary tracking-[0.2em] mb-2 border-b border-primary/20 pb-1">
                Datos de la Concesión
              </h3>
-             <Input 
-               label="Nombre de la Entidad"
-               icon={<Store size={16} />}
-               required
-               placeholder="Ej: AEROCLUB"
-               value={nuevaEntidad.nombre}
-               onChange={(e) => setNuevaEntidad({...nuevaEntidad, nombre: e.target.value.toUpperCase()})}
-             />
-             <Input 
-               label="Capacidad de Vehículos"
-               type="number"
-               required
-               value={nuevaEntidad.capacidad_vehiculos}
-               onChange={(e) => setNuevaEntidad({...nuevaEntidad, capacidad_vehiculos: e.target.value})}
-             />
-           </div>
+              <Input 
+                label="Nombre de la Entidad"
+                icon={<Store size={16} />}
+                required
+                placeholder="Ej: AEROCLUB"
+                value={nuevaEntidad.nombre}
+                onChange={(e) => setNuevaEntidad({...nuevaEntidad, nombre: e.target.value.toUpperCase()})}
+              />
+            </div>
 
            <div className="space-y-3 pt-2">
              <h3 className="text-[10px] uppercase font-bold text-primary tracking-[0.2em] mb-2 border-b border-primary/20 pb-1">
@@ -373,23 +381,18 @@ export default function Entidades() {
                value={nuevaEntidad.admin_cedula}
                onChange={(e) => setNuevaEntidad({...nuevaEntidad, admin_cedula: e.target.value})}
              />
-             <Input 
-               label="Email de Usuario"
-               type="email"
-               required
-               placeholder="admin@entidad.com"
-               value={nuevaEntidad.admin_email}
-               onChange={(e) => setNuevaEntidad({...nuevaEntidad, admin_email: e.target.value})}
-             />
-             <Input 
-               label="Password Inicial"
-               type="password"
-               required
-               placeholder="••••••••"
-               value={nuevaEntidad.admin_password}
-               onChange={(e) => setNuevaEntidad({...nuevaEntidad, admin_password: e.target.value})}
-             />
-           </div>
+              <Input 
+                label="Email de Usuario"
+                type="email"
+                required
+                placeholder="admin@entidad.com"
+                value={nuevaEntidad.admin_email}
+                onChange={(e) => setNuevaEntidad({...nuevaEntidad, admin_email: e.target.value})}
+              />
+              <p className="text-[9px] text-text-muted italic px-2 pt-1 uppercase font-bold tracking-tight opacity-50">
+                * La clave de acceso temporal será el número de cédula.
+              </p>
+            </div>
 
            <div className="pt-4 sticky bottom-0 bg-bg-card pb-2">
              <Boton type="submit" className="w-full" disabled={creando}>
