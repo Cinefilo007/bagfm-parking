@@ -36,4 +36,8 @@ class PuestoEstacionamiento(Base):
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
 
     # Relaciones
-    # zona = relationship("ZonaEstacionamiento")
+    zona = relationship("ZonaEstacionamiento")
+
+    @property
+    def zona_nombre(self):
+        return self.zona.nombre if self.zona else None

@@ -559,22 +559,29 @@ export default function EstacionamientosEntidad() {
                                     acc[zona].push(p);
                                     return acc;
                                 }, {})
-                            ).map(([zonaNombre, zonaPuestos]) => (
-                                <div key={zonaNombre} className="space-y-2">
-                                    <p className="text-[8px] font-black text-text-muted/50 uppercase tracking-widest px-1 flex items-center gap-1.5">
-                                        <MapPin size={9} className="text-primary/60" />
-                                        {zonaNombre} — {zonaPuestos.length} puestos
-                                    </p>
-                                    {zonaPuestos.map(p => (
-                                        <TarjetaPuesto
-                                            key={p.id}
-                                            puesto={p}
-                                            onAsignar={handleAbrirAsignar}
-                                            onLiberar={handleLiberar}
-                                        />
-                                    ))}
-                                </div>
-                            ))}
+                            ).sort(([zA], [zB]) => zA.localeCompare(zB)).map(([zonaNombre, zonaPuestos]) => {
+                                const puestosOrdenados = [...zonaPuestos].sort((a, b) => {
+                                    const numA = a.numero_puesto || a.codigo || '';
+                                    const numB = b.numero_puesto || b.codigo || '';
+                                    return numA.localeCompare(numB, undefined, { numeric: true });
+                                });
+                                return (
+                                    <div key={zonaNombre} className="space-y-2">
+                                        <p className="text-[8px] font-black text-text-muted/50 uppercase tracking-widest px-1 flex items-center gap-1.5">
+                                            <MapPin size={9} className="text-primary/60" />
+                                            {zonaNombre} — {zonaPuestos.length} puestos
+                                        </p>
+                                        {puestosOrdenados.map(p => (
+                                            <TarjetaPuesto
+                                                key={p.id}
+                                                puesto={p}
+                                                onAsignar={handleAbrirAsignar}
+                                                onLiberar={handleLiberar}
+                                            />
+                                        ))}
+                                    </div>
+                                );
+                            })}
                         </>
                     )}
                 </div>
@@ -637,14 +644,14 @@ export default function EstacionamientosEntidad() {
             <Modal
                 isOpen={modalAsignar}
                 onClose={() => setModalAsignar(false)}
-                title={`ASIGNAR PUESTO ${puestoSeleccionado?.codigo || ''}`}
+                title={`ASIGNAR PUESTO ${puestoSeleccionado?.numero_puesto || puestoSeleccionado?.codigo || ''}`}
             >
                 <div className="space-y-5">
                     <div className="flex items-center gap-3 p-4 bg-primary/5 border border-primary/20 rounded-xl">
                         <ParkingSquare size={20} className="text-primary shrink-0" />
                         <div>
                             <p className="text-[9px] font-black text-primary uppercase tracking-wider">Puesto seleccionado</p>
-                            <p className="text-sm font-black text-text-main">{puestoSeleccionado?.codigo} — {puestoSeleccionado?.zona_nombre}</p>
+                            <p className="text-sm font-black text-text-main">{puestoSeleccionado?.numero_puesto || puestoSeleccionado?.codigo} — {puestoSeleccionado?.zona_nombre}</p>
                         </div>
                     </div>
 

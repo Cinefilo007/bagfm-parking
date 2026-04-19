@@ -25,6 +25,7 @@ class PuestoEstacionamientoActualizar(BaseModel):
 class PuestoEstacionamientoSalida(PuestoEstacionamientoBase):
     id: UUID
     zona_id: UUID
+    zona_nombre: Optional[str] = None
     vehiculo_actual_id: Optional[UUID] = None
     qr_actual_id: Optional[UUID] = None
     ocupado_desde: Optional[datetime] = None

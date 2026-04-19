@@ -166,8 +166,9 @@ async def obtener_mis_puestos(
     if not current_user.entidad_id:
         return []
     from sqlalchemy import select
+    from sqlalchemy.orm import joinedload
     from app.models.puesto_estacionamiento import PuestoEstacionamiento
-    rs = await db.execute(select(PuestoEstacionamiento).where(
+    rs = await db.execute(select(PuestoEstacionamiento).options(joinedload(PuestoEstacionamiento.zona)).where(
         PuestoEstacionamiento.reservado_entidad_id == current_user.entidad_id
     ))
     return rs.scalars().all()
