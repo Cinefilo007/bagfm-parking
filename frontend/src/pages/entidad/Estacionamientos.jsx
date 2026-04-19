@@ -430,57 +430,93 @@ export default function EstacionamientosEntidad() {
                         <div className="space-y-3">
                             {asignaciones.map(asig => {
                                 const utilizable = asig.cupo_asignado - asig.cupo_reservado_base;
+                                const isExpanded = !!asignacionEdicion && asignacionEdicion.id === asig.id;
+                                
                                 return (
-                                    <div key={asig.id} className="p-4 rounded-xl border border-white/10 bg-bg-card/50 flex flex-col gap-3">
-                                        <div className="flex justify-between items-start">
-                                            <div>
-                                                <p className="text-xs font-black text-primary flex items-center gap-1.5 uppercase">
-                                                    <ParkingSquare size={13} /> {asig.zona_nombre || `Zona ${asig.zona_id?.slice(-4)}`}
-                                                </p>
-                                                <p className="text-[10px] text-text-muted mt-0.5">Cupo Total: {asig.cupo_asignado} | Res. Base: {asig.cupo_reservado_base}</p>
+                                    <div key={asig.id} className="bg-bg-card/40 border border-white/5 rounded-2xl overflow-hidden transition-all">
+                                        <div 
+                                            className="flex items-center gap-3 p-4 cursor-pointer hover:bg-white/5 transition-all"
+                                            onClick={() => isExpanded ? setAsignacionEdicion(null) : setAsignacionEdicion(asig)}
+                                        >
+                                            <button className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center shrink-0 hover:bg-white/10 transition-all pointer-events-none">
+                                                <ChevronDown size={16} className={cn("text-text-muted transition-transform", isExpanded && "rotate-180")} />
+                                            </button>
+                                            <div className="w-10 h-10 bg-primary/10 rounded-xl flex items-center justify-center border border-primary/20 shrink-0">
+                                                <ParkingSquare size={18} className="text-primary" />
                                             </div>
-                                            <div className="flex items-center gap-3">
-                                                <div className="text-right">
-                                                    <p className="text-2xl font-black text-text-main leading-none">{utilizable}</p>
-                                                    <p className="text-[8px] font-black text-text-muted uppercase tracking-widest">Utilizables</p>
+                                            <div className="flex-1 min-w-0">
+                                                <div className="flex items-center gap-2">
+                                                    <h3 className="text-sm font-black text-text-main uppercase tracking-tight truncate">
+                                                        {asig.zona_nombre || `Zona ${asig.zona_id?.slice(-4)}`}
+                                                    </h3>
                                                 </div>
+                                                <div className="flex items-center gap-3 mt-0.5">
+                                                    <span className="text-[9px] text-text-muted flex items-center gap-1">
+                                                        <Hash size={9} /> Cupo: {asig.cupo_asignado}
+                                                    </span>
+                                                    <span className="text-[9px] text-text-muted flex items-center gap-1">
+                                                        <Shield size={9} /> Base: {asig.cupo_reservado_base}
+                                                    </span>
+                                                </div>
+                                            </div>
+                                            
+                                            <div className="hidden sm:flex items-center gap-4 px-4 border-l border-white/5">
+                                                <div className="text-center group">
+                                                    <div className="text-xl text-primary font-black tracking-tighter transition-transform group-hover:scale-110">{utilizable}</div>
+                                                    <div className="text-[7px] font-black uppercase tracking-widest text-text-muted/50">Utilizables</div>
+                                                </div>
+                                            </div>
+                                            
+                                            <div className="flex items-center gap-1 shrink-0 ml-2">
                                                 <button 
-                                                    onClick={() => handleAbrirGenerar(asig)}
-                                                    className="h-9 px-3 rounded-xl bg-primary/10 text-primary border border-primary/20 hover:bg-primary/20 text-[10px] font-black flex items-center gap-1.5 uppercase transition-all"
+                                                    onClick={(e) => { e.stopPropagation(); handleAbrirGenerar(asig); }}
+                                                    className="p-2 justify-center rounded-lg hover:bg-white/10 text-primary transition-all flex items-center"
+                                                    title="Crear Puestos"
                                                 >
-                                                    <Plus size={14} /> Crear Puestos
+                                                    <Plus size={15} />
                                                 </button>
                                             </div>
                                         </div>
-                                        
-                                        {/* Barra de progreso visual de cupo */}
-                                        <div className="h-1.5 w-full bg-black/40 rounded-full overflow-hidden flex mb-2">
-                                            {asig.cupo_reservado_base > 0 && (
-                                                <div style={{ width: `${(asig.cupo_reservado_base / asig.cupo_asignado) * 100}%` }} className="bg-danger/80" title={`Reserva Base: ${asig.cupo_reservado_base}`} />
-                                            )}
-                                            {utilizable > 0 && (
-                                                <div style={{ width: `${(utilizable / asig.cupo_asignado) * 100}%` }} className="bg-primary" title={`Utilizables: ${utilizable}`} />
-                                            )}
-                                        </div>
-                                        
-                                        {/* Distribución */}
-                                        <div className="bg-black/20 rounded-lg p-2.5 border border-white/5">
-                                            <p className="text-[9px] font-black uppercase text-text-muted mb-2 tracking-widest flex items-center justify-between">
-                                                <span>Distribución Lógica (Simple)</span>
-                                                <button onClick={() => handleAbrirDistribucion(asig)} className="text-primary hover:text-primary/80 transition-all">Configurar</button>
-                                            </p>
-                                            {asig.distribucion_cupos && Object.keys(asig.distribucion_cupos).length > 0 ? (
-                                                <div className="flex flex-wrap gap-2">
-                                                    {Object.entries(asig.distribucion_cupos).map(([k, v]) => (
-                                                        <span key={k} className="text-[10px] font-bold bg-white/5 px-2 py-1 rounded">
-                                                            {k}: <span className="text-primary">{v}</span>
-                                                        </span>
-                                                    ))}
+
+                                        {isExpanded && (
+                                            <div className="px-4 pb-4 space-y-4 border-t border-white/5 pt-4 animate-in slide-in-from-top-2 duration-200 bg-black/20">
+                                                <div>
+                                                    <div className="flex items-center justify-between mb-3">
+                                                        <p className="text-[8px] font-black uppercase tracking-widest text-text-muted/50 flex items-center gap-1.5">
+                                                            <LayoutGrid size={9} className="text-primary" /> Distribución Lógica
+                                                        </p>
+                                                        <button onClick={(e) => { e.stopPropagation(); handleAbrirDistribucion(asig); }} className="text-[9px] text-sky-400 font-bold hover:underline flex items-center gap-1">
+                                                            <Settings size={10} /> Configurar
+                                                        </button>
+                                                    </div>
+                                                    {asig.distribucion_cupos && Object.keys(asig.distribucion_cupos).length > 0 ? (
+                                                        <div className="flex flex-wrap gap-2">
+                                                            {Object.entries(asig.distribucion_cupos).map(([k, v]) => (
+                                                                <span key={k} className="text-[10px] font-bold bg-white/5 px-2 py-1 rounded border border-white/5">
+                                                                    {k}: <span className="text-primary">{v}</span>
+                                                                </span>
+                                                            ))}
+                                                        </div>
+                                                    ) : (
+                                                        <p className="text-[9px] text-text-muted/40 italic">Sin distribución configurada</p>
+                                                    )}
                                                 </div>
-                                            ) : (
-                                                <p className="text-[10px] text-text-muted italic">Sin distribución configurada. (Todos disponibles para General)</p>
-                                            )}
-                                        </div>
+                                                
+                                                <div className="pt-2 border-t border-white/5">
+                                                    <p className="text-[8px] font-black uppercase tracking-widest text-text-muted/50 flex items-center gap-1.5 mb-2">
+                                                        <Activity size={9} className="text-primary" /> Ocupación del Cupo Asignado
+                                                    </p>
+                                                    <div className="h-2 w-full bg-black/40 rounded-full overflow-hidden flex border border-white/5 shadow-inner">
+                                                        {asig.cupo_reservado_base > 0 && <div style={{ width: `${(asig.cupo_reservado_base / asig.cupo_asignado) * 100}%` }} className="bg-danger/80 border-r border-black/50" title={`Reserva Base (${asig.cupo_reservado_base})`} />}
+                                                        {utilizable > 0 && <div style={{ width: `${(utilizable / asig.cupo_asignado) * 100}%` }} className="bg-primary/80" title={`Utilizables (${utilizable})`} />}
+                                                    </div>
+                                                    <div className="flex justify-between mt-1.5 px-0.5">
+                                                        <div className="text-[7px] font-black tracking-widest text-danger uppercase opacity-80">Reserva Base: {asig.cupo_reservado_base}</div>
+                                                        <div className="text-[7px] font-black tracking-widest text-primary uppercase opacity-80">Utilizable: {utilizable}</div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        )}
                                     </div>
                                 )
                             })}
