@@ -97,7 +97,11 @@ class ZonaEstacionamientoService:
     async def generar_puestos_entidad(
         self, db: AsyncSession, zona_id: UUID, entidad_id: UUID, prefijo: str, cantidad: int, user_id: UUID
     ) -> List[PuestoEstacionamiento]:
-        """Crea puestos identificados reservados para una entidad, respetando su cupo asignado."""
+        """Crea puestos identificados para una entidad o reclama puestos libres de la zona."""
+        zona = await self.get_zona(db, zona_id)
+        if not zona:
+            raise ValueError("Zona no encontrada")
+
         # 1. Verificar asignacion
         query_asig = select(AsignacionZona).filter(
             and_(AsignacionZona.zona_id == zona_id, AsignacionZona.entidad_id == entidad_id, AsignacionZona.activa == True)
@@ -108,30 +112,54 @@ class ZonaEstacionamientoService:
 
         # 2. Contar puestos actuales de esta entidad en esta zona
         query_count = select(func.count(PuestoEstacionamiento.id)).filter(
-            and_(PuestoEstacionamiento.zona_id == zona_id, PuestoEstacionamiento.reservado_para_entidad_id == entidad_id)
+            and_(PuestoEstacionamiento.zona_id == zona_id, PuestoEstacionamiento.reservado_entidad_id == entidad_id)
         )
-        puestos_actuales = (await db.execute(query_count)).scalar() or 0
+        puestos_propios = (await db.execute(query_count)).scalar() or 0
 
-        if (puestos_actuales + cantidad) > asig.cupo_asignado:
-            raise ValueError(f"Capacidad excedida. Tienes un cupo asignado de {asig.cupo_asignado}. Puestos actuales generados: {puestos_actuales}. Intentando generar: {cantidad}")
+        if (puestos_propios + cantidad) > asig.cupo_asignado:
+            raise ValueError(f"Capacidad excedida. Tienes un cupo de {asig.cupo_asignado}. Puestos actuales: {puestos_propios}. Intentas generar: {cantidad}")
 
-        puestos = []
-        for i in range(1, cantidad + 1):
-            num_secuencial = puestos_actuales + i
-            puesto = PuestoEstacionamiento(
-                zona_id=zona_id,
-                numero_puesto=f"{prefijo}-{num_secuencial:03d}",
-                estado=EstadoPuesto.reservado,
-                reservado_para_entidad_id=entidad_id,
-                registrado_por=user_id
-            )
-            puestos.append(puesto)
+        # 3. Buscar puestos libres en la zona que la entidad pueda reclamar
+        query_libres = select(PuestoEstacionamiento).filter(
+            and_(PuestoEstacionamiento.zona_id == zona_id, PuestoEstacionamiento.estado == EstadoPuesto.libre)
+        ).limit(cantidad)
+        puestos_libres = (await db.execute(query_libres)).scalars().all()
         
-        db.add_all(puestos)
+        puestos_a_devolver = []
+        cantidad_restante = cantidad
+        
+        # Primero adjudicar los que están libres generados por el comandante
+        for p in puestos_libres:
+            p.estado = EstadoPuesto.reservado
+            p.reservado_entidad_id = entidad_id
+            p.numero_puesto = f"{prefijo}-{(puestos_propios + len(puestos_a_devolver) + 1):03d}"
+            puestos_a_devolver.append(p)
+            cantidad_restante -= 1
+
+        # Si aún faltan, crear los nuevos
+        if cantidad_restante > 0:
+            query_totales = select(func.count(PuestoEstacionamiento.id)).filter(PuestoEstacionamiento.zona_id == zona_id)
+            puestos_totales = (await db.execute(query_totales)).scalar() or 0
+            
+            if (puestos_totales + cantidad_restante) > zona.capacidad_total:
+                raise ValueError(f"Discordancia física: Tienes cupo, pero la base excedió la capacidad máxima ({zona.capacidad_total}).")
+
+            for _ in range(cantidad_restante):
+                num_secuencial = puestos_propios + len(puestos_a_devolver) + 1
+                puesto = PuestoEstacionamiento(
+                    zona_id=zona_id,
+                    numero_puesto=f"{prefijo}-{num_secuencial:03d}",
+                    estado=EstadoPuesto.reservado,
+                    reservado_entidad_id=entidad_id,
+                    registrado_por=user_id
+                )
+                db.add(puesto)
+                puestos_a_devolver.append(puesto)
+        
         await db.commit()
-        for p in puestos:
+        for p in puestos_a_devolver:
             await db.refresh(p)
-        return puestos
+        return puestos_a_devolver
 
     async def get_puesto(self, db: AsyncSession, puesto_id: UUID) -> Optional[PuestoEstacionamiento]:
         resultado = await db.execute(select(PuestoEstacionamiento).filter(PuestoEstacionamiento.id == puesto_id))
@@ -172,7 +200,7 @@ class ZonaEstacionamientoService:
         for puesto in puestos_libres:
             puesto.estado = EstadoPuesto.reservado if entidad_id else EstadoPuesto.reservado_base
             puesto.reservado_por = user_id
-            puesto.reservado_para_entidad_id = entidad_id
+            puesto.reservado_entidad_id = entidad_id
 
         await db.commit()
         for p in puestos_libres:
