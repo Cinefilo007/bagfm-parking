@@ -9,7 +9,8 @@ import { cn } from '../../lib/utils';
 import {
     ParkingSquare, Car, Plus, Trash2, RefreshCw,
     Shield, MapPin, Users, Tag, CheckCircle2,
-    Circle, Edit3, ToggleLeft, ToggleRight, Zap, AlertTriangle
+    Circle, Edit3, ToggleLeft, ToggleRight, Zap, AlertTriangle,
+    ChevronDown, LayoutGrid, Settings, Activity, Hash
 } from 'lucide-react';
 import { zonaService } from '../../services/zona.service';
 
