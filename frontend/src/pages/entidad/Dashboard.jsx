@@ -92,10 +92,28 @@ export default function DashboardEntidad() {
         
         const socios = resSocios.data;
         const solicitudes = resEventos.data;
-        const miCuota = resParking.data; 
+        const miCuotaData = resParking.data; // Puede ser un objeto con resumen o un array de asignaciones
         const lotes = resLotes.data;
         const historial = resHistorial.data;
         const parqueros = resParqueros.data;
+
+        // Lógica de suma consolidada de puestos across all zones
+        let totalAsignados = 0;
+        let totalOcupados = 0;
+
+        if (Array.isArray(miCuotaData)) {
+           miCuotaData.forEach(asig => {
+              totalAsignados += asig.cupo_asignado || 0;
+              totalOcupados += asig.cupo_ocupado || 0;
+           });
+        } else if (miCuotaData.asignaciones) {
+           miCuotaData.asignaciones.forEach(asig => {
+              totalAsignados += asig.cupo_asignado || 0;
+              totalOcupados += asig.cupo_ocupado || 0;
+           });
+        }
+
+        const totalLibres = totalAsignados - totalOcupados;
 
         // Calcular stats de QRs reales
         const qrStats = lotes.reduce((acc, lote) => {
@@ -108,7 +126,11 @@ export default function DashboardEntidad() {
           totalSocios: socios.length,
           vehiculosActivos: socios.filter(s => s.vehiculos?.length > 0).length,
           solicitudesPendientes: solicitudes.filter(e => e.estado === 'PENDIENTE').length,
-          parking: miCuota.resumen || { asignados: 0, ocupados: 0, libres: 0 },
+          parking: { 
+             asignados: totalAsignados, 
+             ocupados: totalOcupados, 
+             libres: totalLibres 
+          },
           qrs: qrStats,
           parqueros: parqueros.map(p => ({
              id: p.id,
