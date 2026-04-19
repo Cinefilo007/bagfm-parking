@@ -15,6 +15,13 @@ class PuestoEstacionamientoBase(BaseModel):
 class PuestoEstacionamientoCrear(PuestoEstacionamientoBase):
     pass
 
+class PuestoEstacionamientoActualizar(BaseModel):
+    numero_puesto: Optional[str] = None
+    estado: Optional[EstadoPuesto] = None
+    reservado_base: Optional[bool] = None
+    latitud: Optional[str] = None
+    longitud: Optional[str] = None
+
 class PuestoEstacionamientoSalida(PuestoEstacionamientoBase):
     id: UUID
     zona_id: UUID
