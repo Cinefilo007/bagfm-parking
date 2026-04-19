@@ -44,10 +44,10 @@ class PersonalService:
                 RolTipo.PARQUERO
             ]))
         elif usuario_actual.rol == RolTipo.ADMIN_ENTIDAD:
-            # Administrador de Entidad solo ve a sus PARQUEROS
+            # Administrador de Entidad solo ve a sus PARQUEROS y SUPERVISORES
             query = query.where(
                 Usuario.entidad_id == usuario_actual.entidad_id,
-                Usuario.rol == RolTipo.PARQUERO
+                Usuario.rol.in_([RolTipo.PARQUERO, RolTipo.SUPERVISOR_PARQUEROS])
             )
         else:
             raise AccesoDenegado("No tiene permisos para ver la lista de personal")
@@ -76,8 +76,8 @@ class PersonalService:
         """
         # 1. Validaciones de Rol (Quién puede crear a quién)
         if usuario_actual.rol == RolTipo.ADMIN_ENTIDAD:
-            if datos.rol != RolTipo.PARQUERO:
-                raise AccesoDenegado("Como Administrador de Entidad, solo puede registrar Parqueros")
+            if datos.rol not in [RolTipo.PARQUERO, RolTipo.SUPERVISOR_PARQUEROS]:
+                raise AccesoDenegado("Como Administrador de Entidad, solo puede registrar Parqueros o Supervisores de su entidad")
             datos.entidad_id = usuario_actual.entidad_id
             
         elif usuario_actual.rol in [RolTipo.COMANDANTE, RolTipo.ADMIN_BASE]:
