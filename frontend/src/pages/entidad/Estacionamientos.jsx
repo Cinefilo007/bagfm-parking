@@ -67,7 +67,14 @@ const TarjetaPuesto = ({ puesto, onAsignar, onLiberar, onReasignar, tipos }) => 
                 <p className="text-xs font-black text-text-main uppercase">{puesto.numero_puesto || puesto.codigo || `Puesto ${puesto.id?.slice(-4)}`}</p>
                 <BadgeEstado estado={puesto.estado} tieneTipo={!!puesto.tipo_acceso_id} />
                 {puesto.tipo_acceso_nombre && (
-                    <span className="text-[7px] font-black bg-primary/10 text-primary px-1.5 py-0.5 rounded-full uppercase tracking-widest border border-primary/20">
+                    <span 
+                        className="text-[7px] font-black px-1.5 py-0.5 rounded-full uppercase tracking-widest border"
+                        style={{ 
+                            backgroundColor: `${tipos.find(t => t.id === puesto.tipo_acceso_id)?.color_badge || '#4EDEA3'}26`,
+                            color: tipos.find(t => t.id === puesto.tipo_acceso_id)?.color_badge || '#4EDEA3',
+                            borderColor: `${tipos.find(t => t.id === puesto.tipo_acceso_id)?.color_badge || '#4EDEA3'}4D`
+                        }}
+                    >
                         {puesto.tipo_acceso_nombre}
                     </span>
                 )}
