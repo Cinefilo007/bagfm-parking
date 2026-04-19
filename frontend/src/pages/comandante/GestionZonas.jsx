@@ -11,7 +11,7 @@ import {
     MapPin, Clock, Users, Shield, ChevronRight,
     ChevronDown, Settings, LayoutGrid, Building2,
     AlertTriangle, CheckCircle2, Timer, Hash,
-    Lock, Unlock, Zap
+    Lock, Unlock, Zap, Activity
 } from 'lucide-react';
 import zonaService from '../../services/zona.service';
 import api from '../../services/api';
