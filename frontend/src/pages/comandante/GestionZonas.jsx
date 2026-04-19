@@ -7,7 +7,7 @@ import { useAuthStore } from '../../store/auth.store';
 import { toast } from 'react-hot-toast';
 import { cn } from '../../lib/utils';
 import {
-    ParkingSquare, Plus, Trash2, RefreshCw, Edit3,
+    ParkingSquare, Plus, Trash2, RefreshCw, Edit3, Edit2, X,
     MapPin, Clock, Users, Shield, ChevronRight,
     ChevronDown, Settings, LayoutGrid, Building2,
     AlertTriangle, CheckCircle2, Timer, Hash,
@@ -768,7 +768,7 @@ export default function GestionZonas() {
             </Modal>
 
             {/* ── MODAL: Ajustar Tiempo Límite ── */}
-            <Modal isOpen={modalTiempo} onClose={() => setModalTiempo(false)} title={`TIEMPO LÍMITE — ${zonaActiva?.nombre}`} balanced={true}>
+            <Modal isOpen={modalTiempo} onClose={() => setModalTiempo(false)} title={`TIEMPO LÍMITE — ${zonaActiva?.nombre}`}>
                 <div className="space-y-5">
                     <div className="p-3 bg-warning/5 border border-warning/20 rounded-xl flex items-start gap-3">
                         <AlertTriangle size={16} className="text-warning shrink-0 mt-0.5" />
@@ -816,7 +816,6 @@ export default function GestionZonas() {
             <ModalConfirmacion
                 {...confirmConfig}
                 onClose={() => setConfirmConfig(prev => ({ ...prev, isOpen: false }))}
-                balanced={true}
             />
         </div>
     );

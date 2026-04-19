@@ -724,6 +724,25 @@ El admin tiene un editor visual en el frontend para crear y personalizar plantil
 
 ---
 
-*Documento generado: 18 de abril de 2026*  
+# PARTE 16 — ESTÁNDARES DE UI/UX (AEGIS TACTICAL v3)
+
+Para mantener la estética premium y la eficiencia operativa del sistema, todos los desarrollos de frontend deben seguir estas directivas:
+
+## 16.1 Modales Balanceados (Ajuste Táctico)
+Debido a la presencia permanente del menú lateral en pantallas grandes (`lg:pl-72`), los modales deben configurarse para centrarse visualmente en el **área de contenido útil** y no en el centro absoluto de la pantalla.
+- **Implementación**: Utilizar el componente `Modal` con la propiedad `balanced={true}` (activa por defecto).
+- **Comportamiento**: 
+  - El fondo oscuro (*backdrop*) debe cubrir el 100% de la pantalla (incluyendo el sidebar).
+  - El contenedor de contenido del modal debe aplicar un desplazamiento izquierdo compensatorio (`lg:ml-72`) antes de centrar sus elementos internos.
+  - En dispositivos móviles, el modal se centra automáticamente al 100% del viewport.
+
+## 16.2 Tipografía y Colores
+- **Fuentes**: `Inter` para cuerpo y datos; `Space Grotesk` para títulos técnicos y encabezados tácticos.
+- **Micro-animaciones**: Todos los modales deben usar `animate-in fade-in zoom-in-95` con una duración de 300ms.
+- **Empty States**: Cuando no existen datos (ej: Entidades, Infracciones), se debe mostrar una silueta del objeto con una descripción táctica en lugar de una pantalla en blanco.
+
+---
+
+*Documento actualizado: 19 de abril de 2026*  
 *Sistema: BAGFM v2.0 — Gestión Inteligente de Estacionamientos*  
 *Base Aérea Generalísimo Francisco de Miranda*
