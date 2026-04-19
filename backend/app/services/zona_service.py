@@ -172,4 +172,31 @@ class ZonaEstacionamientoService:
         resultado = await db.execute(select(AsignacionZona))
         return resultado.scalars().all()
 
+    async def get_asignacion(self, db: AsyncSession, asignacion_id: UUID) -> Optional[AsignacionZona]:
+        resultado = await db.execute(select(AsignacionZona).filter(AsignacionZona.id == asignacion_id))
+        return resultado.scalars().first()
+
+    async def actualizar_asignacion_zona(
+        self, db: AsyncSession, asignacion_id: UUID, datos_in: dict
+    ) -> Optional[AsignacionZona]:
+        db_asig = await self.get_asignacion(db, asignacion_id)
+        if not db_asig:
+            return None
+        
+        for key, value in datos_in.items():
+            setattr(db_asig, key, value)
+            
+        await db.commit()
+        await db.refresh(db_asig)
+        return db_asig
+
+    async def eliminar_asignacion_zona(self, db: AsyncSession, asignacion_id: UUID) -> bool:
+        db_asig = await self.get_asignacion(db, asignacion_id)
+        if not db_asig:
+            return False
+        
+        await db.delete(db_asig)
+        await db.commit()
+        return True
+
 zona_service = ZonaEstacionamientoService()

@@ -11,7 +11,7 @@ from app.schemas.zona_estacionamiento import (
     ZonaEstacionamientoSalida, ZonaEstacionamientoCrear, ZonaEstacionamientoActualizar
 )
 from app.schemas.asignacion_zona import (
-    AsignacionZonaCrear, AsignacionZonaSalida
+    AsignacionZonaCrear, AsignacionZonaSalida, AsignacionZonaActualizar
 )
 from app.schemas.puesto_estacionamiento import PuestoEstacionamientoSalida, PuestoEstacionamientoActualizar
 
@@ -117,3 +117,25 @@ async def obtener_todas_las_asignaciones(
 ):
     """Retorna todas las asignaciones de cupos en el sistema."""
     return await zona_service.obtener_asignaciones_globales(db)
+
+@router.patch("/asignaciones/{asignacion_id}", response_model=AsignacionZonaSalida)
+async def actualizar_asignacion(
+    asignacion_id: UUID,
+    datos: AsignacionZonaActualizar,
+    db: AsyncSession = Depends(obtener_db),
+    current_user: Usuario = Depends(require_rol(["COMANDANTE", "ADMIN_BASE"]))
+):
+    asig = await zona_service.actualizar_asignacion_zona(db, asignacion_id, datos.model_dump(exclude_unset=True))
+    if not asig:
+        raise HTTPException(status_code=404, detail="Asignación no encontrada")
+    return asig
+
+@router.delete("/asignaciones/{asignacion_id}")
+async def eliminar_asignacion(
+    asignacion_id: UUID,
+    db: AsyncSession = Depends(obtener_db),
+    current_user: Usuario = Depends(require_rol(["COMANDANTE", "ADMIN_BASE"]))
+):
+    if not await zona_service.eliminar_asignacion_zona(db, asignacion_id):
+        raise HTTPException(status_code=404, detail="Asignación no encontrada")
+    return {"mensaje": "Asignación eliminada correctamente"}

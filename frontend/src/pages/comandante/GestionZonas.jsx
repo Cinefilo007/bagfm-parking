@@ -65,9 +65,16 @@ const ZonaRow = ({ zona, entidades, asignaciones, onEditar, onEliminar, onGestio
     const totalAsignado = asignacionesZona.reduce((acc, a) => acc + (a.cupo_asignado || 0), 0);
     const reservadoBase = asignacionesZona.reduce((acc, a) => acc + (a.cupo_reservado_base || 0), 0);
 
-    const puestosLibres = puestos.filter(p => p.estado === 'libre' || p.estado === 'reservado_base').length;
+    const puestosLibres = puestos.length > 0
+        ? puestos.filter(p => p.estado === 'libre').length
+        : (zona.capacidad_total - totalAsignado - reservadoBase);
+
     const puestosOcupados = puestos.filter(p => p.estado === 'ocupado').length;
-    const puestosReservados = puestos.filter(p => p.estado === 'reservado').length;
+
+    const puestosReservados = Math.max(
+        reservadoBase,
+        puestos.filter(p => p.estado === 'reservado' || p.estado === 'reservado_base').length
+    );
 
     return (
         <div className="bg-bg-card/40 border border-white/5 rounded-2xl overflow-hidden transition-all">
@@ -162,6 +169,16 @@ const ZonaRow = ({ zona, entidades, asignaciones, onEditar, onEliminar, onGestio
                                         {asig.cupo_reservado_base > 0 && (
                                             <span className="text-[9px] font-bold text-warning">+{asig.cupo_reservado_base} base</span>
                                         )}
+                                        <div className="flex items-center gap-1 border-l border-white/10 pl-2 ml-1">
+                                            <button onClick={() => abrirModalAsignar(zona, asig)} title="Editar asignación"
+                                                className="p-1.5 rounded-lg hover:bg-white/10 text-text-muted hover:text-text-main transition-all">
+                                                <Edit2 size={12} />
+                                            </button>
+                                            <button onClick={() => handleEliminarAsignacion(asig)} title="Eliminar asignación"
+                                                className="p-1.5 rounded-lg hover:bg-red-500/10 text-text-muted/40 hover:text-red-400 transition-all">
+                                                <X size={12} />
+                                            </button>
+                                        </div>
                                     </div>
                                 );
                             })}
@@ -242,6 +259,7 @@ export default function GestionZonas() {
 
     // Asignación puestos
     const [formAsig, setFormAsig] = useState({ entidad_id: '', cupo_asignado: 1, cupo_reservado_base: 0, notas: '' });
+    const [editandoAsig, setEditandoAsig] = useState(null);
     const [asignando, setAsignando] = useState(false);
 
     // Tiempo límite
@@ -425,9 +443,20 @@ export default function GestionZonas() {
 
     // ── Asignación de Cuota ──────────────────────────────────────────────────
 
-    const abrirModalAsignar = (zona) => {
+    const abrirModalAsignar = (zona, asig = null) => {
         setZonaActiva(zona);
-        setFormAsig({ entidad_id: '', cupo_asignado: 1, cupo_reservado_base: 0, notas: '' });
+        if (asig) {
+            setEditandoAsig(asig);
+            setFormAsig({
+                entidad_id: asig.entidad_id,
+                cupo_asignado: asig.cupo_asignado,
+                cupo_reservado_base: asig.cupo_reservado_base || 0,
+                notas: asig.notas || ''
+            });
+        } else {
+            setEditandoAsig(null);
+            setFormAsig({ entidad_id: '', cupo_asignado: 1, cupo_reservado_base: 0, notas: '' });
+        }
         setModalAsignar(true);
     };
 
@@ -435,15 +464,41 @@ export default function GestionZonas() {
         if (!formAsig.entidad_id) { toast.error('Selecciona una entidad'); return; }
         setAsignando(true);
         try {
-            await zonaService.crearAsignacion({ ...formAsig, zona_id: zonaActiva.id });
-            toast.success('Puestos asignados correctamente');
+            if (editandoAsig) {
+                await zonaService.actualizarAsignacion(editandoAsig.id, formAsig);
+                toast.success('Asignación actualizada correctamente');
+            } else {
+                await zonaService.crearAsignacion({ ...formAsig, zona_id: zonaActiva.id });
+                toast.success('Puestos asignados correctamente');
+            }
             setModalAsignar(false);
             cargarDatos();
         } catch (e) {
-            toast.error(e.response?.data?.detail || 'Error al asignar puestos');
+            toast.error(e.response?.data?.detail || 'Error al procesar asignación');
         } finally {
             setAsignando(false);
         }
+    };
+
+    const handleEliminarAsignacion = (asig) => {
+        setConfirmConfig({
+            isOpen: true,
+            title: 'REVOCAR ASIGNACIÓN TÁCTICA',
+            message: `¿CONFIRMA LA REVOCACIÓN de los cupos para la entidad? Esta acción liberará la capacidad en la zona pero no eliminará los puestos físicos si ya fueron generados.`,
+            onConfirm: async () => {
+                setConfirmConfig(prev => ({ ...prev, loading: true }));
+                try {
+                    await zonaService.eliminarAsignacion(asig.id);
+                    toast.success('Asignación revocada');
+                    cargarDatos();
+                    setConfirmConfig(prev => ({ ...prev, isOpen: false }));
+                } catch (e) {
+                    toast.error('Error al revocar asignación');
+                } finally {
+                    setConfirmConfig(prev => ({ ...prev, loading: false }));
+                }
+            }
+        });
     };
 
     // ── Tiempo Límite ────────────────────────────────────────────────────────
@@ -673,7 +728,9 @@ export default function GestionZonas() {
             </Modal>
 
             {/* ── MODAL: Asignar Puestos a Entidad ── */}
-            <Modal isOpen={modalAsignar} onClose={() => setModalAsignar(false)} title={`ASIGNAR PUESTOS — ${zonaActiva?.nombre}`} balanced={true}>
+            <Modal isOpen={modalAsignar} onClose={() => setModalAsignar(false)} 
+                   title={editandoAsig ? `EDITAR ASIGNACIÓN — ${zonaActiva?.nombre}` : `ASIGNAR PUESTOS — ${zonaActiva?.nombre}`} 
+                   balanced={true}>
                 <div className="space-y-4">
                     <div className="p-3 bg-primary/5 border border-primary/20 rounded-xl">
                         <p className="text-[9px] text-text-muted">
@@ -704,7 +761,7 @@ export default function GestionZonas() {
                         <Boton variant="ghost" className="flex-1" onClick={() => setModalAsignar(false)}>Cancelar</Boton>
                         <Boton onClick={handleAsignarPuestos} disabled={asignando || !formAsig.entidad_id}
                             className="flex-[2] bg-primary text-bg-app h-12 font-black uppercase">
-                            {asignando ? <RefreshCw size={16} className="animate-spin" /> : <><Building2 size={15} /> Asignar Puestos</>}
+                            {asignando ? <RefreshCw size={16} className="animate-spin" /> : <><Building2 size={15} /> {editandoAsig ? 'Actualizar Cupos' : 'Asignar Puestos'}</>}
                         </Boton>
                     </div>
                 </div>

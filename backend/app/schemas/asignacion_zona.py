@@ -14,6 +14,13 @@ class AsignacionZonaBase(BaseModel):
 class AsignacionZonaCrear(AsignacionZonaBase):
     zona_id: UUID
 
+class AsignacionZonaActualizar(BaseModel):
+    cupo_asignado: Optional[int] = None
+    cupo_reservado_base: Optional[int] = None
+    notas: Optional[str] = None
+    activa: Optional[bool] = None
+    fecha_fin: Optional[datetime] = None
+
 class AsignacionZonaSalida(AsignacionZonaBase):
     id: UUID
     zona_id: UUID
