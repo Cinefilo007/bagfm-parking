@@ -3,7 +3,7 @@ import { Header } from '../../components/layout/Header';
 import { Card, CardContent } from '../../components/ui/Card';
 import { useAuthStore } from '../../store/auth.store';
 import { 
-  Users, CarFront, AlertCircle, ShieldCheck, 
+  Users as UsersIcon, CarFront, AlertCircle, ShieldCheck, 
   ChevronRight, CalendarRange, UserCog, 
   TrendingUp, Activity, Bell, ParkingSquare
 } from 'lucide-react';
@@ -61,10 +61,10 @@ export default function DashboardEntidad() {
         <section className="grid grid-cols-1 md:grid-cols-3 gap-6">
            <Card className="bg-primary/5 border-primary/20 shadow-xl shadow-primary/5 hover:bg-primary/10 transition-all group overflow-hidden relative">
               <div className="absolute -right-4 -top-4 text-primary/10 group-hover:scale-110 transition-transform">
-                 <Users size={120} />
+                 <UsersIcon size={120} />
               </div>
               <CardContent className="p-6">
-                 <Users className="text-primary mb-4" size={24} />
+                 <UsersIcon className="text-primary mb-4" size={24} />
                  <div className="text-4xl font-black text-text-main italic font-display">{stats.totalSocios}</div>
                  <div className="text-[10px] uppercase font-black tracking-[0.2em] text-text-muted mt-1 opacity-60">Socios Registrados</div>
               </CardContent>
@@ -131,7 +131,7 @@ export default function DashboardEntidad() {
                        <CardContent className="p-4 flex items-center justify-between">
                           <div className="flex items-center gap-4">
                              <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center text-primary group-hover:rotate-6 transition-transform">
-                                <Users size={24} />
+                                <UsersIcon size={24} />
                              </div>
                              <div>
                                 <h5 className="text-sm font-black text-white uppercase tracking-tight italic">Gestión de Socios</h5>

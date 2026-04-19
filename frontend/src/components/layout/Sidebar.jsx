@@ -4,7 +4,7 @@ import {
   LogOut, Settings, ShieldCheck,
   LayoutDashboard, UserCircle, Map as MapIcon,
   Camera, Sun, Moon, UserCog, ParkingCircle, Activity, Radio, AlertTriangle, Palette,
-  ClipboardList, CalendarRange, Building2
+  ClipboardList, CalendarRange, Building2, Users, ParkingSquare
 } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import { useAuthStore } from '../../store/auth.store';
