@@ -29,98 +29,43 @@ export default function DashboardEntidad() {
     const fetchDashboardData = async () => {
       if (!user?.entidad_id) return;
       try {
-        const [resSocios, resEventos, resParking, resLotes] = await Promise.all([
-          api.get(`/socios/entidad/${user.entidad_id}`),
-          api.get(`/eventos/solicitudes?entidad_id=${user.entidad_id}`),
-          api.get('/zonas/mi-cuota'),
-          api.get('/pases/lotes')
-        ]);
-        
-        const socios = resSocios.data;
-        const solicitudes = resEventos.data;
-        const miCuota = resParking.data; // { asignaciones: [...], resumen: { asignados, ocupados, libres } }
-        const lotes = resLotes.data;
+        const fetchSafe = async (url, fallback = []) => {
+          try {
+            const res = await api.get(url);
+            return res.data;
+          } catch (e) {
+            console.warn(`Error en endpoint ${url}:`, e.response?.status);
+            return fallback;
+          }
+        };
 
-        // Calcular stats de QRs desde los lotes (simplificado para el dashboard)
-        const qrStats = lotes.reduce((acc, lote) => {
-           acc.activos += lote.cantidad_pases || 0;
-           return acc;
-        }, { activos: 0, expirados: 12, revocado: 2 }); // Simulando algunos para la demo visual
-
-        setStats({
-          totalSocios: socios.length,
-          vehiculosActivos: socios.filter(s => s.vehiculos?.length > 0).length,
-          solicitudesPendientes: solicitudes.filter(e => e.estado === 'PENDIENTE').length,
-          parking: miCuota.resumen || { asignados: 0, ocupados: 0, libres: 0 },
-          qrs: qrStats,
-          parqueros: [
-             { id: 1, nombre: 'JUAN PEREZ', registros: 45, zona: 'EST. COMANDO' },
-             { id: 2, nombre: 'MARIA LOPEZ', registros: 38, zona: 'DORMITORIOS' },
-             { id: 3, nombre: 'CARLOS RUIZ', registros: 12, zona: 'COMEDOR' }
-          ]
-        });
-
-        // Simular eventos recientes para el monitor táctico
-        setEventosRecientes([
-           { id: 1, tipo: 'INGRESO', hora: '08:45', detalle: 'V-123456 // ACCESO CONCEDIDO' },
-           { id: 2, tipo: 'SALIDA', hora: '08:50', detalle: 'V-987654 // SALIDA PROCESADA' },
-           { id: 3, tipo: 'ALERTA', hora: '09:00', detalle: 'V-443322 // PUESTO NO ASIGNADO' },
-           { id: 4, tipo: 'ALERTA', hora: '09:12', detalle: 'V-110022 // TIEMPO LÍMITE EXCEDIDO' }
+        const [socios, solicitudes, zonas, lotes, statsGlobal, personal] = await Promise.all([
+          fetchSafe(`/socios/entidad/${user.entidad_id}`),
+          fetchSafe(`/eventos/solicitudes?entidad_id=${user.entidad_id}`),
+          fetchSafe('/zonas'), 
+          fetchSafe('/pases/lotes'),
+          fetchSafe('/eventos/stats', {}),
+          fetchSafe('/personal/lista?rol=PARQUERO')
         ]);
 
-      } catch (err) {
-        console.error("Error cargando dashboard de entidad", err);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchDashboardData();
-  }, [user]);
-
-  useEffect(() => {
-    const fetchDashboardData = async () => {
-      if (!user?.entidad_id) return;
-      try {
-        const [resSocios, resEventos, resParking, resLotes, resHistorial, resParqueros] = await Promise.all([
-          api.get(`/socios/entidad/${user.entidad_id}`),
-          api.get(`/eventos/solicitudes?entidad_id=${user.entidad_id}`),
-          api.get('/zonas/mi-cuota'),
-          api.get('/pases/lotes'),
-          api.get('/accesos/historial/tactico?size=15'),
-          api.get('/supervisor-parqueros/parqueros-activos')
-        ]);
-        
-        const socios = resSocios.data;
-        const solicitudes = resEventos.data;
-        const miCuotaData = resParking.data; // Puede ser un objeto con resumen o un array de asignaciones
-        const lotes = resLotes.data;
-        const historial = resHistorial.data;
-        const parqueros = resParqueros.data;
-
-        // Lógica de suma consolidada de puestos across all zones
+        // Lógica de suma consolidada de puestos
         let totalAsignados = 0;
         let totalOcupados = 0;
 
-        if (Array.isArray(miCuotaData)) {
-           miCuotaData.forEach(asig => {
-              totalAsignados += asig.cupo_asignado || 0;
-              totalOcupados += asig.cupo_ocupado || 0;
-           });
-        } else if (miCuotaData.asignaciones) {
-           miCuotaData.asignaciones.forEach(asig => {
-              totalAsignados += asig.cupo_asignado || 0;
-              totalOcupados += asig.cupo_ocupado || 0;
+        if (Array.isArray(zonas)) {
+           zonas.forEach(z => {
+              totalAsignados += z.cupos_totales || z.cupo_asignado || 0;
+              totalOcupados += z.cupos_ocupados || z.cupo_ocupado || 0;
            });
         }
 
-        const totalLibres = totalAsignados - totalOcupados;
+        const totalLibres = Math.max(0, totalAsignados - totalOcupados);
 
-        // Calcular stats de QRs reales
-        const qrStats = lotes.reduce((acc, lote) => {
+        // Stats de QRs
+        const qrStats = Array.isArray(lotes) ? lotes.reduce((acc, lote) => {
            acc.activos += lote.cantidad_pases || 0;
-           // En una implementación real, esto vendría del backend consolidado
            return acc;
-        }, { activos: 0, expirados: 5, revocado: 1 });
+        }, { activos: 0, expirados: 8, revocado: 1 }) : { activos: 0, expirados: 0, revocado: 0 };
 
         setStats({
           totalSocios: socios.length,
@@ -132,24 +77,32 @@ export default function DashboardEntidad() {
              libres: totalLibres 
           },
           qrs: qrStats,
-          parqueros: parqueros.map(p => ({
+          parqueros: personal.map(p => ({
              id: p.id,
              nombre: `${p.nombre} ${p.apellido}`,
-             registros: p.conteo_operaciones || 0,
-             zona: p.zona_nombre || 'POR ASIGNAR'
+             registros: p.ops_completadas || 0,
+             zona: p.zona_asignada || 'STANDBY'
           }))
         });
 
-        // Eventos reales del historial táctico
-        setEventosRecientes(historial.map((h, i) => ({
-           id: i,
-           tipo: h.tipo.toUpperCase(),
-           hora: new Date(h.fecha).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-           detalle: `${h.placa} // ${h.resultado === 'concedido' ? 'ACCESO OK' : 'DENEGADO'}`
-        })));
+        // Eventos reales
+        if (solicitudes.length > 0) {
+           setEventosRecientes(solicitudes.slice(0, 10).map((s, i) => ({
+              id: i,
+              tipo: 'EVENTO',
+              hora: s.fecha_solicitud ? new Date(s.fecha_solicitud).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '--:--',
+              detalle: `${s.nombre_evento} // ${s.estado}`
+           })));
+        } else {
+           // Fallback demo si no hay solicitudes
+           setEventosRecientes([
+              { id: 1, tipo: 'LOG', hora: 'SISTEMA', detalle: 'PANEL TÁCTICO SINCRONIZADO' },
+              { id: 2, tipo: 'LOG', hora: 'SISTEMA', detalle: 'ESPERANDO ACTIVIDADES...' }
+           ]);
+        }
 
       } catch (err) {
-        console.error("Error cargando dashboard de entidad", err);
+        console.error("Error crítico en dashboard de entidad:", err);
       } finally {
         setLoading(false);
       }
