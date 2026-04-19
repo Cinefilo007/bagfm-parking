@@ -741,6 +741,43 @@ Debido a la presencia permanente del menú lateral en pantallas grandes (`lg:pl-
 - **Micro-animaciones**: Todos los modales deben usar `animate-in fade-in zoom-in-95` con una duración de 300ms.
 - **Empty States**: Cuando no existen datos (ej: Entidades, Infracciones), se debe mostrar una silueta del objeto con una descripción táctica en lugar de una pantalla en blanco.
 
+# PARTE 17 — DIRECTIVAS DEL DASHBOARD DE ENTIDAD
+
+Para el administrador de entidad (ADMIN_ENTIDAD), el dashboard actúa como una **Terminal de Gestión Administrativa** optimizada para la toma de decisiones rápidas sobre su concesión.
+
+## 17.1 Estructura Visual y Jerarquía
+- **Encabezado**: Debe priorizar el nombre de la entidad en fuente `Space Grotesk` (Mayúsculas) para reforzar la identidad corporativa/administrativa.
+- **KPI Row (Métricas)**: Uso de tarjetas con iconos "Ghost" (grandes y semitransparentes al fondo) para representar:
+  - **Socios**: Volumen total de membresías activas.
+  - **Flota**: Cantidad de vehículos con autorización de acceso.
+  - **Eventos**: Contador de solicitudes pendientes de aprobación ante el Comando.
+
+## 17.2 Monitoreo Táctico
+- El dashboard debe incluir una sección de **"Estado de la Concesión"** que agrupe alertas preventivas sobre vencimiento de carnets, membresías a punto de expirar o alertas de cupos de estacionamiento críticos.
+
+## 17.3 Monitor de Capacidad Táctica (Parking)
+- Se debe implementar una fila de métricas secundarias que segregue:
+  - **Asignados**: Cuota total concedida por el Comando.
+  - **Ocupados**: Vehículos validados por parqueros dentro de la zona.
+  - **Libres**: Remanente real para asignaciones inmediatas.
+  - **Eficiencia %**: Relación de uso para optimizar la logística de eventos.
+
+## 17.4 Log Táctico y Fuerza Operativa
+- **Monitor de Eventos**: Feed en tiempo real con código de colores según severidad (Ingreso=Verde, Salida=Azul, Alerta=Rojo).
+- **Fuerza Operativa**: Ranking de eficiencia de parqueros para detectar cuellos de botella en sectores específicos de la base.
+- **QR Security**: Panel de control de integridad de pases para prevenir el uso de códigos expirados o revocados.
+
+## 17.5 Protocolos Operativos (Navegación)
+En lugar de un menú convencional, se deben usar **Cards de Acción Rápida** que incluyan:
+1. **Gestión de Socios**: Control de afiliaciones.
+2. **Eventos Masivos**: Gestión de formularios FL-08.
+3. **Personal Operativo**: Administración de parqueros y supervisores de la entidad.
+4. **Estacionamientos**: Vista de puestos asignados y reglas de acceso.
+
+## 17.4 Estética Premium
+- **Gradients**: Uso de gradientes sutiles (ej: `bg-primary/5` con `border-primary/20`) para diferenciar las zonas de importancia.
+- **Interactividad**: Implementar `group-hover:rotate-6` en iconos y `active:scale-95` en accesos directos.
+
 ---
 
 *Documento actualizado: 19 de abril de 2026*  
