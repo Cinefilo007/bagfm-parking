@@ -205,6 +205,10 @@ export default function EstacionamientosEntidad() {
     // Modal Confirmación Auto-Distribución
     const [modalAutoDistConfirm, setModalAutoDistConfirm] = useState(false);
 
+    // Paginación puestos
+    const [paginaActual, setPaginaActual] = useState(1);
+    const elementsPerPage = 10;
+
     // ── Carga de datos ────────────────────────────────────────────────────────
 
     const cargarPuestos = useCallback(async () => {
@@ -681,39 +685,80 @@ export default function EstacionamientosEntidad() {
                         </div>
                     ) : (
                         <>
-                            {/* Agrupado por zona */}
-                            {Object.entries(
-                                puestos.reduce((acc, p) => {
+                            {/* Agrupado por zona con paginación */}
+                            {(() => {
+                                const puestosAgrupados = puestos.reduce((acc, p) => {
                                     const zona = p.zona_nombre || 'Sin Zona';
                                     if (!acc[zona]) acc[zona] = [];
                                     acc[zona].push(p);
                                     return acc;
-                                }, {})
-                            ).sort(([zA], [zB]) => zA.localeCompare(zB)).map(([zonaNombre, zonaPuestos]) => {
-                                const puestosOrdenados = [...zonaPuestos].sort((a, b) => {
-                                    const numA = a.numero_puesto || a.codigo || '';
-                                    const numB = b.numero_puesto || b.codigo || '';
-                                    return numA.localeCompare(numB, undefined, { numeric: true });
+                                }, {});
+
+                                // Ordenar puestos dentro de cada zona
+                                Object.keys(puestosAgrupados).forEach(z => {
+                                    puestosAgrupados[z].sort((a, b) => {
+                                        const numA = a.numero_puesto || a.codigo || '';
+                                        const numB = b.numero_puesto || b.codigo || '';
+                                        return numA.localeCompare(numB, undefined, { numeric: true });
+                                    });
                                 });
+
+                                // Aplanar para paginación global de la pestaña
+                                const todosLosPuestosOrdenados = Object.entries(puestosAgrupados)
+                                    .sort(([zA], [zB]) => zA.localeCompare(zB))
+                                    .flatMap(([_, ps]) => ps);
+
+                                const totalPuestos = todosLosPuestosOrdenados.length;
+                                const totalPaginas = Math.ceil(totalPuestos / elementsPerPage);
+                                const indexInicio = (paginaActual - 1) * elementsPerPage;
+                                const puestosVisibles = todosLosPuestosOrdenados.slice(indexInicio, indexInicio + elementsPerPage);
+
                                 return (
-                                    <div key={zonaNombre} className="space-y-2">
-                                        <p className="text-[8px] font-black text-text-muted/50 uppercase tracking-widest px-1 flex items-center gap-1.5">
-                                            <MapPin size={9} className="text-primary/60" />
-                                            {zonaNombre} — {zonaPuestos.length} puestos
-                                        </p>
-                                        {puestosOrdenados.map(p => (
-                                            <TarjetaPuesto
-                                                key={p.id}
-                                                puesto={p}
-                                                tipos={tipos}
-                                                onAsignar={handleAbrirAsignar}
-                                                onLiberar={handleLiberar}
-                                                onReasignar={handleAbrirReasignar}
-                                            />
-                                        ))}
-                                    </div>
+                                    <>
+                                        <div className="space-y-4">
+                                            {puestosVisibles.map(p => (
+                                                <TarjetaPuesto
+                                                    key={p.id}
+                                                    puesto={p}
+                                                    tipos={tipos}
+                                                    onAsignar={handleAbrirAsignar}
+                                                    onLiberar={handleLiberar}
+                                                    onReasignar={handleAbrirReasignar}
+                                                />
+                                            ))}
+                                        </div>
+
+                                        {/* Controles de Paginación */}
+                                        {totalPaginas > 1 && (
+                                            <div className="flex items-center justify-between p-4 bg-bg-card/30 border border-white/5 rounded-2xl mt-6">
+                                                <div className="text-[10px] font-black text-text-muted uppercase tracking-widest">
+                                                    Página <span className="text-primary">{paginaActual}</span> de {totalPaginas}
+                                                </div>
+                                                <div className="flex gap-2">
+                                                    <Boton
+                                                        variant="ghost"
+                                                        size="sm"
+                                                        disabled={paginaActual === 1}
+                                                        onClick={() => setPaginaActual(p => p - 1)}
+                                                        className="h-8 px-4"
+                                                    >
+                                                        Anterior
+                                                    </Boton>
+                                                    <Boton
+                                                        variant="ghost"
+                                                        size="sm"
+                                                        disabled={paginaActual === totalPaginas}
+                                                        onClick={() => setPaginaActual(p => p + 1)}
+                                                        className="h-8 px-4"
+                                                    >
+                                                        Siguiente
+                                                    </Boton>
+                                                </div>
+                                            </div>
+                                        )}
+                                    </>
                                 );
-                            })}
+                            })()}
                         </>
                     )}
                 </div>
