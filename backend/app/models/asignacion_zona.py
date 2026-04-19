@@ -31,3 +31,8 @@ class AsignacionZona(Base):
     # Relaciones
     zona = relationship("ZonaEstacionamiento")
     # entidad = relationship("EntidadCivil")
+
+    @property
+    def zona_nombre(self):
+        return self.zona.nombre if self.zona else None
+

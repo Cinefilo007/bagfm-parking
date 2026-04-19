@@ -435,47 +435,55 @@ export default function EstacionamientosEntidad() {
                                 
                                 return (
                                     <div key={asig.id} className="bg-bg-card/40 border border-white/5 rounded-2xl overflow-hidden transition-all">
-                                        <div 
-                                            className="flex items-center gap-3 p-4 cursor-pointer hover:bg-white/5 transition-all"
-                                            onClick={() => isExpanded ? setAsignacionEdicion(null) : setAsignacionEdicion(asig)}
-                                        >
-                                            <button className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center shrink-0 hover:bg-white/10 transition-all pointer-events-none">
-                                                <ChevronDown size={16} className={cn("text-text-muted transition-transform", isExpanded && "rotate-180")} />
-                                            </button>
-                                            <div className="w-10 h-10 bg-primary/10 rounded-xl flex items-center justify-center border border-primary/20 shrink-0">
-                                                <ParkingSquare size={18} className="text-primary" />
-                                            </div>
-                                            <div className="flex-1 min-w-0">
-                                                <div className="flex items-center gap-2">
-                                                    <h3 className="text-sm font-black text-text-main uppercase tracking-tight truncate">
-                                                        {asig.zona_nombre || `Zona ${asig.zona_id?.slice(-4)}`}
-                                                    </h3>
-                                                </div>
-                                                <div className="flex items-center gap-3 mt-0.5">
-                                                    <span className="text-[9px] text-text-muted flex items-center gap-1">
-                                                        <Hash size={9} /> Cupo: {asig.cupo_asignado}
-                                                    </span>
-                                                    <span className="text-[9px] text-text-muted flex items-center gap-1">
-                                                        <Shield size={9} /> Base: {asig.cupo_reservado_base}
-                                                    </span>
-                                                </div>
-                                            </div>
-                                            
-                                            <div className="hidden sm:flex items-center gap-4 px-4 border-l border-white/5">
-                                                <div className="text-center group">
-                                                    <div className="text-xl text-primary font-black tracking-tighter transition-transform group-hover:scale-110">{utilizable}</div>
-                                                    <div className="text-[7px] font-black uppercase tracking-widest text-text-muted/50">Utilizables</div>
-                                                </div>
-                                            </div>
-                                            
-                                            <div className="flex items-center gap-1 shrink-0 ml-2">
-                                                <button 
-                                                    onClick={(e) => { e.stopPropagation(); handleAbrirGenerar(asig); }}
-                                                    className="p-2 justify-center rounded-lg hover:bg-white/10 text-primary transition-all flex items-center"
-                                                    title="Crear Puestos"
-                                                >
-                                                    <Plus size={15} />
+                                        <div>
+                                            <div 
+                                                className="flex items-center gap-3 p-4 pb-2 cursor-pointer hover:bg-white/5 transition-all"
+                                                onClick={() => isExpanded ? setAsignacionEdicion(null) : setAsignacionEdicion(asig)}
+                                            >
+                                                <button className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center shrink-0 hover:bg-white/10 transition-all pointer-events-none">
+                                                    <ChevronDown size={16} className={cn("text-text-muted transition-transform", isExpanded && "rotate-180")} />
                                                 </button>
+                                                <div className="w-10 h-10 bg-primary/10 rounded-xl flex items-center justify-center border border-primary/20 shrink-0">
+                                                    <ParkingSquare size={18} className="text-primary" />
+                                                </div>
+                                                <div className="flex-1 min-w-0">
+                                                    <div className="flex items-center gap-2">
+                                                        <h3 className="text-sm font-black text-text-main uppercase tracking-tight truncate">
+                                                            {asig.zona_nombre || `Zona ${asig.zona_id?.slice(-4)}`}
+                                                        </h3>
+                                                    </div>
+                                                    <div className="flex items-center gap-3 mt-0.5">
+                                                        <span className="text-[9px] text-text-muted flex items-center gap-1">
+                                                            <Hash size={9} /> Cupo: {asig.cupo_asignado}
+                                                        </span>
+                                                        <span className="text-[9px] text-text-muted flex items-center gap-1">
+                                                            <Shield size={9} /> Base: {asig.cupo_reservado_base}
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                                
+                                                <div className="hidden sm:flex items-center gap-4 px-4 border-l border-white/5">
+                                                    <div className="text-center group">
+                                                        <div className="text-xl text-primary font-black tracking-tighter transition-transform group-hover:scale-110">{utilizable}</div>
+                                                        <div className="text-[7px] font-black uppercase tracking-widest text-text-muted/50">Utilizables</div>
+                                                    </div>
+                                                </div>
+                                                
+                                                <div className="flex items-center gap-1 shrink-0 ml-2">
+                                                    <button 
+                                                        onClick={(e) => { e.stopPropagation(); handleAbrirGenerar(asig); }}
+                                                        className="p-2 justify-center rounded-lg hover:bg-white/10 text-primary transition-all flex items-center"
+                                                        title="Crear Puestos"
+                                                    >
+                                                        <Plus size={15} />
+                                                    </button>
+                                                </div>
+                                            </div>
+                                            <div className="px-14 pb-3 pr-4 pointer-events-none">
+                                                <div className="h-1.5 w-full bg-black/40 rounded-full overflow-hidden flex border border-white/5 shadow-inner">
+                                                    {asig.cupo_reservado_base > 0 && <div style={{ width: `${(asig.cupo_reservado_base / asig.cupo_asignado) * 100}%` }} className="bg-danger/80 border-r border-black/50" title={`Reserva Base (${asig.cupo_reservado_base})`} />}
+                                                    {utilizable > 0 && <div style={{ width: `${(utilizable / asig.cupo_asignado) * 100}%` }} className="bg-primary/80" title={`Utilizables (${utilizable})`} />}
+                                                </div>
                                             </div>
                                         </div>
 
@@ -501,20 +509,6 @@ export default function EstacionamientosEntidad() {
                                                     ) : (
                                                         <p className="text-[9px] text-text-muted/40 italic">Sin distribución configurada</p>
                                                     )}
-                                                </div>
-                                                
-                                                <div className="pt-2 border-t border-white/5">
-                                                    <p className="text-[8px] font-black uppercase tracking-widest text-text-muted/50 flex items-center gap-1.5 mb-2">
-                                                        <Activity size={9} className="text-primary" /> Ocupación del Cupo Asignado
-                                                    </p>
-                                                    <div className="h-2 w-full bg-black/40 rounded-full overflow-hidden flex border border-white/5 shadow-inner">
-                                                        {asig.cupo_reservado_base > 0 && <div style={{ width: `${(asig.cupo_reservado_base / asig.cupo_asignado) * 100}%` }} className="bg-danger/80 border-r border-black/50" title={`Reserva Base (${asig.cupo_reservado_base})`} />}
-                                                        {utilizable > 0 && <div style={{ width: `${(utilizable / asig.cupo_asignado) * 100}%` }} className="bg-primary/80" title={`Utilizables (${utilizable})`} />}
-                                                    </div>
-                                                    <div className="flex justify-between mt-1.5 px-0.5">
-                                                        <div className="text-[7px] font-black tracking-widest text-danger uppercase opacity-80">Reserva Base: {asig.cupo_reservado_base}</div>
-                                                        <div className="text-[7px] font-black tracking-widest text-primary uppercase opacity-80">Utilizable: {utilizable}</div>
-                                                    </div>
                                                 </div>
                                             </div>
                                         )}
