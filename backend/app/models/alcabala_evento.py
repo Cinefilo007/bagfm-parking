@@ -7,7 +7,7 @@ from sqlalchemy import Column, String, Boolean, Text, DateTime, Date, ForeignKey
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.sql import func
 from app.core.database import Base
-from app.models.enums import SolicitudEstado, PasseTipo
+from app.models.enums import SolicitudEstado, PasseTipo, TipoAccesoPase
 
 class PuntoAcceso(Base):
     __tablename__ = "puntos_acceso"
@@ -41,9 +41,16 @@ class LotePaseMasivo(Base):
     fecha_inicio = Column(Date, nullable=False)
     fecha_fin = Column(Date, nullable=False)
     
-    # Restricción de accesos: NULL = sin límite
     max_accesos_por_pase = Column(Integer, nullable=True)
     cantidad_pases = Column(Integer, nullable=False)
+    
+    # Manejo v2.0
+    entidad_id = Column(UUID(as_uuid=True), ForeignKey("entidades_civiles.id", ondelete="RESTRICT"), nullable=True)
+    tipo_acceso = Column(SQLEnum(TipoAccesoPase, name="tipo_acceso_pase", native_enum=True), default=TipoAccesoPase.general, nullable=False)
+    requiere_aprobacion = Column(Boolean, default=False, nullable=False)
+    aprobado_por = Column(UUID(as_uuid=True), ForeignKey("usuarios.id", ondelete="RESTRICT"), nullable=True)
+    zona_estacionamiento_id = Column(UUID(as_uuid=True), ForeignKey("zonas_estacionamiento.id", ondelete="RESTRICT"), nullable=True)
+    plantilla_carnet_id = Column(UUID(as_uuid=True), ForeignKey("plantillas_carnet.id", ondelete="RESTRICT"), nullable=True)
     
     creado_por = Column(UUID(as_uuid=True), ForeignKey("usuarios.id", ondelete="RESTRICT"), nullable=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
@@ -52,6 +59,8 @@ class LotePaseMasivo(Base):
     zip_generado = Column(Boolean, default=False, nullable=False)
     zip_url = Column(Text, nullable=True) # URL de Supabase Storage
     zip_listo_at = Column(DateTime(timezone=True), nullable=True)
+    
+    pdf_url = Column(Text, nullable=True) # URL del PDF masivo (v2.0)
 
 class SolicitudEvento(Base):
     __tablename__ = "solicitudes_evento"

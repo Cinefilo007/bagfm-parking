@@ -9,7 +9,7 @@ from sqlalchemy.sql import func
 from sqlalchemy.orm import relationship
 
 from app.core.database import Base
-from app.models.enums import QRTipo
+from app.models.enums import QRTipo, TipoAccesoPase
 
 class CodigoQR(Base):
     __tablename__ = "codigos_qr"
@@ -30,6 +30,20 @@ class CodigoQR(Base):
     solicitud_id = Column(UUID(as_uuid=True), ForeignKey("solicitudes_evento.id", ondelete="CASCADE"), nullable=True)
     lote_id = Column(UUID(as_uuid=True), ForeignKey("lotes_pase_masivo.id", ondelete="CASCADE"), nullable=True)
     serial_legible = Column(String(50), nullable=True) # BAGFM-26ABR-003-0042
+    
+    # Campos v2.0 Pases y Accesos
+    tipo_acceso = Column(SQLEnum(TipoAccesoPase, name="tipo_acceso_pase", native_enum=True), default=TipoAccesoPase.general, nullable=False)
+    tipo_acceso_custom_id = Column(UUID(as_uuid=True), ForeignKey("tipos_acceso_custom.id", ondelete="RESTRICT"), nullable=True)
+    zona_asignada_id = Column(UUID(as_uuid=True), ForeignKey("zonas_estacionamiento.id", ondelete="RESTRICT"), nullable=True)
+    puesto_asignado_id = Column(UUID(as_uuid=True), ForeignKey("puestos_estacionamiento.id", ondelete="RESTRICT"), nullable=True)
+    nombre_portador = Column(String(200), nullable=True)
+    cedula_portador = Column(String(20), nullable=True)
+    vehiculo_placa = Column(String(20), nullable=True)
+    multi_vehiculo = Column(Boolean, default=False, nullable=False)
+    datos_completos = Column(Boolean, default=False, nullable=False)
+    verificado_por_parquero = Column(Boolean, default=False, nullable=False)
+    hora_entrada_base = Column(DateTime(timezone=True), nullable=True)
+    hora_llegada_zona = Column(DateTime(timezone=True), nullable=True)
     
     # Restricciones operativas
     accesos_usados = Column(Integer, default=0, nullable=False)

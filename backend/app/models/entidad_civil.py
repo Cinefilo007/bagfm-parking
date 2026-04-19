@@ -18,6 +18,7 @@ class EntidadCivil(Base):
     codigo_slug = Column(String(50), nullable=False, unique=True, index=True)
     zona_id = Column(UUID(as_uuid=True), ForeignKey("zonas_estacionamiento.id", ondelete="RESTRICT"), nullable=True)
     capacidad_vehiculos = Column(Integer, nullable=False, default=1)
+    cuota_pases_autonoma = Column(Integer, default=0, nullable=False)
     descripcion = Column(Text, nullable=True)
     activo = Column(Boolean, default=True, nullable=False)
     latitud = Column(Numeric(10, 8), nullable=True)

@@ -6,7 +6,8 @@ import { Boton } from '../../components/ui/Boton';
 import { Card } from '../../components/ui/Card';
 import { 
     CheckCircle2, XCircle, User, Car, Shield,
-    Zap, Activity, RefreshCw, Power, Clock, Scan, Ticket, Phone, Camera
+    RefreshCw, Power, Scan, Phone, Camera,
+    UserCheck, UserPlus, ArrowRight, MapPin, ParkingSquare
 } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import { toast } from 'react-hot-toast';
@@ -46,22 +47,23 @@ const ScannerAlcabala = () => {
     const [cargando, setCargando] = useState(false);
     const [operador, setOperador] = useState(null);
     
-    // Estados para registro manual de emergencia
+    // Estado para el panel de datos opcional (visible sólo si el usuario lo activa)
+    const [mostrarDatos, setMostrarDatos] = useState(false);
+    
+    // Estados para registro manual
     const [nombreManual, setNombreManual] = useState('');
     const [cedulaManual, setCedulaManual] = useState('');
     const [telefonoManual, setTelefonoManual] = useState('');
-    
     const [placaManual, setPlacaManual] = useState('');
     const [marcaManual, setMarcaManual] = useState('');
     const [modeloManual, setModeloManual] = useState('');
     const [colorManual, setColorManual] = useState('');
 
-    const [iaLoading, setIaLoading] = useState(null); // 'cedula' o 'vehiculo'
-    const [modoEscaneoIA, setModoEscaneoIA] = useState(null); // 'cedula' | 'vehiculo' | null
+    const [iaLoading, setIaLoading] = useState(null);
+    const [modoEscaneoIA, setModoEscaneoIA] = useState(null);
 
     const scannerRef = useRef(null);
 
-    // Formato Caracas para fechas
     const formatCaracas = (dateStr) => {
         if (!dateStr) return 'Sin registro previo';
         return new Intl.DateTimeFormat('es-VE', {
@@ -91,11 +93,12 @@ const ScannerAlcabala = () => {
     const handleScanSuccess = async (qrToken) => {
         if (cargando || modoEscaneoIA) return;
         setCargando(true);
+        setMostrarDatos(false);
         try {
             const res = await alcabalaService.validarQR(qrToken, tipoAcceso);
             setResultado(res);
             
-            // Pre-cargar datos si existen, o limpiar si requiere manual
+            // Pre-cargar datos si el socio ya está registrado
             if (res.socio) {
                 setNombreManual(`${res.socio.nombre} ${res.socio.apellido}`);
                 setCedulaManual(res.socio.cedula);
@@ -116,6 +119,11 @@ const ScannerAlcabala = () => {
                 setMarcaManual('');
                 setModeloManual('');
                 setColorManual('');
+            }
+
+            // Si hay datos del socio, activar automáticamente el panel de datos
+            if (res.socio || res.vehiculo) {
+                setMostrarDatos(true);
             }
 
         } catch (error) {
@@ -139,7 +147,6 @@ const ScannerAlcabala = () => {
 
             setIaLoading(modoEscaneoIA);
             
-            // Capturar frame del video con alta calidad
             const canvas = document.createElement('canvas');
             canvas.width = video.videoWidth;
             canvas.height = video.videoHeight;
@@ -163,7 +170,6 @@ const ScannerAlcabala = () => {
                 toast.success('Vehículo capturado');
             }
             
-            // Cerrar el modo escaneo tras éxito
             setModoEscaneoIA(null);
         } catch (e) {
             toast.error('Fallo en escaneo IA');
@@ -181,20 +187,17 @@ const ScannerAlcabala = () => {
                 vehiculo_id: resultado.vehiculo_id,
                 tipo: tipoAcceso,
                 punto_acceso: operador?.punto?.nombre || 'Alcabala Central',
-                es_manual: resultado.requiere_datos_manuales,
-                nombre_manual: nombreManual,
-                cedula_manual: cedulaManual,
+                es_manual: resultado.requiere_datos_manuales || mostrarDatos,
+                nombre_manual: nombreManual || null,
+                cedula_manual: cedulaManual || null,
                 telefono_manual: telefonoManual ? `+58${telefonoManual}` : null,
-                vehiculo_placa: placaManual,
-                vehiculo_marca: marcaManual,
-                vehiculo_modelo: modeloManual,
-                vehiculo_color: colorManual
+                vehiculo_placa: placaManual || null,
+                vehiculo_marca: marcaManual || null,
+                vehiculo_modelo: modeloManual || null,
+                vehiculo_color: colorManual || null,
             });
             toast.success(`Acceso ${tipoAcceso} confirmado`, { position: 'bottom-center' });
-            setResultado(null);
-            // Limpiar campos
-            setNombreManual(''); setCedulaManual(''); setTelefonoManual('');
-            setPlacaManual(''); setMarcaManual(''); setModeloManual(''); setColorManual('');
+            reiniciar();
         } catch (error) {
             toast.error("Error al registrar acceso");
         } finally {
@@ -202,9 +205,15 @@ const ScannerAlcabala = () => {
         }
     };
 
+    const reiniciar = () => {
+        setResultado(null);
+        setMostrarDatos(false);
+        setNombreManual(''); setCedulaManual(''); setTelefonoManual('');
+        setPlacaManual(''); setMarcaManual(''); setModeloManual(''); setColorManual('');
+    };
+
     const getBgColor = () => {
         if (!resultado) return 'bg-bg-app';
-        // Rojo para denegado, Ámbar para advertencia, Azul para éxito
         if (!resultado.permitido || resultado.tipo_alerta === 'error') return 'bg-red-50 dark:bg-[#1a0605]';
         if (resultado.tipo_alerta === 'warning') return 'bg-amber-50 dark:bg-[#1a1205]';
         return 'bg-blue-50 dark:bg-[#041520]';
@@ -213,7 +222,7 @@ const ScannerAlcabala = () => {
     return (
         <div className={cn("min-h-screen flex flex-col transition-colors duration-700 pb-24", getBgColor())}>
             
-            {/* Cabecera Adaptativa */}
+            {/* Cabecera */}
             <header className="flex items-center justify-between gap-3 p-3 bg-bg-card/80 dark:bg-bg-card/40 backdrop-blur-md border-b border-text-main/10 sticky top-0 z-50 shadow-sm dark:shadow-none">
                 <div className="flex items-center gap-2.5">
                     <div className="p-1.5 bg-primary/10 rounded-lg shrink-0">
@@ -289,13 +298,60 @@ const ScannerAlcabala = () => {
                             <p className="text-[9px] font-bold text-text-muted uppercase tracking-widest mt-1">
                                 {resultado.mensaje || "Validación de Protocolo"}
                             </p>
+                            {/* Zona/Puesto asignado si existe */}
+                            {resultado.permitido && resultado.zona_asignada_id && (
+                                <div className="mt-2 flex items-center gap-1.5 bg-primary/10 px-3 py-1.5 rounded-full">
+                                    <ParkingSquare size={12} className="text-primary" />
+                                    <span className="text-[9px] font-black text-primary uppercase tracking-wider">
+                                        {resultado.puesto_asignado_id ? `Puesto ${resultado.puesto_asignado_id}` : 'Zona Asignada'}
+                                    </span>
+                                </div>
+                            )}
                         </div>
 
-                        {/* Ficha Táctica — solo si está autorizado o requiere datos manuales */}
-                        {(resultado.permitido || resultado.requiere_datos_manuales) ? (
+                        {/* ── ACCIONES RÁPIDAS (QR válido sin datos extra) ── */}
+                        {resultado.permitido && !mostrarDatos && (
+                            <div className="flex flex-col gap-2">
+                                {/* Botón principal: Registrar Entrada */}
+                                <Boton 
+                                    onClick={handleConfirmar} 
+                                    disabled={cargando}
+                                    className="h-16 rounded-xl bg-primary shadow-tactica-green w-full gap-3 text-sm font-black uppercase italic tracking-wide"
+                                >
+                                    {cargando ? <RefreshCw className="animate-spin" size={20} /> : (
+                                        <>
+                                            <Shield size={20} />
+                                            Confirmar {tipoAcceso === 'entrada' ? 'Entrada' : 'Salida'}
+                                            <ArrowRight size={18} />
+                                        </>
+                                    )}
+                                </Boton>
+
+                                {/* Botón secundario: Registrar Datos (opcional) */}
+                                <button 
+                                    onClick={() => setMostrarDatos(true)}
+                                    className="h-12 w-full rounded-xl border border-primary/30 bg-primary/5 text-primary flex items-center justify-center gap-2 active:scale-95 transition-all"
+                                >
+                                    <UserPlus size={14} />
+                                    <span className="text-[10px] font-black uppercase tracking-widest">Registrar Datos (Opcional)</span>
+                                </button>
+
+                                {/* Botón terciario: Seguir Escaneando */}
+                                <button 
+                                    onClick={reiniciar}
+                                    className="h-10 w-full text-[9px] font-black uppercase text-text-muted/60 tracking-[0.3em] bg-white/5 rounded-lg border border-white/5 flex items-center justify-center gap-2"
+                                >
+                                    <Scan size={12} />
+                                    Seguir Escaneando
+                                </button>
+                            </div>
+                        )}
+
+                        {/* ── PANEL DE DATOS COMPLETO (si mostrarDatos=true o QR sin validar manual) ── */}
+                        {(resultado.permitido && mostrarDatos) || resultado.requiere_datos_manuales ? (
                             <Card className="bg-bg-card/40 backdrop-blur-md border-white/5 rounded-2xl p-4 space-y-5">
                                 
-                                {/* ── SECCIÓN: DATOS DEL CIUDADANO ── */}
+                                {/* Sección: Datos del Ciudadano */}
                                 <div className="space-y-3">
                                     <div className="flex items-center justify-between">
                                         <div className="flex items-center gap-2">
@@ -336,16 +392,16 @@ const ScannerAlcabala = () => {
                                     </div>
                                 </div>
 
-                                {/* ── SECCIÓN: DATOS DE CONTACTO ── */}
+                                {/* Sección: Contacto */}
                                 <div className="p-3 bg-white/5 rounded-xl border border-white/5 space-y-2">
                                     <div className="flex items-center gap-2">
                                         <Phone size={12} className="text-primary/70" />
-                                        <span className="text-[8px] font-black uppercase tracking-widest text-text-muted">Datos de Contacto (Obligatorio)</span>
+                                        <span className="text-[8px] font-black uppercase tracking-widest text-text-muted">Teléfono de Contacto</span>
                                     </div>
-                                    <InputManual label="Teléfono Móvil" value={telefonoManual} onChange={setTelefonoManual} prefix="+58" placeholder="4121234567" />
+                                    <InputManual label="Móvil" value={telefonoManual} onChange={setTelefonoManual} prefix="+58" placeholder="4121234567" />
                                 </div>
 
-                                {/* ── SECCIÓN: UNIDAD DE ACCESO ── */}
+                                {/* Sección: Vehículo */}
                                 <div className="space-y-3">
                                     <div className="flex items-center justify-between">
                                         <div className="flex items-center gap-2">
@@ -374,19 +430,20 @@ const ScannerAlcabala = () => {
                                     </div>
                                 </div>
 
-                                {/* ── ACCIONES ── */}
+                                {/* Acciones */}
                                 <div className="pt-2 flex flex-col gap-2">
-                                    {resultado.permitido && (
-                                        <Boton onClick={handleConfirmar} disabled={cargando} className="h-14 rounded-xl bg-primary shadow-tactica-green w-full gap-2">
-                                            {cargando ? <RefreshCw className="animate-spin" size={20} /> : <><Shield size={18} /><span className="text-sm font-black uppercase italic">Confirmar Protocolo</span></>}
-                                        </Boton>
-                                    )}
-                                    <button onClick={() => setResultado(null)} className="h-10 text-[9px] font-black uppercase text-text-muted/60 tracking-[0.3em] bg-white/5 rounded-lg border border-white/5">Abortar Operación</button>
+                                    <Boton onClick={handleConfirmar} disabled={cargando} className="h-14 rounded-xl bg-primary shadow-tactica-green w-full gap-2">
+                                        {cargando ? <RefreshCw className="animate-spin" size={20} /> : <><UserCheck size={18} /><span className="text-sm font-black uppercase italic">Confirmar con Datos</span></>}
+                                    </Boton>
+                                    <button onClick={reiniciar} className="h-10 text-[9px] font-black uppercase text-text-muted/60 tracking-[0.3em] bg-white/5 rounded-lg border border-white/5">Abortar Operación</button>
                                 </div>
                             </Card>
-                        ) : (
-                            /* Pase denegado sin datos — solo botón para reintentar */
-                            <button onClick={() => setResultado(null)} className="w-full h-12 text-[9px] font-black uppercase text-white/60 tracking-[0.3em] bg-white/5 rounded-xl border border-white/10">
+                        ) : null}
+
+                        {/* QR Denegado */}
+                        {!resultado.permitido && (
+                            <button onClick={reiniciar} className="w-full h-12 text-[9px] font-black uppercase text-white/60 tracking-[0.3em] bg-white/5 rounded-xl border border-white/10 flex items-center justify-center gap-2">
+                                <Scan size={14} />
                                 Intentar de nuevo
                             </button>
                         )}
@@ -412,10 +469,9 @@ const ScannerAlcabala = () => {
                     <div className="flex-1 relative">
                         <QRScanner
                             ref={scannerRef}
-                            onScanSuccess={() => {}} // Desactivar QR en IA mode
+                            onScanSuccess={() => {}}
                             autoStart={true}
                         />
-                        {/* Frame de Encuadre */}
                         <div className="absolute inset-0 flex items-center justify-center p-6 sm:p-12 pointer-events-none">
                             <div className="w-full aspect-[1.6/1] border-2 border-primary/40 rounded-[2.5rem] relative">
                                 <div className="absolute -top-1 -left-1 w-12 h-12 border-t-8 border-l-8 border-primary rounded-tl-3xl shadow-[0_0_15px_rgba(var(--color-primary),0.5)]" />

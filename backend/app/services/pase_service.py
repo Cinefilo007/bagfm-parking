@@ -16,6 +16,7 @@ from app.models.enums import PasseTipo, QRTipo, RolTipo
 from app.models.usuario import Usuario
 from app.models.vehiculo import Vehiculo
 from app.core.security import crear_token_evento
+from app.services.pdf_service import pdf_service
 
 config = obtener_config()
 
@@ -38,9 +39,23 @@ class PaseService:
         solicitud_id: Optional[uuid.UUID] = None
     ) -> LotePaseMasivo:
         """
-        Crea un lote de pases masivos.
-        datos: {nombre_evento, tipo_pase, fecha_inicio, fecha_fin, cantidad_pases, max_accesos_por_pase}
+        Crea un lote de pases masivos con verificación de cuota para entidades civiles.
         """
+        # 1. Verificar Cuota si el creador es ADMIN_ENTIDAD
+        usuario = await db.get(Usuario, creado_por_id)
+        if usuario and usuario.rol == RolTipo.ADMIN_ENTIDAD:
+            if not usuario.entidad_id:
+                raise ValueError("El Administrador de Entidad no tiene una entidad vinculada.")
+            
+            from app.models.entidad_civil import EntidadCivil
+            entidad = await db.get(EntidadCivil, usuario.entidad_id)
+            if not entidad:
+                raise ValueError("Entidad no encontrada.")
+            
+            # TODO: Contar pases activos de la entidad en este mes
+            if datos['cantidad_pases'] > entidad.cuota_pases_autonoma:
+                 raise ValueError(f"Cuota insuficiente. Su entidad dispone de {entidad.cuota_pases_autonoma} pases autónomos.")
+
         # Generar serial legible
         serial_lote = await self._generar_serial_lote(db)
         
@@ -65,10 +80,9 @@ class PaseService:
 
         # Generar QRs según el tipo
         if nuevo_lote.tipo_pase == PasseTipo.simple:
-            await self._generar_pases_simples(db, nuevo_lote, creado_por_id)
+            await self._generar_pases_simples(db, nuevo_lote, creado_por_id, datos)
         elif nuevo_lote.tipo_pase == PasseTipo.portal:
-            await self._generar_pases_portal(db, nuevo_lote, creado_por_id)
-        # El tipo 'identificado' se procesa aparte via Excel
+            await self._generar_pases_portal(db, nuevo_lote, creado_por_id, datos)
         
         await db.commit()
         return nuevo_lote
@@ -87,7 +101,7 @@ class PaseService:
         
         return f"{prefijo}-{str(count + 1).zfill(3)}"
 
-    async def _generar_pases_simples(self, db: AsyncSession, lote: LotePaseMasivo, creado_por_id: uuid.UUID):
+    async def _generar_pases_simples(self, db: AsyncSession, lote: LotePaseMasivo, creado_por_id: uuid.UUID, extras: dict):
         """Genera N pases simples para el lote."""
         expira_at = datetime.combine(lote.fecha_fin, datetime.max.time()).replace(tzinfo=timezone.utc) + timedelta(hours=24)
         
@@ -103,11 +117,17 @@ class PaseService:
                 max_accesos=lote.max_accesos_por_pase,
                 fecha_expiracion=expira_at,
                 created_by=creado_por_id,
-                activo=True
+                activo=True,
+                # v2.0 campos
+                tipo_acceso=extras.get('tipo_acceso', 'general'),
+                tipo_acceso_custom_id=extras.get('tipo_acceso_custom_id'),
+                zona_asignada_id=extras.get('zona_id'),
+                puesto_asignado_id=extras.get('puesto_id'),
+                multi_vehiculo=extras.get('multi_vehiculo', False)
             )
             db.add(nuevo_qr)
 
-    async def _generar_pases_portal(self, db: AsyncSession, lote: LotePaseMasivo, creado_por_id: uuid.UUID):
+    async def _generar_pases_portal(self, db: AsyncSession, lote: LotePaseMasivo, creado_por_id: uuid.UUID, extras: dict):
         """Genera pre-usuarios para que se registren en el portal."""
         from app.core.security import hashear_password
         expira_at = datetime.combine(lote.fecha_fin, datetime.max.time()).replace(tzinfo=timezone.utc) + timedelta(hours=24)
@@ -116,7 +136,6 @@ class PaseService:
             serial_qr = f"{lote.codigo_serial}-{str(i).zfill(4)}"
             
             # Crear usuario temporal (SOCIO con contraseña = serial)
-            # Usamos el serial como cedula temporalmente
             nuevo_usuario = Usuario(
                 cedula=serial_qr,
                 nombre=f"INVITADO {i}",
@@ -139,7 +158,13 @@ class PaseService:
                 max_accesos=lote.max_accesos_por_pase,
                 fecha_expiracion=expira_at,
                 created_by=creado_por_id,
-                activo=True
+                activo=True,
+                # v2.0 campos
+                tipo_acceso=extras.get('tipo_acceso', 'general'),
+                tipo_acceso_custom_id=extras.get('tipo_acceso_custom_id'),
+                zona_asignada_id=extras.get('zona_id'),
+                puesto_asignado_id=extras.get('puesto_id'),
+                multi_vehiculo=extras.get('multi_vehiculo', False)
             )
             db.add(nuevo_qr)
 
@@ -316,6 +341,39 @@ class PaseService:
             lote.zip_url = public_url
             lote.zip_generado = True
             lote.zip_listo_at = datetime.now(timezone.utc)
+            await db.commit()
+            return public_url
+            
+        return "storage_not_configured"
+
+    async def generar_pdf_masivo(self, db: AsyncSession, lote_id: uuid.UUID) -> str:
+        """
+        Genera el PDF masivo del lote y lo sube a Supabase.
+        Retorna la URL.
+        """
+        lote = await db.get(LotePaseMasivo, lote_id)
+        if not lote: return None
+        
+        pdf_buffer = await pdf_service.generar_pdf_lote(db, lote_id)
+        
+        # Subir a Supabase
+        if self.supabase:
+            import re
+            nombre_limpio = re.sub(r'[^a-zA-Z0-9_\-]', '_', lote.nombre_evento).strip('_')
+            file_path = f"pases_pdf/{nombre_limpio}_{lote.codigo_serial}.pdf"
+            
+            try:
+                self.supabase.storage.from_("bagfm-pases").remove([file_path])
+            except: pass
+            
+            self.supabase.storage.from_("bagfm-pases").upload(
+                file_path, 
+                pdf_buffer.getvalue(),
+                {"content-type": "application/pdf"}
+            )
+            
+            public_url = self.supabase.storage.from_("bagfm-pases").get_public_url(file_path)
+            lote.pdf_url = public_url # Asegurarse de que el modelo tiene este campo
             await db.commit()
             return public_url
             

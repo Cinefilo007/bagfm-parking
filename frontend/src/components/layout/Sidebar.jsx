@@ -4,7 +4,7 @@ import {
   ShieldCheck, Users, ClipboardList, 
   CalendarRange, LogOut, Settings,
   LayoutDashboard, UserCircle, Map as MapIcon,
-  Camera, Sun, Moon, UserCog
+  Camera, Sun, Moon, UserCog, ParkingSquare, Activity, Radio, AlertTriangle, Palette
 } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import { useAuthStore } from '../../store/auth.store';
@@ -25,6 +25,8 @@ export const Sidebar = () => {
       { to: '/comando/personal', label: 'Gestión Personal', icon: UserCog },
       { to: '/comando/alcabalas', label: 'Gestión Alcabalas', icon: ClipboardList },
       { to: '/comando/eventos', label: 'Eventos Masivos', icon: CalendarRange },
+      { to: '/comando/zonas', label: 'Zonas de Estacionamiento', icon: ParkingSquare },
+      { to: '/comando/infracciones', label: 'Infracciones', icon: AlertTriangle },
     );
   } else if (user?.rol === 'ADMIN_ENTIDAD') {
     navItems.push(
@@ -32,11 +34,22 @@ export const Sidebar = () => {
        { to: '/entidad/socios', label: 'Gestión Socios', icon: Users },
        { to: '/entidad/personal', label: 'Gestión Personal', icon: UserCog },
        { to: '/entidad/eventos', label: 'Mis Eventos', icon: CalendarRange },
+       { to: '/entidad/estacionamientos', label: 'Estacionamientos', icon: ParkingSquare },
+       { to: '/entidad/carnets', label: 'Editor Carnets', icon: Palette },
     );
   } else if (user?.rol === 'ALCABALA') {
     navItems.push(
       { to: '/alcabala/dashboard', label: 'Resumen Turno', icon: ShieldCheck },
       { to: '/alcabala/scanner', label: 'Escanear QR', icon: Camera },
+    );
+  } else if (user?.rol === 'PARQUERO') {
+    navItems.push(
+      { to: '/parquero/dashboard', label: 'Mi Zona', icon: ParkingSquare },
+    );
+  } else if (user?.rol === 'SUPERVISOR_PARQUEROS') {
+    navItems.push(
+      { to: '/supervisor/dashboard', label: 'Supervisión', icon: Radio },
+      { to: '/parquero/dashboard', label: 'Vista Parquero', icon: ParkingSquare },
     );
   }
 

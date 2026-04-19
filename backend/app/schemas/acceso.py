@@ -56,6 +56,9 @@ class ResultadoValidacion(BaseModel):
     socio: Optional[UsuarioSalida] = None
     vehiculo: Optional[VehiculoSalida] = None
     entidad_nombre: Optional[str] = None
+    zona_asignada_id: Optional[UUID] = None
+    puesto_asignado_id: Optional[UUID] = None
+    tipo_acceso: Optional[str] = None
     
     # IDs para el registro posterior
     qr_id: Optional[UUID] = None

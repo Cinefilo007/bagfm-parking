@@ -26,6 +26,9 @@ class Usuario(Base):
     # Para ADMIN_ENTIDAD, PARQUERO, SOCIO
     entidad_id = Column(UUID(as_uuid=True), ForeignKey("entidades_civiles.id", ondelete="RESTRICT"), nullable=True)
     
+    # Para PARQUERO
+    zona_asignada_id = Column(UUID(as_uuid=True), ForeignKey("zonas_estacionamiento.id", ondelete="RESTRICT"), nullable=True)
+    
     activo = Column(Boolean, default=True, nullable=False)
     foto_url = Column(Text, nullable=True)
     password_hash = Column(Text, nullable=False)

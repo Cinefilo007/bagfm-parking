@@ -112,7 +112,10 @@ class AccesoService:
                     socio=socio,
                     vehiculo=vehiculo,
                     vehiculo_id=vehiculo.id if vehiculo else None,
-                    requiere_datos_manuales=necesita_datos
+                    requiere_datos_manuales=necesita_datos,
+                    zona_asignada_id=qr_db.zona_asignada_id or (lote.zona_estacionamiento_id if lote else None),
+                    puesto_asignado_id=qr_db.puesto_asignado_id,
+                    tipo_acceso=qr_db.tipo_acceso
                 )
 
             # 5. Validación Estándar para Socios Permanentes

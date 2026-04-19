@@ -42,13 +42,13 @@ async def resolver_infraccion(
     id: UUID,
     datos: InfraccionResolver,
     db: AsyncSession = Depends(obtener_db),
-    usuario_actual: Usuario = Depends(require_rol([RolTipo.ADMIN_BASE, RolTipo.COMANDANTE]))
+    usuario_actual: Usuario = Depends(require_rol([RolTipo.ADMIN_BASE, RolTipo.COMANDANTE, RolTipo.SUPERVISOR_PARQUEROS, RolTipo.ADMIN_ENTIDAD, RolTipo.SUPERVISOR]))
 ):
     """
     Resuelve o perdona una infracción.
-    Requiere rol de administrador (Base o Comandante).
+    Supervisores de parqueros y Admin de Entidad solo pueden resolver faltas leves.
     """
     try:
-        return await infraccion_service.resolver(db, id, datos, usuario_actual.id)
+        return await infraccion_service.resolver(db, id, datos, usuario_actual)
     except ValueError as e:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN if "permisos" in str(e).lower() else status.HTTP_404_NOT_FOUND, detail=str(e))

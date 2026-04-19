@@ -6,17 +6,23 @@ import Login from '../pages/Login';
 import DashboardComando from '../pages/comandante/Dashboard';
 import Entidades from '../pages/comandante/Entidades';
 import EntidadDetalle from '../pages/comandante/EntidadDetalle';
+import GestionZonas from '../pages/comandante/GestionZonas';
+import InfraccionesComando from '../pages/comandante/Infracciones';
 import DashboardEntidad from '../pages/entidad/Dashboard';
 import SociosEntidad from '../pages/entidad/Socios';
+import EstacionamientosEntidad from '../pages/entidad/Estacionamientos';
 import DashboardAlcabala from '../pages/alcabala/Dashboard';
 import ScannerAlcabala from '../pages/alcabala/Scanner';
 import Alcabalas from '../pages/comandante/Alcabalas';
 import EventosMando from '../pages/comandante/EventosMando';
 import EventosEntidad from '../pages/entidad/Eventos';
+import EditorCarnets from '../pages/entidad/EditorCarnets';
 import Ajustes from '../pages/Ajustes';
 import Personal from '../pages/Personal';
 import PortalSocio from '../pages/socio/Portal';
 import PortalEvento from '../pages/PortalEvento';
+import DashboardParquero from '../pages/parquero/Dashboard';
+import DashboardSupervisor from '../pages/supervisor/Dashboard';
 import { useAuthStore } from '../store/auth.store';
 
 const TemporaryPlaceholder = ({ name }) => (
@@ -28,9 +34,12 @@ const TemporaryPlaceholder = ({ name }) => (
 const HomeRedirect = () => {
   const { user } = useAuthStore();
   if (!user) return <Navigate to="/login" replace />;
-  if (user.rol === 'COMANDANTE' || user.rol === 'ADMIN_BASE' || user.rol === 'SUPERVISOR') return <Navigate to="/comando/dashboard" replace />;
+  if (user.rol === 'COMANDANTE' || user.rol === 'ADMIN_BASE') return <Navigate to="/comando/dashboard" replace />;
+  if (user.rol === 'SUPERVISOR') return <Navigate to="/comando/dashboard" replace />;
   if (user.rol === 'ADMIN_ENTIDAD') return <Navigate to="/entidad/dashboard" replace />;
   if (user.rol === 'ALCABALA') return <Navigate to="/alcabala/dashboard" replace />;
+  if (user.rol === 'SUPERVISOR_PARQUEROS') return <Navigate to="/supervisor/dashboard" replace />;
+  if (user.rol === 'PARQUERO') return <Navigate to="/parquero/dashboard" replace />;
   if (user.rol === 'SOCIO') return <Navigate to="/socio/portal" replace />;
   return <Navigate to="/ajustes" replace />;
 };
@@ -63,7 +72,8 @@ export const router = createBrowserRouter([
               { path: 'alcabalas', element: <Alcabalas /> },
               { path: 'eventos', element: <EventosMando /> },
               { path: 'personal', element: <Personal /> },
-              { path: 'infracciones', element: <TemporaryPlaceholder name="Infracciones" /> }
+              { path: 'zonas', element: <GestionZonas /> },
+              { path: 'infracciones', element: <InfraccionesComando /> }
             ],
           },
           // ENTIDAD
@@ -74,7 +84,9 @@ export const router = createBrowserRouter([
               { path: 'dashboard', element: <DashboardEntidad /> },
               { path: 'socios', element: <SociosEntidad /> },
               { path: 'personal', element: <Personal /> },
-              { path: 'eventos', element: <EventosEntidad /> }
+              { path: 'eventos', element: <EventosEntidad /> },
+              { path: 'estacionamientos', element: <EstacionamientosEntidad /> },
+              { path: 'carnets', element: <EditorCarnets /> }
             ]
           },
           // ALCABALA
@@ -84,6 +96,22 @@ export const router = createBrowserRouter([
             children: [
               { path: 'dashboard', element: <DashboardAlcabala /> },
               { path: 'scanner', element: <ScannerAlcabala /> }
+            ]
+          },
+          // PARQUERO
+          {
+            path: 'parquero',
+            element: <RutaProtegida rolesPermitidos={['PARQUERO', 'ADMIN_BASE', 'COMANDANTE']} />,
+            children: [
+              { path: 'dashboard', element: <DashboardParquero /> }
+            ]
+          },
+          // SUPERVISOR DE PARQUEROS
+          {
+            path: 'supervisor',
+            element: <RutaProtegida rolesPermitidos={['SUPERVISOR_PARQUEROS', 'ADMIN_BASE', 'COMANDANTE']} />,
+            children: [
+              { path: 'dashboard', element: <DashboardSupervisor /> }
             ]
           },
           // SOCIO

@@ -9,39 +9,52 @@ class NotifyManager:
     """
     def __init__(self):
         # Conexiones activas agrupadas por rol para broadcast selectivo
-        # { "ALCABALA": [ws1, ws2], "COMANDANTE": [ws3] }
-        self.active_connections: Dict[str, List[WebSocket]] = {
-            "ALCABALA": [],
-            "COMANDANTE": [],
-            "ADMIN_BASE": [],
-            "SUPERVISOR": []
-        }
+        self.active_connections: Dict[str, List[WebSocket]] = {}
+        # Conexiones adicionales agrupadas por ID (entidad_id, zona_id, etc)
+        self.channel_connections: Dict[str, List[WebSocket]] = {}
 
-    async def conectar(self, websocket: WebSocket, rol: str):
+    async def conectar(self, websocket: WebSocket, rol: str, entidad_id: str = None, zona_id: str = None):
         await websocket.accept()
-        if rol in self.active_connections:
-            self.active_connections[rol].append(websocket)
-        else:
-            # Si el rol no es uno de los objetivos de notificación, permitimos conexión pero no broadcast
-            if "OTROS" not in self.active_connections:
-                self.active_connections["OTROS"] = []
-            self.active_connections["OTROS"].append(websocket)
+        
+        if rol not in self.active_connections:
+            self.active_connections[rol] = []
+        self.active_connections[rol].append(websocket)
+        
+        if entidad_id:
+            ch_key = f"ENTIDAD_{entidad_id}"
+            if ch_key not in self.channel_connections:
+                self.channel_connections[ch_key] = []
+            self.channel_connections[ch_key].append(websocket)
+            
+        if zona_id:
+            ch_key = f"ZONA_{zona_id}"
+            if ch_key not in self.channel_connections:
+                self.channel_connections[ch_key] = []
+            self.channel_connections[ch_key].append(websocket)
 
-    def desconectar(self, websocket: WebSocket, rol: str):
+    def desconectar(self, websocket: WebSocket, rol: str, entidad_id: str = None, zona_id: str = None):
         if rol in self.active_connections and websocket in self.active_connections[rol]:
             self.active_connections[rol].remove(websocket)
-        elif "OTROS" in self.active_connections and websocket in self.active_connections["OTROS"]:
-            self.active_connections["OTROS"].remove(websocket)
+            
+        if entidad_id:
+            ch_key = f"ENTIDAD_{entidad_id}"
+            if ch_key in self.channel_connections and websocket in self.channel_connections[ch_key]:
+                self.channel_connections[ch_key].remove(websocket)
+                
+        if zona_id:
+            ch_key = f"ZONA_{zona_id}"
+            if ch_key in self.channel_connections and websocket in self.channel_connections[ch_key]:
+                self.channel_connections[ch_key].remove(websocket)
 
     async def enviar_mensaje_personal(self, mensaje: str, websocket: WebSocket):
         await websocket.send_text(mensaje)
 
-    async def broadcast(self, mensaje: dict, roles: List[str] = None):
+    async def broadcast(self, mensaje: dict, roles: List[str] = None, channels: List[str] = None):
         """
-        Envía un mensaje a todos los usuarios con los roles especificados.
-        Si roles es None, envía a todos los roles predefinidos (Alcabala, Comandante, etc).
+        Envía un mensaje a todos los usuarios con los roles o canales especificados.
         """
         objetivos = roles if roles else ["ALCABALA", "COMANDANTE", "ADMIN_BASE", "SUPERVISOR"]
+        canales = channels if channels else []
         
         mensaje_json = json.dumps(mensaje)
         

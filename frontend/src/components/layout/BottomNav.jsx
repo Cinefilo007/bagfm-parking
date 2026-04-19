@@ -1,6 +1,6 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
-import { ShieldCheck, Users, Menu, ClipboardList, Camera, UserCog, LogOut } from 'lucide-react';
+import { ShieldCheck, Users, Menu, ClipboardList, Camera, UserCog, LogOut, ParkingSquare, Radio } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import { useAuthStore } from '../../store/auth.store';
 
@@ -14,15 +14,15 @@ export const BottomNav = () => {
     navItems.push(
       { to: '/comando/dashboard', label: 'Centro', icon: ShieldCheck },
       { to: '/comando/entidades', label: 'Entidades', icon: Users },
+      { to: '/comando/zonas', label: 'Zonas', icon: ParkingSquare },
       { to: '/comando/alcabalas', label: 'Alcabalas', icon: ClipboardList },
-      { to: '/comando/personal', label: 'Personal', icon: UserCog },
       { to: '/ajustes', label: 'Más', icon: Menu }
     );
   } else if (user?.rol === 'ADMIN_ENTIDAD') {
     navItems.push(
        { to: '/entidad/dashboard', label: 'Panel', icon: ShieldCheck },
        { to: '/entidad/socios', label: 'Socios', icon: Users },
-       { to: '/entidad/personal', label: 'Personal', icon: UserCog },
+       { to: '/entidad/estacionamientos', label: 'Parking', icon: ParkingSquare },
        { to: '/ajustes', label: 'Más', icon: Menu }
     );
   } else if (user?.rol === 'ALCABALA') {
@@ -30,6 +30,17 @@ export const BottomNav = () => {
       { to: '/alcabala/dashboard', label: 'Panel', icon: ShieldCheck },
       { to: '/alcabala/scanner', label: 'Scanner', icon: Camera },
       { label: 'Cerrar', icon: LogOut, action: 'logout' }
+    );
+  } else if (user?.rol === 'PARQUERO') {
+    navItems.push(
+      { to: '/parquero/dashboard', label: 'Mi Zona', icon: ParkingSquare },
+      { to: '/ajustes', label: 'Más', icon: Menu }
+    );
+  } else if (user?.rol === 'SUPERVISOR_PARQUEROS') {
+    navItems.push(
+      { to: '/supervisor/dashboard', label: 'Superv.', icon: Radio },
+      { to: '/parquero/dashboard', label: 'Parqueo', icon: ParkingSquare },
+      { to: '/ajustes', label: 'Más', icon: Menu }
     );
   } else {
     navItems.push(

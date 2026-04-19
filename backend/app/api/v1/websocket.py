@@ -19,13 +19,17 @@ async def websocket_endpoint(
     El cliente debe enviar el JWT en el query parameter 'token'.
     """
     rol = "OTRO"
+    entidad_id = None
+    zona_id = None
     try:
         # Validar Token
         payload = decodificar_token(token)
         rol = payload.get("rol", "OTRO")
+        entidad_id = payload.get("entidad_id")
+        zona_id = payload.get("zona_id")
         
         # Conectar al gestor
-        await manager.conectar(websocket, rol)
+        await manager.conectar(websocket, rol, entidad_id, zona_id)
         
         # Mantener conexión activa
         while True:
@@ -34,7 +38,7 @@ async def websocket_endpoint(
             # Podríamos manejar pings o comandos simples aquí si fuera necesario
             
     except WebSocketDisconnect:
-        manager.desconectar(websocket, rol)
+        manager.desconectar(websocket, rol, entidad_id, zona_id)
     except (JWTError, Exception) as e:
         # Si el token falla o hay error, cerramos
         print(f"WS Auth Error: {str(e)}")

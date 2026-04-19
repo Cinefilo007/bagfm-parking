@@ -5,7 +5,7 @@ import { useAuthStore } from '../../store/auth.store';
 import { 
   Users, CarFront, AlertCircle, ShieldCheck, 
   ChevronRight, CalendarRange, UserCog, 
-  TrendingUp, Activity, Bell
+  TrendingUp, Activity, Bell, ParkingSquare
 } from 'lucide-react';
 import { NavLink } from 'react-router-dom';
 import api from '../../services/api';
@@ -170,6 +170,23 @@ export default function DashboardEntidad() {
                              <div>
                                 <h5 className="text-sm font-black text-white uppercase tracking-tight italic">Personal Administrativo</h5>
                                 <p className="text-[10px] text-text-muted font-bold tracking-widest uppercase opacity-60">Gestión de Operadores</p>
+                             </div>
+                          </div>
+                          <ChevronRight size={20} className="text-text-muted group-hover:translate-x-1 transition-transform" />
+                       </CardContent>
+                    </Card>
+                 </NavLink>
+
+                 <NavLink to="/entidad/estacionamientos" className="block group">
+                    <Card className="bg-white/[0.02] border-white/5 group-hover:bg-primary/5 group-hover:border-primary/20 transition-all active:scale-[0.98]">
+                       <CardContent className="p-4 flex items-center justify-between">
+                          <div className="flex items-center gap-4">
+                             <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center text-primary group-hover:rotate-6 transition-transform">
+                                <ParkingSquare size={24} />
+                             </div>
+                             <div>
+                                <h5 className="text-sm font-black text-white uppercase tracking-tight italic">Estacionamientos</h5>
+                                <p className="text-[10px] text-text-muted font-bold tracking-widest uppercase opacity-60">Cuota de Puestos y Tipos de Acceso</p>
                              </div>
                           </div>
                           <ChevronRight size={20} className="text-text-muted group-hover:translate-x-1 transition-transform" />

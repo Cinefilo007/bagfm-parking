@@ -23,9 +23,18 @@ class InfraccionService:
             usuario_id = datos.usuario_id,
             reportado_por = reportado_por_id,
             tipo = datos.tipo,
+            gravedad = datos.gravedad,
             descripcion = datos.descripcion,
             foto_url = datos.foto_url,
+            fotos_evidencia = datos.fotos_evidencia or [],
             bloquea_salida = datos.bloquea_salida,
+            bloquea_acceso_futuro = datos.bloquea_acceso_futuro,
+            zona_id = datos.zona_id,
+            puesto_id = datos.puesto_id,
+            entidad_id = datos.entidad_id,
+            latitud_infraccion = datos.latitud_infraccion,
+            longitud_infraccion = datos.longitud_infraccion,
+            notas_internas = datos.notas_internas,
             estado = InfraccionEstado.activa
         )
         
@@ -40,6 +49,7 @@ class InfraccionService:
             "datos": {
                 "id": str(nueva_infraccion.id),
                 "tipo": str(nueva_infraccion.tipo.value),
+                "gravedad": str(nueva_infraccion.gravedad.value) if hasattr(nueva_infraccion, "gravedad") else "leve",
                 "descripcion": nueva_infraccion.descripcion,
                 "bloquea_salida": nueva_infraccion.bloquea_salida,
                 "timestamp": datetime.now(timezone.utc).isoformat()
@@ -49,7 +59,7 @@ class InfraccionService:
         
         return nueva_infraccion
 
-    async def resolver(self, db: AsyncSession, infraccion_id: UUID, datos: InfraccionResolver, resuelta_por_id: UUID) -> Infraccion:
+    async def resolver(self, db: AsyncSession, infraccion_id: UUID, datos: InfraccionResolver, resuelta_por_usuario) -> Infraccion:
         """
         Marca una infracción como resuelta o perdonada.
         """
@@ -60,9 +70,15 @@ class InfraccionService:
         if not infraccion:
             raise ValueError("Infracción no encontrada")
             
+        # Verificación de permisos según la gravedad de la infracción
+        from app.models.enums import GravedadInfraccion, RolTipo
+        if infraccion.gravedad in [GravedadInfraccion.moderada, GravedadInfraccion.grave]:
+            if resuelta_por_usuario.rol not in [RolTipo.ADMIN_BASE, RolTipo.COMANDANTE]:
+                raise ValueError("Permisos insuficientes: Las infracciones moderadas o graves solo pueden ser resueltas por el Comando de Base.")
+
         infraccion.estado = datos.estado
         infraccion.observaciones_resolucion = datos.observaciones_resolucion
-        infraccion.resuelta_por = resuelta_por_id
+        infraccion.resuelta_por = resuelta_por_usuario.id
         infraccion.resuelta_at = datetime.now(timezone.utc)
         
         await db.commit()

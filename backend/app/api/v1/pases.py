@@ -8,15 +8,17 @@ from app.core.dependencias import obtener_usuario_actual, require_rol
 from app.models.enums import RolTipo
 from app.models.usuario import Usuario
 from app.schemas.pases import LotePaseMasivoCrear, LotePaseMasivoSalida
+from app.schemas.codigo_qr import CodigoQRSalida
 from app.services.pase_service import pase_service
 from app.services.template_service import template_service
 from app.models.alcabala_evento import LotePaseMasivo, SolicitudEvento
+from app.models.codigo_qr import CodigoQR
 from sqlalchemy import select
 
 router = APIRouter()
 
 # Roles autorizados para gestionar lotes masivos
-ADMIN_ROLES = [RolTipo.COMANDANTE, RolTipo.ADMIN_BASE]
+ADMIN_ROLES = [RolTipo.COMANDANTE, RolTipo.ADMIN_BASE, RolTipo.ADMIN_ENTIDAD]
 
 @router.post("/lotes", response_model=LotePaseMasivoSalida, status_code=status.HTTP_201_CREATED)
 async def crear_lote(
@@ -49,6 +51,17 @@ async def obtener_lote(
         raise HTTPException(status_code=404, detail="Lote no encontrado")
     return lote
 
+@router.get("/lotes/{lote_id}/pases", response_model=List[CodigoQRSalida])
+async def listar_pases_lote(
+    lote_id: UUID,
+    db: AsyncSession = Depends(obtener_db),
+    usuario_actual: Usuario = Depends(require_rol(ADMIN_ROLES + [RolTipo.ALCABALA]))
+):
+    """Lista los pases individuales de un lote (Drill-down)."""
+    query = select(CodigoQR).where(CodigoQR.lote_id == lote_id).order_by(CodigoQR.serial_legible.asc())
+    res = await db.execute(query)
+    return res.scalars().all()
+
 @router.post("/lotes/{lote_id}/generar-zip")
 async def generar_zip_endpoint(
     lote_id: UUID,
@@ -56,12 +69,39 @@ async def generar_zip_endpoint(
     usuario_actual: Usuario = Depends(require_rol(ADMIN_ROLES))
 ):
     """Dispara la generación del ZIP y subida a Supabase."""
-    # Esto puede ser asíncrono en background si el lote es muy grande
-    # Por ahora se procesa directo para feedback inmediato
     url = await pase_service.generar_zip_lote(db, lote_id)
     if not url:
         raise HTTPException(status_code=404, detail="Lote no encontrado")
     return {"url": url}
+
+@router.get("/lotes/{lote_id}/pdf")
+async def generar_pdf_lote(
+    lote_id: UUID,
+    db: AsyncSession = Depends(obtener_db),
+    usuario_actual: Usuario = Depends(require_rol(ADMIN_ROLES + [RolTipo.ALCABALA]))
+):
+    """Genera (o recupera) el PDF masivo del lote para descarga inmediata."""
+    lote = await db.get(LotePaseMasivo, lote_id)
+    if not lote:
+        raise HTTPException(status_code=404, detail="Lote no encontrado")
+    
+    from fastapi.responses import StreamingResponse
+    from app.services.pdf_service import pdf_service
+    
+    # Generamos el buffer en memoria
+    pdf_buffer = await pdf_service.generar_pdf_lote(db, lote_id)
+    
+    # Intentamos subirlo en segundo plano (opcional) para persistencia
+    import asyncio
+    asyncio.create_task(pase_service.generar_pdf_masivo(db, lote_id))
+    
+    return StreamingResponse(
+        pdf_buffer,
+        media_type="application/pdf",
+        headers={
+            "Content-Disposition": f"attachment; filename=PASES_{lote.codigo_serial}.pdf"
+        }
+    )
 
 @router.post("/lotes/{lote_id}/importar-excel")
 async def importar_excel_lote(

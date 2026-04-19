@@ -1,16 +1,25 @@
-from typing import Optional
+from typing import Optional, List
 from uuid import UUID
 from datetime import datetime
 from pydantic import BaseModel, ConfigDict
-from app.models.enums import InfraccionTipo, InfraccionEstado
+from app.models.enums import InfraccionTipo, InfraccionEstado, GravedadInfraccion
 
 class InfraccionBase(BaseModel):
-    vehiculo_id: UUID
-    usuario_id: UUID
+    vehiculo_id: Optional[UUID] = None
+    usuario_id: Optional[UUID] = None
     tipo: InfraccionTipo
+    gravedad: GravedadInfraccion = GravedadInfraccion.leve
     descripcion: str
     foto_url: Optional[str] = None
+    fotos_evidencia: List[str] = []
     bloquea_salida: bool = True
+    bloquea_acceso_futuro: bool = False
+    zona_id: Optional[UUID] = None
+    puesto_id: Optional[UUID] = None
+    entidad_id: Optional[UUID] = None
+    latitud_infraccion: Optional[float] = None
+    longitud_infraccion: Optional[float] = None
+    notas_internas: Optional[str] = None
 
 class InfraccionCrear(InfraccionBase):
     pass

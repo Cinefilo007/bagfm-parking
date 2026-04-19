@@ -39,6 +39,12 @@ El mapa debe seguir estrictamente el **Aegis Tactical Design System**:
     - **< 80%:** Verde esmeralda.
     - **80% - 95%:** Naranja ámbar.
     - **> 95%:** Rojo táctico (Acrítico).
+  - **v2.0 — Puestos individuales:**
+    - Si `usa_puestos_identificados = true`: mostrar cada puesto con su estado (libre/ocupado/reservado).
+    - Coordenadas `punto_acceso_lat/lon` para marcar la entrada a la zona.
+    - Entidad asignada visible al hacer click en la zona (`asignaciones_zona`).
+  - **v2.0 — Compartir ubicación:**
+    - Botón en marcador de zona → deep link a Google Maps/Waze.
 
 ---
 

@@ -1,11 +1,19 @@
-# DIRECTIVA MAESTRA — BAGFM
-**Sistema de Control de Acceso Vehicular**  
+# DOCUMENTACIÓN COMPLETA DEL SISTEMA — BAGFM (LEGACY)
+**Sistema de Control de Acceso Vehicular y Gestión de Estacionamientos**  
 Base Aérea Generalísimo Francisco de Miranda  
 
 ---
 
-> **LEER ANTES DE ESCRIBIR CUALQUIER LÍNEA DE CÓDIGO**  
-> Este documento es la fuente de verdad del proyecto. Todo agente, desarrollador o IA que trabaje en este sistema debe consultarlo primero y mantenerlo actualizado.
+> ⚠️ **AVISO v2.0**: Este archivo es una referencia LEGACY. Las directivas actualizadas están en `docs/`:
+> - `docs/DIRECTIVA_MAESTRA.md` — Fuente de verdad principal
+> - `docs/SCHEMA_BD.md` — Schema de BD v2.0
+> - `docs/ROLES_Y_PERMISOS.md` — Roles actualizados
+> - `docs/FLUJOS_DE_NEGOCIO.md` — Flujos v2.0 (FL-01 a FL-15)
+> - `docs/DIRECTIVA_PARQUERO.md` — **NUEVO** Módulo parquero
+> - `docs/DIRECTIVA_PASES_MASIVOS.md` — **NUEVO** Pases autónomos + carnets
+> - `docs/DIRECTIVA_ALCABALAS.md` — Alcabalas v2.0 (simplificadas)
+> - `docs/API_REFERENCE.md` — Endpoints v2.0
+> - `docs/REGISTRO_CAMBIOS.md` — Changelog completo
 
 ---
 
@@ -13,8 +21,8 @@ Base Aérea Generalísimo Francisco de Miranda
 
 | Campo | Valor |
 |-------|-------|
-| **Nombre** | BAGFM — Control de Acceso Vehicular |
-| **Versión** | 0.1.0 (en desarrollo) |
+| **Nombre** | BAGFM — Control de Acceso Vehicular y Gestión de Estacionamientos |
+| **Versión** | 2.0.0 (Evolución: Gestión Inteligente de Estacionamientos) |
 | **Dominio** | Configurable via `APP_DOMAIN` (`.env`) |
 | **Idioma** | Español (código, comentarios, variables, UI) |
 | **Metodología** | Mejora Infinita — SOPs vs Ejecución |
