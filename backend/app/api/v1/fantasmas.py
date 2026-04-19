@@ -6,7 +6,7 @@ from typing import List
 from app.core.database import obtener_db
 from app.core.dependencias import obtener_usuario_actual, require_rol
 from app.models.usuario import Usuario
-from app.services.vehiculo_fantasma_service import vehiculo_fantasma_service
+from app.services.cron_service import cron_service
 from app.schemas.infraccion import InfraccionSalida
 
 router = APIRouter(prefix="/fantasmas", tags=["Control de Vehículos Fantasma"])
@@ -20,7 +20,7 @@ async def obtener_historial_fantasmas(
     """
     Obtiene el historial de vehículos fantasma detectados.
     """
-    return await vehiculo_fantasma_service.obtener_historial(db, skip=skip, limit=limit)
+    return await cron_service.obtener_historial_fantasmas(db, skip=skip, limit=limit)
 
 @router.post("/scan-manual")
 async def trigger_scan_manual(
@@ -30,5 +30,5 @@ async def trigger_scan_manual(
     """
     Desencadena un scan manual de vehículos fantasmas.
     """
-    await vehiculo_fantasma_service.detectar_fantasmas(db)
+    await cron_service.procesar_vehiculos_fantasma(db)
     return {"mensaje": "Scan de vehículos fantasma ejecutado con éxito"}
