@@ -15,6 +15,8 @@ import {
 } from 'lucide-react';
 import zonaService from '../../services/zona.service';
 import api from '../../services/api';
+import { ModalConfirmacion } from '../../components/ui/ModalConfirmacion';
+
 
 // ──── Sub-componentes ─────────────────────────────────────────────────────────
 
@@ -105,9 +107,8 @@ const ZonaRow = ({ zona, entidades, asignaciones, onEditar, onEliminar, onGestio
                     </div>
                 </div>
 
-                {/* Mini stats */}
                 <div className="hidden sm:flex items-center gap-4 px-4 border-l border-white/5">
-                    <StatBadge valor={puestosLibres} label="Libres" color="text-success" subLabel="(Inc. Base)" />
+                    <StatBadge valor={puestosLibres} label="Libres" color="text-success" />
                     <StatBadge valor={puestosOcupados} label="Ocup." color="text-danger" />
                     <StatBadge valor={puestosReservados} label="Reserv." color="text-warning" />
                 </div>
@@ -219,6 +220,8 @@ export default function GestionZonas() {
     const [modalAsignar, setModalAsignar] = useState(false);
     const [modalTiempo, setModalTiempo] = useState(false);
     const [zonaActiva, setZonaActiva] = useState(null);
+    const [confirmConfig, setConfirmConfig] = useState({ isOpen: false, title: '', message: '', onConfirm: null, loading: false });
+
 
     // Forms
     const [formZona, setFormZona] = useState(FORM_ZONA_INICIAL);
@@ -323,15 +326,25 @@ export default function GestionZonas() {
         }
     };
 
-    const handleEliminarZona = async (zona) => {
-        if (!window.confirm(`¿Eliminar la zona "${zona.nombre}"? Esta acción no se puede deshacer.`)) return;
-        try {
-            await zonaService.eliminarZona(zona.id);
-            toast.success('Zona eliminada');
-            cargarDatos();
-        } catch (e) {
-            toast.error('Error al eliminar zona');
-        }
+    const handleEliminarZona = (zona) => {
+        setConfirmConfig({
+            isOpen: true,
+            title: 'ELIMINAR ZONA TÁCTICA',
+            message: `¿Está seguro de que desea eliminar la zona "${zona.nombre}"? Esta acción purgará todos los registros asociados de forma permanente.`,
+            onConfirm: async () => {
+                setConfirmConfig(prev => ({ ...prev, loading: true }));
+                try {
+                    await zonaService.eliminarZona(zona.id);
+                    toast.success('Zona eliminada correctamente');
+                    cargarDatos();
+                    setConfirmConfig(prev => ({ ...prev, isOpen: false }));
+                } catch (e) {
+                    toast.error('Error crítico al eliminar la zona');
+                } finally {
+                    setConfirmConfig(prev => ({ ...prev, loading: false }));
+                }
+            }
+        });
     };
 
     // ── Gestión de Puestos ───────────────────────────────────────────────────
@@ -741,6 +754,11 @@ export default function GestionZonas() {
                     </div>
                 </div>
             </Modal>
+            <ModalConfirmacion
+                {...confirmConfig}
+                onClose={() => setConfirmConfig(prev => ({ ...prev, isOpen: false }))}
+                balanced={true}
+            />
         </div>
     );
 }
