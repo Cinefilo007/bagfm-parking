@@ -299,7 +299,7 @@ const TacticalKPIs = ({ lotes }) => {
     }, [lotes]);
 
     return (
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
             {stats.map((s, i) => (
                 <div key={i} className="p-4 bg-bg-card/40 border border-white/5 rounded-2xl flex items-center gap-4 group hover:bg-bg-high/80 transition-all border-b-2 border-b-transparent hover:border-b-primary/50">
                     <div className={cn("w-12 h-12 rounded-2xl flex items-center justify-center bg-black/40 border border-white/5", s.color)}>
@@ -350,12 +350,12 @@ const LoteCardV2 = ({ lote, zonas, tiposCustom, onRefresh, onVerPases, onElimina
     };
 
     return (
-        <div className="flex flex-col md:flex-row items-center gap-4 p-4 bg-bg-card/40 border border-white/5 rounded-2xl group hover:border-white/10 hover:bg-bg-high/60 transition-all">
-            <div className="flex flex-row md:flex-col items-center gap-3 w-full md:w-24 shrink-0 md:border-r border-white/5 md:pr-4">
+        <div className="flex flex-col xl:flex-row items-start xl:items-center gap-4 p-4 bg-bg-card/40 border border-white/5 rounded-2xl group hover:border-white/10 hover:bg-bg-high/60 transition-all">
+            <div className="flex flex-row xl:flex-col items-center gap-3 w-full xl:w-24 shrink-0 xl:border-r border-white/5 xl:pr-4">
                 <div className={cn("p-3 rounded-2xl border border-white/5 shadow-inner", info.bg)}>
                     <Icon className={info.color} size={22} />
                 </div>
-                <div className="flex flex-col gap-1 items-start md:items-center">
+                <div className="flex flex-col gap-1 items-start xl:items-center">
                     {badgeTipo(lote.tipo_pase)}
                     <span className="text-[10px] font-mono text-text-muted opacity-60 font-bold bg-white/5 px-2 py-0.5 rounded border border-white/5 mt-1">
                         {lote.codigo_serial}
@@ -375,18 +375,18 @@ const LoteCardV2 = ({ lote, zonas, tiposCustom, onRefresh, onVerPases, onElimina
                 </div>
             </div>
 
-            <div className="flex items-center gap-4 px-4 border-l border-white/5 shrink-0 hidden md:flex">
-                <div className="text-center">
+            <div className="flex items-center gap-8 py-2 xl:py-0 xl:px-4 xl:border-l border-white/5 shrink-0">
+                <div className="text-center xl:text-center">
                     <div className="text-xl font-black text-white">{lote.cantidad_pases}</div>
                     <div className="text-[8px] font-black text-text-muted uppercase">Pases</div>
                 </div>
-                <div className="text-center">
+                <div className="text-center xl:text-center">
                     <div className="text-xl font-black text-success">{lote.pases_usados ?? 0}</div>
                     <div className="text-[8px] font-black text-text-muted uppercase">Usados</div>
                 </div>
             </div>
 
-            <div className="w-full md:w-36 shrink-0 space-y-2 md:border-l border-white/5 md:pl-4">
+            <div className="w-full xl:w-36 shrink-0 space-y-2 xl:border-l border-white/5 xl:pl-4">
                 <div className="flex justify-between items-center text-[9px] font-black tracking-widest">
                     <span className="text-text-muted uppercase">Estado</span>
                     <span className={lote.zip_generado || progreso >= 100 ? 'text-success' : generando ? 'text-primary' : 'text-warning'}>
@@ -398,7 +398,7 @@ const LoteCardV2 = ({ lote, zonas, tiposCustom, onRefresh, onVerPases, onElimina
                 </div>
             </div>
 
-            <div className="flex items-center gap-2 w-full md:w-auto shrink-0 md:pl-2">
+            <div className="flex items-center gap-2 w-full xl:w-auto shrink-0 xl:pl-2">
                 {lote.zip_generado || progreso >= 100 ? (
                     <button 
                         onClick={() => pasesService.descargarArchivo(lote.zip_url, `PASES_${lote.nombre_evento.replace(/\s+/g, '_')}_${lote.codigo_serial}.zip`)}
