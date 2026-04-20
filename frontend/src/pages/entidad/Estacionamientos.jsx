@@ -15,7 +15,6 @@ import {
     ChevronDown, LayoutGrid, Settings, Activity, Hash, PackagePlus, Palette, Filter, ZapOff
 } from 'lucide-react';
 import { zonaService } from '../../services/zona.service';
-import { ModalConfirmacion } from '../../components/ui/ModalConfirmacion';
 
 const PRESET_COLORS = [
     '#4EDEA3', '#3B82F6', '#F59E0B', '#EF4444', 
