@@ -400,10 +400,13 @@ const LoteCardV2 = ({ lote, zonas, tiposCustom, onRefresh, onVerPases }) => {
 
             <div className="flex items-center gap-2 w-full md:w-auto shrink-0 md:pl-2">
                 {lote.zip_generado || progreso >= 100 ? (
-                    <a href={lote.zip_url} download className="h-9 px-3 bg-success/15 hover:bg-success/25 border border-success/20 rounded-xl flex items-center gap-2 transition-all">
+                    <button 
+                        onClick={() => pasesService.descargarArchivo(lote.zip_url, `PASES_${lote.nombre_evento.replace(/\s+/g, '_')}_${lote.codigo_serial}.zip`)}
+                        className="h-9 px-3 bg-success/15 hover:bg-success/25 border border-success/20 rounded-xl flex items-center gap-2 transition-all cursor-pointer"
+                    >
                         <Download size={14} className="text-success" />
                         <span className="text-[10px] font-black text-success uppercase">ZIP</span>
-                    </a>
+                    </button>
                 ) : (
                     <Boton size="sm" onClick={handleGenerarZip} isLoading={generando} disabled={generando} className="flex-1 md:flex-none">
                         <QrCode size={14} /> GENERAR

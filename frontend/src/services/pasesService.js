@@ -59,6 +59,28 @@ export const pasesService = {
      */
     const res = await api.post(`/pases/portal/${serial}/registrar`, datos);
     return res.data;
+  },
+
+  async descargarArchivo(url, filename) {
+    /**
+     * Descarga robusta usando Blob para evitar problemas de CORS/Download attribute.
+     */
+    try {
+      const response = await fetch(url);
+      const blob = await response.blob();
+      const blobUrl = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = blobUrl;
+      link.setAttribute('download', filename);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(blobUrl);
+    } catch (error) {
+      console.error('Error en descarga táctica:', error);
+      // Fallback: abrir en nueva pestaña
+      window.open(url, '_blank');
+    }
   }
 };
 
