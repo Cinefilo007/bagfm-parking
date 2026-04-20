@@ -87,32 +87,16 @@ class PaseService:
                 asig_especifica = next((a for a in asignaciones if str(a.zona_id) == str(zona_id)), None)
                 if asig_especifica:
                     distribucion = asig_especifica.distribucion_cupos or {}
-                    # Mapear tipo a la llave en el JSON (ej: 'general' -> 'PUBLICO GENERAL')
-                    # Basado en el frontend, se usan etiquetas en mayúsculas
-                    mapping = {
-                        'general': 'PÚBLICO GENERAL',
-                        'staff': 'STAFF / APOYO',
-                        'produccion': 'PRODUCTORES',
-                        'logistica': 'LOGÍSTICA',
-                        'vip': 'INVITADOS VIP',
-                        'prensa': 'PRENSA',
-                        'artista': 'ARTISTA'
-                    }
-                    label_tipo = mapping.get(tipo_acc, str(tipo_acc).upper())
+                    cupo_total = asig_especifica.cupo_asignado
+                    cupo_base  = asig_especifica.cupo_reservado_base or 0
+                    cupos_cat  = sum(int(v) for v in distribucion.values() if v)
+                    # Todos los tipos custom usan el remanente libre de la zona
+                    cupo_disponible = max(0, cupo_total - cupo_base - cupos_cat)
                     
-                    if tipo_acc == 'general' or tipo_acc == 'custom':
-                        # Puestos libres = Total - Base - Reservados para categorías específicas
-                        reservado_otros = sum(int(v) for k, v in distribucion.items() if k != label_tipo)
-                        cupo_disponible = asig_especifica.cupo_asignado - asig_especifica.cupo_reservado_base - reservado_otros
-                    else:
-                        # Puestos específicos para la categoría
-                        cupo_disponible = int(distribucion.get(label_tipo, 0))
-                    
-                    # Si no es distribución libre (ignorar warning en frontend), lanzamos error
-                    # Para el backend, si no viene el flag 'distribucion_automatica', somos estrictos
+                    # Si no es distribución libre (ignorar warning en frontend), somos estrictos
                     dist_auto = datos.get('distribucion_automatica') or datos.get('distribucion_automatic', False)
                     if not dist_auto and datos['cantidad_pases'] > cupo_disponible:
-                         raise ValueError(f"CUPO INSUFICIENTE en esta zona para {label_tipo}: Disponible {cupo_disponible}, Requerido {datos['cantidad_pases']}.")
+                         raise ValueError(f"CUPO INSUFICIENTE en esta zona: Disponible {cupo_disponible}, Requerido {datos['cantidad_pases']}.")
 
         # 3. Generar serial y persistir lote
         serial_lote = await self._generar_serial_lote(db)
