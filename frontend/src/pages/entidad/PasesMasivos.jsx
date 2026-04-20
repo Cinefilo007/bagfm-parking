@@ -791,15 +791,15 @@ export default function EventosV2() {
                 <div className="absolute top-0 right-0 w-64 h-64 bg-primary/5 blur-[100px] -mr-32 -mt-32" />
                 
                 {/* Bloque Izquierdo: Identidad */}
-                <div className="relative flex items-center gap-4">
-                    <div className="p-3 bg-primary/10 rounded-xl border border-primary/20 shadow-lg shadow-primary/5">
-                        <Calendar className="text-primary" size={24} />
+                <div className="relative flex items-center gap-3">
+                    <div className="p-2.5 bg-primary/10 rounded-xl border border-primary/20 shadow-lg shadow-primary/5">
+                        <Calendar className="text-primary" size={20} />
                     </div>
                     <div>
-                        <h1 className="text-2xl md:text-3xl font-black text-text-main uppercase tracking-tighter leading-none">
+                        <h1 className="text-xl md:text-2xl font-black text-text-main uppercase tracking-tighter leading-none">
                             Eventos y Pases
                         </h1>
-                        <p className="text-[10px] md:text-xs text-text-muted font-bold uppercase tracking-[0.2em] mt-1 flex items-center gap-2 px-1">
+                        <p className="text-[10px] text-text-muted font-bold uppercase tracking-[0.2em] mt-1 flex items-center gap-2 px-1">
                             <span className="w-1.5 h-1.5 rounded-full bg-success animate-pulse shrink-0" />
                             Gestión de Accesos Masivos — {user?.entidad_nombre}
                         </p>
@@ -807,19 +807,11 @@ export default function EventosV2() {
                 </div>
 
                 {/* Bloque Derecho: Acciones */}
-                <div className="relative flex items-center gap-3 w-full sm:w-auto">
-                    <Boton 
-                        onClick={() => setShowSolicitudModal(true)} 
-                        variant="ghost"
-                        className="flex-1 sm:flex-none h-11 px-6 gap-2 text-[10px] font-black uppercase border-white/10 rounded-xl hover:bg-white/5 transition-all"
-                    >
-                        <Clock size={16} className="text-warning" /> 
-                        Solicitar Evento
-                    </Boton>
+                <div className="relative flex items-center gap-2 w-full sm:w-auto">
                     <Boton 
                         onClick={() => setShowModal(true)} 
                         disabled={zonas.length === 0}
-                        className="flex-1 sm:flex-none h-11 px-6 gap-2 text-[11px] font-black uppercase bg-primary text-bg-app rounded-xl shadow-xl shadow-primary/20 hover:scale-[1.02] active:scale-95 transition-all disabled:opacity-50"
+                        className="flex-1 sm:flex-none h-11 px-5 gap-2 text-[11px] font-black uppercase bg-primary text-bg-app rounded-xl shadow-xl shadow-primary/20 hover:scale-[1.02] active:scale-95 transition-all disabled:opacity-50 whitespace-nowrap min-w-fit"
                     >
                         <PlusCircle size={18} /> 
                         Crear Nuevo Lote
@@ -868,9 +860,17 @@ export default function EventosV2() {
                     <p className="text-[9px] font-black text-text-muted uppercase tracking-widest flex items-center gap-2">
                         <LayoutGrid size={11} className="text-primary" /> {lotes.length} lotes activos
                     </p>
-                    <button onClick={fetchData} className="p-1.5 rounded-lg bg-white/5 hover:bg-white/10 transition-all">
-                        <RefreshCw size={13} className={cn("text-text-muted", loading && 'animate-spin')} />
-                    </button>
+                    <div className="flex items-center gap-2">
+                        <button 
+                            onClick={() => setShowSolicitudModal(true)}
+                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-warning/10 text-warning text-[9px] font-black uppercase border border-warning/10 hover:bg-warning/20 transition-all"
+                        >
+                            <Clock size={11} /> Solicitar Evento
+                        </button>
+                        <button onClick={fetchData} className="p-1.5 rounded-lg bg-white/5 hover:bg-white/10 transition-all">
+                            <RefreshCw size={13} className={cn("text-text-muted", loading && 'animate-spin')} />
+                        </button>
+                    </div>
                 </div>
                 {loading ? (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
