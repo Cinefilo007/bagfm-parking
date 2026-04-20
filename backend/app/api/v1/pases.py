@@ -8,7 +8,8 @@ from app.core.dependencias import obtener_usuario_actual, require_rol
 from app.models.enums import RolTipo
 from app.models.usuario import Usuario
 from app.schemas.pases import LotePaseMasivoCrear, LotePaseMasivoSalida
-from app.schemas.codigo_qr import CodigoQRSalida
+from app.schemas.codigo_qr import CodigoQRSalida, CodigoQRUpdate
+from app.api.v1.pases import pase_service
 from app.services.pase_service import pase_service
 from app.services.template_service import template_service
 from app.models.alcabala_evento import LotePaseMasivo, SolicitudEvento
@@ -148,3 +149,15 @@ async def descargar_plantilla_pases(
             "Content-Disposition": "attachment; filename=TEMPLATE_PASES_IDENTIFICADOS.xlsx"
         }
     )
+@router.patch("/{pase_id}", response_model=CodigoQRSalida)
+async def actualizar_pase(
+    pase_id: UUID,
+    datos: CodigoQRUpdate,
+    db: AsyncSession = Depends(obtener_db),
+    usuario_actual: Usuario = Depends(require_rol(ADMIN_ROLES))
+):
+    """Actualiza datos de un pase individual."""
+    pase = await pase_service.actualizar_pase(db, pase_id, datos.model_dump(exclude_unset=True))
+    if not pase:
+        raise HTTPException(status_code=404, detail="Pase no encontrado")
+    return pase

@@ -50,3 +50,16 @@ class CodigoQRSalida(CodigoQRBase):
     created_at: datetime
     
     model_config = ConfigDict(from_attributes=True)
+
+class CodigoQRUpdate(BaseModel):
+    nombre_portador: Optional[str] = None
+    cedula_portador: Optional[str] = None
+    email_portador: Optional[str] = None
+    telefono_portador: Optional[str] = None
+    vehiculo_placa: Optional[str] = None
+    vehiculo_marca: Optional[str] = None
+    vehiculo_modelo: Optional[str] = None
+    vehiculo_color: Optional[str] = None
+    activo: Optional[bool] = None
+
+    model_config = ConfigDict(from_attributes=True)

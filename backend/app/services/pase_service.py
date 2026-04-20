@@ -451,4 +451,18 @@ class PaseService:
             
         return "storage_not_configured"
 
+    async def actualizar_pase(self, db: AsyncSession, pase_id: uuid.UUID, datos: dict) -> CodigoQR:
+        """Actualiza datos de un pase individual (portador, vehículo, etc)."""
+        pase = await db.get(CodigoQR, pase_id)
+        if not pase:
+            return None
+        
+        for key, value in datos.items():
+            if hasattr(pase, key) and value is not None:
+                setattr(pase, key, value)
+        
+        await db.commit()
+        await db.refresh(pase)
+        return pase
+
 pase_service = PaseService()

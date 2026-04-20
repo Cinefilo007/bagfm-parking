@@ -49,8 +49,7 @@ const badgeTipo = (tipo, labelCustom) => {
 
 // ──── PaseRow: fila individual de un pase dentro del drill-down ───────────────
 
-const PaseRow = ({ pase, zonas, onCompartir, onEmail }) => {
-    const [menuAbierto, setMenuAbierto] = useState(false);
+const PaseRow = ({ pase, zonas, onCompartir, onEmail, onEditar }) => {
     return (
         <div className="flex items-center gap-3 p-3 bg-white/3 rounded-xl border border-white/5 hover:bg-white/5 transition-all group">
             <div className="w-8 h-8 bg-primary/10 rounded-lg flex items-center justify-center border border-primary/15 shrink-0">
@@ -65,37 +64,15 @@ const PaseRow = ({ pase, zonas, onCompartir, onEmail }) => {
                         <span className="text-[8px] text-text-muted font-mono">{pase.cedula_portador}</span>
                     )}
                     {!pase.nombre_portador && (
-                        <p className="text-[9px] text-text-muted/50 italic">Sin datos del portador</p>
+                        <p className="text-[9px] text-text-muted/50 italic">Sin asignar</p>
                     )}
                 </div>
                 <div className="flex items-center gap-2 mt-1.5 flex-wrap">
-                    {/* Vehículo Principal */}
                     {pase.vehiculo_placa && (
-                        <div className="flex flex-col gap-0.5 px-3 py-1.5 bg-white/5 backdrop-blur-md rounded-xl border border-white/10 min-w-[110px] shadow-sm">
-                            <div className="flex items-center gap-1.5 text-[10px] font-black text-primary">
-                                <Car size={11} /> {pase.vehiculo_placa}
-                            </div>
-                            {(pase.vehiculo_marca || pase.vehiculo_modelo) && (
-                                <div className="text-[7px] text-text-muted truncate uppercase font-bold tracking-tighter opacity-70">
-                                    {pase.vehiculo_marca} {pase.vehiculo_modelo} {pase.vehiculo_color && `· ${pase.vehiculo_color}`}
-                                </div>
-                            )}
+                        <div className="flex items-center gap-1.5 px-2 py-1 bg-white/5 rounded-lg border border-white/5 text-[9px] font-black text-primary">
+                            <Car size={10} /> {pase.vehiculo_placa}
                         </div>
                     )}
-
-                    {/* Vehículos Adicionales */}
-                    {pase.vehiculos_adicionales?.map((v, idx) => (
-                        <div key={v.id || idx} className="flex flex-col gap-0.5 px-3 py-1.5 bg-white/5 backdrop-blur-sm rounded-xl border border-white/5 opacity-60 min-w-[110px] hover:opacity-100 transition-opacity">
-                            <div className="flex items-center gap-1.5 text-[10px] font-black text-text-secondary">
-                                <Car size={11} /> {v.placa}
-                            </div>
-                            {(v.marca || v.modelo) && (
-                                <div className="text-[7px] text-text-muted truncate uppercase font-bold tracking-tighter">
-                                    {v.marca} {v.modelo} {v.color && `· ${v.color}`}
-                                </div>
-                            )}
-                        </div>
-                    ))}
                     
                     {pase.zona_asignada_id && (
                         <span className="text-[8px] font-bold text-success flex items-center gap-0.5 ml-auto">
@@ -104,22 +81,24 @@ const PaseRow = ({ pase, zonas, onCompartir, onEmail }) => {
                     )}
 
                     <span className={cn(
-                        "text-[7px] font-black uppercase px-1.5 py-0.5 rounded-full",
+                        "text-[7px] font-black uppercase px-1.5 py-0.5 rounded-full ml-auto",
                         pase.activo ? 'bg-success/15 text-success' : 'bg-text-muted/10 text-text-muted/50'
                     )}>
                         {pase.activo ? 'ACTIVO' : 'INACTIVO'}
                     </span>
                 </div>
             </div>
-            <div className="flex items-center gap-1 shrink-0">
-                {pase.qr_url && (
-                    <button onClick={() => onCompartir(pase)}
-                        className="p-1.5 rounded-md hover:bg-primary/10 text-text-muted hover:text-primary transition-all" title="Compartir QR">
-                        <Share2 size={13} />
-                    </button>
-                )}
+            <div className="flex items-center gap-1 shrink-0 opacity-40 group-hover:opacity-100 transition-opacity">
+                <button onClick={() => onEditar(pase)}
+                    className="p-2 rounded-lg hover:bg-white/10 text-text-muted hover:text-text-main transition-all" title="Editar Pase">
+                    <Edit3 size={13} />
+                </button>
+                <button onClick={() => onCompartir(pase)}
+                    className="p-2 rounded-lg hover:bg-primary/10 text-text-muted hover:text-primary transition-all" title="Compartir QR">
+                    <Share2 size={13} />
+                </button>
                 <button onClick={() => onEmail(pase)}
-                    className="p-1.5 rounded-md hover:bg-sky-500/10 text-text-muted hover:text-sky-400 transition-all" title="Enviar por email">
+                    className="p-2 rounded-lg hover:bg-sky-500/10 text-text-muted hover:text-sky-400 transition-all" title="Enviar Email">
                     <Mail size={13} />
                 </button>
             </div>
@@ -127,38 +106,218 @@ const PaseRow = ({ pase, zonas, onCompartir, onEmail }) => {
     );
 };
 
-// ──── Evolución del LoteCard con drill-down ───────────────────────────────────
+// ──── Evolución del LoteCard: Formato Horizontal Táctico ──────────────────────
 
-const LoteCardV2 = ({ lote, zonas, tiposCustom, onRefresh }) => {
-    const [generando, setGenerando] = useState(false);
-    const [importando, setImportando] = useState(false);
-    const [expandido, setExpandido] = useState(false);
+const ModalEditarPase = ({ pase, isOpen, onClose, onRefresh }) => {
+    const [form, setForm] = useState({
+        nombre_portador: '', cedula_portador: '', email_portador: '', telefono_portador: '',
+        vehiculo_placa: '', vehiculo_marca: '', vehiculo_modelo: '', vehiculo_color: ''
+    });
+    const [loading, setLoading] = useState(false);
+
+    useEffect(() => {
+        if (pase) {
+            setForm({
+                nombre_portador: pase.nombre_portador || '',
+                cedula_portador: pase.cedula_portador || '',
+                email_portador: pase.email_portador || '',
+                telefono_portador: pase.telefono_portador || '',
+                vehiculo_placa: pase.vehiculo_placa || '',
+                vehiculo_marca: pase.vehiculo_marca || '',
+                vehiculo_modelo: pase.vehiculo_modelo || '',
+                vehiculo_color: pase.vehiculo_color || ''
+            });
+        }
+    }, [pase]);
+
+    const handleSave = async () => {
+        setLoading(true);
+        try {
+            await api.patch(`/pases/${pase.id}`, form);
+            toast.success('Pase actualizado con éxito');
+            onRefresh();
+            onClose();
+        } catch (e) {
+            toast.error('Fallo al actualizar pase');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    return (
+        <Modal isOpen={isOpen} onClose={onClose} title="EDITAR DATOS DEL PASE" size="lg">
+            <div className="space-y-6">
+                <section>
+                    <h4 className="text-[10px] font-black text-primary uppercase tracking-widest mb-3 flex items-center gap-2">
+                        <Users size={12} /> Información del Portador
+                    </h4>
+                    <div className="grid grid-cols-2 gap-4">
+                        <Input label="NOMBRE COMPLETO" value={form.nombre_portador} onChange={e => setForm({...form, nombre_portador: e.target.value})} placeholder="EJ: JUAN PÉREZ" />
+                        <Input label="CÉDULA / ID" value={form.cedula_portador} onChange={e => setForm({...form, cedula_portador: e.target.value})} placeholder="EJ: V-12345678" />
+                        <Input label="EMAIL" type="email" value={form.email_portador} onChange={e => setForm({...form, email_portador: e.target.value})} placeholder="ejemplo@email.com" />
+                        <Input label="TELÉFONO" value={form.telefono_portador} onChange={e => setForm({...form, telefono_portador: e.target.value})} placeholder="+58 412..." />
+                    </div>
+                </section>
+
+                <section>
+                    <h4 className="text-[10px] font-black text-warning uppercase tracking-widest mb-3 flex items-center gap-2">
+                        <Car size={12} /> Detalles del Vehículo
+                    </h4>
+                    <div className="grid grid-cols-2 gap-4">
+                        <Input label="PLACA" value={form.vehiculo_placa} onChange={e => setForm({...form, vehiculo_placa: e.target.value.toUpperCase()})} placeholder="ALFA-01" />
+                        <Input label="MARCA" value={form.vehiculo_marca} onChange={e => setForm({...form, vehiculo_marca: e.target.value.toUpperCase()})} placeholder="TOYOTA" />
+                        <Input label="MODELO" value={form.vehiculo_modelo} onChange={e => setForm({...form, vehiculo_modelo: e.target.value.toUpperCase()})} placeholder="FORTUNER" />
+                        <Input label="COLOR" value={form.vehiculo_color} onChange={e => setForm({...form, vehiculo_color: e.target.value.toUpperCase()})} placeholder="NEGRO" />
+                    </div>
+                </section>
+
+                <div className="flex justify-end gap-3 pt-4 border-t border-white/5">
+                    <Boton variant="ghost" onClick={onClose}>Cancelar</Boton>
+                    <Boton onClick={handleSave} isLoading={loading}>Guardar Cambios</Boton>
+                </div>
+            </div>
+        </Modal>
+    );
+};
+
+const ModalListaPases = ({ isOpen, onClose, lote, zonas }) => {
     const [pases, setPases] = useState([]);
-    const [cargandoPases, setCargandoPases] = useState(false);
-    const [progreso, setProgreso] = useState(0); // 0-100 porcentaje de QRs generados
+    const [loading, setLoading] = useState(true);
+    const [busqueda, setBusqueda] = useState('');
+    const [paseEdicion, setPaseEdicion] = useState(null);
 
-    const info = TIPO_INFO[lote.tipo_pase] || TIPO_INFO.simple;
-    const Icon = info.icon;
-
-    const cargarPases = useCallback(async () => {
-        if (!expandido) return;
-        setCargandoPases(true);
+    const fetchPases = useCallback(async () => {
+        if (!lote?.id) return;
+        setLoading(true);
         try {
             const res = await api.get(`/pases/lotes/${lote.id}/pases`);
             setPases(res.data);
         } catch (e) {
-            // demo
-            setPases([
-                { id: 'q1', nombre_portador: 'JUAN PÉREZ', cedula_portador: 'V-12345678', vehiculo_placa: 'ABC-123', zona_asignada_nombre: 'Zona VIP', puesto_asignado_codigo: 'A-04', activo: true },
-                { id: 'q2', nombre_portador: 'MARÍA GÓMEZ', cedula_portador: 'V-87654321', vehiculo_placa: 'XYZ-789', activo: true },
-                { id: 'q3', activo: true },
-            ]);
+            toast.error('Error al cargar pases individuales');
         } finally {
-            setCargandoPases(false);
+            setLoading(false);
         }
-    }, [expandido, lote.id]);
+    }, [lote?.id]);
 
-    useEffect(() => { cargarPases(); }, [cargarPases]);
+    useEffect(() => { if (isOpen) fetchPases(); }, [isOpen, fetchPases]);
+
+    const filtrados = useMemo(() => {
+        if (!busqueda) return pases;
+        const q = busqueda.toLowerCase();
+        return pases.filter(p => 
+            p.nombre_portador?.toLowerCase().includes(q) ||
+            p.cedula_portador?.toLowerCase().includes(q) ||
+            p.vehiculo_placa?.toLowerCase().includes(q) ||
+            p.serial_legible?.toLowerCase().includes(q)
+        );
+    }, [pases, busqueda]);
+
+    const handleCompartir = async (pase) => {
+        try {
+            const url = pase.qr_url || `${window.location.origin}/portal-evento/${lote.codigo_serial}`;
+            if (navigator.share && navigator.canShare && navigator.canShare({ url })) {
+                await navigator.share({ title: `PASE BAGFM: ${lote.nombre_evento}`, url });
+            } else {
+                await navigator.clipboard.writeText(url);
+                toast.success('Enlace copiado al portapapeles');
+            }
+        } catch (err) {
+            if (err.name !== 'AbortError') {
+                const url = pase.qr_url || `${window.location.origin}/portal-evento/${lote.codigo_serial}`;
+                await navigator.clipboard.writeText(url);
+                toast.success('Copiado al portapapeles (Share bloqueado)');
+            }
+        }
+    };
+
+    return (
+        <Modal isOpen={isOpen} onClose={onClose} title={`GESTIÓN DE PASES: ${lote?.nombre_evento}`} size="xl">
+            <div className="space-y-4">
+                <div className="flex items-center gap-3">
+                    <div className="relative flex-1">
+                        <Input 
+                            placeholder="BUSCAR POR NOMBRE, CÉDULA O PLACA..." 
+                            value={busqueda}
+                            onChange={e => setBusqueda(e.target.value)}
+                            className="pl-10"
+                        />
+                        <LayoutGrid size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted opacity-40" />
+                    </div>
+                </div>
+
+                <div className="max-h-[60vh] overflow-y-auto space-y-2 pr-2 scrollbar-thin">
+                    {loading ? (
+                        Array(5).fill(0).map((_, i) => (
+                            <div key={i} className="h-16 w-full animate-pulse bg-white/5 rounded-xl border border-white/5" />
+                        ))
+                    ) : filtrados.length > 0 ? (
+                        filtrados.map(pase => (
+                            <PaseRow 
+                                key={pase.id} 
+                                pase={pase} 
+                                zonas={zonas} 
+                                onCompartir={handleCompartir} 
+                                onEditar={setPaseEdicion}
+                                onEmail={(p) => toast('Envío de email en desarrollo táctico...', { icon: '📧' })}
+                            />
+                        ))
+                    ) : (
+                        <div className="text-center py-10 opacity-30 italic text-sm">
+                            No se encontraron pases que coincidan...
+                        </div>
+                    )}
+                </div>
+            </div>
+
+            <ModalEditarPase 
+                isOpen={!!paseEdicion} 
+                onClose={() => setPaseEdicion(null)} 
+                pase={paseEdicion} 
+                onRefresh={fetchPases}
+            />
+        </Modal>
+    );
+};
+
+const TacticalKPIs = ({ lotes }) => {
+    const stats = useMemo(() => {
+        const totalPases = lotes.reduce((acc, l) => acc + (l.cantidad_pases || 0), 0);
+        const usados = lotes.reduce((acc, l) => acc + (l.pases_usados || 0), 0);
+        const activos = lotes.filter(l => new Date(l.fecha_fin) >= new Date()).length;
+        const eficiencia = totalPases > 0 ? Math.round((usados / totalPases) * 100) : 0;
+        
+        return [
+            { label: 'Lotes Activos', val: activos, icon: PackageOpen, color: 'text-primary', sub: 'Paquetes vigentes' },
+            { label: 'Pases Totales', val: totalPases.toLocaleString(), icon: Ticket, color: 'text-warning', sub: 'Generados globalmente' },
+            { label: 'Accesos Usados', val: usados.toLocaleString(), icon: UserCheck, color: 'text-success', sub: 'Registros en alcabala' },
+            { label: 'Eficiencia', val: `${eficiencia}%`, icon: Shield, color: 'text-sky-400', sub: 'Uso de cupos' },
+        ];
+    }, [lotes]);
+
+    return (
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+            {stats.map((s, i) => (
+                <div key={i} className="p-4 bg-bg-card/40 border border-white/5 rounded-2xl flex items-center gap-4 group hover:bg-bg-high/80 transition-all border-b-2 border-b-transparent hover:border-b-primary/50">
+                    <div className={cn("w-12 h-12 rounded-2xl flex items-center justify-center bg-black/40 border border-white/5", s.color)}>
+                        <s.icon size={22} />
+                    </div>
+                    <div>
+                        <div className="text-2xl font-black text-text-main leading-tight">{s.val}</div>
+                        <div className="text-[10px] font-black uppercase text-text-muted tracking-widest">{s.label}</div>
+                        <div className="text-[8px] text-text-muted opacity-40 uppercase font-bold mt-0.5">{s.sub}</div>
+                    </div>
+                </div>
+            ))}
+        </div>
+    );
+};
+
+const LoteCardV2 = ({ lote, zonas, tiposCustom, onRefresh, onVerPases }) => {
+    const [generando, setGenerando] = useState(false);
+    const [progreso, setProgreso] = useState(0);
+
+    const info = TIPO_INFO[lote.tipo_pase] || TIPO_INFO.simple;
+    const Icon = info.icon;
 
     const handleGenerarZip = async () => {
         setGenerando(true);
@@ -166,8 +325,6 @@ const LoteCardV2 = ({ lote, zonas, tiposCustom, onRefresh }) => {
         try {
             await pasesService.generarZip(lote.id);
             toast.success('Generación de QRs iniciada');
-
-            // Polling: actualizar barra cada 1.5s contando QRs ya generados
             const total = lote.cantidad_pases || 1;
             const intervalo = setInterval(async () => {
                 try {
@@ -175,225 +332,85 @@ const LoteCardV2 = ({ lote, zonas, tiposCustom, onRefresh }) => {
                     const generados = Array.isArray(res.data) ? res.data.length : 0;
                     const pct = Math.min(100, Math.round((generados / total) * 100));
                     setProgreso(pct);
-
                     if (pct >= 100) {
                         clearInterval(intervalo);
                         setGenerando(false);
-                        onRefresh?.();
                     }
-                } catch {
-                    // Ignora errores de polling, reintenta en el próximo tick
-                }
-            }, 1500);
-
-            // Timeout de seguridad: detener polling después de 2 minutos
-            setTimeout(() => {
-                clearInterval(intervalo);
-                setGenerando(false);
-                onRefresh?.();
-            }, 120_000);
-
+                } catch { }
+            }, 1800);
+            setTimeout(() => { clearInterval(intervalo); setGenerando(false); }, 180_000);
         } catch (e) {
             toast.error('Error al generar QRs');
             setGenerando(false);
         }
     };
 
-    const handleImportExcel = async (e) => {
-        const file = e.target.files[0];
-        if (!file) return;
-        setImportando(true);
-        
-        const reader = new FileReader();
-        reader.onload = async (evt) => {
-            try {
-                const data = evt.target.result;
-                const workbook = XLSX.read(data, { type: 'binary' });
-                const sheetName = workbook.SheetNames[0];
-                const sheet = workbook.Sheets[sheetName];
-                const rows = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: "" });
-                
-                // Remover el header y las filas vacias
-                const dataRows = rows.slice(1);
-                const validRows = dataRows.filter(r => r.some(v => v));
-
-                if (validRows.length !== lote.cantidad_pases) {
-                    toast.error(`Error: El Excel tiene ${validRows.length} registros, el lote requiere exactamente ${lote.cantidad_pases}.`);
-                    setImportando(false);
-                    return;
-                }
-
-                await pasesService.importarExcelJson(lote.id, { pases: validRows });
-                toast.success('Datos importados con éxito');
-                onRefresh?.();
-            } catch (err) {
-                const errorData = err.response?.data?.detail;
-                if (Array.isArray(errorData)) {
-                    const msg = errorData.map(e => `${e.loc[e.loc.length-1]}: ${e.msg}`).join(', ');
-                    toast.error(`ERROR DE VALIDACIÓN: ${msg.toUpperCase()}`);
-                } else {
-                    toast.error(errorData || 'Error en la importación');
-                }
-            } finally {
-                setImportando(false);
-                e.target.value = '';
-            }
-        };
-
-        reader.onerror = () => {
-            toast.error('Error al leer el archivo');
-            setImportando(false);
-        };
-        
-        reader.readAsBinaryString(file);
-    };
-
-    const handleCompartir = async (pase) => {
-        const url = pase.qr_url || `${window.location.origin}/portal-evento/${lote.codigo_serial}`;
-        if (navigator.share) {
-            await navigator.share({ title: `Pase BAGFM — ${lote.nombre_evento}`, url });
-        } else {
-            await navigator.clipboard.writeText(url);
-            toast.success('Enlace copiado');
-        }
-    };
-
-    const handleEmail = (pase) => {
-        if (!pase.email) { toast.error('Este pase no tiene email registrado'); return; }
-        toast('Enviando invitación...', { icon: '📧' });
-        api.post(`/pases/${pase.id}/enviar-email`).then(() => toast.success('Email enviado')).catch(() => toast.error('Error al enviar email'));
-    };
-
     return (
-        <Card className="bg-bg-card/40 border-white/5 overflow-hidden group hover:bg-bg-high/80 transition-all">
-            <CardContent className="p-0">
-                <div className="p-5 space-y-4">
-                    {/* Header */}
-                    <div className="flex justify-between items-start">
-                        <div className="space-y-1 flex-1 min-w-0">
-                            <div className="flex items-center gap-1 flex-wrap">
-                                {badgeTipo(lote.tipo_pase)}
-                                {lote.tipo_acceso && lote.tipo_acceso !== 'general' && badgeTipo(lote.tipo_acceso, lote.tipo_custom_label)}
-                                <span className="text-[9px] font-mono text-text-muted opacity-40 ml-1">#{lote.codigo_serial.split('-').pop()}</span>
-                            </div>
-                            <h3 className="text-lg font-black text-text-main uppercase leading-tight truncate">{lote.nombre_evento}</h3>
-                        </div>
-                        <div className="p-2 bg-black/20 rounded-xl border border-white/5 shrink-0">
-                            <Icon className={info.color} size={18} />
-                        </div>
-                    </div>
-
-                    {/* Stats */}
-                    <div className="grid grid-cols-3 gap-2">
-                        <div className="bg-black/20 p-2 rounded-xl border border-white/5 text-center">
-                            <div className="text-lg font-black text-primary">{lote.cantidad_pases}</div>
-                            <div className="text-[7px] font-black uppercase text-text-muted/50">Pases</div>
-                        </div>
-                        <div className="bg-black/20 p-2 rounded-xl border border-white/5 text-center">
-                            <div className="text-lg font-black text-success">{lote.pases_usados ?? '—'}</div>
-                            <div className="text-[7px] font-black uppercase text-text-muted/50">Usados</div>
-                        </div>
-                        <div className="bg-black/20 p-2 rounded-xl border border-white/5 text-center">
-                            <div className="text-[10px] font-black text-text-main">{new Date(lote.fecha_fin).toLocaleDateString('es-VE', { day: '2-digit', month: 'short' })}</div>
-                            <div className="text-[7px] font-black uppercase text-text-muted/50">Vence</div>
-                        </div>
-                    </div>
-
-                    {/* Zona/Puesto asignado (si aplica) */}
-                    {lote.zona_nombre && (
-                        <div className="flex items-center gap-2 p-2 bg-success/5 border border-success/15 rounded-xl">
-                            <ParkingSquare size={13} className="text-success shrink-0" />
-                            <span className="text-[9px] font-black text-success uppercase">
-                                {lote.zona_nombre}
-                                {lote.puesto_asignado_codigo && ` · Puesto ${lote.puesto_asignado_codigo}`}
-                            </span>
-                        </div>
-                    )}
-
-                    {/* Estado del paquete + barra de progreso */}
-                    <div className="space-y-1.5">
-                        <div className="flex justify-between items-center text-[9px] font-black uppercase tracking-widest px-0.5">
-                            <span className="text-text-muted">Estado</span>
-                            <span className={lote.zip_generado ? 'text-success' : generando ? 'text-primary' : 'text-warning'}>
-                                {lote.zip_generado ? 'DISPONIBLE' : generando ? `GENERANDO ${progreso}%` : 'PENDIENTE'}
-                            </span>
-                        </div>
-                        <div className="h-1.5 w-full bg-white/5 rounded-full overflow-hidden">
-                            <div
-                                className={cn(
-                                    "h-full rounded-full transition-all",
-                                    lote.zip_generado
-                                        ? 'bg-success duration-700'
-                                        : generando
-                                        ? 'bg-primary duration-500'
-                                        : 'bg-white/10 duration-300'
-                                )}
-                                style={{ width: lote.zip_generado ? '100%' : generando ? `${progreso}%` : '0%' }}
-                            />
-                        </div>
-                    </div>
-
-                    {/* Drill-down toggle */}
-                    <button onClick={() => setExpandido(!expandido)}
-                        className="w-full flex items-center justify-between p-2.5 rounded-xl bg-white/3 border border-white/5 hover:bg-white/8 transition-all">
-                        <span className="text-[9px] font-black text-text-muted uppercase tracking-widest flex items-center gap-2">
-                            <QrCode size={12} className="text-primary" />
-                            Ver pases individuales ({lote.cantidad_pases})
-                        </span>
-                        <ChevronRight size={14} className={cn("text-text-muted transition-transform", expandido && "rotate-90")} />
-                    </button>
-
-                    {/* Pases individuales */}
-                    {expandido && (
-                        <div className="space-y-2 animate-in slide-in-from-top-2 duration-200">
-                            {cargandoPases ? (
-                                Array(3).fill(0).map((_, i) => (
-                                    <div key={i} className="h-14 rounded-xl bg-white/5 animate-pulse" />
-                                ))
-                            ) : pases.length > 0 ? (
-                                <div className="max-h-64 overflow-y-auto no-scrollbar space-y-1.5">
-                                    {pases.map(p => (
-                                        <PaseRow key={p.id} pase={p} zonas={zonas} onCompartir={handleCompartir} onEmail={handleEmail} />
-                                    ))}
-                                </div>
-                            ) : (
-                                <p className="text-center text-[9px] text-text-muted/30 uppercase tracking-widest py-3">Sin pases registrados</p>
-                            )}
-                        </div>
-                    )}
+        <div className="flex flex-col md:flex-row items-center gap-4 p-4 bg-bg-card/40 border border-white/5 rounded-2xl group hover:border-white/10 hover:bg-bg-high/60 transition-all">
+            <div className="flex flex-row md:flex-col items-center gap-3 w-full md:w-24 shrink-0 md:border-r border-white/5 md:pr-4">
+                <div className={cn("p-3 rounded-2xl border border-white/5 shadow-inner", info.bg)}>
+                    <Icon className={info.color} size={22} />
                 </div>
-
-                {/* Footer Actions */}
-                <div className="grid grid-cols-3 border-t border-white/5 bg-black/10">
-                    {lote.tipo_pase === 'identificado' && !lote.zip_generado ? (
-                        <label className="flex items-center justify-center gap-1.5 py-3 text-[9px] font-black uppercase text-text-muted hover:bg-white/5 cursor-pointer transition-all border-r border-white/5">
-                            <input type="file" className="hidden" accept=".xlsx" onChange={handleImportExcel} disabled={importando} />
-                            {importando ? <RefreshCw className="animate-spin" size={13} /> : <Upload size={13} />}
-                            Importar
-                        </label>
-                    ) : (
-                        <button onClick={handleGenerarZip} disabled={generando || lote.zip_generado}
-                            className="flex items-center justify-center gap-1.5 py-3 text-[9px] font-black uppercase text-text-muted hover:bg-primary/10 hover:text-primary transition-all border-r border-white/5 disabled:opacity-30">
-                            {generando ? <RefreshCw className="animate-spin" size={13} /> : (lote.zip_generado ? <CheckCircle2 className="text-success" size={13} /> : <Ticket size={13} />)}
-                            {lote.zip_generado ? 'QRs OK' : 'Generar'}
-                        </button>
-                    )}
-
-                    <button onClick={() => lote.zip_url && window.open(lote.zip_url, '_blank')} disabled={!lote.zip_generado}
-                        className={cn("flex items-center justify-center gap-1.5 py-3 text-[9px] font-black uppercase transition-all border-r border-white/5",
-                            lote.zip_generado ? "text-primary hover:bg-primary/10" : "text-text-muted/30 cursor-not-allowed")}>
-                        <Download size={13} /> ZIP
-                    </button>
-
-                    <button onClick={() => handleCompartir({ qr_url: `${window.location.origin}/portal-evento/${lote.codigo_serial}` })}
-                        className="flex items-center justify-center gap-1.5 py-3 text-[9px] font-black uppercase text-text-muted hover:bg-sky-500/10 hover:text-sky-400 transition-all">
-                        <Share2 size={13} /> Link
-                    </button>
+                <div className="flex flex-col gap-1 items-start md:items-center">
+                    {badgeTipo(lote.tipo_pase)}
+                    <span className="text-[10px] font-mono text-text-muted opacity-40 font-bold">#{lote.codigo_serial.split('-').pop()}</span>
                 </div>
-            </CardContent>
-        </Card>
+            </div>
+
+            <div className="flex-1 min-w-0 space-y-1 w-full text-left">
+                <div className="flex items-center gap-2 flex-wrap">
+                    <h3 className="text-base font-black text-text-main uppercase leading-tight truncate">{lote.nombre_evento}</h3>
+                    {lote.tipo_acceso && lote.tipo_acceso !== 'general' && badgeTipo(lote.tipo_acceso, lote.tipo_custom_label)}
+                </div>
+                <div className="flex items-center gap-3 text-text-muted text-[10px] font-bold uppercase tracking-wider">
+                    <span className="flex items-center gap-1"><Calendar size={12} className="opacity-40" /> {new Date(lote.fecha_inicio).toLocaleDateString()}</span>
+                    <span className="opacity-20">|</span>
+                    <span className="flex items-center gap-1"><Clock size={12} className="opacity-40" /> Vence {new Date(lote.fecha_fin).toLocaleDateString()}</span>
+                </div>
+            </div>
+
+            <div className="flex items-center gap-4 px-4 border-l border-white/5 shrink-0 hidden md:flex">
+                <div className="text-center">
+                    <div className="text-xl font-black text-white">{lote.cantidad_pases}</div>
+                    <div className="text-[8px] font-black text-text-muted uppercase">Pases</div>
+                </div>
+                <div className="text-center">
+                    <div className="text-xl font-black text-success">{lote.pases_usados ?? 0}</div>
+                    <div className="text-[8px] font-black text-text-muted uppercase">Usados</div>
+                </div>
+            </div>
+
+            <div className="w-full md:w-36 shrink-0 space-y-2 md:border-l border-white/5 md:pl-4">
+                <div className="flex justify-between items-center text-[9px] font-black tracking-widest">
+                    <span className="text-text-muted uppercase">Estado</span>
+                    <span className={lote.zip_generado || progreso >= 100 ? 'text-success' : generando ? 'text-primary' : 'text-warning'}>
+                        {lote.zip_generado || progreso >= 100 ? 'LISTO' : generando ? `${progreso}%` : 'PENDIENTE'}
+                    </span>
+                </div>
+                <div className="h-1.5 w-full bg-white/5 rounded-full overflow-hidden">
+                    <div className={cn("h-full rounded-full transition-all duration-500", lote.zip_generado || progreso >= 100 ? 'bg-success' : generando ? 'bg-primary' : 'bg-white/10')} style={{ width: lote.zip_generado || progreso >= 100 ? '100%' : generando ? `${progreso}%` : '0%' }} />
+                </div>
+            </div>
+
+            <div className="flex items-center gap-2 w-full md:w-auto shrink-0 md:pl-2">
+                {lote.zip_generado || progreso >= 100 ? (
+                    <a href={lote.zip_url} download className="h-9 px-3 bg-success/15 hover:bg-success/25 border border-success/20 rounded-xl flex items-center gap-2 transition-all">
+                        <Download size={14} className="text-success" />
+                        <span className="text-[10px] font-black text-success uppercase">ZIP</span>
+                    </a>
+                ) : (
+                    <Boton size="sm" onClick={handleGenerarZip} isLoading={generando} disabled={generando} className="flex-1 md:flex-none">
+                        <QrCode size={14} /> GENERAR
+                    </Boton>
+                )}
+                <Boton variant="ghost" size="sm" onClick={() => onVerPases(lote)} className="h-9 px-3 bg-primary/10 border border-primary/20 rounded-xl flex items-center gap-2 text-primary hover:bg-primary/20">
+                    <Users size={14} /> <span className="text-[10px] font-black uppercase">GESTIONAR</span>
+                </Boton>
+            </div>
+        </div>
     );
 };
+
 
 // ──── Modal: Crear lote con asignación zona/puesto + multi-vehículo ─────────
 
@@ -815,6 +832,7 @@ export default function EventosV2() {
     const [loading, setLoading] = useState(true);
     const [showModal, setShowModal] = useState(false);
     const [showSolicitudModal, setShowSolicitudModal] = useState(false);
+    const [loteDetalle, setLoteDetalle] = useState(null); // Nuevo estado para drill-down
     const [formSolicitud, setFormSolicitud] = useState({
         nombre_evento: '', fecha_evento: '', cantidad_solicitada: 10, motivo: '', tipo_pase: 'simple', entidad_id: user?.entidad_id
     });
@@ -902,6 +920,9 @@ export default function EventosV2() {
                 </div>
             </header>
 
+            {/* Panel de Indicadores KPI */}
+            {!loading && lotes.length > 0 && <TacticalKPIs lotes={lotes} />}
+
             {/* ERROR NO PARKING */}
             {zonas.length === 0 && !loading && (
                 <div className="bg-warning/10 border border-warning/30 rounded-xl p-4 flex gap-3 text-warning">
@@ -960,9 +981,9 @@ export default function EventosV2() {
                         {Array(3).fill(0).map((_, i) => <div key={i} className="h-52 rounded-2xl bg-white/5 animate-pulse border border-white/5" />)}
                     </div>
                 ) : lotes.length > 0 ? (
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <div className="flex flex-col gap-3">
                         {lotes.map(lote => (
-                            <LoteCardV2 key={lote.id} lote={lote} zonas={zonas} tiposCustom={tiposCustom} onRefresh={fetchData} />
+                            <LoteCardV2 key={lote.id} lote={lote} zonas={zonas} tiposCustom={tiposCustom} onRefresh={fetchData} onVerPases={setLoteDetalle} />
                         ))}
                     </div>
                 ) : (
@@ -996,6 +1017,14 @@ export default function EventosV2() {
 
             {/* Modal crear lote v2 */}
             <ModalNuevoLote isOpen={showModal} onClose={() => setShowModal(false)} zonas={zonas} tiposCustom={tiposCustom} onCreated={fetchData} />
+
+            {/* Modal Gestión de Pases Individuales */}
+            <ModalListaPases 
+                isOpen={!!loteDetalle} 
+                onClose={() => setLoteDetalle(null)} 
+                lote={loteDetalle} 
+                zonas={zonas} 
+            />
 
             {/* Modal solicitud evento */}
             <Modal isOpen={showSolicitudModal} onClose={() => setShowSolicitudModal(false)} title="NUEVA SOLICITUD FL-08">
