@@ -43,6 +43,46 @@ async def listar_lotes(
     res = await db.execute(query)
     return res.scalars().all()
 
+@router.get("/lotes/disponibilidad")
+async def obtener_disponibilidad_zona(
+    zona_id: UUID,
+    inicio: str,
+    fin: str,
+    db: AsyncSession = Depends(obtener_db),
+    usuario_actual: Usuario = Depends(require_rol(ADMIN_ROLES))
+):
+    """Calcula disponibilidad proyectada para una zona en un periodo."""
+    from datetime import datetime
+    try:
+        ini_dt = datetime.strptime(inicio, '%Y-%m-%d').date()
+        fin_dt = datetime.strptime(fin, '%Y-%m-%d').date()
+    except:
+        raise HTTPException(status_code=400, detail="Formato de fecha inválido (YYYY-MM-DD)")
+        
+    ocupacion = await pase_service.calcular_ocupacion_proyectada(db, zona_id, ini_dt, fin_dt)
+    return {"ocupacion_proyectada": ocupacion}
+
+@router.get("/lotes/sugerir-distribucion")
+async def sugerir_distribucion(
+    cantidad: int,
+    inicio: str,
+    fin: str,
+    db: AsyncSession = Depends(obtener_db),
+    usuario_actual: Usuario = Depends(require_rol(ADMIN_ROLES))
+):
+    """Sugiere cómo repartir pases entre las zonas de la entidad."""
+    from datetime import datetime
+    if not usuario_actual.entidad_id:
+        raise HTTPException(status_code=400, detail="Usuario sin entidad asociada")
+        
+    try:
+        ini_dt = datetime.strptime(inicio, '%Y-%m-%d').date()
+        fin_dt = datetime.strptime(fin, '%Y-%m-%d').date()
+    except:
+        raise HTTPException(status_code=400, detail="Formato de fecha inválido (YYYY-MM-DD)")
+
+    return await pase_service.sugerir_distribucion_entidad(db, usuario_actual.entidad_id, cantidad, ini_dt, fin_dt)
+
 @router.get("/lotes/{lote_id}", response_model=LotePaseMasivoSalida)
 async def obtener_lote(
     lote_id: UUID,

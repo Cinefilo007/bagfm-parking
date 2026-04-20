@@ -466,6 +466,11 @@ const ModalNuevoLote = ({ isOpen, onClose, zonas, tiposCustom, onCreated }) => {
     const [capacidadExcedida, setCapacidadExcedida] = useState(false);
     const [warningIgnorada, setWarningIgnorada] = useState(false);
     const [excelPases, setExcelPases] = useState(null);
+    
+    // Estados para disponibilidad dinámica por traslape
+    const [ocupacionProyectada, setOcupacionProyectada] = useState(0);
+    const [sugerencia, setSugerencia] = useState(null);
+    const [cargandoDisp, setCargandoDisp] = useState(false);
 
     // Opciones de acceso: 'Público General' fijo + tipos custom de la entidad
     const OPCION_GENERAL = { id: 'general', label: 'Público General', icon: Users, color: null };
@@ -488,27 +493,52 @@ const ModalNuevoLote = ({ isOpen, onClose, zonas, tiposCustom, onCreated }) => {
     }, [zonas]);
 
     useEffect(() => {
-        if (!form.zona_asignada_id) {
-            // Sin zona: el sistema asigna automáticamente, sin alerta de bloqueo.
-            setMaxPasesZona(totalCapacidadEntidad || 9999);
-            setCapacidadExcedida(false);
-            return;
-        }
+        const fetchDisponibilidad = async () => {
+            if (!form.zona_asignada_id || !form.fecha_inicio || !form.fecha_fin) {
+                setCapacidadExcedida(false);
+                setSugerencia(null);
+                return;
+            }
 
-        const asig = zonas.find(z => z.zona_id === form.zona_asignada_id);
-        if (!asig) return;
+            setCargandoDisp(true);
+            try {
+                const res = await pasesService.obtenerDisponibilidad(
+                    form.zona_asignada_id,
+                    form.fecha_inicio,
+                    form.fecha_fin
+                );
+                
+                setOcupacionProyectada(res.ocupacion_proyectada);
+                const asig = zonas.find(z => z.zona_id === form.zona_asignada_id);
+                const cupoTotal = asig?.cupo_asignado || 0;
+                const disponibleReal = Math.max(0, cupoTotal - res.ocupacion_proyectada);
+                
+                // Actualizar límite visual
+                setMaxPasesZona(disponibleReal);
 
-        const distribucion = asig.distribucion_cupos || {};
-        const cupoTotal = parseInt(asig.cupo_asignado) || 0;
-        const cupoBase  = parseInt(asig.cupo_reservado_base) || 0;
-        const cuposCat  = Object.values(distribucion).reduce((acc, v) => acc + (parseInt(v) || 0), 0);
-        // Cupos libres = Total - Reservados operativos - Todos los categorizados
-        const cuposLibres = Math.max(0, cupoTotal - cupoBase - cuposCat);
+                if (form.cantidad_pases > disponibleReal && !warningIgnorada) {
+                    setCapacidadExcedida(true);
+                    // Consultar sugerencia de distribución
+                    const sug = await pasesService.sugerirDistribucion(
+                        form.cantidad_pases,
+                        form.fecha_inicio,
+                        form.fecha_fin
+                    );
+                    setSugerencia(sug);
+                } else {
+                    setCapacidadExcedida(false);
+                    setSugerencia(null);
+                }
+            } catch (error) {
+                console.error("Error validando disponibilidad proyectada:", error);
+            } finally {
+                setCargandoDisp(false);
+            }
+        };
 
-        // Todos los tipos custom usan el remanente libre de la zona
-        setMaxPasesZona(cuposLibres);
-        setCapacidadExcedida(cuposLibres > 0 && form.cantidad_pases > cuposLibres && !warningIgnorada);
-    }, [form.zona_asignada_id, zonas, form.cantidad_pases, warningIgnorada, totalCapacidadEntidad]);
+        const timer = setTimeout(fetchDisponibilidad, 500); // Debounce táctico
+        return () => clearTimeout(timer);
+    }, [form.zona_asignada_id, form.fecha_inicio, form.fecha_fin, form.cantidad_pases, zonas, warningIgnorada]);
 
     const handleAjustarCapacidad = () => {
         setForm(prev => ({ ...prev, cantidad_pases: maxPasesZona }));
@@ -730,22 +760,47 @@ const ModalNuevoLote = ({ isOpen, onClose, zonas, tiposCustom, onCreated }) => {
 
                         {/* Alerta de Capacidad */}
                         {capacidadExcedida && (
-                            <div className="bg-warning/10 border border-warning/30 rounded-2xl p-4 space-y-3 animate-in zoom-in-95">
+                            <div className="bg-warning/10 border border-warning/30 rounded-2xl p-4 space-y-4 animate-in zoom-in-95">
                                 <div className="flex gap-3">
                                     <AlertTriangle className="text-warning shrink-0" size={18} />
-                                    <div>
-                                        <p className="text-[10px] font-black text-warning uppercase tracking-widest">Capacidad Excedida</p>
+                                    <div className="flex-1">
+                                        <p className="text-[10px] font-black text-warning uppercase tracking-widest">Capacidad Excedida por Traslape</p>
                                         <p className="text-[9px] text-text-muted font-bold mt-1 leading-relaxed">
-                                            Solicitaste <span className="text-white">{form.cantidad_pases}</span> pases, pero solo hay <span className="text-white">{maxPasesZona}</span> cupos libres en esta zona.
+                                            Solicitaste <span className="text-white">{form.cantidad_pases}</span> pases, pero en este periodo (<span className="text-white">{form.fecha_inicio} al {form.fecha_fin}</span>) solo hay <span className="text-white">{maxPasesZona}</span> cupos libres reales.
                                         </p>
                                     </div>
                                 </div>
+
+                                {sugerencia?.distribucion?.length > 0 && (
+                                    <div className="bg-black/20 rounded-xl p-3 border border-white/5 space-y-2">
+                                        <p className="text-[8px] font-black text-primary uppercase tracking-widest flex items-center gap-2">
+                                            <ParkingSquare size={10} /> Sugerencia de Distribución Equitativa:
+                                        </p>
+                                        <div className="space-y-1.5">
+                                            {sugerencia.distribucion.map((d, i) => (
+                                                <div key={i} className="flex justify-between items-center bg-white/5 p-2 rounded-lg border border-white/5">
+                                                    <span className="text-[9px] font-black text-text-main uppercase">{d.zona_nombre}</span>
+                                                    <div className="flex items-center gap-2">
+                                                        <span className="text-[8px] text-text-muted">DIPONIBLE: {d.cupo_libre}</span>
+                                                        <span className="text-[10px] font-black text-primary">REPARTIR: {d.sugerencia}</span>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                            {sugerencia.cantidad_restante > 0 && (
+                                                <p className="text-[8px] text-red-400 font-bold uppercase pt-1 italic">
+                                                    * Faltarían {sugerencia.cantidad_restante} pases por ubicar.
+                                                </p>
+                                            )}
+                                        </div>
+                                    </div>
+                                )}
+
                                 <div className="flex gap-2">
                                     <button 
                                         onClick={handleAjustarCapacidad}
                                         className="flex-1 bg-warning/20 hover:bg-warning/30 text-warning text-[8px] font-black uppercase py-2 rounded-lg transition-all"
                                     >
-                                        Ajustar al Máximo
+                                        Ajustar al Máximo ({maxPasesZona})
                                     </button>
                                     <button 
                                         onClick={handleIgnorarWarning}

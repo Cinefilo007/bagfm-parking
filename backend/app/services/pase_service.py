@@ -74,34 +74,47 @@ class PaseService:
             from app.models.asignacion_zona import AsignacionZona
             from sqlalchemy import and_
             
-            # Obtener todas las asignaciones de la entidad para calcular capacidad total
-            query_asigs = select(AsignacionZona).where(
-                and_(AsignacionZona.entidad_id == entidad.id, AsignacionZona.activa == True)
-            )
-            res_asigs = await db.execute(query_asigs)
-            asignaciones = res_asigs.scalars().all()
-            
-            capacidad_total_entidad = sum(asig.cupo_asignado for asig in asignaciones)
-            
-            # 2a. Bloqueo si supera la capacidad TOTAL de la entidad en todas sus zonas
-            if datos['cantidad_pases'] > capacidad_total_entidad:
-                raise ValueError(f"CAPACIDAD AGOTADA: La entidad solo tiene {capacidad_total_entidad} puestos totales asignados.")
+            # 2a. Parsear fechas para validación temporal
+            try:
+                # Si vienen como string del API
+                fecha_ini = datetime.strptime(datos['fecha_inicio'], '%Y-%m-%d').date() if isinstance(datos['fecha_inicio'], str) else datos['fecha_inicio']
+                fecha_fin = datetime.strptime(datos['fecha_fin'], '%Y-%m-%d').date() if isinstance(datos['fecha_fin'], str) else datos['fecha_fin']
+            except Exception:
+                fecha_ini = date.today()
+                fecha_fin = date.today()
 
             # 2b. Validación por Zona Específica (si se seleccionó una)
             if zona_id:
-                asig_especifica = next((a for a in asignaciones if str(a.zona_id) == str(zona_id)), None)
+                # Obtener la asignación específica para esta zona
+                query_asig = select(AsignacionZona).where(
+                    and_(
+                        AsignacionZona.entidad_id == entidad.id, 
+                        AsignacionZona.zona_id == zona_id,
+                        AsignacionZona.activa == True
+                    )
+                )
+                asig_especifica = (await db.execute(query_asig)).scalar()
+                
                 if asig_especifica:
-                    distribucion = asig_especifica.distribucion_cupos or {}
+                    # Cálculo de Ocupación Proyectada (Traslape de fechas)
+                    ocupacion_actual = await self.calcular_ocupacion_proyectada(db, zona_id, fecha_ini, fecha_fin)
                     cupo_total = asig_especifica.cupo_asignado
-                    cupo_base  = asig_especifica.cupo_reservado_base or 0
-                    cupos_cat  = sum(int(v) for v in distribucion.values() if v)
-                    # Todos los tipos custom usan el remanente libre de la zona
-                    cupo_disponible = max(0, cupo_total - cupo_base - cupos_cat)
+                    cupo_disponible = max(0, cupo_total - ocupacion_actual)
                     
-                    # Si no es distribución libre (ignorar warning en frontend), somos estrictos
+                    # Si no es distribución libre (advertencia ignorada en frontend), somos estrictos
                     dist_auto = datos.get('distribucion_automatica') or datos.get('distribucion_automatic', False)
                     if not dist_auto and datos['cantidad_pases'] > cupo_disponible:
-                         raise ValueError(f"CUPO INSUFICIENTE en esta zona: Disponible {cupo_disponible}, Requerido {datos['cantidad_pases']}.")
+                         raise ValueError(f"CAPACIDAD AGOTADA para estas fechas: Libre {cupo_disponible}, Requerido {datos['cantidad_pases']}. Sugerencia: Distribuir en otras zonas.")
+            else:
+                # Si no hay zona_id, validamos contra la capacidad TOTAL de la entidad (legacy check)
+                query_asigs = select(AsignacionZona).where(
+                    and_(AsignacionZona.entidad_id == entidad.id, AsignacionZona.activa == True)
+                )
+                asignaciones = (await db.execute(query_asigs)).scalars().all()
+                capacidad_total_entidad = sum(asig.cupo_asignado for asig in asignaciones)
+                
+                if datos['cantidad_pases'] > capacidad_total_entidad:
+                    raise ValueError(f"CAPACIDAD TOTAL SUPERADA: La entidad solo tiene {capacidad_total_entidad} puestos totales.")
 
         # 3. Generar serial y persistir lote
         serial_lote = await self._generar_serial_lote(db)
@@ -143,20 +156,74 @@ class PaseService:
         return nuevo_lote
 
     async def _generar_serial_lote(self, db: AsyncSession) -> str:
-        """Genera serial corto tipo B26403 (B+YY+M+LOTE)"""
+        """Genera serial corto tipo B26401 (B+YY+M+CONSECUTIVO) verificado contra DB."""
         ahora = datetime.now()
-        # Meses en un solo caracter: 1-9, A, B, C
         meses_id = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "A", "B", "C"]
         prefijo = f"B{str(ahora.year)[2:]}{meses_id[ahora.month-1]}"
         
-        # Contar lotes del mes
         inicio_mes = ahora.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
-        query = select(func.count(LotePaseMasivo.id)).where(LotePaseMasivo.created_at >= inicio_mes)
-        res = await db.execute(query)
-        count = res.scalar() or 0
+        query_count = select(func.count(LotePaseMasivo.id)).where(LotePaseMasivo.created_at >= inicio_mes)
+        count = (await db.execute(query_count)).scalar() or 0
         
-        # Serial del lote: B264(mes)03(consecutivo)
-        return f"{prefijo}{str(count + 1).zfill(2)}"
+        tentativo = count + 1
+        while True:
+            serial = f"{prefijo}{str(tentativo).zfill(2)}"
+            # Verificación física para evitar colisiones por borrados previos
+            q_exists = select(LotePaseMasivo.id).where(LotePaseMasivo.codigo_serial == serial)
+            if not (await db.execute(q_exists)).first():
+                return serial
+            tentativo += 1
+
+    async def calcular_ocupacion_proyectada(self, db: AsyncSession, zona_id: uuid.UUID, inicio: date, fin: date) -> int:
+        """Suma pases de lotes que se traslapan con el periodo solicitado."""
+        from sqlalchemy import and_
+        query = select(func.sum(LotePaseMasivo.cantidad_pases)).where(
+            and_(
+                LotePaseMasivo.zona_estacionamiento_id == zona_id,
+                LotePaseMasivo.fecha_inicio <= fin,
+                LotePaseMasivo.fecha_fin >= inicio
+            )
+        )
+        res = await db.execute(query)
+        return int(res.scalar() or 0)
+
+    async def sugerir_distribucion_entidad(self, db: AsyncSession, entidad_id: uuid.UUID, cantidad: int, inicio: date, fin: date):
+        """Busca todas las asignaciones de la entidad y reparte la cantidad según disponibilidad temporal."""
+        from app.models.asignacion_zona import AsignacionZona
+        
+        # 1. Obtener todas las asignaciones activas
+        query = select(AsignacionZona).where(
+            AsignacionZona.entidad_id == entidad_id,
+            AsignacionZona.activa == True
+        )
+        res_asigs = await db.execute(query)
+        asigs = res_asigs.scalars().all()
+        
+        resultados = []
+        restante = cantidad
+        
+        # 2. Analizar disponibilidad real por zona considerando traslapes
+        for asig in asigs:
+            if restante <= 0: break
+            
+            ocupacion = await self.calcular_ocupacion_proyectada(db, asig.zona_id, inicio, fin)
+            disponible = max(0, asig.cupo_asignado - ocupacion)
+            
+            if disponible > 0:
+                tomar = min(disponible, restante)
+                resultados.append({
+                    "zona_id": asig.zona_id,
+                    "zona_nombre": asig.zona_nombre,
+                    "cupo_libre": disponible,
+                    "sugerencia": tomar
+                })
+                restante -= tomar
+        
+        return {
+            "distribucion": resultados,
+            "cantidad_restante": restante,
+            "completo": restante == 0
+        }
 
     async def _generar_pases_simples(self, db: AsyncSession, lote: LotePaseMasivo, creado_por_id: uuid.UUID, extras: dict):
         """Genera N pases simples para el lote."""
@@ -192,17 +259,29 @@ class PaseService:
         for i in range(1, lote.cantidad_pases + 1):
             serial_qr = f"{lote.codigo_serial}{str(i).zfill(4)}"
             
-            # Crear usuario temporal (SOCIO con contraseña = serial)
-            nuevo_usuario = Usuario(
-                cedula=serial_qr,
-                nombre=f"INVITADO {i}",
-                apellido=lote.nombre_evento,
-                rol=RolTipo.SOCIO,
-                password_hash=hashear_password(serial_qr),
-                debe_cambiar_password=False,
-                activo=True
-            )
-            db.add(nuevo_usuario)
+            # Verificar si el usuario ya existe (por si es un huérfano de intento fallido o colisión)
+            query_exist = select(Usuario).where(Usuario.cedula == serial_qr)
+            res_exist = await db.execute(query_exist)
+            nuevo_usuario = res_exist.scalar()
+            
+            if not nuevo_usuario:
+                # Crear usuario temporal (SOCIO con contraseña = serial)
+                nuevo_usuario = Usuario(
+                    cedula=serial_qr,
+                    nombre=f"INVITADO {i}",
+                    apellido=lote.nombre_evento,
+                    rol=RolTipo.SOCIO,
+                    password_hash=hashear_password(serial_qr),
+                    debe_cambiar_password=False,
+                    activo=True
+                )
+                db.add(nuevo_usuario)
+            else:
+                # Si existe, lo reactivamos
+                nuevo_usuario.activo = True
+                nuevo_usuario.nombre = f"INVITADO {i}"
+                nuevo_usuario.apellido = lote.nombre_evento
+            
             await db.flush()
             
             token = crear_token_evento(serial_qr, expira_at)

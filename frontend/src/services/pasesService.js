@@ -86,6 +86,20 @@ export const pasesService = {
   async eliminarLote(id) {
     const res = await api.delete(`/pases/lotes/${id}`);
     return res.data;
+  },
+
+  async obtenerDisponibilidad(zonaId, inicio, fin) {
+    const res = await api.get('/pases/lotes/disponibilidad', {
+      params: { zona_id: zonaId, inicio, fin }
+    });
+    return res.data;
+  },
+
+  async sugerirDistribucion(cantidad, inicio, fin) {
+    const res = await api.get('/pases/lotes/sugerir-distribucion', {
+      params: { cantidad, inicio, fin }
+    });
+    return res.data;
   }
 };
 
