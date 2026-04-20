@@ -135,6 +135,7 @@ const LoteCardV2 = ({ lote, zonas, tiposCustom, onRefresh }) => {
     const [expandido, setExpandido] = useState(false);
     const [pases, setPases] = useState([]);
     const [cargandoPases, setCargandoPases] = useState(false);
+    const [progreso, setProgreso] = useState(0); // 0-100 porcentaje de QRs generados
 
     const info = TIPO_INFO[lote.tipo_pase] || TIPO_INFO.simple;
     const Icon = info.icon;
@@ -161,13 +162,39 @@ const LoteCardV2 = ({ lote, zonas, tiposCustom, onRefresh }) => {
 
     const handleGenerarZip = async () => {
         setGenerando(true);
+        setProgreso(0);
         try {
             await pasesService.generarZip(lote.id);
             toast.success('Generación de QRs iniciada');
-            onRefresh?.();
+
+            // Polling: actualizar barra cada 1.5s contando QRs ya generados
+            const total = lote.cantidad_pases || 1;
+            const intervalo = setInterval(async () => {
+                try {
+                    const res = await api.get(`/pases/lotes/${lote.id}/pases`);
+                    const generados = Array.isArray(res.data) ? res.data.length : 0;
+                    const pct = Math.min(100, Math.round((generados / total) * 100));
+                    setProgreso(pct);
+
+                    if (pct >= 100) {
+                        clearInterval(intervalo);
+                        setGenerando(false);
+                        onRefresh?.();
+                    }
+                } catch {
+                    // Ignora errores de polling, reintenta en el próximo tick
+                }
+            }, 1500);
+
+            // Timeout de seguridad: detener polling después de 2 minutos
+            setTimeout(() => {
+                clearInterval(intervalo);
+                setGenerando(false);
+                onRefresh?.();
+            }, 120_000);
+
         } catch (e) {
             toast.error('Error al generar QRs');
-        } finally {
             setGenerando(false);
         }
     };
@@ -283,16 +310,26 @@ const LoteCardV2 = ({ lote, zonas, tiposCustom, onRefresh }) => {
                         </div>
                     )}
 
-                    {/* Estado del paquete */}
+                    {/* Estado del paquete + barra de progreso */}
                     <div className="space-y-1.5">
                         <div className="flex justify-between items-center text-[9px] font-black uppercase tracking-widest px-0.5">
                             <span className="text-text-muted">Estado</span>
-                            <span className={lote.zip_generado ? 'text-success' : 'text-warning'}>
-                                {lote.zip_generado ? 'DISPONIBLE' : 'PENDIENTE'}
+                            <span className={lote.zip_generado ? 'text-success' : generando ? 'text-primary' : 'text-warning'}>
+                                {lote.zip_generado ? 'DISPONIBLE' : generando ? `GENERANDO ${progreso}%` : 'PENDIENTE'}
                             </span>
                         </div>
                         <div className="h-1.5 w-full bg-white/5 rounded-full overflow-hidden">
-                            <div className={cn("h-full transition-all duration-1000", lote.zip_generado ? 'bg-success w-full' : 'bg-warning w-1/3 animate-pulse')} />
+                            <div
+                                className={cn(
+                                    "h-full rounded-full transition-all",
+                                    lote.zip_generado
+                                        ? 'bg-success duration-700'
+                                        : generando
+                                        ? 'bg-primary duration-500'
+                                        : 'bg-white/10 duration-300'
+                                )}
+                                style={{ width: lote.zip_generado ? '100%' : generando ? `${progreso}%` : '0%' }}
+                            />
                         </div>
                     </div>
 
