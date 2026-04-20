@@ -964,6 +964,8 @@ export default function EstacionamientosEntidad() {
                                                 ? 'bg-primary/10 border-primary text-primary'
                                                 : 'bg-white/5 border-white/10 text-text-muted hover:border-white/20'
                                         )}
+                                    >
+                                        {n}
                                     </button>
                                 ))}
                             </div>
