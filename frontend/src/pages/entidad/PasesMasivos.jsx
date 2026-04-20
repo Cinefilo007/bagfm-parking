@@ -389,6 +389,7 @@ const ModalNuevoLote = ({ isOpen, onClose, zonas, tiposCustom, onCreated }) => {
     const [guardando, setGuardando] = useState(false);
     const [maxPasesZona, setMaxPasesZona] = useState(9999);
     const [capacidadExcedida, setCapacidadExcedida] = useState(false);
+    const [warningIgnorada, setWarningIgnorada] = useState(false);
     const [excelPases, setExcelPases] = useState(null);
     const [nombreTipoActivo, setNombreTipoActivo] = useState('');
 
@@ -404,6 +405,11 @@ const ModalNuevoLote = ({ isOpen, onClose, zonas, tiposCustom, onCreated }) => {
         }));
         return [general, ...customMapped].filter(Boolean);
     }, [tiposCustom]);
+
+    // Capacidad total de la entidad en todas sus zonas asignadas
+    const totalCapacidadEntidad = useMemo(() => {
+        return zonas.reduce((acc, z) => acc + (z.cupo_asignado || 0) - (z.cupo_reservado_base || 0), 0);
+    }, [zonas]);
 
     useEffect(() => {
         if (form.zona_asignada_id) {
@@ -431,19 +437,29 @@ const ModalNuevoLote = ({ isOpen, onClose, zonas, tiposCustom, onCreated }) => {
                     cupoParaTipo = asig.cupo_asignado - asig.cupo_reservado_base - reservadoOtros;
                 }
                 
+                
                 const max = Math.max(0, cupoParaTipo);
                 setMaxPasesZona(max);
-                setCapacidadExcedida(form.cantidad_pases > max);
+                
+                // Solo mostrar alerta si NO hemos ignorado la advertencia explícitamente
+                // Y si la cantidad actual supera el cupo asignado a ese tipo en ESA zona
+                setCapacidadExcedida(form.cantidad_pases > max && !warningIgnorada);
             }
         } else {
             setPuestosDisponibles([]);
-            setMaxPasesZona(9999);
-            setCapacidadExcedida(false);
+            setMaxPasesZona(totalCapacidadEntidad);
+            setCapacidadExcedida(form.cantidad_pases > totalCapacidadEntidad);
         }
-    }, [form.zona_asignada_id, form.tipo_acceso, zonas, opcionesAcceso, form.cantidad_pases]);
+    }, [form.zona_asignada_id, form.tipo_acceso, zonas, opcionesAcceso, form.cantidad_pases, warningIgnorada, totalCapacidadEntidad]);
 
     const handleAjustarCapacidad = () => {
         setForm(prev => ({ ...prev, cantidad_pases: maxPasesZona }));
+        setCapacidadExcedida(false);
+        setWarningIgnorada(false);
+    };
+
+    const handleIgnorarWarning = () => {
+        setWarningIgnorada(true);
         setCapacidadExcedida(false);
     };
 
@@ -503,6 +519,15 @@ const ModalNuevoLote = ({ isOpen, onClose, zonas, tiposCustom, onCreated }) => {
         }
         if (form.tipo_pase === 'identificado' && !excelPases) {
             toast.error('Debes cargar el Excel con los datos de los pases');
+            return;
+        }
+
+        // BLOQUEO TÁCTICO: No permitir si supera la capacidad total de la entidad
+        if (form.cantidad_pases > totalCapacidadEntidad) {
+            toast.error(`CAPACIDAD AGOTADA: Solicitaste ${form.cantidad_pases} pases, pero la entidad solo tiene ${totalCapacidadEntidad} puestos disponibles en total.`, {
+                icon: '🚨',
+                duration: 6000
+            });
             return;
         }
 
@@ -623,7 +648,7 @@ const ModalNuevoLote = ({ isOpen, onClose, zonas, tiposCustom, onCreated }) => {
                                     <div>
                                         <p className="text-[10px] font-black text-warning uppercase tracking-widest">Capacidad Excedida</p>
                                         <p className="text-[9px] text-text-muted font-bold mt-1 leading-relaxed">
-                                            Solicitaste <span className="text-white">{form.cantidad_pases}</span> pases de tipo <span className="text-white">{nombreTipoActivo}</span>, pero solo hay <span className="text-white">{maxPasesZona}</span> cupos reservados en esta zona.
+                                            Solicitaste <span className="text-white">{form.cantidad_pases}</span> pases de tipo <span className="text-white">{nombreTipoActivo}</span>, pero solo hay <span className="text-white">{maxPasesZona}</span> {form.tipo_acceso === 'general' ? 'cupos libres' : 'cupos reservados'} en esta zona.
                                         </p>
                                     </div>
                                 </div>
@@ -635,7 +660,7 @@ const ModalNuevoLote = ({ isOpen, onClose, zonas, tiposCustom, onCreated }) => {
                                         Ajustar al Máximo
                                     </button>
                                     <button 
-                                        onClick={() => setCapacidadExcedida(false)}
+                                        onClick={handleIgnorarWarning}
                                         className="flex-1 bg-white/5 hover:bg-white/10 text-text-muted text-[8px] font-black uppercase py-2 rounded-lg transition-all"
                                     >
                                         Distribución Libre
