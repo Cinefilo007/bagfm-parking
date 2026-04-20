@@ -46,34 +46,46 @@ class TemplateService:
     def generar_excel_pases_template(self) -> bytes:
         """
         Genera un archivo Excel con los encabezados necesarios para pases con identificación (Tipo B).
-        Estructura v2.1: Nombre, Cédula, Email, Teléfono, Placa 1, Placa 2, Placa 3.
+        Estructura Aegis Tactical v2.2 (20 Columnas): 
+        Datos Personales (4) + 4 Vehículos (Marca, Modelo, Color, Placa = 16 columnas).
         """
         wb = openpyxl.Workbook()
         ws = wb.active
         ws.title = "DATOS_IDENTIFICACION"
 
-        # Encabezados tácticos v2.1
+        # Encabezados tácticos v2.2 (20 Columnas)
         headers = [
             "NOMBRE COMPLETO", "CEDULA", "EMAIL", "TELEFONO", 
-            "PLACA VEHICULO 1", "PLACA VEHICULO 2", "PLACA VEHICULO 3"
+            "V1_PLACA", "V1_MARCA", "V1_MODELO", "V1_COLOR",
+            "V2_PLACA", "V2_MARCA", "V2_MODELO", "V2_COLOR",
+            "V3_PLACA", "V3_MARCA", "V3_MODELO", "V3_COLOR",
+            "V4_PLACA", "V4_MARCA", "V4_MODELO", "V4_COLOR"
         ]
         
         # Estilos
-        header_fill = PatternFill(start_color="3B82F6", end_color="3B82F6", fill_type="solid") # Azul táctico
+        header_fill = PatternFill(start_color="1E293B", end_color="1E293B", fill_type="solid") # Dark tactico
+        v_fill = PatternFill(start_color="334155", end_color="334155", fill_type="solid") # Gris tactico para vehiculos
         header_font = Font(bold=True, color="FFFFFF")
         center_align = Alignment(horizontal="center")
 
         for col_num, header in enumerate(headers, 1):
             cell = ws.cell(row=1, column=col_num, value=header)
-            cell.fill = header_fill
             cell.font = header_font
             cell.alignment = center_align
-            ws.column_dimensions[openpyxl.utils.get_column_letter(col_num)].width = 22
+            if col_num <= 4:
+                cell.fill = header_fill
+            else:
+                cell.fill = v_fill
+                
+            ws.column_dimensions[openpyxl.utils.get_column_letter(col_num)].width = 20
 
         # Ejemplo táctico
         ejemplo = [
-            "JUAN PEREZ", "V10987654", "juan@correo.com", "04245558899",
-            "AC123LL", "XDE990", ""
+            "PEDRO PEREZ", "V12345678", "pedro@aegis.com", "04121112233",
+            "AB123CD", "TOYOTA", "HILUX", "BLANCO",
+            "XY999ZZ", "CHEVROLET", "AVEO", "GRIS",
+            "", "", "", "",
+            "", "", "", ""
         ]
         for col_num, value in enumerate(ejemplo, 1):
             ws.cell(row=2, column=col_num, value=value)

@@ -71,13 +71,13 @@ const PaseRow = ({ pase, zonas, onCompartir, onEmail }) => {
                 <div className="flex items-center gap-2 mt-1.5 flex-wrap">
                     {/* Vehículo Principal */}
                     {pase.vehiculo_placa && (
-                        <div className="flex flex-col gap-0.5 px-2 py-1 bg-white/5 rounded-lg border border-white/10 min-w-[100px]">
-                            <div className="flex items-center gap-1 text-[9px] font-black text-primary-light">
-                                <Car size={10} className="text-primary" /> {pase.vehiculo_placa}
+                        <div className="flex flex-col gap-0.5 px-3 py-1.5 bg-white/5 backdrop-blur-md rounded-xl border border-white/10 min-w-[110px] shadow-sm">
+                            <div className="flex items-center gap-1.5 text-[10px] font-black text-primary">
+                                <Car size={11} /> {pase.vehiculo_placa}
                             </div>
                             {(pase.vehiculo_marca || pase.vehiculo_modelo) && (
-                                <div className="text-[7px] text-text-muted truncate uppercase tracking-tighter">
-                                    {pase.vehiculo_marca} {pase.vehiculo_modelo} {pase.vehiculo_color && `(${pase.vehiculo_color})`}
+                                <div className="text-[7px] text-text-muted truncate uppercase font-bold tracking-tighter opacity-70">
+                                    {pase.vehiculo_marca} {pase.vehiculo_modelo} {pase.vehiculo_color && `· ${pase.vehiculo_color}`}
                                 </div>
                             )}
                         </div>
@@ -85,19 +85,19 @@ const PaseRow = ({ pase, zonas, onCompartir, onEmail }) => {
 
                     {/* Vehículos Adicionales */}
                     {pase.vehiculos_adicionales?.map((v, idx) => (
-                        <div key={v.id || idx} className="flex flex-col gap-0.5 px-2 py-1 bg-white/5 rounded-lg border border-white/5 opacity-80 min-w-[100px]">
-                            <div className="flex items-center gap-1 text-[9px] font-bold text-text-secondary">
-                                <Car size={10} /> {v.placa}
+                        <div key={v.id || idx} className="flex flex-col gap-0.5 px-3 py-1.5 bg-white/5 backdrop-blur-sm rounded-xl border border-white/5 opacity-60 min-w-[110px] hover:opacity-100 transition-opacity">
+                            <div className="flex items-center gap-1.5 text-[10px] font-black text-text-secondary">
+                                <Car size={11} /> {v.placa}
                             </div>
                             {(v.marca || v.modelo) && (
-                                <div className="text-[7px] text-text-muted truncate uppercase tracking-tighter">
-                                    {v.marca} {v.modelo} {v.color && `(${v.color})`}
+                                <div className="text-[7px] text-text-muted truncate uppercase font-bold tracking-tighter">
+                                    {v.marca} {v.modelo} {v.color && `· ${v.color}`}
                                 </div>
                             )}
                         </div>
                     ))}
                     
-                    {pase.zona_asignada_nombre && (
+                    {pase.zona_asignada_id && (
                         <span className="text-[8px] font-bold text-success flex items-center gap-0.5 ml-auto">
                             <ParkingSquare size={8} /> {pase.puesto_asignado_codigo || pase.zona_asignada_nombre}
                         </span>
@@ -267,11 +267,11 @@ const LoteCardV2 = ({ lote, zonas, tiposCustom, onRefresh }) => {
                     </div>
 
                     {/* Zona/Puesto asignado (si aplica) */}
-                    {lote.zona_asignada_id && (
+                    {lote.zona_nombre && (
                         <div className="flex items-center gap-2 p-2 bg-success/5 border border-success/15 rounded-xl">
                             <ParkingSquare size={13} className="text-success shrink-0" />
                             <span className="text-[9px] font-black text-success uppercase">
-                                {lote.zona_asignada_nombre || 'Zona asignada'}
+                                {lote.zona_nombre}
                                 {lote.puesto_asignado_codigo && ` · Puesto ${lote.puesto_asignado_codigo}`}
                             </span>
                         </div>
@@ -771,7 +771,7 @@ const ModalNuevoLote = ({ isOpen, onClose, zonas, tiposCustom, onCreated }) => {
                 <div className="flex gap-3 pt-4">
                     <Boton variant="ghost" className="flex-1 h-11 text-[11px] rounded-xl" onClick={onClose}>Cancelar</Boton>
                     <Boton onClick={handleSubmit} disabled={guardando}
-                        className="flex-[2] bg-primary text-bg-app h-14 font-black uppercase tracking-[0.2em] rounded-xl shadow-lg shadow-primary/20">
+                        className="flex-[2] bg-primary text-bg-app h-14 font-black uppercase tracking-widest text-[11px] rounded-xl shadow-tactica hover:scale-[1.02] transition-transform">
                         {guardando ? <RefreshCw size={16} className="animate-spin" /> : <><Plus size={15} /> Crear Lote</>}
                     </Boton>
                 </div>

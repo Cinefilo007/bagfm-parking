@@ -2,6 +2,7 @@ from typing import List, Optional
 from uuid import UUID
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, and_, func
+from sqlalchemy.orm import joinedload
 
 from app.models.zona_estacionamiento import ZonaEstacionamiento
 from app.models.puesto_estacionamiento import PuestoEstacionamiento
@@ -57,7 +58,12 @@ class ZonaEstacionamientoService:
         return resultado.scalars().all()
 
     async def obtener_puestos_zona(self, db: AsyncSession, zona_id: UUID) -> List[PuestoEstacionamiento]:
-        resultado = await db.execute(select(PuestoEstacionamiento).filter(PuestoEstacionamiento.zona_id == zona_id).order_by(PuestoEstacionamiento.numero_puesto))
+        resultado = await db.execute(
+            select(PuestoEstacionamiento)
+            .options(joinedload(PuestoEstacionamiento.zona), joinedload(PuestoEstacionamiento.tipo_acceso))
+            .filter(PuestoEstacionamiento.zona_id == zona_id)
+            .order_by(PuestoEstacionamiento.numero_puesto)
+        )
         return resultado.scalars().all()
 
     async def generar_puestos_fisicos(

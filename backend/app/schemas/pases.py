@@ -29,6 +29,7 @@ class LotePaseMasivoSalida(LotePaseMasivoBase):
     zip_listo_at: Optional[datetime] = None
     tipo_acceso: str = "general"
     tipo_acceso_custom_id: Optional[UUID] = None
+    zona_nombre: Optional[str] = None
     
     model_config = ConfigDict(from_attributes=True)
 

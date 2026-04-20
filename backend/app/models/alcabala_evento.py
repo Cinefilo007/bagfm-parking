@@ -62,6 +62,13 @@ class LotePaseMasivo(Base):
     
     pdf_url = Column(Text, nullable=True) # URL del PDF masivo (v2.0)
 
+    # Relaciones
+    zona_asignada = relationship("ZonaEstacionamiento", foreign_keys=[zona_estacionamiento_id], lazy="selectin")
+
+    @property
+    def zona_nombre(self):
+        return self.zona_asignada.nombre if self.zona_asignada else None
+
 class SolicitudEvento(Base):
     __tablename__ = "solicitudes_evento"
 

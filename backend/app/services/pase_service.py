@@ -39,24 +39,83 @@ class PaseService:
         solicitud_id: Optional[uuid.UUID] = None
     ) -> LotePaseMasivo:
         """
-        Crea un lote de pases masivos con verificación de cuota para entidades civiles.
+        Crea un lote de pases masivos con verificación de cuota y capacidad de estacionamiento.
+        Sigue la Lógica Táctica v2.2: 
+        - General: usa puestos no reservados.
+        - Staff/VIP/etc: usa puestos reservados para su categoría.
         """
-        # 1. Verificar Cuota si el creador es ADMIN_ENTIDAD
+        # 1. Verificar Cuota y Entidad
         usuario = await db.get(Usuario, creado_por_id)
-        if usuario and usuario.rol == RolTipo.ADMIN_ENTIDAD:
-            if not usuario.entidad_id:
-                raise ValueError("El Administrador de Entidad no tiene una entidad vinculada.")
-            
+        if not usuario or not usuario.entidad_id:
+             # Si no tiene entidad, solo permitimos si es ADMIN_BASE o COMANDANTE (sin cuota por ahora)
+             if usuario and usuario.rol not in [RolTipo.COMANDANTE, RolTipo.ADMIN_BASE]:
+                raise ValueError("El usuario no tiene una entidad vinculada.")
+        
+        entidad = None
+        if usuario.entidad_id:
             from app.models.entidad_civil import EntidadCivil
             entidad = await db.get(EntidadCivil, usuario.entidad_id)
             if not entidad:
                 raise ValueError("Entidad no encontrada.")
             
-            # TODO: Contar pases activos de la entidad en este mes
-            if datos['cantidad_pases'] > entidad.cuota_pases_autonoma:
-                 raise ValueError(f"Cuota insuficiente. Su entidad dispone de {entidad.cuota_pases_autonoma} pases autónomos.")
+            # Verificar cuota autónoma si es ADMIN_ENTIDAD
+            if usuario.rol == RolTipo.ADMIN_ENTIDAD:
+                if datos['cantidad_pases'] > entidad.cuota_pases_autonoma:
+                    raise ValueError(f"Cuota insuficiente. Su entidad dispone de {entidad.cuota_pases_autonoma} pases autónomos.")
 
-        # Generar serial legible
+        # 2. VALIDACIÓN TÁCTICA DE ESTACIONAMIENTO (Requerimiento #8)
+        zona_id = datos.get('zona_asignada_id') or datos.get('zona_id')
+        tipo_acc = datos.get('tipo_acceso', 'general')
+        
+        if entidad:
+            from app.models.asignacion_zona import AsignacionZona
+            from sqlalchemy import and_
+            
+            # Obtener todas las asignaciones de la entidad para calcular capacidad total
+            query_asigs = select(AsignacionZona).where(
+                and_(AsignacionZona.entidad_id == entidad.id, AsignacionZona.activa == True)
+            )
+            res_asigs = await db.execute(query_asigs)
+            asignaciones = res_asigs.scalars().all()
+            
+            capacidad_total_entidad = sum(asig.cupo_asignado for asig in asignaciones)
+            
+            # 2a. Bloqueo si supera la capacidad TOTAL de la entidad en todas sus zonas
+            if datos['cantidad_pases'] > capacidad_total_entidad:
+                raise ValueError(f"CAPACIDAD AGOTADA: La entidad solo tiene {capacidad_total_entidad} puestos totales asignados.")
+
+            # 2b. Validación por Zona Específica (si se seleccionó una)
+            if zona_id:
+                asig_especifica = next((a for a in asignaciones if str(a.zona_id) == str(zona_id)), None)
+                if asig_especifica:
+                    distribucion = asig_especifica.distribucion_cupos or {}
+                    # Mapear tipo a la llave en el JSON (ej: 'general' -> 'PUBLICO GENERAL')
+                    # Basado en el frontend, se usan etiquetas en mayúsculas
+                    mapping = {
+                        'general': 'PÚBLICO GENERAL',
+                        'staff': 'STAFF / APOYO',
+                        'produccion': 'PRODUCTORES',
+                        'logistica': 'LOGÍSTICA',
+                        'vip': 'INVITADOS VIP',
+                        'prensa': 'PRENSA',
+                        'artista': 'ARTISTA'
+                    }
+                    label_tipo = mapping.get(tipo_acc, str(tipo_acc).upper())
+                    
+                    if tipo_acc == 'general' or tipo_acc == 'custom':
+                        # Puestos libres = Total - Base - Reservados para categorías específicas
+                        reservado_otros = sum(int(v) for k, v in distribucion.items() if k != label_tipo)
+                        cupo_disponible = asig_especifica.cupo_asignado - asig_especifica.cupo_reservado_base - reservado_otros
+                    else:
+                        # Puestos específicos para la categoría
+                        cupo_disponible = int(distribucion.get(label_tipo, 0))
+                    
+                    # Si no es distribución libre (ignorar warning en frontend), lanzamos error
+                    # Para el backend, si no viene el flag 'distribucion_automatica', somos estrictos
+                    if not datos.get('distribucion_automatic', False) and datos['cantidad_pases'] > cupo_disponible:
+                         raise ValueError(f"CUPO INSUFICIENTE en esta zona para {label_tipo}: Disponible {cupo_disponible}, Requerido {datos['cantidad_pases']}.")
+
+        # 3. Generar serial y persistir lote
         serial_lote = await self._generar_serial_lote(db)
         
         nuevo_lote = LotePaseMasivo(
@@ -67,10 +126,10 @@ class PaseService:
             fecha_fin=datos['fecha_fin'],
             cantidad_pases=datos['cantidad_pases'],
             max_accesos_por_pase=datos.get('max_accesos_por_pase'),
-            entidad_id=usuario.entidad_id if usuario and usuario.rol == RolTipo.ADMIN_ENTIDAD else None,
-            tipo_acceso=datos.get('tipo_acceso', 'general'),
+            entidad_id=entidad.id if entidad else None,
+            tipo_acceso=tipo_acc,
             tipo_acceso_custom_id=datos.get('tipo_acceso_custom_id'),
-            zona_estacionamiento_id=datos.get('zona_asignada_id') or datos.get('zona_id'),
+            zona_estacionamiento_id=zona_id,
             creado_por=creado_por_id
         )
         db.add(nuevo_lote)
@@ -82,13 +141,14 @@ class PaseService:
             if solicitud:
                 solicitud.lote_id = nuevo_lote.id
 
-        # Generar QRs según el tipo
+        # 4. Generar QRs según el tipo
         if nuevo_lote.tipo_pase == PasseTipo.simple:
             await self._generar_pases_simples(db, nuevo_lote, creado_por_id, datos)
         elif nuevo_lote.tipo_pase == PasseTipo.portal:
             await self._generar_pases_portal(db, nuevo_lote, creado_por_id, datos)
-        elif nuevo_lote.tipo_pase == PasseTipo.identificado and datos.get('excel_data'):
-            await self.procesar_json_identificado(db, nuevo_lote, datos['excel_data'], creado_por_id)
+        elif nuevo_lote.tipo_pase == PasseTipo.identificado:
+            if datos.get('excel_data'):
+                await self.procesar_json_identificado(db, nuevo_lote, datos['excel_data'], creado_por_id)
         
         await db.commit()
         return nuevo_lote

@@ -37,8 +37,8 @@ class PuestoEstacionamiento(Base):
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
 
     # Relaciones
-    zona = relationship("ZonaEstacionamiento")
-    tipo_acceso = relationship("TipoAccesoCustom")
+    zona = relationship("ZonaEstacionamiento", lazy="selectin")
+    tipo_acceso = relationship("TipoAccesoCustom", lazy="selectin")
 
     @property
     def zona_nombre(self):

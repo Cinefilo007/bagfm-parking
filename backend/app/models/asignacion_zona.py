@@ -29,7 +29,7 @@ class AsignacionZona(Base):
     asignado_por = Column(UUID(as_uuid=True), ForeignKey("usuarios.id", ondelete="SET NULL"), nullable=True)
 
     # Relaciones
-    zona = relationship("ZonaEstacionamiento")
+    zona = relationship("ZonaEstacionamiento", lazy="selectin")
     # entidad = relationship("EntidadCivil")
 
     @property
