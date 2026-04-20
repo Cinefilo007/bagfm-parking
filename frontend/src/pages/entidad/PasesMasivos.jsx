@@ -846,7 +846,7 @@ export default function EventosV2() {
                     <Boton 
                         onClick={() => setShowModal(true)} 
                         disabled={zonas.length === 0}
-                        className="flex-1 sm:flex-none h-11 px-5 gap-2 text-[11px] font-black uppercase bg-primary text-bg-app rounded-xl hover:scale-[1.02] active:scale-95 transition-all disabled:opacity-50 whitespace-nowrap min-w-fit"
+                        className="gap-2 h-12 px-6 bg-primary text-bg-app font-black uppercase tracking-widest text-[11px] shadow-tactica hover:scale-[1.02] transition-all disabled:opacity-50 whitespace-nowrap min-w-fit"
                     >
                         <PlusCircle size={18} /> 
                         Crear Nuevo Lote
