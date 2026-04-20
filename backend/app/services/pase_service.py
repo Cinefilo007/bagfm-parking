@@ -58,10 +58,8 @@ class PaseService:
             if not entidad:
                 raise ValueError("Entidad no encontrada.")
             
-            # Verificar cuota autónoma si es ADMIN_ENTIDAD
-            if usuario.rol == RolTipo.ADMIN_ENTIDAD:
-                if datos['cantidad_pases'] > entidad.cuota_pases_autonoma:
-                    raise ValueError(f"Cuota insuficiente. Su entidad dispone de {entidad.cuota_pases_autonoma} pases autónomos.")
+            # La capacidad se valida en el paso 2 (VALIDACIÓN TÁCTICA DE ESTACIONAMIENTO)
+            # a través de las AsignacionZona. La cuota autónoma legacy ya no se aplica.
 
         # 2. VALIDACIÓN TÁCTICA DE ESTACIONAMIENTO (Requerimiento #8)
         zona_id = datos.get('zona_asignada_id') or datos.get('zona_id')

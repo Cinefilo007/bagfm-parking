@@ -391,7 +391,6 @@ const ModalNuevoLote = ({ isOpen, onClose, zonas, tiposCustom, onCreated }) => {
         puesto_asignado_id: null,
         max_accesos_por_pase: 1,
     });
-    const [puestosDisponibles, setPuestosDisponibles] = useState([]);
     const [guardando, setGuardando] = useState(false);
     const [maxPasesZona, setMaxPasesZona] = useState(9999);
     const [capacidadExcedida, setCapacidadExcedida] = useState(false);
@@ -419,10 +418,8 @@ const ModalNuevoLote = ({ isOpen, onClose, zonas, tiposCustom, onCreated }) => {
 
     useEffect(() => {
         if (form.zona_asignada_id) {
-            zonaService.getPuestosZona(form.zona_asignada_id)
-                .then(p => setPuestosDisponibles(p.filter(px => px.estado === 'libre' || px.estado === 'reservado')))
-                .catch(() => setPuestosDisponibles([]));
-                
+            // La distribución de puestos es automática por el sistema.
+            
             // Calcular límite de pases si hay zona asignada
             const asig = zonas.find(z => z.zona_id === form.zona_asignada_id);
             if (asig) {
@@ -452,7 +449,6 @@ const ModalNuevoLote = ({ isOpen, onClose, zonas, tiposCustom, onCreated }) => {
                 setCapacidadExcedida(form.cantidad_pases > max && !warningIgnorada);
             }
         } else {
-            setPuestosDisponibles([]);
             setMaxPasesZona(totalCapacidadEntidad);
             setCapacidadExcedida(form.cantidad_pases > totalCapacidadEntidad);
         }
@@ -659,7 +655,7 @@ const ModalNuevoLote = ({ isOpen, onClose, zonas, tiposCustom, onCreated }) => {
                                 value: form.zona_asignada_id,
                                 label: zonas.find(z => z.zona_id === form.zona_asignada_id)?.zona_nombre?.toUpperCase()
                             } : null}
-                            onChange={(opt) => setForm({ ...form, zona_asignada_id: opt?.value || '', puesto_asignado_id: '' })}
+                            onChange={(opt) => setForm({ ...form, zona_asignada_id: opt?.value || null })}
                             isClearable
                         />
 
@@ -692,37 +688,6 @@ const ModalNuevoLote = ({ isOpen, onClose, zonas, tiposCustom, onCreated }) => {
                             </div>
                         )}
 
-                        {puestosDisponibles.length > 0 && !capacidadExcedida && (
-                            <div className="bg-white/5 border border-white/5 rounded-xl p-4 space-y-2">
-                                <label className="text-[10px] font-black text-text-muted/60 uppercase tracking-widest flex items-center gap-2">
-                                    <Hash size={11} className="text-primary" />
-                                    Vincular a Puesto Específico
-                                </label>
-                                <div className="grid grid-cols-4 gap-2">
-                                    <button 
-                                        onClick={() => setForm({ ...form, puesto_asignado_id: '' })}
-                                        className={cn(
-                                            "h-9 rounded-lg border text-[9px] font-black transition-all uppercase",
-                                            !form.puesto_asignado_id ? 'bg-primary/20 border-primary text-primary' : 'bg-black/20 border-white/5 text-text-muted hover:bg-white/5'
-                                        )}
-                                    >
-                                        Auto
-                                    </button>
-                                    {puestosDisponibles.slice(0, 7).map(p => (
-                                        <button 
-                                            key={p.id}
-                                            onClick={() => setForm({ ...form, puesto_asignado_id: p.id })}
-                                            className={cn(
-                                                "h-9 rounded-lg border text-[9px] font-black transition-all",
-                                                form.puesto_asignado_id === p.id ? 'bg-primary/20 border-primary text-primary' : 'bg-black/20 border-white/5 text-text-muted hover:bg-white/5'
-                                            )}
-                                        >
-                                            {p.numero_puesto || p.codigo?.slice(-3)}
-                                        </button>
-                                    ))}
-                                </div>
-                            </div>
-                        )}
                     </div>
 
                     {/* Sección Excel para Identificados */}
