@@ -350,78 +350,86 @@ const LoteCardV2 = ({ lote, zonas, tiposCustom, onRefresh, onVerPases, onElimina
     };
 
     return (
-        <div className="flex flex-col xl:flex-row items-start xl:items-center gap-4 p-4 bg-bg-card/40 border border-white/5 rounded-2xl group hover:border-white/10 hover:bg-bg-high/60 transition-all">
-            <div className="flex flex-row xl:flex-col items-center gap-3 w-full xl:w-24 shrink-0 xl:border-r border-white/5 xl:pr-4">
-                <div className={cn("p-3 rounded-2xl border border-white/5 shadow-inner", info.bg)}>
-                    <Icon className={info.color} size={22} />
+        <div className="flex flex-col xl:flex-row items-stretch xl:items-center gap-2 p-3 bg-bg-card/40 border border-white/5 rounded-2xl group hover:border-white/10 hover:bg-bg-high/60 transition-all">
+            
+            {/* FILA 1: Identidad + Datos + Contadores */}
+            <div className="flex items-center justify-between gap-3 w-full xl:w-auto xl:flex-1">
+                <div className="flex items-center gap-3">
+                    <div className={cn("p-2.5 rounded-xl border border-white/5 shadow-inner shrink-0", info.bg)}>
+                        <Icon className={info.color} size={20} />
+                    </div>
+                    <div className="min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap">
+                            <h3 className="text-sm font-black text-text-main uppercase leading-tight truncate">{lote.nombre_evento}</h3>
+                            {lote.tipo_acceso && lote.tipo_acceso !== 'general' && badgeTipo(lote.tipo_acceso, lote.tipo_custom_label)}
+                        </div>
+                        <div className="flex items-center gap-2 mt-0.5">
+                            <span className="text-[9px] font-mono text-text-muted opacity-60 font-bold bg-white/5 px-1.5 py-0.5 rounded border border-white/5">
+                                {lote.codigo_serial}
+                            </span>
+                            <div className="flex items-center gap-3 text-text-muted text-[9px] font-bold uppercase tracking-wider">
+                                <span className="flex items-center gap-1"><Calendar size={10} className="opacity-40" /> {new Date(lote.fecha_inicio).toLocaleDateString()}</span>
+                                <span className="flex items-center gap-1"><Clock size={10} className="opacity-40" /> Vence {new Date(lote.fecha_fin).toLocaleDateString()}</span>
+                            </div>
+                        </div>
+                    </div>
                 </div>
-                <div className="flex flex-col gap-1 items-start xl:items-center">
-                    {badgeTipo(lote.tipo_pase)}
-                    <span className="text-[10px] font-mono text-text-muted opacity-60 font-bold bg-white/5 px-2 py-0.5 rounded border border-white/5 mt-1">
-                        {lote.codigo_serial}
-                    </span>
+
+                {/* Contadores (Fila 1) */}
+                <div className="flex items-center gap-4 px-3 border-l border-white/5 shrink-0">
+                    <div className="text-center">
+                        <div className="text-sm font-black text-white leading-none">{lote.cantidad_pases}</div>
+                        <div className="text-[7px] font-black text-text-muted uppercase">Pases</div>
+                    </div>
+                    <div className="text-center">
+                        <div className="text-sm font-black text-success leading-none">{lote.pases_usados ?? 0}</div>
+                        <div className="text-[7px] font-black text-text-muted uppercase">Usados</div>
+                    </div>
                 </div>
             </div>
 
-            <div className="flex-1 min-w-0 space-y-1 w-full text-left">
-                <div className="flex items-center gap-2 flex-wrap">
-                    <h3 className="text-base font-black text-text-main uppercase leading-tight truncate">{lote.nombre_evento}</h3>
-                    {lote.tipo_acceso && lote.tipo_acceso !== 'general' && badgeTipo(lote.tipo_acceso, lote.tipo_custom_label)}
+            {/* FILA 2: Estado (Progreso) + Acciones */}
+            <div className="flex items-center gap-3 w-full xl:w-auto pt-2 xl:pt-0 border-t xl:border-t-0 xl:border-l border-white/5 xl:pl-4">
+                {/* Barra de Estado */}
+                <div className="flex-1 xl:w-32 shrink-0 space-y-1">
+                    <div className="flex justify-between items-center text-[8px] font-black tracking-widest uppercase mb-1">
+                        <span className="text-text-muted">Estado</span>
+                        <span className={lote.zip_generado || progreso >= 100 ? 'text-success' : generando ? 'text-primary' : 'text-warning'}>
+                            {lote.zip_generado || progreso >= 100 ? 'LISTO' : generando ? `${progreso}%` : 'PENDIENTE'}
+                        </span>
+                    </div>
+                    <div className="h-1.5 w-full bg-white/5 rounded-full overflow-hidden">
+                        <div className={cn("h-full rounded-full transition-all duration-500", lote.zip_generado || progreso >= 100 ? 'bg-success' : generando ? 'bg-primary' : 'bg-white/10')} style={{ width: lote.zip_generado || progreso >= 100 ? '100%' : generando ? `${progreso}%` : '0%' }} />
+                    </div>
                 </div>
-                <div className="flex items-center gap-3 text-text-muted text-[10px] font-bold uppercase tracking-wider">
-                    <span className="flex items-center gap-1"><Calendar size={12} className="opacity-40" /> {new Date(lote.fecha_inicio).toLocaleDateString()}</span>
-                    <span className="opacity-20">|</span>
-                    <span className="flex items-center gap-1"><Clock size={12} className="opacity-40" /> Vence {new Date(lote.fecha_fin).toLocaleDateString()}</span>
-                </div>
-            </div>
 
-            <div className="flex items-center gap-8 py-2 xl:py-0 xl:px-4 xl:border-l border-white/5 shrink-0">
-                <div className="text-center xl:text-center">
-                    <div className="text-xl font-black text-white">{lote.cantidad_pases}</div>
-                    <div className="text-[8px] font-black text-text-muted uppercase">Pases</div>
-                </div>
-                <div className="text-center xl:text-center">
-                    <div className="text-xl font-black text-success">{lote.pases_usados ?? 0}</div>
-                    <div className="text-[8px] font-black text-text-muted uppercase">Usados</div>
-                </div>
-            </div>
-
-            <div className="w-full xl:w-36 shrink-0 space-y-2 xl:border-l border-white/5 xl:pl-4">
-                <div className="flex justify-between items-center text-[9px] font-black tracking-widest">
-                    <span className="text-text-muted uppercase">Estado</span>
-                    <span className={lote.zip_generado || progreso >= 100 ? 'text-success' : generando ? 'text-primary' : 'text-warning'}>
-                        {lote.zip_generado || progreso >= 100 ? 'LISTO' : generando ? `${progreso}%` : 'PENDIENTE'}
-                    </span>
-                </div>
-                <div className="h-1.5 w-full bg-white/5 rounded-full overflow-hidden">
-                    <div className={cn("h-full rounded-full transition-all duration-500", lote.zip_generado || progreso >= 100 ? 'bg-success' : generando ? 'bg-primary' : 'bg-white/10')} style={{ width: lote.zip_generado || progreso >= 100 ? '100%' : generando ? `${progreso}%` : '0%' }} />
-                </div>
-            </div>
-
-            <div className="flex items-center gap-2 w-full xl:w-auto shrink-0 xl:pl-2">
-                {lote.zip_generado || progreso >= 100 ? (
-                    <button 
-                        onClick={() => pasesService.descargarArchivo(lote.zip_url, `PASES_${lote.nombre_evento.replace(/\s+/g, '_')}_${lote.codigo_serial}.zip`)}
-                        className="h-9 px-3 bg-success/15 hover:bg-success/25 border border-success/20 rounded-xl flex items-center gap-2 transition-all cursor-pointer"
-                    >
-                        <Download size={14} className="text-success" />
-                        <span className="text-[10px] font-black text-success uppercase">ZIP</span>
-                    </button>
-                ) : (
-                    <Boton size="sm" onClick={handleGenerarZip} isLoading={generando} disabled={generando} className="flex-1 md:flex-none">
-                        <QrCode size={14} /> GENERAR
+                {/* Botones de Acción */}
+                <div className="flex items-center gap-1.5 shrink-0">
+                    {lote.zip_generado || progreso >= 100 ? (
+                        <button 
+                            onClick={() => pasesService.descargarArchivo(lote.zip_url, `PASES_${lote.nombre_evento.replace(/\s+/g, '_')}_${lote.codigo_serial}.zip`)}
+                            className="h-8 px-3 bg-success/15 hover:bg-success/25 border border-success/20 rounded-xl flex items-center gap-2 transition-all cursor-pointer"
+                        >
+                            <Download size={13} className="text-success" />
+                            <span className="text-[9px] font-black text-success uppercase">ZIP</span>
+                        </button>
+                    ) : (
+                        <Boton size="sm" onClick={handleGenerarZip} isLoading={generando} disabled={generando} className="h-8 px-3">
+                            <QrCode size={13} /> <span className="hidden sm:inline">GENERAR</span>
+                        </Boton>
+                    )}
+                    <Boton variant="ghost" size="sm" onClick={() => onVerPases(lote)} className="h-8 px-3 bg-primary/10 border border-primary/20 rounded-xl flex items-center gap-2 text-primary hover:bg-primary/20">
+                        <Users size={13} /> <span className="text-[9px] font-black uppercase hidden sm:inline">GESTIONAR</span>
+                        <ChevronRight className="sm:hidden" size={13} />
                     </Boton>
-                )}
-                <Boton variant="ghost" size="sm" onClick={() => onVerPases(lote)} className="h-9 px-3 bg-primary/10 border border-primary/20 rounded-xl flex items-center gap-2 text-primary hover:bg-primary/20">
-                    <Users size={14} /> <span className="text-[10px] font-black uppercase">GESTIONAR</span>
-                </Boton>
-                <button 
-                    onClick={() => onEliminar(lote)}
-                    className="h-9 w-9 bg-danger/10 hover:bg-danger/20 border border-danger/20 rounded-xl flex items-center justify-center transition-all text-danger"
-                    title="Eliminar Lote Permanentemente"
-                >
-                    <Trash2 size={15} />
-                </button>
+                    <button 
+                        onClick={() => onEliminar(lote)}
+                        className="h-8 w-8 bg-danger/10 hover:bg-danger/20 border border-danger/20 rounded-xl flex items-center justify-center transition-all text-danger"
+                        title="Eliminar Lote Permanentemente"
+                    >
+                        <Trash2 size={13} />
+                    </button>
+                </div>
             </div>
         </div>
     );
