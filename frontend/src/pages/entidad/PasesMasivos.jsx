@@ -384,11 +384,11 @@ const ModalNuevoLote = ({ isOpen, onClose, zonas, tiposCustom, onCreated }) => {
         cantidad_pases: 10,
         tipo_pase: 'simple',
         tipo_acceso: 'general',
-        tipo_acceso_custom_id: '',
+        tipo_acceso_custom_id: null,
         multi_vehiculo: false,
         max_vehiculos: 1,
-        zona_asignada_id: '',
-        puesto_asignado_id: '',
+        zona_asignada_id: null,
+        puesto_asignado_id: null,
         max_accesos_por_pase: 1,
     });
     const [puestosDisponibles, setPuestosDisponibles] = useState([]);
@@ -539,16 +539,21 @@ const ModalNuevoLote = ({ isOpen, onClose, zonas, tiposCustom, onCreated }) => {
 
         setGuardando(true);
         try {
+            // Limpieza táctica del payload: convertir strings vacíos de IDs en null
+            const cleanForm = { ...form };
+            ['zona_asignada_id', 'puesto_asignado_id', 'tipo_acceso_custom_id'].forEach(key => {
+                if (cleanForm[key] === '') cleanForm[key] = null;
+            });
+
             const payload = {
-                ...form,
+                ...cleanForm,
                 entidad_id: user?.entidad_id,
-                excel_data: excelPases, // Enviaremos los datos del excel si existen
-                distribucion_automatica: capacidadExcedida, // Indica si aceptó distribuir fuera de su cupo
+                excel_data: excelPases, 
+                distribucion_automatica: capacidadExcedida,
                 
-                // Mapeo táctico para el backend
-                zona_id: form.zona_asignada_id || null,
-                puesto_id: form.puesto_asignado_id || null,
-                tipo_acceso_custom_id: form.tipo_acceso_custom_id || null
+                // Mapeo explícito
+                zona_id: cleanForm.zona_asignada_id,
+                puesto_id: cleanForm.puesto_asignado_id
             };
             await pasesService.crearLote(payload);
             toast.success('Lote de pases creado con éxito');

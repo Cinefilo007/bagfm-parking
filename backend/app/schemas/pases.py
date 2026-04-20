@@ -1,4 +1,4 @@
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, field_validator
 from uuid import UUID
 from datetime import datetime, date
 from typing import Optional, List, Any
@@ -23,6 +23,13 @@ class LotePaseMasivoCrear(LotePaseMasivoBase):
     excel_data: Optional[List[List[Any]]] = None
     distribucion_automatic: Optional[bool] = False # Deprecated but kept for safety
     distribucion_automatica: Optional[bool] = False
+
+    @field_validator('tipo_acceso_custom_id', 'zona_id', 'zona_asignada_id', 'puesto_id', 'puesto_asignado_id', mode='before')
+    @classmethod
+    def empty_string_to_none(cls, v):
+        if v == "":
+            return None
+        return v
 
 class LotePaseMasivoSalida(LotePaseMasivoBase):
     id: UUID

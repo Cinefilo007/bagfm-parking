@@ -33,11 +33,11 @@ El sistema implementa una validación diferenciada según el `TipoAccesoPase`:
 ## 3. Robustez de Interfaz y API (v2.3)
 Para prevenir errores `422 Unprocessable Entity` y fallos de renderizado en React (#31):
 
-- **Sanitización de UUIDs**: Los identificadores opcionales (zona, puesto, categorías custom) deben enviarse como `null` si están vacíos, nunca como string vacío `""`.
+- **Sanitización de UUIDs**: El backend implementa un `field_validator` global que normaliza automáticamente cualquier cadena vacía `""` a `null`.
 - **Mapeo de Campos**: El backend soporta alias para los campos de relación:
   - `zona_id` / `zona_asignada_id`
   - `puesto_id` / `puesto_asignado_id`
-- **Manejo de Errores**: El frontend procesa las listas de errores de validación de Pydantic para mostrar mensajes específicos en lugar de objetos, evitando el desplome de la UI.
+- **Manejo de Errores**: El frontend procesa las listas de errores de validación de Pydantic para mostrar mensajes específicos en lugar de objetos, evitando el desplome de la UI (#31).
 
 ## 4. Notas de Implementación (Backend)
 - Se utiliza `lazy="selectin"` en todos los modelos de estacionamiento y pases para evitar errores de `MissingGreenlet`.
