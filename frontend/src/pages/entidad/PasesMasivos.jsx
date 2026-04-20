@@ -514,30 +514,23 @@ const ModalNuevoLote = ({ isOpen, onClose, zonas, tiposCustom, onCreated }) => {
                     </div>
                 </div>
 
-                {/* Tipo de acceso dinámico */}
-                <div>
-                    <label className="text-[10px] font-black text-text-muted uppercase tracking-widest block mb-4">
-                        2. Clasificación del Portador
-                    </label>
-                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
-                        {opcionesAcceso.map(t => {
-                            const Icon = t.icon;
-                            const sel = form.tipo_acceso === t.id;
-                            return (
-                                <button key={t.id} onClick={() => setForm({ ...form, tipo_acceso: t.id })}
-                                    className={cn(
-                                        "flex items-center gap-3 p-3 rounded-2xl border transition-all text-left group relative overflow-hidden",
-                                        sel ? 'bg-white/10 border-white/30 text-text-main shadow-xl' : 'bg-white/5 border-white/5 text-text-muted hover:border-white/10 hover:bg-white/8'
-                                    )}>
-                                    {sel && <div className="absolute top-0 left-0 w-1 h-full bg-primary" />}
-                                    <div className={cn("p-2 rounded-xl shrink-0 transition-colors", sel ? 'bg-primary/20 text-primary' : 'bg-black/20 group-hover:bg-black/40')}>
-                                        <Icon size={16} />
-                                    </div>
-                                    <span className="text-[10px] font-black uppercase leading-tight tracking-tight">{t.label}</span>
-                                </button>
-                            );
-                        })}
-                    </div>
+                {/* Clasificación del portador - SelectTactivo para ahorro de espacio */}
+                <div className="pt-2">
+                    <SelectTactivo 
+                        label="2. Clasificación del Portador"
+                        icon={<Users size={12} className="text-primary" />}
+                        placeholder="Buscar clasificación..."
+                        options={opcionesAcceso.map(t => ({ 
+                            value: t.id, 
+                            label: t.label.toUpperCase() 
+                        }))}
+                        value={opcionesAcceso.find(t => t.id === form.tipo_acceso) ? {
+                            value: form.tipo_acceso,
+                            label: opcionesAcceso.find(t => t.id === form.tipo_acceso)?.label.toUpperCase()
+                        } : null}
+                        onChange={(opt) => setForm({ ...form, tipo_acceso: opt?.value || 'general' })}
+                        isSearchable
+                    />
                 </div>
 
                 {/* Datos del lote */}
