@@ -35,7 +35,11 @@ async def listar_lotes(
     usuario_actual: Usuario = Depends(require_rol(ADMIN_ROLES + [RolTipo.ALCABALA]))
 ):
     """Lista todos los lotes de pases masivos."""
-    query = select(LotePaseMasivo).order_by(LotePaseMasivo.created_at.desc())
+    from sqlalchemy.orm import selectinload
+    query = select(LotePaseMasivo).options(
+        selectinload(LotePaseMasivo.zona_asignada),
+        selectinload(LotePaseMasivo.tipo_acceso_custom)
+    ).order_by(LotePaseMasivo.created_at.desc())
     res = await db.execute(query)
     return res.scalars().all()
 

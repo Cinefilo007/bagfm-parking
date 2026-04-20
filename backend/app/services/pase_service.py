@@ -139,6 +139,7 @@ class PaseService:
                 await self.procesar_json_identificado(db, nuevo_lote, datos['excel_data'], creado_por_id)
         
         await db.commit()
+        await db.refresh(nuevo_lote, attribute_names=["zona_asignada", "tipo_acceso_custom"])
         return nuevo_lote
 
     async def _generar_serial_lote(self, db: AsyncSession) -> str:

@@ -71,6 +71,10 @@ class LotePaseMasivo(Base):
     @property
     def zona_nombre(self):
         return self.zona_asignada.nombre if self.zona_asignada else None
+        
+    @property
+    def tipo_custom_label(self):
+        return self.tipo_acceso_custom.nombre if self.tipo_acceso_custom else None
 
 class SolicitudEvento(Base):
     __tablename__ = "solicitudes_evento"
