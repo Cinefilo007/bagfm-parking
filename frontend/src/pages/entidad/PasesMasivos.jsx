@@ -417,42 +417,50 @@ const ModalNuevoLote = ({ isOpen, onClose, zonas, tiposCustom, onCreated }) => {
     }, [zonas]);
 
     useEffect(() => {
-        if (form.zona_asignada_id) {
-            // La distribución de puestos es automática por el sistema.
-            
-            // Calcular límite de pases si hay zona asignada
-            const asig = zonas.find(z => z.zona_id === form.zona_asignada_id);
-            if (asig) {
-                let cupoParaTipo = 0;
-                let nombreTipo = '';
-                
-                const opt = opcionesAcceso.find(o => o.id === form.tipo_acceso);
-                if (opt) nombreTipo = opt.label.toUpperCase();
-                setNombreTipoActivo(nombreTipo);
-
-                if (nombreTipo && asig.distribucion_cupos && asig.distribucion_cupos[nombreTipo]) {
-                    cupoParaTipo = parseInt(asig.distribucion_cupos[nombreTipo]);
-                } else {
-                    // Si no tiene distribución específica, asume el remanente (libres)
-                    const reservadoOtros = Object.entries(asig.distribucion_cupos || {}).reduce((acc, [k, v]) => {
-                        return k === nombreTipo ? acc : acc + parseInt(v);
-                    }, 0);
-                    cupoParaTipo = asig.cupo_asignado - asig.cupo_reservado_base - reservadoOtros;
-                }
-                
-                
-                const max = Math.max(0, cupoParaTipo);
-                setMaxPasesZona(max);
-                
-                // Solo mostrar alerta si NO hemos ignorado la advertencia explícitamente
-                // Y si la cantidad actual supera el cupo asignado a ese tipo en ESA zona
-                setCapacidadExcedida(form.cantidad_pases > max && !warningIgnorada);
-            }
-        } else {
+        if (!form.zona_asignada_id) {
+            // Sin zona: límite es la capacidad total de la entidad, sin alertas por categoría
             setMaxPasesZona(totalCapacidadEntidad);
             setCapacidadExcedida(form.cantidad_pases > totalCapacidadEntidad);
+            return;
         }
-    }, [form.zona_asignada_id, form.tipo_acceso, zonas, opcionesAcceso, form.cantidad_pases, warningIgnorada, totalCapacidadEntidad]);
+
+        const asig = zonas.find(z => z.zona_id === form.zona_asignada_id);
+        if (!asig) return;
+
+        const distribucion = asig.distribucion_cupos || {};
+        const cupoTotal = parseInt(asig.cupo_asignado) || 0;
+        const cupoBase = parseInt(asig.cupo_reservado_base) || 0;
+        // Suma de todos los cupos categorizados (VIP, Staff, etc.)
+        const cuposCat = Object.values(distribucion).reduce((acc, v) => acc + (parseInt(v) || 0), 0);
+
+        let cupoDisponible = 0;
+        let labelMostrar = 'PÚBLICO GENERAL';
+
+        if (form.tipo_acceso === 'general') {
+            // Cupos libres = Total - Reservados operativos - Todos los categorizados
+            cupoDisponible = cupoTotal - cupoBase - cuposCat;
+            labelMostrar = 'PÚBLICO GENERAL';
+        } else {
+            // Buscar el cupo específico para esta categoría en distribucion_cupos
+            // El backend usa etiquetas en mayúsculas (ej: 'STAFF / APOYO', 'INVITADOS VIP')
+            const LABEL_MAP = {
+                'staff': 'STAFF / APOYO',
+                'produccion': 'PRODUCTORES',
+                'logistica': 'LOGÍSTICA',
+                'vip': 'INVITADOS VIP',
+                'prensa': 'PRENSA',
+                'artista': 'ARTISTA',
+            };
+            const labelKey = LABEL_MAP[form.tipo_acceso] || form.tipo_acceso.toUpperCase();
+            cupoDisponible = parseInt(distribucion[labelKey] || 0);
+            labelMostrar = labelKey;
+        }
+
+        const max = Math.max(0, cupoDisponible);
+        setNombreTipoActivo(labelMostrar);
+        setMaxPasesZona(max);
+        setCapacidadExcedida(form.cantidad_pases > max && !warningIgnorada);
+    }, [form.zona_asignada_id, form.tipo_acceso, zonas, form.cantidad_pases, warningIgnorada, totalCapacidadEntidad]);
 
     const handleAjustarCapacidad = () => {
         setForm(prev => ({ ...prev, cantidad_pases: maxPasesZona }));

@@ -127,7 +127,6 @@ class PaseService:
             max_accesos_por_pase=datos.get('max_accesos_por_pase'),
             entidad_id=entidad.id if entidad else None,
             tipo_acceso=tipo_acc,
-            tipo_acceso_custom_id=datos.get('tipo_acceso_custom_id'),
             zona_estacionamiento_id=zona_id,
             creado_por=creado_por_id
         )
