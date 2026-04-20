@@ -68,17 +68,41 @@ const PaseRow = ({ pase, zonas, onCompartir, onEmail }) => {
                         <p className="text-[9px] text-text-muted/50 italic">Sin datos del portador</p>
                     )}
                 </div>
-                <div className="flex items-center gap-3 mt-0.5 flex-wrap">
+                <div className="flex items-center gap-2 mt-1.5 flex-wrap">
+                    {/* Vehículo Principal */}
                     {pase.vehiculo_placa && (
-                        <span className="text-[8px] font-bold text-text-muted flex items-center gap-0.5">
-                            <Car size={8} /> {pase.vehiculo_placa}
-                        </span>
+                        <div className="flex flex-col gap-0.5 px-2 py-1 bg-white/5 rounded-lg border border-white/10 min-w-[100px]">
+                            <div className="flex items-center gap-1 text-[9px] font-black text-primary-light">
+                                <Car size={10} className="text-primary" /> {pase.vehiculo_placa}
+                            </div>
+                            {(pase.vehiculo_marca || pase.vehiculo_modelo) && (
+                                <div className="text-[7px] text-text-muted truncate uppercase tracking-tighter">
+                                    {pase.vehiculo_marca} {pase.vehiculo_modelo} {pase.vehiculo_color && `(${pase.vehiculo_color})`}
+                                </div>
+                            )}
+                        </div>
                     )}
+
+                    {/* Vehículos Adicionales */}
+                    {pase.vehiculos_adicionales?.map((v, idx) => (
+                        <div key={v.id || idx} className="flex flex-col gap-0.5 px-2 py-1 bg-white/5 rounded-lg border border-white/5 opacity-80 min-w-[100px]">
+                            <div className="flex items-center gap-1 text-[9px] font-bold text-text-secondary">
+                                <Car size={10} /> {v.placa}
+                            </div>
+                            {(v.marca || v.modelo) && (
+                                <div className="text-[7px] text-text-muted truncate uppercase tracking-tighter">
+                                    {v.marca} {v.modelo} {v.color && `(${v.color})`}
+                                </div>
+                            )}
+                        </div>
+                    ))}
+                    
                     {pase.zona_asignada_nombre && (
-                        <span className="text-[8px] font-bold text-success flex items-center gap-0.5">
+                        <span className="text-[8px] font-bold text-success flex items-center gap-0.5 ml-auto">
                             <ParkingSquare size={8} /> {pase.puesto_asignado_codigo || pase.zona_asignada_nombre}
                         </span>
                     )}
+
                     <span className={cn(
                         "text-[7px] font-black uppercase px-1.5 py-0.5 rounded-full",
                         pase.activo ? 'bg-success/15 text-success' : 'bg-text-muted/10 text-text-muted/50'
@@ -424,10 +448,21 @@ const ModalNuevoLote = ({ isOpen, onClose, zonas, tiposCustom, onCreated }) => {
     };
 
     const handleDescargarPlantilla = () => {
-        const ws = XLSX.utils.aoa_to_sheet([
-            ["NOMBRE COMPLETO", "CEDULA", "EMAIL", "TELEFONO", "PLACA VEHICULO 1", "PLACA VEHICULO 2", "PLACA VEHICULO 3"],
-            ["EJ: JUAN PEREZ", "12345678", "juan@correo.com", "04120000000", "ABC-123", "", ""]
-        ]);
+        const headers = [
+            "NOMBRE COMPLETO", "CEDULA", "EMAIL", "TELEFONO", 
+            "PLACA V1", "MARCA V1", "MODELO V1", "COLOR V1",
+            "PLACA V2", "MARCA V2", "MODELO V2", "COLOR V2",
+            "PLACA V3", "MARCA V3", "MODELO V3", "COLOR V3",
+            "PLACA V4", "MARCA V4", "MODELO V4", "COLOR V4"
+        ];
+        const example = [
+            "EJ: JUAN PEREZ", "12345678", "juan@correo.com", "04120000000", 
+            "ABC-123", "TOYOTA", "COROLLA", "BLANCO",
+            "", "", "", "",
+            "", "", "", "",
+            "", "", "", ""
+        ];
+        const ws = XLSX.utils.aoa_to_sheet([headers, example]);
         const wb = XLSX.utils.book_new();
         XLSX.utils.book_append_sheet(wb, ws, "PLANTILLA_PASES");
         XLSX.writeFile(wb, `PLANTILLA_PASES_${form.nombre_evento || 'EV'}.xlsx`);
@@ -811,7 +846,7 @@ export default function EventosV2() {
                     <Boton 
                         onClick={() => setShowModal(true)} 
                         disabled={zonas.length === 0}
-                        className="flex-1 sm:flex-none h-11 px-5 gap-2 text-[11px] font-black uppercase bg-primary text-bg-app rounded-xl shadow-xl shadow-primary/20 hover:scale-[1.02] active:scale-95 transition-all disabled:opacity-50 whitespace-nowrap min-w-fit"
+                        className="flex-1 sm:flex-none h-11 px-5 gap-2 text-[11px] font-black uppercase bg-primary text-bg-app rounded-xl hover:scale-[1.02] active:scale-95 transition-all disabled:opacity-50 whitespace-nowrap min-w-fit"
                     >
                         <PlusCircle size={18} /> 
                         Crear Nuevo Lote

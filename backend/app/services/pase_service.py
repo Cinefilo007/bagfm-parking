@@ -195,15 +195,20 @@ class PaseService:
         for row in filas:
             if not len(row) > 0 or not row[0]: continue # Nombre mandatorio
             
-            # Formato Excel: [NOMBRE, CEDULA, EMAIL, TELEFONO, PLACA 1, PLACA 2, PLACA 3]
-            # Aseguramos que tenga al menos 7 columnas
-            row_data = (list(row) + [None]*7)[:7]
-            nombre, cedula, email, telefono, placa1, placa2, placa3 = row_data
+            # Nuevo Formato Excel (20 Col): [NOMBRE, CEDULA, EMAIL, TELEFONO, 
+            # V1_PLACA, V1_MARCA, V1_MODELO, V1_COLOR, 
+            # V2_PLACA, V2_MARCA, V2_MODELO, V2_COLOR,
+            # V3_PLACA, V3_MARCA, V3_MODELO, V3_COLOR,
+            # V4_PLACA, V4_MARCA, V4_MODELO, V4_COLOR]
+            
+            row_data = (list(row) + [None]*20)[:20]
+            nombre, cedula, email, telefono = row_data[0:4]
+            v1_data = row_data[4:8]
+            v2_data = row_data[8:12]
+            v3_data = row_data[12:16]
+            v4_data = row_data[16:20]
             
             serial_qr = f"{lote.codigo_serial}-{str(count + 1).zfill(4)}"
-            
-            # 1. Crear QR (Sin usuario asignado inicialmente para pases simples identificados, 
-            # o podemos crear el usuario si es necesario, pero la directiva dice que el QR lleva los datos)
             token = crear_token_evento(serial_qr, expira_at)
             
             nuevo_qr = CodigoQR(
@@ -215,29 +220,35 @@ class PaseService:
                 fecha_expiracion=expira_at,
                 created_by=creado_por_id,
                 activo=True,
-                # Datos del portador
                 nombre_portador=str(nombre).upper(),
                 cedula_portador=str(cedula) if cedula else None,
                 email_portador=str(email).lower() if email else None,
                 telefono_portador=str(telefono) if telefono else None,
-                vehiculo_placa=str(placa1).upper() if placa1 else None,
+                # Vehículo 1
+                vehiculo_placa=str(v1_data[0]).upper() if v1_data[0] else None,
+                vehiculo_marca=str(v1_data[1]).upper() if v1_data[1] else None,
+                vehiculo_modelo=str(v1_data[2]).upper() if v1_data[2] else None,
+                vehiculo_color=str(v1_data[3]).upper() if v1_data[3] else None,
                 tipo_acceso=lote.tipo_acceso,
                 tipo_acceso_custom_id=lote.tipo_acceso_custom_id,
                 zona_asignada_id=lote.zona_estacionamiento_id,
-                multi_vehiculo=bool(placa2 or placa3)
+                multi_vehiculo=bool(v2_data[0] or v3_data[0] or v4_data[0])
             )
             db.add(nuevo_qr)
             await db.flush()
             
-            # 2. Registrar vehículos adicionales si existen
-            placas_adicionales = [p for p in [placa2, placa3] if p]
-            for p_adi in placas_adicionales:
-                v_extra = VehiculoPase(
-                    qr_id=nuevo_qr.id,
-                    placa=str(p_adi).upper(),
-                    zona_asignada_id=lote.zona_estacionamiento_id
-                )
-                db.add(v_extra)
+            # Vehículos adicionales (V2, V3, V4)
+            for v_data in [v2_data, v3_data, v4_data]:
+                if v_data[0]: # Si hay placa
+                    v_extra = VehiculoPase(
+                        qr_id=nuevo_qr.id,
+                        placa=str(v_data[0]).upper(),
+                        marca=str(v_data[1]).upper() if v_data[1] else None,
+                        modelo=str(v_data[2]).upper() if v_data[2] else None,
+                        color=str(v_data[3]).upper() if v_data[3] else None,
+                        zona_asignada_id=lote.zona_estacionamiento_id
+                    )
+                    db.add(v_extra)
             
             count += 1
             

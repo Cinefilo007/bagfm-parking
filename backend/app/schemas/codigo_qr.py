@@ -4,6 +4,16 @@ from datetime import datetime
 from pydantic import BaseModel, ConfigDict
 from app.models.enums import QRTipo
 
+class VehiculoPaseSalida(BaseModel):
+    id: UUID
+    placa: str
+    marca: Optional[str] = None
+    modelo: Optional[str] = None
+    color: Optional[str] = None
+    ingresado: bool
+    hora_ingreso: Optional[datetime] = None
+    model_config = ConfigDict(from_attributes=True)
+
 class CodigoQRBase(BaseModel):
     tipo: QRTipo
     activo: bool = True
@@ -28,7 +38,11 @@ class CodigoQRSalida(CodigoQRBase):
     email_portador: Optional[str] = None
     telefono_portador: Optional[str] = None
     vehiculo_placa: Optional[str] = None
+    vehiculo_marca: Optional[str] = None
+    vehiculo_modelo: Optional[str] = None
+    vehiculo_color: Optional[str] = None
     multi_vehiculo: bool = False
+    vehiculos_adicionales: List["VehiculoPaseSalida"] = []
     zona_asignada_id: Optional[UUID] = None
     puesto_asignado_id: Optional[UUID] = None
     hora_entrada_base: Optional[datetime] = None

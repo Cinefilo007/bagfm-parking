@@ -19,6 +19,7 @@ class VehiculoPase(Base):
     placa = Column(String(20), nullable=False)
     marca = Column(String(50), nullable=True)
     modelo = Column(String(50), nullable=True)
+    color = Column(String(50), nullable=True)
     
     zona_asignada_id = Column(UUID(as_uuid=True), ForeignKey("zonas_estacionamiento.id", ondelete="RESTRICT"), nullable=True)
     puesto_asignado_id = Column(UUID(as_uuid=True), ForeignKey("puestos_estacionamiento.id", ondelete="RESTRICT"), nullable=True)
