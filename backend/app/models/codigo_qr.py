@@ -38,6 +38,8 @@ class CodigoQR(Base):
     puesto_asignado_id = Column(UUID(as_uuid=True), ForeignKey("puestos_estacionamiento.id", ondelete="RESTRICT"), nullable=True)
     nombre_portador = Column(String(200), nullable=True)
     cedula_portador = Column(String(20), nullable=True)
+    email_portador = Column(String(200), nullable=True)
+    telefono_portador = Column(String(50), nullable=True)
     vehiculo_placa = Column(String(20), nullable=True)
     multi_vehiculo = Column(Boolean, default=False, nullable=False)
     datos_completos = Column(Boolean, default=False, nullable=False)

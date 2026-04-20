@@ -46,15 +46,16 @@ class TemplateService:
     def generar_excel_pases_template(self) -> bytes:
         """
         Genera un archivo Excel con los encabezados necesarios para pases con identificación (Tipo B).
+        Estructura v2.1: Nombre, Cédula, Email, Teléfono, Placa 1, Placa 2, Placa 3.
         """
         wb = openpyxl.Workbook()
         ws = wb.active
         ws.title = "DATOS_IDENTIFICACION"
 
-        # Encabezados solicitados
+        # Encabezados tácticos v2.1
         headers = [
-            "NOMBRE", "APELLIDO", "CEDULA", "TELEFONO", 
-            "MARCA_VEHICULO", "MODELO_VEHICULO", "PLACA", "COLOR", "AÑO"
+            "NOMBRE COMPLETO", "CEDULA", "EMAIL", "TELEFONO", 
+            "PLACA VEHICULO 1", "PLACA VEHICULO 2", "PLACA VEHICULO 3"
         ]
         
         # Estilos
@@ -67,12 +68,12 @@ class TemplateService:
             cell.fill = header_fill
             cell.font = header_font
             cell.alignment = center_align
-            ws.column_dimensions[openpyxl.utils.get_column_letter(col_num)].width = 18
+            ws.column_dimensions[openpyxl.utils.get_column_letter(col_num)].width = 22
 
-        # Ejemplo
+        # Ejemplo táctico
         ejemplo = [
-            "CARLOS", "RODRIGUEZ", "V10987654", "04245558899",
-            "CHERY", "ARAUCA", "AC123LL", "AZUL", "2015"
+            "JUAN PEREZ", "V10987654", "juan@correo.com", "04245558899",
+            "AC123LL", "XDE990", ""
         ]
         for col_num, value in enumerate(ejemplo, 1):
             ws.cell(row=2, column=col_num, value=value)

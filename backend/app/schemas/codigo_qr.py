@@ -25,6 +25,8 @@ class CodigoQRSalida(CodigoQRBase):
     tipo_acceso: Optional[str] = "general"
     nombre_portador: Optional[str] = None
     cedula_portador: Optional[str] = None
+    email_portador: Optional[str] = None
+    telefono_portador: Optional[str] = None
     vehiculo_placa: Optional[str] = None
     multi_vehiculo: bool = False
     zona_asignada_id: Optional[UUID] = None

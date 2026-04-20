@@ -918,6 +918,15 @@ export default function EstacionamientosEntidad() {
                     />
 
                     {/* Selector de color circular */}
+                    {/* Info de requerimiento implicito */}
+                    <div className="flex items-start gap-2 p-3 bg-white/5 rounded-xl border border-white/5">
+                        <Car size={14} className="text-primary shrink-0 mt-0.5" />
+                        <p className="text-[9px] text-text-muted leading-tight uppercase font-bold">
+                            Nota: Todo acceso de tipo estacionamiento requiere vinculación de vehículo obligatoria.
+                        </p>
+                    </div>
+
+                    {/* Selector de color circular */}
                     <div className="space-y-2">
                         <label className="text-[10px] font-black text-text-muted uppercase tracking-widest flex items-center gap-2">
                             <Palette size={11} className="text-primary" /> Color del Badge
@@ -926,6 +935,7 @@ export default function EstacionamientosEntidad() {
                             {PRESET_COLORS.map(color => (
                                 <button
                                     key={color}
+                                    type="button"
                                     onClick={() => setFormTipo({ ...formTipo, color_badge: color })}
                                     className={cn(
                                         "w-8 h-8 rounded-full border-2 transition-all hover:scale-110",
@@ -940,12 +950,13 @@ export default function EstacionamientosEntidad() {
                     <div className="grid grid-cols-1 gap-4">
                         <div>
                             <label className="text-[9px] font-black text-text-muted uppercase tracking-widest block mb-2">
-                                Máx. Vehículos por Socio
+                                Máx. Vehículos Permitidos
                             </label>
                             <div className="flex gap-2">
                                 {[1, 2, 3, 4].map(n => (
                                     <button
                                         key={n}
+                                        type="button"
                                         onClick={() => setFormTipo({ ...formTipo, max_vehiculos: n })}
                                         className={cn(
                                             "flex-1 h-10 rounded-xl border-2 text-sm font-black transition-all",
@@ -953,8 +964,6 @@ export default function EstacionamientosEntidad() {
                                                 ? 'bg-primary/10 border-primary text-primary'
                                                 : 'bg-white/5 border-white/10 text-text-muted hover:border-white/20'
                                         )}
-                                    >
-                                        {n}
                                     </button>
                                 ))}
                             </div>

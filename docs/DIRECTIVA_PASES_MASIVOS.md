@@ -24,17 +24,14 @@ Adicionalmente, se introduce un sistema de **carnets de acceso personalizables**
 1. Admin accede a "Generar Pases"
 2. Ve indicador: "Cuota disponible: 55/100 puestos"
 3. Configura el lote:
-   - Tipo de acceso (logística, prensa, VIP, general, staff, artista)
+   - Tipo de acceso (logística, prensa, VIP, general, staff, artista, custom)
    - Tipo de pase (simple, identificado, portal)
    - Cantidad, fechas, evento, max accesos
-   - **v2.0 — Asignación de estacionamiento** (para VIP, logística, productores):
-     a. Seleccionar zona destino (opcional)
-     b. Si la zona tiene puestos identificados:
-        → Admin puede seleccionar puestos específicos (ej: "A-01", "A-02")
-        → Puestos quedan en estado "reservado" → vinculados a los pases
-     c. Si la zona NO tiene puestos identificados:
-        → Solo se registra la zona como destino
-     d. Pases generales: sin asignación previa (se asigna al llegar)
+   - **v2.1 — Distribución Táctica**:
+     a. El sistema prioriza los puestos "reservados" para el tipo de acceso seleccionado.
+     b. Si `cantidad > cupos_tipo`: El sistema ofrece alerta de sobrefacturación.
+     c. El usuario puede: Ajustar cantidad u optar por "Distribución Remanente" (usa puestos libres generales).
+     d. Validación en Frontend: El Excel debe tener exactamente la misma cantidad de filas que los pases solicitados.
 
 4a. cantidad ≤ cuota disponible:
     → Genera lote DIRECTO (requiere_aprobacion = false)
@@ -145,8 +142,9 @@ Admin ve lista de lotes:
    - WhatsApp: Abre WhatsApp con mensaje pre-formateado + imagen QR
    - Email: Envía email con QR adjunto (fastapi-mail + SMTP)
    - Copiar Link: Copia URL al clipboard
-4. En móvil: usa navigator.share() nativo
-```
+Portadores (Datos capturados):
+→ Cada pase individual almacena: `nombre_portador`, `cedula_portador`, `email_portador` (v2.1), `telefono_portador` (v2.1).
+→ Esta información es vital para la trazabilidad y contacto directo.
 
 ### Envío Masivo de Email
 ```
@@ -174,7 +172,8 @@ Admin ve lista de lotes:
 
 ### Tipo B — Identificado (`identificado`)
 - Cargado desde Excel con datos completos de los integrantes.
-- Crea usuario + vehículo vinculado en el sistema.
+- **Estructura Excel v2.1**: `Nombre Completo`, `Cédula`, `Email`, `Teléfono`, `Placa 1`, `Placa 2`, `Placa 3`.
+- Crea registro de portador vinculado y soporta pases multi-vehículo desde la carga inicial.
 - Ideal para: invitados pre-registrados, equipo de trabajo conocido (staff, vip).
 
 ### Tipo C — Portal (`portal`)
@@ -349,5 +348,5 @@ RESEND_API_KEY=re_****
 
 ---
 
-*Última actualización: 2026-04-18 | v2.0 — Pases Masivos con Autonomía*
+*Última actualización: 2026-04-19 | v2.1 — Pases Masivos con Distribución Táctica y Multi-Vehículo*
 *Docs Relacionados: SCHEMA_BD.md, ROLES_Y_PERMISOS.md, FLUJOS_DE_NEGOCIO.md FL-08 v2*

@@ -10,9 +10,8 @@ import {
     Calendar, Plus, Download, Clock, PackageOpen,
     LayoutGrid, Ticket, UserCheck, ExternalLink,
     Users, QrCode, ChevronRight, Share2, Mail,
-    ParkingSquare, Car, Tag, Edit3, RefreshCw,
-    Upload, CheckCircle2, MapPin, MoreVertical, Copy,
-    Shield, Camera, Star
+    RefreshCw, Upload, CheckCircle2, MapPin, MoreVertical, Copy,
+    Shield, Camera, Star, AlertTriangle, FileSpreadsheet, PlusCircle
 } from 'lucide-react';
 import { eventosService } from '../../services/eventos.service';
 import { pasesService } from '../../services/pasesService';
@@ -335,14 +334,15 @@ const TIPOS_PASE_OPTIONS = [
     { id: 'portal', label: 'Portal', icon: ExternalLink, desc: 'Auto-registro' },
 ];
 
-const TIPOS_ACCESO_OPTIONS = [
+const TIPOS_ACCESO_BASE = [
     { id: 'general', label: 'Público General', icon: Users },
     { id: 'staff', label: 'Staff / Apoyo', icon: Shield },
     { id: 'produccion', label: 'Productores', icon: LayoutGrid },
     { id: 'logistica', label: 'Logística', icon: Car },
     { id: 'vip', label: 'Invitados VIP', icon: Tag },
-    { id: 'custom', label: 'Otro / Personalizado', icon: Plus },
 ];
+
+import SelectTactivo from '../../components/ui/SelectTactivo';
 
 const ModalNuevoLote = ({ isOpen, onClose, zonas, tiposCustom, onCreated }) => {
     const { user } = useAuthStore();
@@ -363,6 +363,21 @@ const ModalNuevoLote = ({ isOpen, onClose, zonas, tiposCustom, onCreated }) => {
     const [puestosDisponibles, setPuestosDisponibles] = useState([]);
     const [guardando, setGuardando] = useState(false);
     const [maxPasesZona, setMaxPasesZona] = useState(9999);
+    const [capacidadExcedida, setCapacidadExcedida] = useState(false);
+    const [excelPases, setExcelPases] = useState(null);
+    const [nombreTipoActivo, setNombreTipoActivo] = useState('');
+
+    // Combinar tipos de acceso (Base + Custom de la entidad)
+    const opcionesAcceso = useMemo(() => {
+        const customMapped = tiposCustom.map(tc => ({
+            id: tc.id,
+            label: tc.nombre,
+            icon: Tag,
+            isCustom: true,
+            color: tc.color
+        }));
+        return [...TIPOS_ACCESO_BASE, ...customMapped];
+    }, [tiposCustom]);
 
     useEffect(() => {
         if (form.zona_asignada_id) {
@@ -375,48 +390,95 @@ const ModalNuevoLote = ({ isOpen, onClose, zonas, tiposCustom, onCreated }) => {
             if (asig) {
                 let cupoParaTipo = 0;
                 let nombreTipo = '';
-                if (form.tipo_acceso === 'custom' && form.tipo_acceso_custom_id) {
-                    const custom = tiposCustom.find(t => t.id === form.tipo_acceso_custom_id);
-                    if (custom) nombreTipo = custom.nombre.toUpperCase();
-                } else if (form.tipo_acceso !== 'custom') {
-                    const opt = TIPOS_ACCESO_OPTIONS.find(t => t.id === form.tipo_acceso);
-                    if (opt) nombreTipo = opt.label.toUpperCase();
-                }
+                
+                const opt = opcionesAcceso.find(o => o.id === form.tipo_acceso);
+                if (opt) nombreTipo = opt.label.toUpperCase();
+                setNombreTipoActivo(nombreTipo);
 
                 if (nombreTipo && asig.distribucion_cupos && asig.distribucion_cupos[nombreTipo]) {
                     cupoParaTipo = parseInt(asig.distribucion_cupos[nombreTipo]);
                 } else {
-                    // Si no tiene distribución específica, asume el general remanente
-                    const reservado = Object.values(asig.distribucion_cupos || {}).reduce((acc, v) => acc + parseInt(v), 0);
-                    cupoParaTipo = asig.cupo_asignado - asig.cupo_reservado_base - reservado;
+                    // Si no tiene distribución específica, asume el remanente (libres)
+                    const reservadoOtros = Object.entries(asig.distribucion_cupos || {}).reduce((acc, [k, v]) => {
+                        return k === nombreTipo ? acc : acc + parseInt(v);
+                    }, 0);
+                    cupoParaTipo = asig.cupo_asignado - asig.cupo_reservado_base - reservadoOtros;
                 }
                 
-                setMaxPasesZona(Math.max(0, cupoParaTipo));
-                if (form.cantidad_pases > cupoParaTipo) {
-                    setForm(prev => ({...prev, cantidad_pases: Math.max(0, cupoParaTipo)}));
-                }
+                const max = Math.max(0, cupoParaTipo);
+                setMaxPasesZona(max);
+                setCapacidadExcedida(form.cantidad_pases > max);
             }
         } else {
             setPuestosDisponibles([]);
             setMaxPasesZona(9999);
+            setCapacidadExcedida(false);
         }
-    }, [form.zona_asignada_id, form.tipo_acceso, form.tipo_acceso_custom_id, zonas, tiposCustom]);
+    }, [form.zona_asignada_id, form.tipo_acceso, zonas, opcionesAcceso, form.cantidad_pases]);
+
+    const handleAjustarCapacidad = () => {
+        setForm(prev => ({ ...prev, cantidad_pases: maxPasesZona }));
+        setCapacidadExcedida(false);
+    };
+
+    const handleDescargarPlantilla = () => {
+        const ws = XLSX.utils.aoa_to_sheet([
+            ["NOMBRE COMPLETO", "CEDULA", "EMAIL", "TELEFONO", "PLACA VEHICULO 1", "PLACA VEHICULO 2", "PLACA VEHICULO 3"],
+            ["EJ: JUAN PEREZ", "12345678", "juan@correo.com", "04120000000", "ABC-123", "", ""]
+        ]);
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, "PLANTILLA_PASES");
+        XLSX.writeFile(wb, `PLANTILLA_PASES_${form.nombre_evento || 'EV'}.xlsx`);
+    };
+
+    const handleCargarExcelFrontend = (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = (evt) => {
+            try {
+                const data = evt.target.result;
+                const workbook = XLSX.read(data, { type: 'binary' });
+                const sheet = workbook.Sheets[workbook.SheetNames[0]];
+                const rows = XLSX.utils.sheet_to_json(sheet, { header: 1 });
+                const dataRows = rows.slice(1).filter(r => r.some(v => v));
+
+                if (dataRows.length !== form.cantidad_pases) {
+                    toast.error(`ERROR TÁCTICO: El Excel tiene ${dataRows.length} registros, pero solicitaste ${form.cantidad_pases} pases.`);
+                    e.target.value = '';
+                    setExcelPases(null);
+                    return;
+                }
+                setExcelPases(dataRows);
+                toast.success('Excel validado correctamente');
+            } catch (err) {
+                toast.error('Error al procesar el Excel');
+            }
+        };
+        reader.readAsBinaryString(file);
+    };
 
     const handleSubmit = async () => {
         if (!form.nombre_evento.trim() || !form.fecha_fin) {
             toast.error('Completa los campos requeridos');
             return;
         }
+        if (form.tipo_pase === 'identificado' && !excelPases) {
+            toast.error('Debes cargar el Excel con los datos de los pases');
+            return;
+        }
+
         setGuardando(true);
         try {
-            await pasesService.crearLote({
+            const payload = {
                 ...form,
                 entidad_id: user?.entidad_id,
-                tipo_acceso_custom_id: form.tipo_acceso === 'custom' ? form.tipo_acceso_custom_id : null,
-                zona_asignada_id: form.zona_asignada_id || null,
-                puesto_asignado_id: form.puesto_asignado_id || null,
-            });
-            toast.success('Lote de pases creado');
+                excel_data: excelPases, // Enviaremos los datos del excel si existen
+                distribucion_automatica: capacidadExcedida // Indica si aceptó distribuir fuera de su cupo
+            };
+            await pasesService.crearLote(payload);
+            toast.success('Lote de pases creado con éxito');
             onCreated?.();
             onClose();
         } catch (e) {
@@ -451,38 +513,30 @@ const ModalNuevoLote = ({ isOpen, onClose, zonas, tiposCustom, onCreated }) => {
                     </div>
                 </div>
 
-                {/* Tipo de acceso */}
+                {/* Tipo de acceso dinámico */}
                 <div>
-                    <label className="text-[10px] font-black text-text-muted uppercase tracking-widest block mb-3">2. Tipo de Acceso / Público</label>
-                    <div className="grid grid-cols-3 gap-2">
-                        {TIPOS_ACCESO_OPTIONS.map(t => {
+                    <label className="text-[10px] font-black text-text-muted uppercase tracking-widest block mb-4">
+                        2. Clasificación del Portador
+                    </label>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
+                        {opcionesAcceso.map(t => {
                             const Icon = t.icon;
                             const sel = form.tipo_acceso === t.id;
                             return (
                                 <button key={t.id} onClick={() => setForm({ ...form, tipo_acceso: t.id })}
                                     className={cn(
-                                        "flex items-center gap-2 p-2.5 rounded-xl border-2 transition-all text-left",
-                                        sel ? 'bg-white/10 border-white/40 text-text-main shadow-lg' : 'bg-white/5 border-white/5 text-text-muted hover:bg-white/8'
+                                        "flex items-center gap-3 p-3 rounded-2xl border transition-all text-left group relative overflow-hidden",
+                                        sel ? 'bg-white/10 border-white/30 text-text-main shadow-xl' : 'bg-white/5 border-white/5 text-text-muted hover:border-white/10 hover:bg-white/8'
                                     )}>
-                                    <div className={cn("p-1.5 rounded-lg shrink-0", sel ? 'bg-primary/20 text-primary' : 'bg-black/20')}>
-                                        <Icon size={14} />
+                                    {sel && <div className="absolute top-0 left-0 w-1 h-full bg-primary" />}
+                                    <div className={cn("p-2 rounded-xl shrink-0 transition-colors", sel ? 'bg-primary/20 text-primary' : 'bg-black/20 group-hover:bg-black/40')}>
+                                        <Icon size={16} />
                                     </div>
-                                    <span className="text-[9px] font-black uppercase leading-tight">{t.label}</span>
+                                    <span className="text-[10px] font-black uppercase leading-tight tracking-tight">{t.label}</span>
                                 </button>
                             );
                         })}
                     </div>
-                    {/* Tipo custom selector */}
-                    {form.tipo_acceso === 'custom' && tiposCustom.length > 0 && (
-                        <select value={form.tipo_acceso_custom_id}
-                            onChange={e => setForm({ ...form, tipo_acceso_custom_id: e.target.value })}
-                            className="mt-3 w-full bg-white/5 border border-primary/30 rounded-xl px-3 py-2.5 text-xs font-bold text-text-main focus:border-primary/60 outline-none animate-in slide-in-from-top-2">
-                            <option value="">— Seleccionar tipo personalizado —</option>
-                            {tiposCustom.map(tc => (
-                                <option key={tc.id} value={tc.id}>{tc.nombre}</option>
-                            ))}
-                        </select>
-                    )}
                 </div>
 
                 {/* Datos del lote */}
@@ -513,32 +567,118 @@ const ModalNuevoLote = ({ isOpen, onClose, zonas, tiposCustom, onCreated }) => {
                             onChange={e => setForm({ ...form, max_accesos_por_pase: parseInt(e.target.value) || 1 })} />
                     </div>
 
-                    {/* Asignación zona/puesto */}
-                    {zonas.length > 0 && (
-                        <div className="space-y-3">
-                            <label className="text-[9px] font-black text-text-muted uppercase tracking-widest block">
-                                <ParkingSquare size={10} className="inline mr-1.5 text-primary" />
-                                Zona de Estacionamiento (opcional)
-                            </label>
-                            <div className="grid grid-cols-2 gap-3">
-                                <select value={form.zona_asignada_id}
-                                    onChange={e => setForm({ ...form, zona_asignada_id: e.target.value, puesto_asignado_id: '' })}
-                                    className="bg-white/5 border border-white/10 rounded-xl px-3 py-2.5 text-xs font-bold text-text-main focus:border-primary/50 outline-none">
-                                    <option value="">— Sin zona —</option>
-                                    {zonas.map(z => (
-                                        <option key={z.id} value={z.id}>{z.nombre}</option>
+                    {/* Asignación táctica zona/puesto */}
+                    <div className="space-y-4 pt-2">
+                        <SelectTactivo 
+                            label="Zona de Estacionamiento"
+                            icon={<MapPin size={10} className="text-primary" />}
+                            placeholder="Buscar zona física..."
+                            options={zonas.map(z => ({ 
+                                value: z.zona_id, 
+                                label: z.zona_nombre?.toUpperCase() || `ZONA ${z.zona_id.slice(-4)}`
+                            }))}
+                            value={zonas.find(z => z.zona_id === form.zona_asignada_id) ? {
+                                value: form.zona_asignada_id,
+                                label: zonas.find(z => z.zona_id === form.zona_asignada_id)?.zona_nombre?.toUpperCase()
+                            } : null}
+                            onChange={(opt) => setForm({ ...form, zona_asignada_id: opt?.value || '', puesto_asignado_id: '' })}
+                            isClearable
+                        />
+
+                        {/* Alerta de Capacidad */}
+                        {capacidadExcedida && (
+                            <div className="bg-warning/10 border border-warning/30 rounded-2xl p-4 space-y-3 animate-in zoom-in-95">
+                                <div className="flex gap-3">
+                                    <AlertTriangle className="text-warning shrink-0" size={18} />
+                                    <div>
+                                        <p className="text-[10px] font-black text-warning uppercase tracking-widest">Capacidad Excedida</p>
+                                        <p className="text-[9px] text-text-muted font-bold mt-1 leading-relaxed">
+                                            Solicitaste <span className="text-white">{form.cantidad_pases}</span> pases de tipo <span className="text-white">{nombreTipoActivo}</span>, pero solo hay <span className="text-white">{maxPasesZona}</span> cupos reservados en esta zona.
+                                        </p>
+                                    </div>
+                                </div>
+                                <div className="flex gap-2">
+                                    <button 
+                                        onClick={handleAjustarCapacidad}
+                                        className="flex-1 bg-warning/20 hover:bg-warning/30 text-warning text-[8px] font-black uppercase py-2 rounded-lg transition-all"
+                                    >
+                                        Ajustar al Máximo
+                                    </button>
+                                    <button 
+                                        onClick={() => setCapacidadExcedida(false)}
+                                        className="flex-1 bg-white/5 hover:bg-white/10 text-text-muted text-[8px] font-black uppercase py-2 rounded-lg transition-all"
+                                    >
+                                        Distribución Libre
+                                    </button>
+                                </div>
+                            </div>
+                        )}
+
+                        {puestosDisponibles.length > 0 && !capacidadExcedida && (
+                            <div className="bg-white/5 border border-white/5 rounded-2xl p-4 space-y-2">
+                                <label className="text-[9px] font-black text-text-muted uppercase tracking-widest flex items-center gap-2">
+                                    <Hash size={11} className="text-primary" />
+                                    Vincular a Puesto Específico
+                                </label>
+                                <div className="grid grid-cols-4 gap-2">
+                                    <button 
+                                        onClick={() => setForm({ ...form, puesto_asignado_id: '' })}
+                                        className={cn(
+                                            "h-9 rounded-lg border text-[9px] font-black transition-all uppercase",
+                                            !form.puesto_asignado_id ? 'bg-primary/20 border-primary text-primary' : 'bg-black/20 border-white/5 text-text-muted hover:bg-white/5'
+                                        )}
+                                    >
+                                        Auto
+                                    </button>
+                                    {puestosDisponibles.slice(0, 7).map(p => (
+                                        <button 
+                                            key={p.id}
+                                            onClick={() => setForm({ ...form, puesto_asignado_id: p.id })}
+                                            className={cn(
+                                                "h-9 rounded-lg border text-[9px] font-black transition-all",
+                                                form.puesto_asignado_id === p.id ? 'bg-primary/20 border-primary text-primary' : 'bg-black/20 border-white/5 text-text-muted hover:bg-white/5'
+                                            )}
+                                        >
+                                            {p.numero_puesto || p.codigo?.slice(-3)}
+                                        </button>
                                     ))}
-                                </select>
-                                {puestosDisponibles.length > 0 && (
-                                    <select value={form.puesto_asignado_id}
-                                        onChange={e => setForm({ ...form, puesto_asignado_id: e.target.value })}
-                                        className="bg-white/5 border border-white/10 rounded-xl px-3 py-2.5 text-xs font-bold text-text-main focus:border-primary/50 outline-none">
-                                        <option value="">— Puesto libre —</option>
-                                        {puestosDisponibles.map(p => (
-                                            <option key={p.id} value={p.id}>{p.codigo}</option>
-                                        ))}
-                                    </select>
-                                )}
+                                </div>
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Sección Excel para Identificados */}
+                    {form.tipo_pase === 'identificado' && (
+                        <div className="p-4 bg-primary/5 border border-primary/20 rounded-2xl space-y-4 animate-in slide-in-from-bottom-2">
+                            <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-2">
+                                    <FileSpreadsheet size={16} className="text-primary" />
+                                    <span className="text-[10px] font-black text-text-main uppercase">Carga de Integrantes</span>
+                                </div>
+                                <button 
+                                    onClick={handleDescargarPlantilla}
+                                    className="text-[9px] font-black text-primary hover:underline uppercase flex items-center gap-1.5"
+                                >
+                                    <Download size={12} /> Plantilla
+                                </button>
+                            </div>
+                            
+                            <div className="relative group">
+                                <input 
+                                    type="file" 
+                                    accept=".xlsx, .xls"
+                                    onChange={handleCargarExcelFrontend}
+                                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" 
+                                />
+                                <div className={cn(
+                                    "p-6 border-2 border-dashed rounded-xl flex flex-col items-center gap-2 transition-all",
+                                    excelPases ? 'bg-success/5 border-success/30 text-success' : 'bg-black/20 border-white/10 text-text-muted group-hover:border-primary/40'
+                                )}>
+                                    {excelPases ? <CheckCircle2 size={24} /> : <Upload size={24} />}
+                                    <span className="text-[10px] font-black uppercase">
+                                        {excelPases ? `${excelPases.length} REGISTROS CARGADOS` : 'Haga clic o arrastre el Excel aquí'}
+                                    </span>
+                                </div>
                             </div>
                         </div>
                     )}
@@ -650,29 +790,47 @@ export default function EventosV2() {
 
     return (
         <div className="p-4 space-y-6 pb-32 max-w-[1400px] mx-auto animate-in fade-in duration-500">
-            {/* Cabecera */}
-            <header className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4 bg-bg-card/30 p-4 md:p-5 rounded-2xl md:rounded-[2rem] border border-white/5 overflow-hidden">
-                <div className="min-w-0">
-                    <h1 className="text-xl md:text-2xl font-black text-text-main uppercase tracking-tighter flex items-center gap-3">
-                        <div className="p-2 bg-primary/10 rounded-xl border border-primary/20 shrink-0">
-                            <Calendar className="text-primary" size={20} />
+            {/* Cabecera Táctica */}
+            <header className="relative overflow-hidden bg-bg-card/30 rounded-[2.5rem] border border-white/5 p-6 md:p-8">
+                {/* Decoración de fondo */}
+                <div className="absolute top-0 right-0 w-64 h-64 bg-primary/5 blur-[100px] -mr-32 -mt-32" />
+                
+                <div className="relative flex flex-col md:flex-row md:items-center justify-between gap-6">
+                    <div className="space-y-2">
+                        <div className="flex items-center gap-3">
+                            <div className="p-3 bg-primary/10 rounded-2xl border border-primary/20 shadow-lg shadow-primary/5">
+                                <Calendar className="text-primary" size={24} />
+                            </div>
+                            <div>
+                                <h1 className="text-2xl md:text-3xl font-black text-text-main uppercase tracking-tighter leading-none">
+                                    Eventos y Pases
+                                </h1>
+                                <p className="text-[10px] md:text-xs text-text-muted font-bold uppercase tracking-[0.2em] mt-1 flex items-center gap-2">
+                                    <span className="w-2 h-2 rounded-full bg-success animate-pulse" />
+                                    Gestión de Accesos Masivos — {user?.entidad_nombre}
+                                </p>
+                            </div>
                         </div>
-                        <span className="truncate">Eventos y Pases</span>
-                    </h1>
-                    <p className="text-text-muted text-[10px] md:text-xs mt-1 flex items-center gap-2 font-bold truncate">
-                        <span className="w-1.5 h-1.5 rounded-full bg-success animate-pulse shrink-0" />
-                        {user?.entidad_nombre}
-                    </p>
-                </div>
-                <div className="flex flex-wrap items-center gap-2 w-full lg:w-auto">
-                    <Boton onClick={() => setShowSolicitudModal(true)} variant="ghost"
-                        className="flex-1 lg:flex-none h-11 px-4 gap-2 text-[9px] md:text-[10px] font-black uppercase border-white/10 rounded-xl">
-                        <Clock size={14} /> Solicitar
-                    </Boton>
-                    <Boton onClick={() => setShowModal(true)} disabled={zonas.length === 0}
-                        className="flex-1 lg:flex-none h-11 px-4 gap-2 text-[9px] md:text-[10px] font-black uppercase bg-primary text-bg-app rounded-xl shadow-tactica disabled:opacity-50 disabled:cursor-not-allowed">
-                        <Plus size={14} /> Crear Lote
-                    </Boton>
+                    </div>
+
+                    <div className="flex items-center gap-3">
+                        <Boton 
+                            onClick={() => setShowSolicitudModal(true)} 
+                            variant="ghost"
+                            className="h-12 px-6 gap-2 text-[10px] font-black uppercase border-white/10 rounded-2xl hover:bg-white/5 transition-all"
+                        >
+                            <Clock size={16} className="text-warning" /> 
+                            Solicitar Evento
+                        </Boton>
+                        <Boton 
+                            onClick={() => setShowModal(true)} 
+                            disabled={zonas.length === 0}
+                            className="h-12 px-8 gap-2 text-[11px] font-black uppercase bg-primary text-bg-app rounded-2xl shadow-xl shadow-primary/20 hover:scale-[1.02] active:scale-95 transition-all disabled:opacity-50"
+                        >
+                            <PlusCircle size={18} /> 
+                            Crear Nuevo Lote
+                        </Boton>
+                    </div>
                 </div>
             </header>
 
@@ -732,12 +890,30 @@ export default function EventosV2() {
                         ))}
                     </div>
                 ) : (
-                    <div className="py-16 flex flex-col items-center gap-4 bg-bg-card/20 rounded-3xl border border-dashed border-white/10">
-                        <PackageOpen className="text-text-muted opacity-20" size={48} />
-                        <div className="text-center px-6">
-                            <p className="text-text-main font-black uppercase tracking-widest text-sm">Sin lotes de pases</p>
-                            <p className="text-text-muted text-xs mt-1 max-w-xs mx-auto">Utiliza los controles de la cabecera para solicitar un evento o crear un lote de acceso.</p>
+                    <div className="relative group py-24 flex flex-col items-center gap-6 bg-bg-card/10 rounded-[3rem] border border-dashed border-white/10 overflow-hidden">
+                        <div className="absolute inset-0 bg-gradient-to-b from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                        
+                        <div className="relative w-20 h-20 bg-white/5 rounded-[2rem] flex items-center justify-center border border-white/5 shadow-inner">
+                            <PackageOpen className="text-text-muted/20" size={40} />
                         </div>
+                        
+                        <div className="relative text-center px-6 space-y-2">
+                            <h3 className="text-text-main font-black uppercase tracking-[0.2em] text-sm">
+                                Terminal de Pases Vacía
+                            </h3>
+                            <p className="text-text-muted text-[10px] font-bold uppercase tracking-widest max-w-xs mx-auto leading-relaxed opacity-60">
+                                No se detectan lotes de acceso activos para {user?.entidad_nombre}. 
+                                Utiliza el panel superior para iniciar un nuevo protocolo.
+                            </p>
+                        </div>
+
+                        <Boton 
+                            onClick={() => setShowModal(true)} 
+                            variant="ghost"
+                            className="relative mt-2 h-10 px-6 gap-2 text-[9px] font-black uppercase border-white/5 rounded-xl hover:bg-primary/10 hover:text-primary transition-all"
+                        >
+                            <Plus size={14} /> Iniciar Primer Lote
+                        </Boton>
                     </div>
                 )}
             </section>
