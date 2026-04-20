@@ -288,83 +288,83 @@ const PlantillaTicket = ({ datos, config }) => {
 const PlantillaCredencial = ({ datos, config }) => {
     const c = config.colores;
     return (
-        <div className="w-[240px] mx-auto select-none" id="carnet-preview">
-            <div className="rounded-2xl overflow-hidden shadow-2xl"
-                style={{ background: c.fondo, border: `2px solid ${c.primario}30` }}>
+        <div className="w-[240px] mx-auto select-none overflow-hidden" id="carnet-preview" style={{ width: '240px', minWidth: '240px' }}>
+            <div className="rounded-2xl overflow-hidden shadow-2xl relative"
+                style={{ background: c.fondo, border: `2px solid ${c.primario}30`, minHeight: '380px', display: 'flex', flexDirection: 'column' }}>
 
-                {/* Banner superior */}
-                <div className="h-3" style={{ background: c.primario }} />
+                {/* Banner superior (fijo) */}
+                <div className="h-4 w-full shrink-0" style={{ background: c.primario }} />
 
-                <div className="p-5 space-y-3">
+                <div className="p-5 flex-1 flex flex-col justify-between">
                     {/* Logo + título */}
-                    <div className="flex items-center gap-2">
-                        <div className="w-7 h-7 rounded-lg flex items-center justify-center"
+                    <div className="flex items-center gap-2 mb-4">
+                        <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
                             style={{ background: `${c.primario}15` }}>
-                            <Shield size={14} style={{ color: c.primario }} />
+                            <Shield size={16} style={{ color: c.primario }} />
                         </div>
-                        <div>
-                            <p className="text-[8px] font-black uppercase tracking-[0.25em]" style={{ color: c.primario }}>
+                        <div className="flex-1 overflow-hidden">
+                            <p className="text-[9px] font-black uppercase tracking-[0.25em] truncate" style={{ color: c.primario }}>
                                 {config.titulo || 'BAGFM'}
                             </p>
-                            <p className="text-[6px] font-bold uppercase tracking-widest" style={{ color: `${c.textoNombre}40` }}>
+                            <p className="text-[6px] font-bold uppercase tracking-widest truncate" style={{ color: `${c.textoNombre}50` }}>
                                 {config.subtitulo || 'CONTROL DE ACCESO'}
                             </p>
                         </div>
                     </div>
 
-                    {/* Nombre — Subido por eliminación de foto */}
-                    <div className="text-center pt-2">
-                        <p className="text-sm font-black uppercase tracking-tight" style={{ color: c.textoNombre }}>
-                            {datos.nombre || 'NOMBRE APELLIDO'}
-                        </p>
-                        {datos.cedula && (
-                            <p className="text-[8px] font-bold tracking-widest mt-0.5" style={{ color: `${c.textoNombre}60` }}>
-                                C.I. {datos.cedula}
+                    {/* Nombre y Tipo — Espaciado armonizado */}
+                    <div className="text-center py-4 space-y-2">
+                        <div>
+                            <p className="text-sm font-black uppercase tracking-tight" style={{ color: c.textoNombre }}>
+                                {datos.nombre || 'NOMBRE APELLIDO'}
                             </p>
-                        )}
+                            {datos.cedula && (
+                                <p className="text-[8px] font-bold tracking-widest mt-0.5" style={{ color: `${c.textoNombre}60` }}>
+                                    C.I. {datos.cedula}
+                                </p>
+                            )}
+                        </div>
+                        <div>
+                            <span className="inline-flex items-center gap-1 text-[8px] font-black uppercase tracking-widest px-3 py-1 rounded-full"
+                                style={{ background: c.primario, color: c.textoHeader }}>
+                                <Tag size={8} /> {datos.tipo_acceso || 'INVITADO'}
+                            </span>
+                        </div>
                     </div>
 
-                    {/* Tipo */}
-                    <div className="text-center">
-                        <span className="inline-flex items-center gap-1 text-[8px] font-black uppercase tracking-widest px-3 py-1 rounded-full"
-                            style={{ background: c.primario, color: c.textoHeader }}>
-                            <Tag size={8} /> {datos.tipo_acceso || 'INVITADO'}
-                        </span>
-                    </div>
-
-                    {/* Detalles */}
-                    <div className="space-y-1.5">
+                    {/* Detalles — Compactos para no desperdigarse */}
+                    <div className="space-y-1.5 px-2">
                         {[
                             { label: 'Entidad', valor: datos.entidad },
                             { label: 'Evento', valor: datos.evento },
                             { label: 'Vehículo', valor: datos.vehiculo_placa },
                             { label: 'Zona', valor: datos.zona_nombre },
                         ].filter(d => d.valor).map(d => (
-                            <div key={d.label} className="flex justify-between items-center">
-                                <span className="text-[7px] font-bold uppercase tracking-widest" style={{ color: `${c.textoNombre}40` }}>{d.label}</span>
-                                <span className="text-[8px] font-black uppercase" style={{ color: c.textoNombre }}>{d.valor}</span>
+                            <div key={d.label} className="flex justify-between items-center gap-4">
+                                <span className="text-[7px] font-bold uppercase tracking-widest shrink-0" style={{ color: `${c.textoNombre}45` }}>{d.label}</span>
+                                <span className="text-[8px] font-black uppercase text-right truncate" style={{ color: c.textoNombre }}>{d.valor}</span>
                             </div>
                         ))}
                     </div>
 
-                    {/* QR */}
-                    <div className="flex flex-col items-center pt-4 border-t" style={{ borderColor: `${c.primario}15` }}>
+                    {/* QR — El protagonista */}
+                    <div className="flex flex-col items-center pt-4 mt-2 border-t" style={{ borderColor: `${c.primario}15` }}>
                         <QRPlaceholder size={110} />
-                        <p className="text-[6px] font-mono tracking-widest mt-1" style={{ color: `${c.textoNombre}35` }}>
+                        <p className="text-[6px] font-mono tracking-widest mt-1.5" style={{ color: `${c.textoNombre}35` }}>
                             {datos.serial || 'XXXX-XXXX-XXXX'}
                         </p>
                     </div>
 
                     {/* Vigencia */}
-                    <div className="text-center pt-1">
+                    <div className="text-center pt-2">
                         <p className="text-[7px] font-bold" style={{ color: `${c.textoNombre}50` }}>
                             Vigencia: {datos.fecha_inicio || '--/--'} — {datos.fecha_fin || '--/--'}
                         </p>
                     </div>
                 </div>
 
-                {/* Franja inferior */}
-                <div className="h-2" style={{ background: c.primario }} />
+                {/* Franja inferior (fijo) */}
+                <div className="h-2 w-full shrink-0" style={{ background: c.primario }} />
             </div>
         </div>
     );
