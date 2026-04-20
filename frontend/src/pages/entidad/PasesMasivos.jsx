@@ -90,12 +90,12 @@ const PaseRow = ({ pase, zonas, onCompartir, onEmail }) => {
             <div className="flex items-center gap-1 shrink-0">
                 {pase.qr_url && (
                     <button onClick={() => onCompartir(pase)}
-                        className="p-1.5 rounded-lg hover:bg-primary/10 text-text-muted hover:text-primary transition-all" title="Compartir QR">
+                        className="p-1.5 rounded-md hover:bg-primary/10 text-text-muted hover:text-primary transition-all" title="Compartir QR">
                         <Share2 size={13} />
                     </button>
                 )}
                 <button onClick={() => onEmail(pase)}
-                    className="p-1.5 rounded-lg hover:bg-sky-500/10 text-text-muted hover:text-sky-400 transition-all" title="Enviar por email">
+                    className="p-1.5 rounded-md hover:bg-sky-500/10 text-text-muted hover:text-sky-400 transition-all" title="Enviar por email">
                     <Mail size={13} />
                 </button>
             </div>
@@ -370,6 +370,7 @@ const ModalNuevoLote = ({ isOpen, onClose, zonas, tiposCustom, onCreated }) => {
 
     // Combinar tipos de acceso (Base + Custom de la entidad)
     const opcionesAcceso = useMemo(() => {
+        const general = TIPOS_ACCESO_BASE.find(t => t.id === 'general');
         const customMapped = tiposCustom.map(tc => ({
             id: tc.id,
             label: tc.nombre,
@@ -377,7 +378,7 @@ const ModalNuevoLote = ({ isOpen, onClose, zonas, tiposCustom, onCreated }) => {
             isCustom: true,
             color: tc.color
         }));
-        return [...TIPOS_ACCESO_BASE, ...customMapped];
+        return [general, ...customMapped].filter(Boolean);
     }, [tiposCustom]);
 
     useEffect(() => {
@@ -494,7 +495,7 @@ const ModalNuevoLote = ({ isOpen, onClose, zonas, tiposCustom, onCreated }) => {
             <div className="space-y-6">
                 {/* Tipo de pase */}
                 <div>
-                    <label className="text-[10px] font-black text-text-muted uppercase tracking-widest block mb-3">1. Selecciona el Tipo de Pase</label>
+                    <label className="text-[10px] font-black text-text-muted/60 uppercase tracking-widest block mb-3">1. Selecciona el Tipo de Pase</label>
                     <div className="grid grid-cols-3 gap-2">
                         {TIPOS_PASE_OPTIONS.map(t => {
                             const Icon = t.icon;
@@ -609,8 +610,8 @@ const ModalNuevoLote = ({ isOpen, onClose, zonas, tiposCustom, onCreated }) => {
                         )}
 
                         {puestosDisponibles.length > 0 && !capacidadExcedida && (
-                            <div className="bg-white/5 border border-white/5 rounded-2xl p-4 space-y-2">
-                                <label className="text-[9px] font-black text-text-muted uppercase tracking-widest flex items-center gap-2">
+                            <div className="bg-white/5 border border-white/5 rounded-xl p-4 space-y-2">
+                                <label className="text-[10px] font-black text-text-muted/60 uppercase tracking-widest flex items-center gap-2">
                                     <Hash size={11} className="text-primary" />
                                     Vincular a Puesto Específico
                                 </label>
@@ -708,9 +709,9 @@ const ModalNuevoLote = ({ isOpen, onClose, zonas, tiposCustom, onCreated }) => {
                 </div>
 
                 <div className="flex gap-3 pt-4">
-                    <Boton variant="ghost" className="flex-1 h-12" onClick={onClose}>Cancelar</Boton>
+                    <Boton variant="ghost" className="flex-1 h-11 text-[11px] rounded-xl" onClick={onClose}>Cancelar</Boton>
                     <Boton onClick={handleSubmit} disabled={guardando}
-                        className="flex-[2] bg-primary text-bg-app h-12 font-black uppercase tracking-wider shadow-lg shadow-primary/20">
+                        className="flex-[2] bg-primary text-bg-app h-14 font-black uppercase tracking-[0.2em] rounded-xl shadow-lg shadow-primary/20">
                         {guardando ? <RefreshCw size={16} className="animate-spin" /> : <><Plus size={15} /> Crear Lote</>}
                     </Boton>
                 </div>
@@ -785,46 +786,44 @@ export default function EventosV2() {
     return (
         <div className="p-4 space-y-6 pb-32 max-w-[1400px] mx-auto animate-in fade-in duration-500">
             {/* Cabecera Táctica */}
-            <header className="relative overflow-hidden bg-bg-card/30 rounded-[2.5rem] border border-white/5 p-6 md:p-8">
+            <header className="relative overflow-hidden bg-bg-card/30 rounded-2xl border border-white/5 p-4 md:p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                 {/* Decoración de fondo */}
                 <div className="absolute top-0 right-0 w-64 h-64 bg-primary/5 blur-[100px] -mr-32 -mt-32" />
                 
-                <div className="relative flex flex-col md:flex-row md:items-center justify-between gap-6">
-                    <div className="space-y-2">
-                        <div className="flex items-center gap-3">
-                            <div className="p-3 bg-primary/10 rounded-2xl border border-primary/20 shadow-lg shadow-primary/5">
-                                <Calendar className="text-primary" size={24} />
-                            </div>
-                            <div>
-                                <h1 className="text-2xl md:text-3xl font-black text-text-main uppercase tracking-tighter leading-none">
-                                    Eventos y Pases
-                                </h1>
-                                <p className="text-[10px] md:text-xs text-text-muted font-bold uppercase tracking-[0.2em] mt-1 flex items-center gap-2">
-                                    <span className="w-2 h-2 rounded-full bg-success animate-pulse" />
-                                    Gestión de Accesos Masivos — {user?.entidad_nombre}
-                                </p>
-                            </div>
-                        </div>
+                {/* Bloque Izquierdo: Identidad */}
+                <div className="relative flex items-center gap-4">
+                    <div className="p-3 bg-primary/10 rounded-xl border border-primary/20 shadow-lg shadow-primary/5">
+                        <Calendar className="text-primary" size={24} />
                     </div>
+                    <div>
+                        <h1 className="text-2xl md:text-3xl font-black text-text-main uppercase tracking-tighter leading-none">
+                            Eventos y Pases
+                        </h1>
+                        <p className="text-[10px] md:text-xs text-text-muted font-bold uppercase tracking-[0.2em] mt-1 flex items-center gap-2 px-1">
+                            <span className="w-1.5 h-1.5 rounded-full bg-success animate-pulse shrink-0" />
+                            Gestión de Accesos Masivos — {user?.entidad_nombre}
+                        </p>
+                    </div>
+                </div>
 
-                    <div className="flex items-center gap-3">
-                        <Boton 
-                            onClick={() => setShowSolicitudModal(true)} 
-                            variant="ghost"
-                            className="h-12 px-6 gap-2 text-[10px] font-black uppercase border-white/10 rounded-2xl hover:bg-white/5 transition-all"
-                        >
-                            <Clock size={16} className="text-warning" /> 
-                            Solicitar Evento
-                        </Boton>
-                        <Boton 
-                            onClick={() => setShowModal(true)} 
-                            disabled={zonas.length === 0}
-                            className="h-12 px-8 gap-2 text-[11px] font-black uppercase bg-primary text-bg-app rounded-2xl shadow-xl shadow-primary/20 hover:scale-[1.02] active:scale-95 transition-all disabled:opacity-50"
-                        >
-                            <PlusCircle size={18} /> 
-                            Crear Nuevo Lote
-                        </Boton>
-                    </div>
+                {/* Bloque Derecho: Acciones */}
+                <div className="relative flex items-center gap-3 w-full sm:w-auto">
+                    <Boton 
+                        onClick={() => setShowSolicitudModal(true)} 
+                        variant="ghost"
+                        className="flex-1 sm:flex-none h-11 px-6 gap-2 text-[10px] font-black uppercase border-white/10 rounded-xl hover:bg-white/5 transition-all"
+                    >
+                        <Clock size={16} className="text-warning" /> 
+                        Solicitar Evento
+                    </Boton>
+                    <Boton 
+                        onClick={() => setShowModal(true)} 
+                        disabled={zonas.length === 0}
+                        className="flex-1 sm:flex-none h-11 px-6 gap-2 text-[11px] font-black uppercase bg-primary text-bg-app rounded-xl shadow-xl shadow-primary/20 hover:scale-[1.02] active:scale-95 transition-all disabled:opacity-50"
+                    >
+                        <PlusCircle size={18} /> 
+                        Crear Nuevo Lote
+                    </Boton>
                 </div>
             </header>
 
@@ -884,10 +883,10 @@ export default function EventosV2() {
                         ))}
                     </div>
                 ) : (
-                    <div className="relative group py-24 flex flex-col items-center gap-6 bg-bg-card/10 rounded-[3rem] border border-dashed border-white/10 overflow-hidden">
+                    <div className="relative group py-24 flex flex-col items-center gap-6 bg-bg-card/10 rounded-2xl border border-dashed border-white/10 overflow-hidden">
                         <div className="absolute inset-0 bg-gradient-to-b from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
                         
-                        <div className="relative w-20 h-20 bg-white/5 rounded-[2rem] flex items-center justify-center border border-white/5 shadow-inner">
+                        <div className="relative w-20 h-20 bg-white/5 rounded-2xl flex items-center justify-center border border-white/5 shadow-inner">
                             <PackageOpen className="text-text-muted/20" size={40} />
                         </div>
                         
