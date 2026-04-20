@@ -60,20 +60,8 @@ const PlantillaColgante = ({ datos, config }) => {
                     </h2>
                 </div>
 
-                {/* Foto */}
-                <div className="flex justify-center -mt-8 relative z-10">
-                    <div className="w-16 h-16 rounded-full border-4 flex items-center justify-center overflow-hidden"
-                        style={{ borderColor: c.primario, background: `${c.primario}15` }}>
-                        {datos.foto_url ? (
-                            <img src={datos.foto_url} alt="" className="w-full h-full object-cover" />
-                        ) : (
-                            <User size={28} style={{ color: c.primario }} />
-                        )}
-                    </div>
-                </div>
-
-                {/* Datos */}
-                <div className="px-5 pt-3 pb-4 text-center space-y-2">
+                {/* Datos — Reajustado por eliminación de foto */}
+                <div className="px-5 pt-6 pb-4 text-center space-y-3">
                     <div>
                         <p className="text-sm font-black uppercase tracking-tight" style={{ color: c.textoNombre }}>
                             {datos.nombre || 'NOMBRE APELLIDO'}
@@ -127,9 +115,9 @@ const PlantillaColgante = ({ datos, config }) => {
                     )}
                 </div>
 
-                {/* QR */}
-                <div className="flex flex-col items-center pb-5 pt-1">
-                    <QRPlaceholder size={72} />
+                {/* QR — Maximizado para escaneo táctico */}
+                <div className="flex flex-col items-center pb-6 pt-2">
+                    <QRPlaceholder size={110} />
                     <p className="text-[7px] font-mono tracking-widest mt-1.5" style={{ color: `${c.textoNombre}40` }}>
                         {datos.serial || 'XXXX-XXXX-XXXX'}
                     </p>
@@ -224,7 +212,7 @@ const PlantillaCartera = ({ datos, config }) => {
                                 {datos.fecha_inicio || '--/--'} — {datos.fecha_fin || '--/--'}
                             </p>
                         </div>
-                        <QRPlaceholder size={52} />
+                        <QRPlaceholder size={85} />
                     </div>
                 </div>
             </div>
@@ -250,7 +238,7 @@ const PlantillaTicket = ({ datos, config }) => {
                     {/* QR lado izquierdo */}
                     <div className="p-4 flex flex-col items-center justify-center border-r border-dashed shrink-0"
                         style={{ borderColor: `${c.primario}20` }}>
-                        <QRPlaceholder size={64} />
+                        <QRPlaceholder size={90} />
                         <p className="text-[6px] font-mono tracking-widest mt-1" style={{ color: `${c.textoNombre}40` }}>
                             {datos.serial || 'XXXX'}
                         </p>
@@ -324,20 +312,8 @@ const PlantillaCredencial = ({ datos, config }) => {
                         </div>
                     </div>
 
-                    {/* Foto grande */}
-                    <div className="flex justify-center">
-                        <div className="w-20 h-24 rounded-xl border-2 flex items-center justify-center overflow-hidden"
-                            style={{ borderColor: `${c.primario}30`, background: `${c.primario}08` }}>
-                            {datos.foto_url ? (
-                                <img src={datos.foto_url} alt="" className="w-full h-full object-cover" />
-                            ) : (
-                                <User size={36} style={{ color: `${c.textoNombre}30` }} />
-                            )}
-                        </div>
-                    </div>
-
-                    {/* Nombre */}
-                    <div className="text-center">
+                    {/* Nombre — Subido por eliminación de foto */}
+                    <div className="text-center pt-2">
                         <p className="text-sm font-black uppercase tracking-tight" style={{ color: c.textoNombre }}>
                             {datos.nombre || 'NOMBRE APELLIDO'}
                         </p>
@@ -372,8 +348,8 @@ const PlantillaCredencial = ({ datos, config }) => {
                     </div>
 
                     {/* QR */}
-                    <div className="flex flex-col items-center pt-2 border-t" style={{ borderColor: `${c.primario}15` }}>
-                        <QRPlaceholder size={60} />
+                    <div className="flex flex-col items-center pt-4 border-t" style={{ borderColor: `${c.primario}15` }}>
+                        <QRPlaceholder size={110} />
                         <p className="text-[6px] font-mono tracking-widest mt-1" style={{ color: `${c.textoNombre}35` }}>
                             {datos.serial || 'XXXX-XXXX-XXXX'}
                         </p>

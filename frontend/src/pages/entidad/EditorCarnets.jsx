@@ -120,7 +120,11 @@ export default function EditorCarnets() {
                 }
             } catch (e) { console.error("Error al recopilar estilos", e); }
 
-            const ventana = window.open('', '_blank', 'width=800,height=900');
+            // Determinar orientación según plantilla
+            const esHorizontal = ['cartera', 'ticket'].includes(plantillaActiva);
+            const orientacion = esHorizontal ? 'landscape' : 'portrait';
+
+            const ventana = window.open('', '_blank', 'width=850,height=900');
             ventana.document.write(`
                 <!DOCTYPE html>
                 <html>
@@ -133,29 +137,44 @@ export default function EditorCarnets() {
                         /* Inyección de estilos de la app */
                         ${stylesRaw}
 
-                        /* Reajustes específicos para impresión táctica */
+                        /* Reset y Configuración de Impresión */
                         * { margin: 0; padding: 0; box-sizing: border-box; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+                        
+                        @page { 
+                            size: ${orientacion}; 
+                            margin: 0mm; /* Elimina encabezados y pies de página del navegador */
+                        }
+
                         body { 
                             display: flex; 
                             align-items: center; 
                             justify-content: center; 
-                            min-height: 100vh; 
+                            width: 100vw;
+                            height: 100vh;
                             background: white !important; 
                             font-family: 'Inter', sans-serif;
-                            padding: 20px;
+                            overflow: hidden;
                         }
+
                         .carnet-print-wrapper { 
                             display: flex;
                             align-items: center;
                             justify-content: center;
                             width: 100%;
                             height: 100%;
-                            transform: scale(1.4); /* Escala en pantalla para que se vea bien */
+                        }
+
+                        #carnet-preview {
+                            box-shadow: none !important;
+                            border: 1px solid rgba(0,0,0,0.05) !important;
                         }
                         
-                        @page { margin: 0; size: auto; }
+                        @media screen {
+                            .carnet-print-wrapper { transform: scale(1.4); }
+                        }
+
                         @media print {
-                            body { background: white !important; padding: 0; }
+                            body { background: white !important; }
                             .carnet-print-wrapper { transform: scale(1); }
                         }
                     </style>
@@ -163,11 +182,10 @@ export default function EditorCarnets() {
                 <body>
                     <div class="carnet-print-wrapper">${contenido.outerHTML}</div>
                     <script>
-                        // Esperar a que todo cargue (fuentes, QR, fotos) antes de disparar impresión
                         window.onload = () => {
                             setTimeout(() => {
                                 window.print();
-                                // window.close(); // Opcional, cerrar tras imprimir
+                                // window.close(); 
                             }, 800);
                         };
                     </script>
