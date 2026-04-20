@@ -400,15 +400,16 @@ const ModalNuevoLote = ({ isOpen, onClose, zonas, tiposCustom, onCreated }) => {
 
     // Combinar tipos de acceso (Base + Custom de la entidad)
     const opcionesAcceso = useMemo(() => {
-        const general = TIPOS_ACCESO_BASE.find(t => t.id === 'general');
+        const base = TIPOS_ACCESO_BASE.map(t => ({ ...t, isCustom: false }));
         const customMapped = tiposCustom.map(tc => ({
-            id: tc.id,
+            id: `custom:${tc.id}`, // Prefijo para distinguirlos
             label: tc.nombre,
             icon: Tag,
             isCustom: true,
+            customId: tc.id,
             color: tc.color
         }));
-        return [general, ...customMapped].filter(Boolean);
+        return [...base, ...customMapped].filter(Boolean);
     }, [tiposCustom]);
 
     // Capacidad total de la entidad en todas sus zonas asignadas
@@ -418,9 +419,11 @@ const ModalNuevoLote = ({ isOpen, onClose, zonas, tiposCustom, onCreated }) => {
 
     useEffect(() => {
         if (!form.zona_asignada_id) {
-            // Sin zona: límite es la capacidad total de la entidad, sin alertas por categoría
-            setMaxPasesZona(totalCapacidadEntidad);
-            setCapacidadExcedida(form.cantidad_pases > totalCapacidadEntidad);
+            // Sin zona: el sistema asigna automáticamente.
+            // El límite es la cuota total de la entidad.
+            setNombreTipoActivo('PÚBLICO GENERAL');
+            setMaxPasesZona(totalCapacidadEntidad || 9999);
+            setCapacidadExcedida(false); // Sin zona seleccionada no bloqueamos
             return;
         }
 
@@ -430,37 +433,47 @@ const ModalNuevoLote = ({ isOpen, onClose, zonas, tiposCustom, onCreated }) => {
         const distribucion = asig.distribucion_cupos || {};
         const cupoTotal = parseInt(asig.cupo_asignado) || 0;
         const cupoBase = parseInt(asig.cupo_reservado_base) || 0;
-        // Suma de todos los cupos categorizados (VIP, Staff, etc.)
+        // Suma de todos los cupos reservados para categorías específicas
         const cuposCat = Object.values(distribucion).reduce((acc, v) => acc + (parseInt(v) || 0), 0);
+        // Cupos libres = los que no están reservados para nadie
+        const cuposLibres = Math.max(0, cupoTotal - cupoBase - cuposCat);
 
         let cupoDisponible = 0;
-        let labelMostrar = 'PÚBLICO GENERAL';
+        let labelMostrar = '';
 
         if (form.tipo_acceso === 'general') {
-            // Cupos libres = Total - Reservados operativos - Todos los categorizados
-            cupoDisponible = cupoTotal - cupoBase - cuposCat;
+            // Para público general: usa el remanente libre
+            cupoDisponible = cuposLibres;
             labelMostrar = 'PÚBLICO GENERAL';
         } else {
-            // Buscar el cupo específico para esta categoría en distribucion_cupos
-            // El backend usa etiquetas en mayúsculas (ej: 'STAFF / APOYO', 'INVITADOS VIP')
-            const LABEL_MAP = {
-                'staff': 'STAFF / APOYO',
-                'produccion': 'PRODUCTORES',
-                'logistica': 'LOGÍSTICA',
-                'vip': 'INVITADOS VIP',
-                'prensa': 'PRENSA',
-                'artista': 'ARTISTA',
-            };
-            const labelKey = LABEL_MAP[form.tipo_acceso] || form.tipo_acceso.toUpperCase();
-            cupoDisponible = parseInt(distribucion[labelKey] || 0);
-            labelMostrar = labelKey;
+            // Para tipos categorizados: buscar en distribucion_cupos
+            // Las claves pueden ser cualquier texto definido por el admin.
+            // Si no hay ninguna clave configurada para este tipo, usa el remanente libre.
+            const opt = opcionesAcceso.find(o => o.id === form.tipo_acceso);
+            const tipoLabel = opt?.label || form.tipo_acceso;
+            labelMostrar = tipoLabel.toUpperCase();
+
+            // Buscar coincidencia exacta o parcial en las claves de distribución
+            const matchKey = Object.keys(distribucion).find(k => 
+                k.toUpperCase() === labelMostrar ||
+                labelMostrar.includes(k.toUpperCase()) ||
+                k.toUpperCase().includes(tipoLabel.toUpperCase())
+            );
+
+            if (matchKey) {
+                cupoDisponible = parseInt(distribucion[matchKey]) || 0;
+            } else {
+                // No hay cupo categórico configurado → usa el remanente libre
+                cupoDisponible = cuposLibres;
+                labelMostrar = `${labelMostrar} (REMANENTE)`;
+            }
         }
 
         const max = Math.max(0, cupoDisponible);
         setNombreTipoActivo(labelMostrar);
         setMaxPasesZona(max);
         setCapacidadExcedida(form.cantidad_pases > max && !warningIgnorada);
-    }, [form.zona_asignada_id, form.tipo_acceso, zonas, form.cantidad_pases, warningIgnorada, totalCapacidadEntidad]);
+    }, [form.zona_asignada_id, form.tipo_acceso, zonas, opcionesAcceso, form.cantidad_pases, warningIgnorada, totalCapacidadEntidad]);
 
     const handleAjustarCapacidad = () => {
         setForm(prev => ({ ...prev, cantidad_pases: maxPasesZona }));
@@ -609,14 +622,27 @@ const ModalNuevoLote = ({ isOpen, onClose, zonas, tiposCustom, onCreated }) => {
                         icon={<Users size={12} className="text-primary" />}
                         placeholder="Buscar clasificación..."
                         options={opcionesAcceso.map(t => ({ 
-                            value: t.id, 
+                            value: t.id,  // Para base: 'general'/'staff'/etc. Para custom: 'custom:{uuid}'
                             label: t.label.toUpperCase() 
                         }))}
-                        value={opcionesAcceso.find(t => t.id === form.tipo_acceso) ? {
-                            value: form.tipo_acceso,
-                            label: opcionesAcceso.find(t => t.id === form.tipo_acceso)?.label.toUpperCase()
-                        } : null}
-                        onChange={(opt) => setForm({ ...form, tipo_acceso: opt?.value || 'general' })}
+                        value={(() => {
+                            // Construir el value correcto según si es custom o base
+                            const currentId = form.tipo_acceso === 'custom' && form.tipo_acceso_custom_id
+                                ? `custom:${form.tipo_acceso_custom_id}`
+                                : form.tipo_acceso;
+                            const opt = opcionesAcceso.find(t => t.id === currentId);
+                            return opt ? { value: currentId, label: opt.label.toUpperCase() } : null;
+                        })()}
+                        onChange={(opt) => {
+                            if (!opt) {
+                                setForm({ ...form, tipo_acceso: 'general', tipo_acceso_custom_id: null });
+                            } else if (opt.value?.startsWith('custom:')) {
+                                const customId = opt.value.replace('custom:', '');
+                                setForm({ ...form, tipo_acceso: 'custom', tipo_acceso_custom_id: customId });
+                            } else {
+                                setForm({ ...form, tipo_acceso: opt.value, tipo_acceso_custom_id: null });
+                            }
+                        }}
                         isSearchable
                     />
                 </div>
@@ -866,8 +892,7 @@ export default function EventosV2() {
                 <div className="relative flex items-center gap-2 w-full sm:w-auto">
                     <Boton 
                         onClick={() => setShowModal(true)} 
-                        disabled={zonas.length === 0}
-                        className="gap-2 h-12 px-6 bg-primary text-bg-app font-black uppercase tracking-widest text-[11px] shadow-tactica hover:scale-[1.02] transition-all disabled:opacity-50 whitespace-nowrap min-w-fit"
+                        className="gap-2 h-12 px-6 bg-primary text-bg-app font-black uppercase tracking-widest text-[11px] shadow-tactica hover:scale-[1.02] transition-all whitespace-nowrap min-w-fit"
                     >
                         <PlusCircle size={18} /> 
                         Crear Nuevo Lote
