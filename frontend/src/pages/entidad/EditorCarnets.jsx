@@ -108,31 +108,75 @@ export default function EditorCarnets() {
             const contenido = document.getElementById('carnet-preview');
             if (!contenido) { toast.error('No se encontró el preview'); setImprimiendo(false); return; }
 
-            const ventana = window.open('', '_blank', 'width=500,height=700');
+            // Recopilar TODAS las reglas de estilo de la aplicación para inyectarlas
+            let stylesRaw = '';
+            try {
+                for (const sheet of document.styleSheets) {
+                    try {
+                        for (const rule of sheet.cssRules) {
+                            stylesRaw += rule.cssText;
+                        }
+                    } catch (e) { /* Saltar hojas de estilo externas inaccesibles por CORS */ }
+                }
+            } catch (e) { console.error("Error al recopilar estilos", e); }
+
+            const ventana = window.open('', '_blank', 'width=800,height=900');
             ventana.document.write(`
                 <!DOCTYPE html>
-                <html><head>
-                    <title>Carnet BAGFM</title>
+                <html>
+                <head>
+                    <title>Carnet BAGFM - ${datosPreview.nombre}</title>
+                    <link rel="preconnect" href="https://fonts.googleapis.com">
+                    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+                    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
                     <style>
-                        * { margin: 0; padding: 0; box-sizing: border-box; }
-                        body { display: flex; align-items: center; justify-content: center; min-height: 100vh; background: #f5f5f5; font-family: system-ui, sans-serif; }
-                        .carnet-wrapper { transform: scale(1.3); transform-origin: center; }
+                        /* Inyección de estilos de la app */
+                        ${stylesRaw}
+
+                        /* Reajustes específicos para impresión táctica */
+                        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+                        body { 
+                            display: flex; 
+                            align-items: center; 
+                            justify-content: center; 
+                            min-height: 100vh; 
+                            background: white !important; 
+                            font-family: 'Inter', sans-serif;
+                            padding: 20px;
+                        }
+                        .carnet-print-wrapper { 
+                            display: flex;
+                            align-items: center;
+                            justify-content: center;
+                            width: 100%;
+                            height: 100%;
+                            transform: scale(1.4); /* Escala en pantalla para que se vea bien */
+                        }
+                        
+                        @page { margin: 0; size: auto; }
                         @media print {
-                            body { background: white; }
-                            .carnet-wrapper { transform: scale(1); }
+                            body { background: white !important; padding: 0; }
+                            .carnet-print-wrapper { transform: scale(1); }
                         }
                     </style>
-                </head><body>
-                    <div class="carnet-wrapper">${contenido.outerHTML}</div>
-                </body></html>
+                </head>
+                <body>
+                    <div class="carnet-print-wrapper">${contenido.outerHTML}</div>
+                    <script>
+                        // Esperar a que todo cargue (fuentes, QR, fotos) antes de disparar impresión
+                        window.onload = () => {
+                            setTimeout(() => {
+                                window.print();
+                                // window.close(); // Opcional, cerrar tras imprimir
+                            }, 800);
+                        };
+                    </script>
+                </body>
+                </html>
             `);
             ventana.document.close();
-            ventana.focus();
-            setTimeout(() => {
-                ventana.print();
-                setImprimiendo(false);
-            }, 600);
-        }, 100);
+            setImprimiendo(false);
+        }, 150);
     };
 
     const handleGuardarPlantilla = () => {

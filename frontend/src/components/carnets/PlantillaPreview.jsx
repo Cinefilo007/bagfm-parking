@@ -241,12 +241,9 @@ const PlantillaTicket = ({ datos, config }) => {
             <div className="rounded-2xl overflow-hidden shadow-2xl relative"
                 style={{ background: c.fondo, border: `1px solid ${c.primario}20` }}>
 
-                {/* Muesca izquierda */}
-                <div className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-1/2 w-6 h-6 rounded-full"
-                    style={{ background: 'var(--color-bg-app, #0d0d0d)' }} />
-                {/* Muesca derecha */}
-                <div className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-1/2 w-6 h-6 rounded-full"
-                    style={{ background: 'var(--color-bg-app, #0d0d0d)' }} />
+                {/* Muescas tácticas (simulan recorte físico) */}
+                <div className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-1/2 w-6 h-6 rounded-full bg-white print:bg-white" />
+                <div className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-1/2 w-6 h-6 rounded-full bg-white print:bg-white" />
 
                 {/* Contenido */}
                 <div className="flex items-stretch">
