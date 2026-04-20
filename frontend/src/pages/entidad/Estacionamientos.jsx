@@ -3,6 +3,8 @@ import { Card } from '../../components/ui/Card';
 import { Boton } from '../../components/ui/Boton';
 import { Modal } from '../../components/ui/Modal';
 import { Input } from '../../components/ui/Input';
+import { ChipFiltro } from '../../components/ui/ChipFiltro';
+import { ModalConfirmacion } from '../../components/ui/ModalConfirmacion';
 import { useAuthStore } from '../../store/auth.store';
 import { toast } from 'react-hot-toast';
 import { cn } from '../../lib/utils';
@@ -10,7 +12,7 @@ import {
     ParkingSquare, Car, Plus, Trash2, RefreshCw,
     Shield, MapPin, Users, Tag, CheckCircle2,
     Circle, Edit3, ToggleLeft, ToggleRight, Zap, AlertTriangle,
-    ChevronDown, LayoutGrid, Settings, Activity, Hash, PackagePlus, Palette
+    ChevronDown, LayoutGrid, Settings, Activity, Hash, PackagePlus, Palette, Filter, ZapOff
 } from 'lucide-react';
 import { zonaService } from '../../services/zona.service';
 import { ModalConfirmacion } from '../../components/ui/ModalConfirmacion';
@@ -205,8 +207,9 @@ export default function EstacionamientosEntidad() {
     // Modal Confirmación Auto-Distribución
     const [modalAutoDistConfirm, setModalAutoDistConfirm] = useState(false);
 
-    // Paginación puestos
+    // Paginación y Filtro puestos
     const [paginaActual, setPaginaActual] = useState(1);
+    const [filtroZona, setFiltroZona] = useState(null);
     const elementsPerPage = 10;
 
     // ── Carga de datos ────────────────────────────────────────────────────────
@@ -685,9 +688,40 @@ export default function EstacionamientosEntidad() {
                         </div>
                     ) : (
                         <>
+                            {/* Filtro por Zona Chips */}
+                            <div className="flex items-center gap-2 overflow-x-auto pb-4 no-scrollbar">
+                                <div className="flex items-center gap-2 pr-4 border-r border-white/5 shrink-0">
+                                    <Filter size={12} className="text-text-muted" />
+                                    <span className="text-[9px] font-black text-text-muted uppercase tracking-widest">Filtrar:</span>
+                                </div>
+                                <ChipFiltro 
+                                    activo={filtroZona === null} 
+                                    onClick={() => { setFiltroZona(null); setPaginaActual(1); }}
+                                    className="h-8 flex items-center justify-center"
+                                >
+                                    TODAS LAS ZONAS
+                                </ChipFiltro>
+                                {asignaciones.map(a => (
+                                    <ChipFiltro 
+                                        key={a.zona_id}
+                                        activo={filtroZona === a.zona_id}
+                                        onClick={() => { setFiltroZona(a.zona_id); setPaginaActual(1); }}
+                                        className="h-8 flex items-center justify-center"
+                                    >
+                                        {a.zona_nombre?.toUpperCase() || `ZONA ${a.zona_id?.slice(-4)}`}
+                                    </ChipFiltro>
+                                ))}
+                            </div>
+
                             {/* Agrupado por zona con paginación */}
                             {(() => {
-                                const puestosAgrupados = puestos.reduce((acc, p) => {
+                                // Aplicar el filtro primario por zona en la data base
+                                const puestosFiltradosPorZona = filtroZona 
+                                    ? puestos.filter(p => p.zona_id === filtroZona)
+                                    : puestos;
+
+                                // Agrupar
+                                const puestosAgrupados = puestosFiltradosPorZona.reduce((acc, p) => {
                                     const zona = p.zona_nombre || 'Sin Zona';
                                     if (!acc[zona]) acc[zona] = [];
                                     acc[zona].push(p);
