@@ -9,7 +9,6 @@ from app.models.enums import RolTipo
 from app.models.usuario import Usuario
 from app.schemas.pases import LotePaseMasivoCrear, LotePaseMasivoSalida
 from app.schemas.codigo_qr import CodigoQRSalida, CodigoQRUpdate
-from app.api.v1.pases import pase_service
 from app.services.pase_service import pase_service
 from app.services.template_service import template_service
 from app.models.alcabala_evento import LotePaseMasivo, SolicitudEvento
