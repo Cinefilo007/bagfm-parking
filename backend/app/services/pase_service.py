@@ -502,19 +502,28 @@ class PaseService:
             except Exception as e:
                 print(f"ALERTA STORAGE: No se pudieron borrar algunos archivos: {e}")
         
-        # 3. Eliminar Usuarios temporales asociados (si no son otros que SOCIO con cedula=serial)
+        # 3. Eliminar el lote (CodigoQR caen por CASCADE debido al modelo)
+        await db.delete(lote)
+        
+        # Sincronizamos para que los QRs desaparezcan y se liberen las FKs de los Usuarios
+        await db.flush()
+        
+        # 4. Eliminar Usuarios temporales asociados (Cleanup opcional)
+        # Solo borramos si el usuario NO tiene más registros en CodigoQR (usuarios huérfanos de este lote)
         if user_ids:
             from app.models.usuario import Usuario
             from sqlalchemy import delete
-            # Solo borramos si el usuario NO es admin y es SOCIO (seguridad técnica)
+            
+            # Subconsulta para usuarios que aún tienen pases en otros lotes
+            usuarios_con_pases = select(CodigoQR.usuario_id)
+            
             query_del_users = delete(Usuario).where(
                 Usuario.id.in_(user_ids),
-                Usuario.rol == RolTipo.SOCIO
+                Usuario.rol == RolTipo.SOCIO,
+                ~Usuario.id.in_(usuarios_con_pases)
             )
             await db.execute(query_del_users)
             
-        # 4. Eliminar el lote (CodigoQR caen por CASCADE)
-        await db.delete(lote)
         await db.commit()
         return True
 
