@@ -65,6 +65,11 @@ class PaseService:
         zona_id = datos.get('zona_asignada_id') or datos.get('zona_id')
         tipo_acc = datos.get('tipo_acceso', 'general')
         
+        # Salvaguarda: si tipo_acceso='custom' pero sin ID, tratar como 'general'
+        custom_id = datos.get('tipo_acceso_custom_id')
+        if tipo_acc == 'custom' and not custom_id:
+            tipo_acc = 'general'
+
         if entidad:
             from app.models.asignacion_zona import AsignacionZona
             from sqlalchemy import and_

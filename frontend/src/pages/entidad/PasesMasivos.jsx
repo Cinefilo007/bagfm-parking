@@ -383,8 +383,8 @@ const ModalNuevoLote = ({ isOpen, onClose, zonas, tiposCustom, onCreated }) => {
         fecha_fin: '',
         cantidad_pases: 10,
         tipo_pase: 'simple',
-        tipo_acceso: 'general',
-        tipo_acceso_custom_id: null,
+        tipo_acceso: 'general',         // Siempre empieza en general
+        tipo_acceso_custom_id: null,     // null = Público General
         multi_vehiculo: false,
         max_vehiculos: 1,
         zona_asignada_id: null,
@@ -397,16 +397,19 @@ const ModalNuevoLote = ({ isOpen, onClose, zonas, tiposCustom, onCreated }) => {
     const [warningIgnorada, setWarningIgnorada] = useState(false);
     const [excelPases, setExcelPases] = useState(null);
 
-    // Solo tipos custom de la entidad
+    // Opciones de acceso: 'Público General' fijo + tipos custom de la entidad
+    const OPCION_GENERAL = { id: 'general', label: 'Público General', icon: Users, color: null };
     const opcionesAcceso = useMemo(() => {
-        return tiposCustom
+        const customs = tiposCustom
             .filter(tc => tc.activo !== false)
             .map(tc => ({
                 id: tc.id,           // UUID directo
                 label: tc.nombre,
                 icon: Tag,
-                color: tc.color_hex || tc.color
+                color: tc.color_hex || tc.color,
+                isCustom: true
             }));
+        return [OPCION_GENERAL, ...customs];
     }, [tiposCustom]);
 
     // Capacidad total de la entidad en todas sus zonas asignadas
@@ -582,21 +585,28 @@ const ModalNuevoLote = ({ isOpen, onClose, zonas, tiposCustom, onCreated }) => {
                     <SelectTactivo 
                         label="2. Categoría de Acceso"
                         icon={<Tag size={12} className="text-primary" />}
-                        placeholder={tiposCustom.length === 0 ? 'No hay categorías configuradas...' : 'Buscar categoría...'}
+                        placeholder="Seleccionar categoría..."
                         options={opcionesAcceso.map(t => ({ 
-                            value: t.id,  // UUID directo del tipo custom
-                            label: t.label.toUpperCase() 
+                            value: t.id,
+                            label: t.label.toUpperCase()
                         }))}
                         value={(() => {
+                            // Si es 'general', mostrar la opción fija
+                            if (form.tipo_acceso === 'general' || !form.tipo_acceso_custom_id) {
+                                return { value: 'general', label: 'PÚBLICO GENERAL' };
+                            }
+                            // Si es custom, buscar por UUID
                             const opt = opcionesAcceso.find(t => t.id === form.tipo_acceso_custom_id);
-                            return opt ? { value: opt.id, label: opt.label.toUpperCase() } : null;
+                            return opt ? { value: opt.id, label: opt.label.toUpperCase() } : { value: 'general', label: 'PÚBLICO GENERAL' };
                         })()}
                         onChange={(opt) => {
-                            setForm({ 
-                                ...form, 
-                                tipo_acceso: 'custom',
-                                tipo_acceso_custom_id: opt?.value || null 
-                            });
+                            if (!opt || opt.value === 'general') {
+                                // Público General: tipo_acceso='general', sin ID custom
+                                setForm({ ...form, tipo_acceso: 'general', tipo_acceso_custom_id: null });
+                            } else {
+                                // Tipo custom: tipo_acceso='custom' + UUID
+                                setForm({ ...form, tipo_acceso: 'custom', tipo_acceso_custom_id: opt.value });
+                            }
                         }}
                         isSearchable
                     />
