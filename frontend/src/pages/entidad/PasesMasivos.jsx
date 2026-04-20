@@ -6,11 +6,13 @@ import { Input } from '../../components/ui/Input';
 import { useAuthStore } from '../../store/auth.store';
 import { toast } from 'react-hot-toast';
 import { cn } from '../../lib/utils';
+import SelectTactivo from '../../components/ui/SelectTactivo';
 import {
     Calendar, Plus, Download, Clock, PackageOpen,
     LayoutGrid, Ticket, UserCheck, ExternalLink,
     Users, QrCode, ChevronRight, Share2, Mail,
-    RefreshCw, Upload, CheckCircle2, MapPin, MoreVertical, Copy,
+    ParkingSquare, Car, Tag, Edit3, RefreshCw,
+    Upload, CheckCircle2, MapPin, MoreVertical, Copy,
     Shield, Camera, Star, AlertTriangle, FileSpreadsheet, PlusCircle
 } from 'lucide-react';
 import { eventosService } from '../../services/eventos.service';
@@ -342,7 +344,6 @@ const TIPOS_ACCESO_BASE = [
     { id: 'vip', label: 'Invitados VIP', icon: Tag },
 ];
 
-import SelectTactivo from '../../components/ui/SelectTactivo';
 
 const ModalNuevoLote = ({ isOpen, onClose, zonas, tiposCustom, onCreated }) => {
     const { user } = useAuthStore();
