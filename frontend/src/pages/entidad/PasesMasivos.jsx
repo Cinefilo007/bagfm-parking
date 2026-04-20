@@ -13,7 +13,7 @@ import {
     Users, QrCode, ChevronRight, Share2, Mail,
     ParkingSquare, Car, Tag, Edit3, RefreshCw,
     Upload, CheckCircle2, MapPin, MoreVertical, Copy,
-    AlertTriangle, FileSpreadsheet, PlusCircle
+    Shield, Camera, Star, AlertTriangle, FileSpreadsheet, PlusCircle
 } from 'lucide-react';
 import { eventosService } from '../../services/eventos.service';
 import { pasesService } from '../../services/pasesService';
