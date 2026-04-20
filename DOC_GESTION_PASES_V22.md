@@ -1,4 +1,4 @@
-# 🛡️ Aegis Tactical: Directiva de Gestión de Pases Masivos (v2.2)
+# 🛡️ Aegis Tactical: Directiva de Gestión de Pases Masivos (v2.3)
 
 Esta directiva establece los estándares técnicos y operativos para la generación, importación y validación de pases masivos en el sistema BAGFM.
 
@@ -19,7 +19,7 @@ El sistema soporta hasta **4 vehículos** por pase masivo. La plantilla Excel (`
 - El sistema procesa lotes de hasta 5,000 registros mediante `PaseService.procesar_json_identificado`.
 
 ## 2. Lógica Táctica de Estacionamiento
-El sistema implementa una validación diferenciada según el `TipoAccesoPase` (Requerimiento #8):
+El sistema implementa una validación diferenciada según el `TipoAccesoPase`:
 
 ### Validaciones:
 1. **Capacidad Total**: La sumatoria de pases en un lote NO puede superar la capacidad total de todas las zonas asignadas a la entidad civil.
@@ -28,16 +28,20 @@ El sistema implementa una validación diferenciada según el `TipoAccesoPase` (R
 3. **Acceso Categorizado (Staff, VIP, Producción, etc.)**: Utiliza estrictamente el cupo definido en la `distribucion_cupos` de la `AsignacionZona`.
 
 > [!IMPORTANT]
-> Si el flag `distribucion_automatic` está activo (bypass de advertencia), el sistema permitirá superar el cupo de la categoría pero NUNCA el cupo total de la entidad.
+> Si el flag `distribucion_automatica` está activo (bypass de advertencia), el sistema permitirá superar el cupo de la categoría pero NUNCA el cupo total de la entidad.
 
-## 3. Estándares Visuales (Aegis Tactical v3)
-- **Botones**: Uso estricto de la clase `bg-primary` con `text-bg-app`. Se eliminan resplandores (`shadow-primary/20`) en favor de `shadow-tactica`.
-- **Tipografía**: `tracking-widest`, `font-black`, `uppercase`.
-- **UI de Pases**: Los vehículos se visualizan en tarjetas con glassmorphism (`bg-white/5 backdrop-blur-md`) para máxima claridad operativa.
+## 3. Robustez de Interfaz y API (v2.3)
+Para prevenir errores `422 Unprocessable Entity` y fallos de renderizado en React (#31):
+
+- **Sanitización de UUIDs**: Los identificadores opcionales (zona, puesto, categorías custom) deben enviarse como `null` si están vacíos, nunca como string vacío `""`.
+- **Mapeo de Campos**: El backend soporta alias para los campos de relación:
+  - `zona_id` / `zona_asignada_id`
+  - `puesto_id` / `puesto_asignado_id`
+- **Manejo de Errores**: El frontend procesa las listas de errores de validación de Pydantic para mostrar mensajes específicos en lugar de objetos, evitando el desplome de la UI.
 
 ## 4. Notas de Implementación (Backend)
-- Se utiliza `lazy="selectin"` en todos los modelos de estacionamiento y pases para evitar errores de `MissingGreenlet` en entornos asíncronos.
+- Se utiliza `lazy="selectin"` en todos los modelos de estacionamiento y pases para evitar errores de `MissingGreenlet`.
 - La serialización de esquemas incluye `zona_nombre` precargado mediante relaciones eager loading.
 
 ---
-*BAGFM v2.2 - Evolución Táctica de Seguridad y Logística.*
+*BAGFM v2.3 - Estabilización de Operaciones Masivas.*

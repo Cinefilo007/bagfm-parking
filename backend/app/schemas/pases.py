@@ -1,7 +1,7 @@
 from pydantic import BaseModel, ConfigDict
 from uuid import UUID
 from datetime import datetime, date
-from typing import Optional, List
+from typing import Optional, List, Any
 from app.models.enums import PasseTipo
 
 class LotePaseMasivoBase(BaseModel):
@@ -16,8 +16,13 @@ class LotePaseMasivoCrear(LotePaseMasivoBase):
     tipo_acceso: Optional[str] = "general"
     tipo_acceso_custom_id: Optional[UUID] = None
     zona_id: Optional[UUID] = None
+    zona_asignada_id: Optional[UUID] = None # Alias para compatibilidad frontend
     puesto_id: Optional[UUID] = None
+    puesto_asignado_id: Optional[UUID] = None # Alias para compatibilidad frontend
     multi_vehiculo: bool = False
+    excel_data: Optional[List[List[Any]]] = None
+    distribucion_automatic: Optional[bool] = False # Deprecated but kept for safety
+    distribucion_automatica: Optional[bool] = False
 
 class LotePaseMasivoSalida(LotePaseMasivoBase):
     id: UUID

@@ -112,7 +112,8 @@ class PaseService:
                     
                     # Si no es distribución libre (ignorar warning en frontend), lanzamos error
                     # Para el backend, si no viene el flag 'distribucion_automatica', somos estrictos
-                    if not datos.get('distribucion_automatic', False) and datos['cantidad_pases'] > cupo_disponible:
+                    dist_auto = datos.get('distribucion_automatica') or datos.get('distribucion_automatic', False)
+                    if not dist_auto and datos['cantidad_pases'] > cupo_disponible:
                          raise ValueError(f"CUPO INSUFICIENTE en esta zona para {label_tipo}: Disponible {cupo_disponible}, Requerido {datos['cantidad_pases']}.")
 
         # 3. Generar serial y persistir lote

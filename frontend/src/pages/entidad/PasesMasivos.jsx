@@ -200,7 +200,13 @@ const LoteCardV2 = ({ lote, zonas, tiposCustom, onRefresh }) => {
                 toast.success('Datos importados con éxito');
                 onRefresh?.();
             } catch (err) {
-                toast.error(err.response?.data?.detail || 'Error en la importación');
+                const errorData = err.response?.data?.detail;
+                if (Array.isArray(errorData)) {
+                    const msg = errorData.map(e => `${e.loc[e.loc.length-1]}: ${e.msg}`).join(', ');
+                    toast.error(`ERROR DE VALIDACIÓN: ${msg.toUpperCase()}`);
+                } else {
+                    toast.error(errorData || 'Error en la importación');
+                }
             } finally {
                 setImportando(false);
                 e.target.value = '';
@@ -537,14 +543,26 @@ const ModalNuevoLote = ({ isOpen, onClose, zonas, tiposCustom, onCreated }) => {
                 ...form,
                 entidad_id: user?.entidad_id,
                 excel_data: excelPases, // Enviaremos los datos del excel si existen
-                distribucion_automatica: capacidadExcedida // Indica si aceptó distribuir fuera de su cupo
+                distribucion_automatica: capacidadExcedida, // Indica si aceptó distribuir fuera de su cupo
+                
+                // Mapeo táctico para el backend
+                zona_id: form.zona_asignada_id || null,
+                puesto_id: form.puesto_asignado_id || null,
+                tipo_acceso_custom_id: form.tipo_acceso_custom_id || null
             };
             await pasesService.crearLote(payload);
             toast.success('Lote de pases creado con éxito');
             onCreated?.();
             onClose();
         } catch (e) {
-            toast.error(e.response?.data?.detail || 'Error al crear lote');
+            const errorData = e.response?.data?.detail;
+            if (Array.isArray(errorData)) {
+                // Error de validación de FastAPI (422)
+                const msg = errorData.map(err => `${err.loc[err.loc.length-1]}: ${err.msg}`).join(', ');
+                toast.error(`ERROR TÁCTICO: ${msg.toUpperCase()}`);
+            } else {
+                toast.error(errorData || 'Error al crear lote');
+            }
         } finally {
             setGuardando(false);
         }
