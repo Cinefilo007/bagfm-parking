@@ -48,6 +48,8 @@ class LotePaseMasivo(Base):
     # Manejo v2.0
     entidad_id = Column(UUID(as_uuid=True), ForeignKey("entidades_civiles.id", ondelete="RESTRICT"), nullable=True)
     tipo_acceso = Column(SQLEnum(TipoAccesoPase, name="tipo_acceso_pase", native_enum=True), default=TipoAccesoPase.general, nullable=False)
+    tipo_acceso_custom_id = Column(UUID(as_uuid=True), ForeignKey("tipos_acceso_custom.id", ondelete="RESTRICT"), nullable=True)
+    
     requiere_aprobacion = Column(Boolean, default=False, nullable=False)
     aprobado_por = Column(UUID(as_uuid=True), ForeignKey("usuarios.id", ondelete="RESTRICT"), nullable=True)
     zona_estacionamiento_id = Column(UUID(as_uuid=True), ForeignKey("zonas_estacionamiento.id", ondelete="RESTRICT"), nullable=True)
@@ -62,9 +64,9 @@ class LotePaseMasivo(Base):
     zip_listo_at = Column(DateTime(timezone=True), nullable=True)
     
     pdf_url = Column(Text, nullable=True) # URL del PDF masivo (v2.0)
-
     # Relaciones
     zona_asignada = relationship("ZonaEstacionamiento", foreign_keys=[zona_estacionamiento_id], lazy="selectin")
+    tipo_acceso_custom = relationship("TipoAccesoCustom", foreign_keys=[tipo_acceso_custom_id], lazy="selectin")
 
     @property
     def zona_nombre(self):

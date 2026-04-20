@@ -44,7 +44,9 @@ class CodigoQRSalida(CodigoQRBase):
     multi_vehiculo: bool = False
     vehiculos_adicionales: List["VehiculoPaseSalida"] = []
     zona_asignada_id: Optional[UUID] = None
+    zona_asignada_nombre: Optional[str] = None
     puesto_asignado_id: Optional[UUID] = None
+    puesto_asignado_codigo: Optional[str] = None
     hora_entrada_base: Optional[datetime] = None
     hora_llegada_zona: Optional[datetime] = None
     created_at: datetime

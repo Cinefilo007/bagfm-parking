@@ -60,6 +60,9 @@ const PaseRow = ({ pase, zonas, onCompartir, onEmail, onEditar }) => {
                     {pase.nombre_portador && (
                         <p className="text-[10px] font-black text-text-main uppercase truncate">{pase.nombre_portador}</p>
                     )}
+                    <span className="text-[8px] text-text-muted font-mono tracking-tighter bg-white/5 px-1.5 py-0.5 rounded border border-white/5">
+                        {pase.serial_legible}
+                    </span>
                     {pase.cedula_portador && (
                         <span className="text-[8px] text-text-muted font-mono">{pase.cedula_portador}</span>
                     )}
@@ -74,9 +77,10 @@ const PaseRow = ({ pase, zonas, onCompartir, onEmail, onEditar }) => {
                         </div>
                     )}
                     
-                    {pase.zona_asignada_id && (
-                        <span className="text-[8px] font-bold text-success flex items-center gap-0.5 ml-auto">
-                            <ParkingSquare size={8} /> {pase.puesto_asignado_codigo || pase.zona_asignada_nombre}
+                    {(pase.puesto_asignado_codigo || pase.zona_asignada_nombre) && (
+                        <span className="text-[8px] font-bold text-success flex items-center gap-1 ml-auto bg-success/5 px-2 py-0.5 rounded-lg border border-success/20">
+                            <ParkingSquare size={9} /> 
+                            {pase.puesto_asignado_codigo ? `PUESTO ${pase.puesto_asignado_codigo}` : (pase.zona_asignada_nombre || 'ZONA ASIGNADA')}
                         </span>
                     )}
 
@@ -353,7 +357,9 @@ const LoteCardV2 = ({ lote, zonas, tiposCustom, onRefresh, onVerPases }) => {
                 </div>
                 <div className="flex flex-col gap-1 items-start md:items-center">
                     {badgeTipo(lote.tipo_pase)}
-                    <span className="text-[10px] font-mono text-text-muted opacity-40 font-bold">#{lote.codigo_serial.split('-').pop()}</span>
+                    <span className="text-[10px] font-mono text-text-muted opacity-60 font-bold bg-white/5 px-2 py-0.5 rounded border border-white/5 mt-1">
+                        {lote.codigo_serial}
+                    </span>
                 </div>
             </div>
 

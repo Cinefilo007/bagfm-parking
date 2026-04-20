@@ -57,9 +57,17 @@ class CodigoQR(Base):
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     created_by = Column(UUID(as_uuid=True), ForeignKey("usuarios.id", ondelete="RESTRICT"), nullable=True)
 
+    created_by = Column(UUID(as_uuid=True), ForeignKey("usuarios.id", ondelete="RESTRICT"), nullable=True)
+
     # Relaciones
-    # usuario = relationship("Usuario", foreign_keys=[usuario_id], back_populates="codigos_qr")
-    # vehiculo = relationship("Vehiculo", back_populates="codigos_qr")
-    # membresia = relationship("Membresia", back_populates="codigos_qr")
-    # accesos = relationship("Acceso", back_populates="qr")
+    zona_asignada = relationship("ZonaEstacionamiento", foreign_keys=[zona_asignada_id], lazy="selectin")
+    puesto_asignado = relationship("PuestoEstacionamiento", foreign_keys=[puesto_asignado_id], lazy="selectin")
     vehiculos_adicionales = relationship("VehiculoPase", backref="codigo_qr", cascade="all, delete-orphan", lazy="selectin")
+
+    @property
+    def zona_asignada_nombre(self):
+        return self.zona_asignada.nombre if self.zona_asignada else None
+
+    @property
+    def puesto_asignado_codigo(self):
+        return self.puesto_asignado.codigo if self.puesto_asignado else None

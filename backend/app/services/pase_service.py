@@ -116,6 +116,7 @@ class PaseService:
             max_accesos_por_pase=datos.get('max_accesos_por_pase'),
             entidad_id=entidad.id if entidad else None,
             tipo_acceso=tipo_acc,
+            tipo_acceso_custom_id=datos.get('tipo_acceso_custom_id'),
             zona_estacionamiento_id=zona_id,
             creado_por=creado_por_id
         )
@@ -141,10 +142,11 @@ class PaseService:
         return nuevo_lote
 
     async def _generar_serial_lote(self, db: AsyncSession) -> str:
-        """Genera serial tipo BAGFM-26ABR-003"""
+        """Genera serial corto tipo B26403 (B+YY+M+LOTE)"""
         ahora = datetime.now()
-        meses = ["ENE", "FEB", "MAR", "ABR", "MAY", "JUN", "JUL", "AGO", "SEP", "OCT", "NOV", "DIC"]
-        prefijo = f"BAGFM-{str(ahora.year)[2:]}{meses[ahora.month-1]}"
+        # Meses en un solo caracter: 1-9, A, B, C
+        meses_id = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "A", "B", "C"]
+        prefijo = f"B{str(ahora.year)[2:]}{meses_id[ahora.month-1]}"
         
         # Contar lotes del mes
         inicio_mes = ahora.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
@@ -152,14 +154,15 @@ class PaseService:
         res = await db.execute(query)
         count = res.scalar() or 0
         
-        return f"{prefijo}-{str(count + 1).zfill(3)}"
+        # Serial del lote: B264(mes)03(consecutivo)
+        return f"{prefijo}{str(count + 1).zfill(2)}"
 
     async def _generar_pases_simples(self, db: AsyncSession, lote: LotePaseMasivo, creado_por_id: uuid.UUID, extras: dict):
         """Genera N pases simples para el lote."""
         expira_at = datetime.combine(lote.fecha_fin, datetime.max.time()).replace(tzinfo=timezone.utc) + timedelta(hours=24)
         
         for i in range(1, lote.cantidad_pases + 1):
-            serial_qr = f"{lote.codigo_serial}-{str(i).zfill(4)}"
+            serial_qr = f"{lote.codigo_serial}{str(i).zfill(4)}"
             token = crear_token_evento(serial_qr, expira_at)
             
             nuevo_qr = CodigoQR(
@@ -186,7 +189,7 @@ class PaseService:
         expira_at = datetime.combine(lote.fecha_fin, datetime.max.time()).replace(tzinfo=timezone.utc) + timedelta(hours=24)
         
         for i in range(1, lote.cantidad_pases + 1):
-            serial_qr = f"{lote.codigo_serial}-{str(i).zfill(4)}"
+            serial_qr = f"{lote.codigo_serial}{str(i).zfill(4)}"
             
             # Crear usuario temporal (SOCIO con contraseña = serial)
             nuevo_usuario = Usuario(
@@ -255,7 +258,7 @@ class PaseService:
             v3_data = row_data[12:16]
             v4_data = row_data[16:20]
             
-            serial_qr = f"{lote.codigo_serial}-{str(count + 1).zfill(4)}"
+            serial_qr = f"{lote.codigo_serial}{str(count + 1).zfill(4)}"
             token = crear_token_evento(serial_qr, expira_at)
             
             nuevo_qr = CodigoQR(
@@ -277,7 +280,7 @@ class PaseService:
                 vehiculo_modelo=str(v1_data[2]).upper() if v1_data[2] else None,
                 vehiculo_color=str(v1_data[3]).upper() if v1_data[3] else None,
                 tipo_acceso=lote.tipo_acceso,
-                tipo_acceso_custom_id=lote.tipo_acceso_custom_id,
+                tipo_acceso_custom_id=lote.tipo_acceso_custom_id if hasattr(lote, 'tipo_acceso_custom_id') else None,
                 zona_asignada_id=lote.zona_estacionamiento_id,
                 multi_vehiculo=bool(v2_data[0] or v3_data[0] or v4_data[0])
             )
