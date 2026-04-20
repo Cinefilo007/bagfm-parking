@@ -469,4 +469,53 @@ class PaseService:
         await db.refresh(pase)
         return pase
 
+    async def eliminar_lote(self, db: AsyncSession, lote_id: uuid.UUID) -> bool:
+        """
+        Elimina un lote y toda su infraestructura asociada.
+        - Borra QRs (cascada).
+        - Borra Usuarios temporales (portal).
+        - Borra archivos de Supabase (ZIP, PDF).
+        - Borra el Lote.
+        """
+        lote = await db.get(LotePaseMasivo, lote_id)
+        if not lote:
+            return False
+            
+        # 1. Obtener IDs de usuarios temporales para este lote antes de borrar los QRs
+        query_qrs = select(CodigoQR.usuario_id).where(CodigoQR.lote_id == lote_id)
+        res_qrs = await db.execute(query_qrs)
+        user_ids = [uid for uid in res_qrs.scalars().all() if uid]
+        
+        # 2. Eliminar archivos de Supabase
+        if self.supabase:
+            import re
+            nombre_limpio = re.sub(r'[^a-zA-Z0-9_\-]', '_', lote.nombre_evento).strip('_')
+            
+            # Rutas posibles
+            paths = [
+                f"pases/{nombre_limpio}_{lote.codigo_serial}.zip",
+                f"pases_pdf/{nombre_limpio}_{lote.codigo_serial}.pdf"
+            ]
+            
+            try:
+                self.supabase.storage.from_("bagfm-pases").remove(paths)
+            except Exception as e:
+                print(f"ALERTA STORAGE: No se pudieron borrar algunos archivos: {e}")
+        
+        # 3. Eliminar Usuarios temporales asociados (si no son otros que SOCIO con cedula=serial)
+        if user_ids:
+            from app.models.usuario import Usuario
+            from sqlalchemy import delete
+            # Solo borramos si el usuario NO es admin y es SOCIO (seguridad técnica)
+            query_del_users = delete(Usuario).where(
+                Usuario.id.in_(user_ids),
+                Usuario.rol == RolTipo.SOCIO
+            )
+            await db.execute(query_del_users)
+            
+        # 4. Eliminar el lote (CodigoQR caen por CASCADE)
+        await db.delete(lote)
+        await db.commit()
+        return True
+
 pase_service = PaseService()

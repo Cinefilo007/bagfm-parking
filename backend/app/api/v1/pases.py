@@ -164,3 +164,15 @@ async def actualizar_pase(
     if not pase:
         raise HTTPException(status_code=404, detail="Pase no encontrado")
     return pase
+
+@router.delete("/lotes/{lote_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def eliminar_lote(
+    lote_id: UUID,
+    db: AsyncSession = Depends(obtener_db),
+    usuario_actual: Usuario = Depends(require_rol(ADMIN_ROLES))
+):
+    """Elimina un lote y todos sus recursos asociados."""
+    exito = await pase_service.eliminar_lote(db, lote_id)
+    if not exito:
+        raise HTTPException(status_code=404, detail="Lote no encontrado")
+    return Response(status_code=status.HTTP_204_NO_CONTENT)

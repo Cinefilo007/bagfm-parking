@@ -13,7 +13,7 @@ import {
     Users, QrCode, ChevronRight, Share2, Mail,
     ParkingSquare, Car, Tag, Edit3, RefreshCw,
     Upload, CheckCircle2, MapPin, MoreVertical, Copy,
-    Shield, Camera, Star, AlertTriangle, FileSpreadsheet, PlusCircle
+    Shield, Camera, Star, AlertTriangle, FileSpreadsheet, PlusCircle, Trash2
 } from 'lucide-react';
 import { eventosService } from '../../services/eventos.service';
 import { pasesService } from '../../services/pasesService';
@@ -316,7 +316,7 @@ const TacticalKPIs = ({ lotes }) => {
     );
 };
 
-const LoteCardV2 = ({ lote, zonas, tiposCustom, onRefresh, onVerPases }) => {
+const LoteCardV2 = ({ lote, zonas, tiposCustom, onRefresh, onVerPases, onEliminar }) => {
     const [generando, setGenerando] = useState(false);
     const [progreso, setProgreso] = useState(0);
 
@@ -415,6 +415,13 @@ const LoteCardV2 = ({ lote, zonas, tiposCustom, onRefresh, onVerPases }) => {
                 <Boton variant="ghost" size="sm" onClick={() => onVerPases(lote)} className="h-9 px-3 bg-primary/10 border border-primary/20 rounded-xl flex items-center gap-2 text-primary hover:bg-primary/20">
                     <Users size={14} /> <span className="text-[10px] font-black uppercase">GESTIONAR</span>
                 </Boton>
+                <button 
+                    onClick={() => onEliminar(lote)}
+                    className="h-9 w-9 bg-danger/10 hover:bg-danger/20 border border-danger/20 rounded-xl flex items-center justify-center transition-all text-danger"
+                    title="Eliminar Lote Permanentemente"
+                >
+                    <Trash2 size={15} />
+                </button>
             </div>
         </div>
     );
@@ -842,6 +849,8 @@ export default function EventosV2() {
     const [showModal, setShowModal] = useState(false);
     const [showSolicitudModal, setShowSolicitudModal] = useState(false);
     const [loteDetalle, setLoteDetalle] = useState(null); // Nuevo estado para drill-down
+    const [loteEliminar, setLoteEliminar] = useState(null);
+    const [eliminando, setEliminando] = useState(false);
     const [formSolicitud, setFormSolicitud] = useState({
         nombre_evento: '', fecha_evento: '', cantidad_solicitada: 10, motivo: '', tipo_pase: 'simple', entidad_id: user?.entidad_id
     });
@@ -879,6 +888,21 @@ export default function EventosV2() {
     }, [user?.entidad_id]);
 
     useEffect(() => { fetchData(); }, [fetchData]);
+
+    const handleEliminarLote = async () => {
+        if (!loteEliminar) return;
+        setEliminando(true);
+        try {
+            await pasesService.eliminarLote(loteEliminar.id);
+            toast.success('Lote eliminado permanentemente');
+            setLoteEliminar(null);
+            fetchData();
+        } catch (e) {
+            toast.error('Error al ejecutar protocolo de eliminación');
+        } finally {
+            setEliminando(false);
+        }
+    };
 
     const handleSolicitud = async (e) => {
         e.preventDefault();
@@ -992,7 +1016,15 @@ export default function EventosV2() {
                 ) : lotes.length > 0 ? (
                     <div className="flex flex-col gap-3">
                         {lotes.map(lote => (
-                            <LoteCardV2 key={lote.id} lote={lote} zonas={zonas} tiposCustom={tiposCustom} onRefresh={fetchData} onVerPases={setLoteDetalle} />
+                            <LoteCardV2 
+                                key={lote.id} 
+                                lote={lote} 
+                                zonas={zonas} 
+                                tiposCustom={tiposCustom} 
+                                onRefresh={fetchData} 
+                                onVerPases={setLoteDetalle} 
+                                onEliminar={setLoteEliminar}
+                            />
                         ))}
                     </div>
                 ) : (
@@ -1034,6 +1066,37 @@ export default function EventosV2() {
                 lote={loteDetalle} 
                 zonas={zonas} 
             />
+
+            {/* Modal de Confirmación de Eliminación Táctica */}
+            <Modal 
+                isOpen={!!loteEliminar} 
+                onClose={() => !eliminando && setLoteEliminar(null)} 
+                title="ALERTA DE SEGURIDAD"
+                size="md"
+            >
+                <div className="text-center space-y-6 py-4">
+                    <div className="w-20 h-20 bg-danger/10 rounded-full flex items-center justify-center border border-danger/20 mx-auto animate-pulse">
+                        <AlertTriangle size={40} className="text-danger" />
+                    </div>
+                    
+                    <div className="space-y-2">
+                        <h3 className="text-lg font-black text-white uppercase tracking-tighter leading-tight">¿Anular y Eliminar Lote?</h3>
+                        <p className="text-xs text-text-muted leading-relaxed font-bold">
+                            Esta acción es <span className="text-danger font-black uppercase underline">irreversible</span>. 
+                            Se anularán todos los accesos del lote <span className="text-white font-mono bg-white/5 px-1.5 rounded">{loteEliminar?.codigo_serial}</span> y se borrarán sus archivos de la nube.
+                        </p>
+                    </div>
+
+                    <div className="flex gap-3 pt-4">
+                        <Boton variant="ghost" className="flex-1" onClick={() => setLoteEliminar(null)} disabled={eliminando}>
+                            CANCELAR
+                        </Boton>
+                        <Boton className="flex-1 bg-danger hover:bg-danger/80" onClick={handleEliminarLote} isLoading={eliminando}>
+                            SÍ, ELIMINAR TODO
+                        </Boton>
+                    </div>
+                </div>
+            </Modal>
 
             {/* Modal solicitud evento */}
             <Modal isOpen={showSolicitudModal} onClose={() => setShowSolicitudModal(false)} title="NUEVA SOLICITUD FL-08">

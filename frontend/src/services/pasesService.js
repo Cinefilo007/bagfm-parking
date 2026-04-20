@@ -81,6 +81,11 @@ export const pasesService = {
       // Fallback: abrir en nueva pestaña
       window.open(url, '_blank');
     }
+  },
+
+  async eliminarLote(id) {
+    const res = await api.delete(`/pases/lotes/${id}`);
+    return res.data;
   }
 };
 
