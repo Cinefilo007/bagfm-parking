@@ -142,12 +142,14 @@ class PaseService:
             if solicitud:
                 solicitud.lote_id = nuevo_lote.id
 
-        # 4. Generar QRs según el tipo
-        if nuevo_lote.tipo_pase == PasseTipo.simple:
+        # 4. Generar QRs según el tipo (Uso de .value para máxima robustez en comparaciones de Enum)
+        tipo_lote_val = nuevo_lote.tipo_pase.value if hasattr(nuevo_lote.tipo_pase, 'value') else str(nuevo_lote.tipo_pase)
+        
+        if tipo_lote_val == PasseTipo.simple.value:
             await self._generar_pases_simples(db, nuevo_lote, creado_por_id, datos)
-        elif nuevo_lote.tipo_pase == PasseTipo.portal:
+        elif tipo_lote_val == PasseTipo.portal.value:
             await self._generar_pases_portal(db, nuevo_lote, creado_por_id, datos)
-        elif nuevo_lote.tipo_pase == PasseTipo.identificado:
+        elif tipo_lote_val == PasseTipo.identificado.value:
             if datos.get('excel_data'):
                 await self.procesar_json_identificado(db, nuevo_lote, datos['excel_data'], creado_por_id)
         
@@ -303,6 +305,7 @@ class PaseService:
                 multi_vehiculo=extras.get('multi_vehiculo', False)
             )
             db.add(nuevo_qr)
+            await db.flush()
 
     async def procesar_excel_identificado(self, db: AsyncSession, lote: LotePaseMasivo, contenido_excel: bytes, creado_por_id: uuid.UUID):
         """Parsea Excel y crea pases identificados (Versión Backend Directa)."""
@@ -458,6 +461,32 @@ class PaseService:
         res = await db.execute(query)
         qrs = res.scalars().all()
         
+        # --- AUTO-CURACIÓN TÁCTICA v3.2 ---
+        # Si el lote existe pero no tiene QRs, y es de tipo generable (portal/simple), los creamos ahora.
+        if not qrs:
+            from app.models.enums import PasseTipo
+            tipo_val = lote.tipo_pase.value if hasattr(lote.tipo_pase, 'value') else str(lote.tipo_pase)
+            
+            if tipo_val in [PasseTipo.portal.value, PasseTipo.simple.value]:
+                # Re-generamos los pases mendiante los servicios correspondientes
+                # El diccionario 'datos' requerido para extras se construye con lo básico del lote
+                datos_reparacion = {
+                    'zona_id': lote.zona_estacionamiento_id,
+                    'tipo_acceso_custom_id': lote.tipo_acceso_custom_id,
+                    'tipo_acceso': lote.tipo_acceso
+                }
+                
+                if tipo_val == PasseTipo.portal.value:
+                    await self._generar_pases_portal(db, lote, lote.creado_por, datos_reparacion)
+                else:
+                    await self._generar_pases_simples(db, lote, lote.creado_por, datos_reparacion)
+                
+                await db.commit()
+                # Re-consultamos los QRs ahora generados
+                res = await db.execute(query)
+                qrs = res.scalars().all()
+        # ----------------------------------
+
         zip_buffer = io.BytesIO()
         with zipfile.ZipFile(zip_buffer, 'a', zipfile.ZIP_DEFLATED, False) as zip_file:
             from app.models.enums import QRTipo
