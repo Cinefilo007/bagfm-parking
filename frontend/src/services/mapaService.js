@@ -15,5 +15,10 @@ export const mapaService = {
        lng
     });
     return response.data;
+  },
+
+  getTrafico: async (weeks_ago = 0) => {
+    const response = await api.get(`/mapa/trafico?weeks_ago=${weeks_ago}`);
+    return response.data;
   }
 };

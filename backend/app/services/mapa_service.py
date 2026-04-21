@@ -173,6 +173,55 @@ async def get_situacion_actual(db: AsyncSession):
         "eventos_recientes": eventos_data
     }
 
+async def get_trafico_historico(db: AsyncSession, weeks_ago: int = 0):
+    """Retorna el conteo de entradas diarias para una semana específica."""
+    from datetime import timedelta, date as datetime_date
+    
+    hoy = datetime_date.today()
+    offset = weeks_ago * 7
+    fin_rango = hoy - timedelta(days=offset)
+    inicio_rango = fin_rango - timedelta(days=6)
+    
+    # Generar todos los días del rango para asegurar que haya datos (incluso ceros)
+    dias_rango = []
+    for i in range(7):
+        dias_rango.append(inicio_rango + timedelta(days=i))
+    
+    # Consulta: Contar entradas por día
+    query = select(
+        cast(Acceso.timestamp, Date).label('fecha'),
+        func.count(Acceso.id).label('total')
+    ).filter(
+        Acceso.tipo == "entrada",
+        cast(Acceso.timestamp, Date) >= inicio_rango,
+        cast(Acceso.timestamp, Date) <= fin_rango
+    ).group_by(
+        cast(Acceso.timestamp, Date)
+    ).order_by(
+        cast(Acceso.timestamp, Date)
+    )
+    
+    result = await db.execute(query)
+    data_map = {row.fecha: row.total for row in result.all()}
+    
+    # Consolidar con ceros para días sin tráfico
+    resultado = []
+    for d in dias_rango:
+        resultado.append({
+            "fecha": d.isoformat(),
+            "dia": d.strftime("%a").upper(), # Eje X: Lun, Mar, etc.
+            "total": data_map.get(d, 0)
+        })
+        
+    return {
+        "semana": {
+            "inicio": inicio_rango.isoformat(),
+            "fin": fin_rango.isoformat(),
+            "weeks_ago": weeks_ago
+        },
+        "puntos": resultado
+    }
+
 async def actualizar_georreferencia(
     db: AsyncSession, 
     tipo: Literal['entidad', 'alcabala', 'zona'], 

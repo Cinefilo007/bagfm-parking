@@ -23,6 +23,15 @@ async def get_situacion(
     """Retorna la situación táctica consolidada de la Base."""
     return await mapa_service.get_situacion_actual(db)
 
+@router.get("/trafico")
+async def get_trafico(
+    weeks_ago: int = 0,
+    db: AsyncSession = Depends(obtener_db),
+    usuario_actual = Depends(obtener_usuario_actual)
+):
+    """Retorna estadísticas de tráfico histórico por días."""
+    return await mapa_service.get_trafico_historico(db, weeks_ago)
+
 @router.put("/georreferenciar")
 async def actualizar_ubicacion(
     request: GeorreferenciaRequest,

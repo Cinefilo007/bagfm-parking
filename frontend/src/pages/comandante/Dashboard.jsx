@@ -4,6 +4,7 @@ import { Card } from '../../components/ui/Card';
 import { Target, CarFront, ShieldAlert, AlertTriangle } from 'lucide-react';
 import MapaTactico from '../../components/MapaTactico';
 import EventMonitor from '../../components/dashboard/EventMonitor';
+import TrafficChart from '../../components/dashboard/TrafficChart';
 import { mapaService } from '../../services/mapaService';
 
 export default function DashboardComando() {
@@ -77,12 +78,17 @@ export default function DashboardComando() {
           })}
         </div>
 
-        {/* BOTTOM SECTION: 2/3 Map and 1/3 Events */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-stretch h-[600px]">
+        {/* BOTTOM SECTION: 2/3 Map + Chart and 1/3 Events */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-stretch h-[720px]">
           
-          {/* Columna Izquierda: Mapa Táctico (Ocupa 8/12 = 66%) */}
-          <div className="flex flex-col h-full lg:col-span-8">
-             <MapaTactico pollingEnabled={false} situacionPreload={situacion} />
+          {/* Columna Izquierda: Mapa Táctico + Gráfico (Ocupa 8/12 = 66%) */}
+          <div className="flex flex-col h-full lg:col-span-8 gap-6">
+             <div className="flex-1 min-h-0">
+                <MapaTactico pollingEnabled={false} situacionPreload={situacion} />
+             </div>
+             <div className="h-[240px] flex-shrink-0">
+                <TrafficChart />
+             </div>
           </div>
 
           {/* Columna Derecha: Monitor de Eventos (Ocupa 4/12 = 33%) */}
