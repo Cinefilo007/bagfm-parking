@@ -3,6 +3,7 @@ import { Card } from '../../components/ui/Card';
 import { Boton } from '../../components/ui/Boton';
 import { Modal } from '../../components/ui/Modal';
 import { Input } from '../../components/ui/Input';
+import { NumberInput } from '../../components/ui/NumberInput';
 import { useAuthStore } from '../../store/auth.store';
 import { toast } from 'react-hot-toast';
 import { cn } from '../../lib/utils';
@@ -771,12 +772,18 @@ export default function GestionZonas() {
                     />
 
                     <div className="grid grid-cols-2 gap-4">
-                        <Input label="Puestos asignados" type="number" value={formAsig.cupo_asignado}
-                            onChange={e => setFormAsig({ ...formAsig, cupo_asignado: parseInt(e.target.value) })}
-                            placeholder="Ej: 15" />
-                        <Input label="Reservado base" type="number" value={formAsig.cupo_reservado_base}
-                            onChange={e => setFormAsig({ ...formAsig, cupo_reservado_base: parseInt(e.target.value) || 0 })}
-                            placeholder="0" />
+                        <NumberInput 
+                            label="Puestos asignados" 
+                            value={formAsig.cupo_asignado}
+                            max={zonaActiva?.capacidad_total || 999}
+                            onChange={val => setFormAsig({ ...formAsig, cupo_asignado: val })}
+                        />
+                        <NumberInput 
+                            label="Reservado base" 
+                            value={formAsig.cupo_reservado_base}
+                            max={zonaActiva?.capacidad_total || 999}
+                            onChange={val => setFormAsig({ ...formAsig, cupo_reservado_base: val })}
+                        />
                     </div>
                     <Input label="Notas (opcional)" value={formAsig.notes}
                         onChange={e => setFormAsig({ ...formAsig, notes: e.target.value })}

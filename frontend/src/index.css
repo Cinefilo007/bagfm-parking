@@ -234,5 +234,15 @@
     opacity: 1;
     transform: translateY(0) scale(1);
   }
+
+  /* Ocultar spinners nativos de inputs numéricos */
+  input::-webkit-outer-spin-button,
+  input::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+  input[type=number] {
+    -moz-appearance: textfield;
+  }
 }
 
