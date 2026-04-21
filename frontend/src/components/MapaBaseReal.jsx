@@ -14,49 +14,43 @@ L.Icon.Default.mergeOptions({
   shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
 });
 
-const createTacticalPin = (color, label = "", isSelected = false, isDarkMode = true, type = 'default') => {
-  const pinBgColor = isDarkMode ? 'rgba(13, 17, 23, 0.8)' : 'rgba(255, 255, 255, 0.9)';
-  const pinTextColor = isDarkMode ? 'white' : '#0F172A';
+const createTacticalPin = (color, label = "", isSelected = false, isDarkMode = true, IconComponent = Target) => {
+  const pinBgColor = isDarkMode ? 'rgba(13, 17, 23, 0.9)' : '#FFFFFF';
+  const pinTextColor = isDarkMode ? '#DEE1F7' : '#0F172A';
   
-  const innerContent = type === 'parking' ? (
-    <span style={{
-      color: pinBgColor,
-      fontSize: '14px',
-      fontWeight: '900',
-      fontFamily: 'Space Grotesk, sans-serif',
-      transform: 'rotate(45deg)',
-    }}>P</span>
-  ) : (
+  // Renderizar el icono central
+  const innerContent = (
     <div style={{
-      width: '10px',
-      height: '10px',
-      background: pinBgColor,
-      borderRadius: '50%',
+      color: pinBgColor,
       transform: 'rotate(45deg)',
-      border: `2px solid ${isSelected ? color : (isDarkMode ? '#FFF' : '#FFF')}`
-    }} />
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center'
+    }}>
+       <IconComponent size={14} strokeWidth={3} />
+    </div>
   );
 
   const html = renderToString(
-    <div style={{
+    <div className={`tactical-marker-container ${isSelected ? 'is-selected' : ''}`} style={{
       display: 'flex',
       flexDirection: 'column',
       alignItems: 'center',
       justifyContent: 'center',
-      filter: isSelected ? `drop-shadow(0 0 10px ${color})` : 'none',
-      transform: isSelected ? 'scale(1.15)' : 'scale(1)',
-      transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)'
+      transform: isSelected ? 'scale(1.2)' : 'scale(1)',
+      transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+      cursor: 'pointer'
     }}>
       {/* Pin Shape */}
       <div style={{
         position: 'relative',
         width: '32px',
         height: '32px',
-        background: isSelected ? (isDarkMode ? '#FFF' : '#10B981') : color,
+        background: isSelected ? (isDarkMode ? '#FFFFFF' : '#10B981') : color,
         borderRadius: '50% 50% 50% 1px',
         transform: 'rotate(-45deg)',
-        border: `3px solid ${pinBgColor}`,
-        boxShadow: `0 0 15px ${color}66`,
+        border: `2px solid ${pinBgColor}`,
+        boxShadow: isSelected ? `0 0 20px ${color}` : `0 4px 10px rgba(0,0,0,0.3)`,
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center'
@@ -64,16 +58,18 @@ const createTacticalPin = (color, label = "", isSelected = false, isDarkMode = t
         {innerContent}
       </div>
 
-      {/* Label Box */}
+      {/* Label Box - Usando la clase tactical-label definida en index.css */}
       {label && (
-        <div style={{
+        <div className="tactical-label" style={{
           marginTop: '6px',
           background: pinBgColor,
-          backdropFilter: 'blur(4px)',
-          padding: '2px 8px',
-          borderRadius: '6px',
-          border: `1px solid ${color}44`,
-          boxShadow: '0 4px 10px rgba(0,0,0,0.3)'
+          backdropFilter: 'blur(8px)',
+          padding: '2px 10px',
+          borderRadius: '20px',
+          border: `1px solid ${isDarkMode ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)'}`,
+          boxShadow: '0 4px 15px rgba(0,0,0,0.4)',
+          zIndex: 1000,
+          whiteSpace: 'nowrap'
         }}>
           <span style={{
             color: pinTextColor,
@@ -81,9 +77,7 @@ const createTacticalPin = (color, label = "", isSelected = false, isDarkMode = t
             fontFamily: 'Inter, sans-serif',
             fontWeight: '900',
             textTransform: 'uppercase',
-            letterSpacing: '0.08em',
-            whiteSpace: 'nowrap',
-            textShadow: isDarkMode ? '0 1px 2px rgba(0,0,0,0.8)' : 'none'
+            letterSpacing: '0.1em'
           }}>
             {label}
           </span>
@@ -94,9 +88,9 @@ const createTacticalPin = (color, label = "", isSelected = false, isDarkMode = t
 
   return L.divIcon({
     html,
-    className: 'tactical-marker-pin',
+    className: `tactical-marker-pin ${isSelected ? 'is-selected' : ''}`,
     iconSize: [80, 60],
-    iconAnchor: [40, 36],
+    iconAnchor: [40, 32],
   });
 };
 
@@ -175,7 +169,13 @@ const MapaBaseReal = ({ situacion, onSelectEntity, assignmentMode, onMapClick, s
                   <Marker 
                     key={`alcabala-${alcabala.id}`}
                     position={[alcabala.latitud, alcabala.longitud]}
-                    icon={createTacticalPin('#4EDEA3', alcabala.nombre, selectedForMove?.id === alcabala.id && selectedForMove?.tipo === 'alcabala', isDarkMode)}
+                    icon={createTacticalPin(
+                      '#4EDEA3', 
+                      alcabala.nombre, 
+                      selectedForMove?.id === alcabala.id && selectedForMove?.tipo === 'alcabala', 
+                      isDarkMode,
+                      Shield
+                    )}
                     eventHandlers={{ click: () => !assignmentMode && onSelectEntity(alcabala) }}
                   >
                     <Popup className="tactical-popup">
@@ -201,7 +201,13 @@ const MapaBaseReal = ({ situacion, onSelectEntity, assignmentMode, onMapClick, s
                   <Marker 
                     key={`entidad-${entidad.id}`}
                     position={[entidad.latitud, entidad.longitud]}
-                    icon={createTacticalPin('#DEE1F7', entidad.nombre, selectedForMove?.id === entidad.id && selectedForMove?.tipo === 'entidad', isDarkMode)}
+                    icon={createTacticalPin(
+                      '#8B5CF6', 
+                      entidad.nombre, 
+                      selectedForMove?.id === entidad.id && selectedForMove?.tipo === 'entidad', 
+                      isDarkMode,
+                      Building
+                    )}
                     eventHandlers={{ click: () => !assignmentMode && onSelectEntity(entidad) }}
                   >
                     <Popup className="tactical-popup">
@@ -222,7 +228,13 @@ const MapaBaseReal = ({ situacion, onSelectEntity, assignmentMode, onMapClick, s
                      <Marker 
                        key={`zona-${zona.id}`}
                        position={[zona.latitud, zona.longitud]}
-                       icon={createTacticalPin('#F59E0B', zona.nombre, selectedForMove?.id === zona.id && selectedForMove?.tipo === 'zona', isDarkMode, 'parking')}
+                       icon={createTacticalPin(
+                         '#F59E0B', 
+                         zona.nombre, 
+                         selectedForMove?.id === zona.id && selectedForMove?.tipo === 'zona', 
+                         isDarkMode, 
+                         SquareParking
+                       )}
                        eventHandlers={{ click: () => !assignmentMode && onSelectEntity(zona) }}
                      >
                         <Popup className="tactical-popup">

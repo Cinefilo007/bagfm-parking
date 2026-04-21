@@ -77,16 +77,16 @@ export default function DashboardComando() {
           })}
         </div>
 
-        {/* BOTTOM SECTION: 50/50 Map and Events */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-stretch h-[550px]">
+        {/* BOTTOM SECTION: 2/3 Map and 1/3 Events */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-stretch h-[600px]">
           
-          {/* Columna Izquierda: Mapa Táctico */}
-          <div className="flex flex-col h-full">
+          {/* Columna Izquierda: Mapa Táctico (Ocupa 8/12 = 66%) */}
+          <div className="flex flex-col h-full lg:col-span-8">
              <MapaTactico pollingEnabled={false} situacionPreload={situacion} />
           </div>
 
-          {/* Columna Derecha: Monitor de Eventos */}
-          <div className="h-full">
+          {/* Columna Derecha: Monitor de Eventos (Ocupa 4/12 = 33%) */}
+          <div className="h-full lg:col-span-4">
              <EventMonitor eventos={situacion?.eventos_recientes} />
           </div>
 

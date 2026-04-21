@@ -216,5 +216,23 @@
     width: auto !important;
     min-width: 140px;
   }
+
+  /* Tactical Markers Optimization */
+  .tactical-marker-pin {
+    z-index: 500 !important;
+  }
+
+  .tactical-label {
+    opacity: 0;
+    transform: translateY(4px) scale(0.95);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    pointer-events: none;
+  }
+
+  .tactical-marker-pin:hover .tactical-label,
+  .tactical-marker-pin.is-selected .tactical-label {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
 }
 
