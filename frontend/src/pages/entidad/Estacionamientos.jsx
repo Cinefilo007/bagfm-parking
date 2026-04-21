@@ -465,7 +465,7 @@ export default function EstacionamientosEntidad() {
     // ── Estadísticas rápidas ──────────────────────────────────────────────────
 
     const stats = {
-        total: asignaciones.reduce((acc, a) => acc + (a.cupo_asignado - a.cupo_reservado_base), 0),
+        total: asignaciones.reduce((acc, a) => acc + a.cupo_asignado, 0),
         reservados: asignaciones.reduce((acc, asig) => 
             acc + Object.values(asig.distribucion_cupos || {}).reduce((sum, val) => sum + val, 0), 0),
         ocupados: puestos.filter(p => p.estado === 'ocupado').length,
@@ -557,7 +557,7 @@ export default function EstacionamientosEntidad() {
                     ) : (
                         <div className="space-y-3">
                             {asignaciones.map(asig => {
-                                const utilizable = asig.cupo_asignado - asig.cupo_reservado_base;
+                                const utilizable = asig.cupo_asignado;
                                 const isExpanded = !!asignacionEdicion && asignacionEdicion.id === asig.id;
                                 
                                 return (
@@ -609,8 +609,8 @@ export default function EstacionamientosEntidad() {
                                             </div>
                                             <div className="px-14 pb-3 pr-4 pointer-events-none">
                                                 <div className="h-1.5 w-full bg-black/40 rounded-full overflow-hidden flex border border-white/5 shadow-inner">
-                                                    {asig.cupo_reservado_base > 0 && <div style={{ width: `${(asig.cupo_reservado_base / asig.cupo_asignado) * 100}%` }} className="bg-danger/80 border-r border-black/50" title={`Reserva Base (${asig.cupo_reservado_base})`} />}
-                                                    {utilizable > 0 && <div style={{ width: `${(utilizable / asig.cupo_asignado) * 100}%` }} className="bg-primary/80" title={`Utilizables (${utilizable})`} />}
+                                                    {asig.cupo_reservado_base > 0 && <div style={{ width: `${(asig.cupo_reservado_base / (asig.cupo_asignado + asig.cupo_reservado_base)) * 100}%` }} className="bg-danger/80 border-r border-black/50" title={`Reserva Base (${asig.cupo_reservado_base})`} />}
+                                                    {utilizable > 0 && <div style={{ width: `${(utilizable / (asig.cupo_asignado + asig.cupo_reservado_base)) * 100}%` }} className="bg-primary/80" title={`Utilizables (${utilizable})`} />}
                                                 </div>
                                             </div>
                                         </div>
