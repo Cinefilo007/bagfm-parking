@@ -98,7 +98,7 @@ const LiveEventLog = ({ puntoNombre = null }) => {
     }, [eventos]);
 
     return (
-        <div className="flex flex-col h-full max-h-[440px] overflow-hidden relative border border-white/5 rounded-[2.5rem] bg-bg-card/20 p-4">
+        <div className="flex flex-col h-full overflow-hidden relative border border-white/5 rounded-3xl bg-bg-card/20 p-4">
             {polling && (
                 <div className="absolute top-4 right-6 bg-primary/20 p-1 rounded-full animate-pulse z-10">
                     <Zap size={10} className="text-primary" />
@@ -111,7 +111,7 @@ const LiveEventLog = ({ puntoNombre = null }) => {
                 className="flex-1 overflow-y-auto pr-1 space-y-3 pb-4"
             >
                 {eventos.length === 0 && !loading && !polling ? (
-                    <div className="h-full min-h-[150px] flex flex-col items-center justify-center border border-dashed border-white/5 rounded-2xl">
+                    <div className="flex-1 min-h-[150px] flex flex-col items-center justify-center border border-dashed border-white/5 rounded-2xl">
                         <ShieldCheck size={32} className="text-text-muted opacity-20 mb-3" />
                         <p className="text-[10px] font-black text-text-muted uppercase tracking-[0.3em] opacity-40">Sin novedad en el frente</p>
                     </div>
