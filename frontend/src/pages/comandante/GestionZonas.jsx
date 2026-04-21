@@ -3,7 +3,6 @@ import { Card } from '../../components/ui/Card';
 import { Boton } from '../../components/ui/Boton';
 import { Modal } from '../../components/ui/Modal';
 import { Input } from '../../components/ui/Input';
-import { NumberInput } from '../../components/ui/NumberInput';
 import { useAuthStore } from '../../store/auth.store';
 import { toast } from 'react-hot-toast';
 import { cn } from '../../lib/utils';
@@ -465,11 +464,16 @@ export default function GestionZonas() {
         if (!formAsig.entidad_id) { toast.error('Selecciona una entidad'); return; }
         setAsignando(true);
         try {
+            const payload = {
+                ...formAsig,
+                cupo_asignado: parseInt(formAsig.cupo_asignado) || 0,
+                cupo_reservado_base: parseInt(formAsig.cupo_reservado_base) || 0
+            };
             if (editandoAsig) {
-                await zonaService.actualizarAsignacion(editandoAsig.id, formAsig);
+                await zonaService.actualizarAsignacion(editandoAsig.id, payload);
                 toast.success('Asignación actualizada correctamente');
             } else {
-                await zonaService.crearAsignacion({ ...formAsig, zona_id: zonaActiva.id });
+                await zonaService.crearAsignacion({ ...payload, zona_id: zonaActiva.id });
                 toast.success('Puestos asignados correctamente');
             }
             setModalAsignar(false);
@@ -772,18 +776,12 @@ export default function GestionZonas() {
                     />
 
                     <div className="grid grid-cols-2 gap-4">
-                        <NumberInput 
-                            label="Puestos asignados" 
-                            value={formAsig.cupo_asignado}
-                            max={zonaActiva?.capacidad_total || 999}
-                            onChange={val => setFormAsig({ ...formAsig, cupo_asignado: val })}
-                        />
-                        <NumberInput 
-                            label="Reservado base" 
-                            value={formAsig.cupo_reservado_base}
-                            max={zonaActiva?.capacidad_total || 999}
-                            onChange={val => setFormAsig({ ...formAsig, cupo_reservado_base: val })}
-                        />
+                        <Input label="Puestos asignados" type="number" value={formAsig.cupo_asignado}
+                            onChange={e => setFormAsig({ ...formAsig, cupo_asignado: e.target.value })}
+                            placeholder="Ej: 15" />
+                        <Input label="Reservado base" type="number" value={formAsig.cupo_reservado_base}
+                            onChange={e => setFormAsig({ ...formAsig, cupo_reservado_base: e.target.value })}
+                            placeholder="0" />
                     </div>
                     <Input label="Notas (opcional)" value={formAsig.notes}
                         onChange={e => setFormAsig({ ...formAsig, notes: e.target.value })}
