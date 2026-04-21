@@ -491,7 +491,7 @@ export default function EstacionamientosEntidad() {
             </header>
 
             {/* KPIs mini */}
-            <div className="grid grid-cols-4 gap-2">
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-2">
                 {[
                     { label: 'Total', valor: stats.total, color: 'text-primary' },
                     { label: 'Libres', valor: stats.libres, color: 'text-success' },
@@ -579,12 +579,15 @@ export default function EstacionamientosEntidad() {
                                                             {asig.zona_nombre || `Zona ${asig.zona_id?.slice(-4)}`}
                                                         </h3>
                                                     </div>
-                                                    <div className="flex items-center gap-3 mt-0.5">
+                                                    <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-0.5">
                                                         <span className="text-[9px] text-text-muted flex items-center gap-1">
                                                             <Hash size={9} /> Cupo: {asig.cupo_asignado}
                                                         </span>
                                                         <span className="text-[9px] text-text-muted flex items-center gap-1">
                                                             <Shield size={9} /> Base: {asig.cupo_reservado_base}
+                                                        </span>
+                                                        <span className="sm:hidden text-[9px] text-primary/70 font-bold uppercase">
+                                                            {utilizable} Util.
                                                         </span>
                                                     </div>
                                                 </div>
@@ -596,16 +599,16 @@ export default function EstacionamientosEntidad() {
                                                     </div>
                                                 </div>
                                                 
-                                                <div className="flex items-center gap-1 shrink-0 ml-2">
-                                                    <button 
-                                                        onClick={(e) => { e.stopPropagation(); handleAbrirGenerar(asig); }}
-                                                        className="h-9 px-3 rounded-xl bg-primary/10 hover:bg-primary/20 text-primary border border-primary/20 flex items-center gap-2 transition-all group"
-                                                        title="Crear Puestos"
-                                                    >
-                                                        <PackagePlus size={16} className="group-hover:scale-110 transition-transform" />
-                                                        <span className="text-[10px] font-black uppercase tracking-wider">Crear Puestos</span>
-                                                    </button>
-                                                </div>
+                                                    <div className="flex items-center gap-1 shrink-0 ml-1">
+                                                        <button 
+                                                            onClick={(e) => { e.stopPropagation(); handleAbrirGenerar(asig); }}
+                                                            className="h-9 w-9 sm:w-auto sm:px-3 rounded-xl bg-primary/10 hover:bg-primary/20 text-primary border border-primary/20 flex items-center justify-center sm:justify-start gap-2 transition-all group"
+                                                            title="Crear Puestos"
+                                                        >
+                                                            <PackagePlus size={16} className="group-hover:scale-110 transition-transform" />
+                                                            <span className="hidden sm:inline text-[10px] font-black uppercase tracking-wider">Crear Puestos</span>
+                                                        </button>
+                                                    </div>
                                             </div>
                                             <div className="px-14 pb-3 pr-4 pointer-events-none">
                                                 <div className="h-1.5 w-full bg-black/40 rounded-full overflow-hidden flex border border-white/5 shadow-inner">
