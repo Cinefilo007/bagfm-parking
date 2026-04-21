@@ -45,76 +45,97 @@ const BadgeEstado = ({ estado, tieneTipo = false }) => {
 
 const TarjetaPuesto = ({ puesto, onAsignar, onLiberar, onReasignar, tipos }) => {
     const isOcupado = puesto.estado === 'ocupado';
+    const tipo = tipos?.find(t => t.id === puesto.tipo_acceso_id);
+
     return (
         <div className={cn(
-            "p-3 rounded-2xl border transition-all hover:bg-white/5",
+            "p-2 md:p-3 rounded-2xl border transition-all hover:bg-white/5",
             puesto.estado === 'libre' && 'bg-success/5 border-success/20',
             isOcupado && 'bg-danger/5 border-danger/15',
             puesto.estado === 'reservado' && 'bg-warning/5 border-warning/20',
             puesto.estado === 'mantenimiento' && 'bg-white/3 border-white/5 opacity-60',
         )}>
-            <div className="flex flex-col xs:flex-row items-stretch xs:items-center gap-3">
+            <div className="flex flex-col md:flex-row items-stretch md:items-center gap-2 md:gap-4">
+                {/* Lado Izquierdo: Icono + Identificación Principal */}
                 <div className="flex items-center gap-3 flex-1 min-w-0">
                     <div className={cn(
-                        "w-9 h-9 rounded-xl flex items-center justify-center shrink-0",
+                        "w-8 h-8 md:w-9 md:h-9 rounded-xl flex items-center justify-center shrink-0 shadow-sm",
                         puesto.estado === 'libre' ? 'bg-success/20 text-success' : 
                         isOcupado ? 'bg-danger/15 text-danger/70' :
                         puesto.estado === 'reservado' ? 'bg-warning/20 text-warning' : 'bg-white/5 text-text-muted/50'
                     )}>
-                        {isOcupado ? <Car size={18} /> : <ParkingSquare size={18} />}
+                        {isOcupado ? <Car size={16} /> : <ParkingSquare size={16} />}
                     </div>
                     
-                    <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 flex-wrap">
-                            <p className="text-[11px] xs:text-xs font-black text-text-main uppercase truncate">
+                    <div className="flex-1 min-w-0 flex flex-col md:flex-row md:items-center gap-1 md:gap-3">
+                        <div className="flex items-center gap-2 shrink-0">
+                            <p className="text-[11px] md:text-xs font-black text-text-main uppercase truncate">
                                 {puesto.numero_puesto || puesto.codigo || `Puesto ${puesto.id?.slice(-4)}`}
                             </p>
                             <BadgeEstado estado={puesto.estado} tieneTipo={!!puesto.tipo_acceso_id} />
                         </div>
-                        {puesto.zona_nombre && (
-                            <p className="text-[8px] text-text-muted font-bold flex items-center gap-1 mt-0.5 truncate uppercase">
-                                <MapPin size={8} /> {puesto.zona_nombre.slice(0, 20)}...
-                            </p>
-                        )}
+                        
+                        {/* Ubicación y tipo que se ocultan o mueven según pantalla */}
+                        <div className="flex items-center gap-3">
+                            {puesto.zona_nombre && (
+                                <p className="text-[8px] md:text-[9px] text-text-muted font-bold flex items-center gap-1 uppercase truncate">
+                                    <MapPin size={10} className="text-text-muted/40" /> 
+                                    <span className="max-w-[100px] md:max-w-[150px] truncate">{puesto.zona_nombre}</span>
+                                </p>
+                            )}
+                            {tipo && (
+                                <div className="hidden sm:flex px-2 py-0.5 rounded-lg bg-primary/10 border border-primary/20 items-center gap-1">
+                                    <Tag size={8} className="text-primary" />
+                                    <span className="text-[8px] font-black text-primary uppercase whitespace-nowrap">
+                                        {tipo.nombre}
+                                    </span>
+                                </div>
+                            )}
+                        </div>
                     </div>
                 </div>
 
-                <div className="flex items-center gap-2 justify-between xs:justify-end border-t xs:border-t-0 pt-2 xs:pt-0 border-white/5">
-                    {puesto.tipo_acceso_id && (
-                        <div className="px-2 py-1 rounded-lg bg-primary/10 border border-primary/20 flex items-center gap-1">
+                {/* Lado Derecho: Acciones y Otros Metadatos */}
+                <div className="flex items-center justify-between md:justify-end gap-2 md:gap-3 border-t md:border-t-0 pt-2 md:pt-0 border-white/5">
+                    {/* Badge de tipo visible solo en móviles si no cabe arriba */}
+                    {tipo && (
+                        <div className="sm:hidden px-2 py-1 rounded-lg bg-primary/10 border border-primary/20 flex items-center gap-1">
                             <Tag size={9} className="text-primary" />
                             <span className="text-[8px] font-black text-primary uppercase">
-                                {tipos?.find(t => t.id === puesto.tipo_acceso_id)?.nombre || 'Custom'}
+                                {tipo.nombre}
                             </span>
                         </div>
                     )}
                     
-                    <div className="flex items-center gap-1">
+                    <div className="flex items-center gap-1 md:gap-2">
                         {puesto.estado === 'libre' || puesto.estado === 'reservado' ? (
                             <button 
                                 onClick={() => onAsignar(puesto)}
-                                className="h-8 px-3 rounded-lg bg-primary text-on-primary text-[9px] font-black uppercase flex items-center gap-1 hover:brightness-110 active:scale-95 transition-all shadow-lg shadow-primary/20"
+                                className="h-8 px-4 rounded-lg bg-primary text-on-primary text-[9px] font-black uppercase flex items-center gap-1.5 hover:brightness-110 active:scale-95 transition-all shadow-lg shadow-primary/20"
                             >
-                                <Users size={12} /> <span className="xs:hidden sm:inline">Asignar</span>
+                                <Users size={12} /> <span>Asignar</span>
                             </button>
                         ) : isOcupado && (
                             <div className="flex items-center gap-1">
                                 <button 
                                     onClick={() => onReasignar(puesto)}
-                                    className="h-8 w-8 rounded-lg bg-warning/20 text-warning border border-warning/30 flex items-center justify-center hover:bg-warning/30 transition-all"
+                                    className="h-8 w-8 md:h-9 md:w-9 rounded-lg bg-warning/20 text-warning border border-warning/30 flex items-center justify-center hover:bg-warning/30 transition-all"
                                     title="Configurar"
                                 >
-                                    <Settings size={13} />
+                                    <Settings size={14} />
                                 </button>
                                 <button 
                                     onClick={() => onLiberar(puesto)}
-                                    className="h-8 w-8 rounded-lg bg-danger/20 text-danger border border-danger/30 flex items-center justify-center hover:bg-danger/30 transition-all font-black text-[10px]"
+                                    className="h-8 w-8 md:h-9 md:w-9 rounded-lg bg-danger/20 text-danger border border-danger/30 flex items-center justify-center hover:bg-danger/30 transition-all"
                                     title="Liberar"
                                 >
-                                    <Zap size={13} />
+                                    <Zap size={14} />
                                 </button>
                             </div>
                         )}
+                        <button className="h-8 w-8 md:h-9 md:w-9 rounded-lg hover:bg-white/10 text-text-muted/40 hover:text-text-main transition-all flex items-center justify-center">
+                            <Edit3 size={14} />
+                        </button>
                     </div>
                 </div>
             </div>
