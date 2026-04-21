@@ -45,7 +45,7 @@ El sistema está diseñado para **evolucionar continuamente** sin romper lo exis
 **5. Identidad Visual Unificada (Aegis Tactical v2)**  
 - Todas las vistas de mando: Cabecera Táctica (Icono Boxed + Título Black + Subtítulo con Beacon).
 - Layout principal: `max-w-[1400px]` para estaciones de trabajo.
-- Mobile-first siempre.
+- Mobile-first siempre: KPIs en cuadrícula 2x2 con iconos descriptivos.
 
 **6. Ciclo de mejora**  
 ```

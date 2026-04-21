@@ -43,77 +43,84 @@ const BadgeEstado = ({ estado, tieneTipo = false }) => {
 };
 
 
-const TarjetaPuesto = ({ puesto, onAsignar, onLiberar, onReasignar, tipos }) => (
-    <div className={cn(
-        "flex items-center gap-3 p-3 rounded-xl border transition-all",
-        puesto.estado === 'libre' && 'bg-success/5 border-success/20',
-        puesto.estado === 'ocupado' && 'bg-danger/5 border-danger/15',
-        puesto.estado === 'reservado' && 'bg-warning/5 border-warning/20',
-        puesto.estado === 'mantenimiento' && 'bg-white/3 border-white/5 opacity-60',
-    )}>
+const TarjetaPuesto = ({ puesto, onAsignar, onLiberar, onReasignar, tipos }) => {
+    const isOcupado = puesto.estado === 'ocupado';
+    return (
         <div className={cn(
-            "w-9 h-9 rounded-xl flex items-center justify-center shrink-0",
-            puesto.estado === 'libre' ? 'bg-success/20' : 
-            puesto.estado === 'ocupado' ? 'bg-danger/15' :
-            puesto.estado === 'reservado' ? 'bg-warning/20' : 'bg-white/5'
+            "p-3 rounded-2xl border transition-all hover:bg-white/5",
+            puesto.estado === 'libre' && 'bg-success/5 border-success/20',
+            isOcupado && 'bg-danger/5 border-danger/15',
+            puesto.estado === 'reservado' && 'bg-warning/5 border-warning/20',
+            puesto.estado === 'mantenimiento' && 'bg-white/3 border-white/5 opacity-60',
         )}>
-            <ParkingSquare size={18} className={cn(
-                puesto.estado === 'libre' ? 'text-success' :
-                puesto.estado === 'ocupado' ? 'text-danger/70' :
-                puesto.estado === 'reservado' ? 'text-warning' : 'text-text-muted/50'
-            )} />
-        </div>
-        <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2">
-                <p className="text-xs font-black text-text-main uppercase">{puesto.numero_puesto || puesto.codigo || `Puesto ${puesto.id?.slice(-4)}`}</p>
-                <BadgeEstado estado={puesto.estado} tieneTipo={!!puesto.tipo_acceso_id} />
-                {puesto.tipo_acceso_nombre && (
-                    <span 
-                        className="text-[7px] font-black px-1.5 py-0.5 rounded-full uppercase tracking-widest border"
-                        style={{ 
-                            backgroundColor: `${tipos.find(t => t.id === puesto.tipo_acceso_id)?.color_badge || '#4EDEA3'}26`,
-                            color: tipos.find(t => t.id === puesto.tipo_acceso_id)?.color_badge || '#4EDEA3',
-                            borderColor: `${tipos.find(t => t.id === puesto.tipo_acceso_id)?.color_badge || '#4EDEA3'}4D`
-                        }}
-                    >
-                        {puesto.tipo_acceso_nombre}
-                    </span>
-                )}
+            <div className="flex flex-col xs:flex-row items-stretch xs:items-center gap-3">
+                <div className="flex items-center gap-3 flex-1 min-w-0">
+                    <div className={cn(
+                        "w-9 h-9 rounded-xl flex items-center justify-center shrink-0",
+                        puesto.estado === 'libre' ? 'bg-success/20 text-success' : 
+                        isOcupado ? 'bg-danger/15 text-danger/70' :
+                        puesto.estado === 'reservado' ? 'bg-warning/20 text-warning' : 'bg-white/5 text-text-muted/50'
+                    )}>
+                        {isOcupado ? <Car size={18} /> : <ParkingSquare size={18} />}
+                    </div>
+                    
+                    <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap">
+                            <p className="text-[11px] xs:text-xs font-black text-text-main uppercase truncate">
+                                {puesto.numero_puesto || puesto.codigo || `Puesto ${puesto.id?.slice(-4)}`}
+                            </p>
+                            <BadgeEstado estado={puesto.estado} tieneTipo={!!puesto.tipo_acceso_id} />
+                        </div>
+                        {puesto.zona_nombre && (
+                            <p className="text-[8px] text-text-muted font-bold flex items-center gap-1 mt-0.5 truncate uppercase">
+                                <MapPin size={8} /> {puesto.zona_nombre.slice(0, 20)}...
+                            </p>
+                        )}
+                    </div>
+                </div>
+
+                <div className="flex items-center gap-2 justify-between xs:justify-end border-t xs:border-t-0 pt-2 xs:pt-0 border-white/5">
+                    {puesto.tipo_acceso_id && (
+                        <div className="px-2 py-1 rounded-lg bg-primary/10 border border-primary/20 flex items-center gap-1">
+                            <Tag size={9} className="text-primary" />
+                            <span className="text-[8px] font-black text-primary uppercase">
+                                {tipos?.find(t => t.id === puesto.tipo_acceso_id)?.nombre || 'Custom'}
+                            </span>
+                        </div>
+                    )}
+                    
+                    <div className="flex items-center gap-1">
+                        {puesto.estado === 'libre' || puesto.estado === 'reservado' ? (
+                            <button 
+                                onClick={() => onAsignar(puesto)}
+                                className="h-8 px-3 rounded-lg bg-primary text-on-primary text-[9px] font-black uppercase flex items-center gap-1 hover:brightness-110 active:scale-95 transition-all shadow-lg shadow-primary/20"
+                            >
+                                <Users size={12} /> <span className="xs:hidden sm:inline">Asignar</span>
+                            </button>
+                        ) : isOcupado && (
+                            <div className="flex items-center gap-1">
+                                <button 
+                                    onClick={() => onReasignar(puesto)}
+                                    className="h-8 w-8 rounded-lg bg-warning/20 text-warning border border-warning/30 flex items-center justify-center hover:bg-warning/30 transition-all"
+                                    title="Configurar"
+                                >
+                                    <Settings size={13} />
+                                </button>
+                                <button 
+                                    onClick={() => onLiberar(puesto)}
+                                    className="h-8 w-8 rounded-lg bg-danger/20 text-danger border border-danger/30 flex items-center justify-center hover:bg-danger/30 transition-all font-black text-[10px]"
+                                    title="Liberar"
+                                >
+                                    <Zap size={13} />
+                                </button>
+                            </div>
+                        )}
+                    </div>
+                </div>
             </div>
-            <div className="flex items-center gap-2 mt-0.5">
-                {puesto.zona_nombre && (
-                    <p className="text-[9px] text-text-muted font-bold flex items-center gap-1">
-                        <MapPin size={9} /> {puesto.zona_nombre}
-                    </p>
-                )}
-            </div>
         </div>
-        <div className="flex items-center gap-1 shrink-0">
-            {puesto.estado === 'libre' || puesto.estado === 'reservado' ? (
-                <button
-                    onClick={() => onAsignar(puesto)}
-                    className="h-7 px-2.5 rounded-lg bg-primary/20 text-primary border border-primary/30 text-[9px] font-black uppercase flex items-center gap-1 hover:bg-primary/30 transition-all"
-                >
-                    <Users size={10} /> Asignar
-                </button>
-            ) : puesto.estado === 'ocupado' ? (
-                <button
-                    onClick={() => onLiberar(puesto)}
-                    className="h-7 px-2.5 rounded-lg bg-danger/15 text-danger border border-danger/20 text-[9px] font-black uppercase flex items-center gap-1 hover:bg-danger/25 transition-all"
-                >
-                    <Circle size={10} /> Liberar
-                </button>
-            ) : null}
-            <button 
-                onClick={() => onReasignar(puesto)}
-                className="p-1.5 rounded-lg hover:bg-white/10 text-text-muted/40 hover:text-text-main transition-all"
-                title="Configurar Distribución"
-            >
-                <Settings size={14} />
-            </button>
-        </div>
-    </div>
-);
+    );
+};
 
 const TarjetaTipoAcceso = ({ tipo, onEditar, onEliminar, onToggle }) => (
     <div className={cn(
@@ -491,17 +498,23 @@ export default function EstacionamientosEntidad() {
             </header>
 
             {/* KPIs mini */}
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-2">
+            {/* KPIs mini */}
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
                 {[
-                    { label: 'Total', valor: stats.total, color: 'text-primary' },
-                    { label: 'Libres', valor: stats.libres, color: 'text-success' },
-                    { label: 'Ocupados', valor: stats.ocupados, color: 'text-danger' },
-                    { label: 'Reservados', valor: stats.reservados, color: 'text-warning' },
-                ].map(s => (
-                    <Card key={s.label} className="p-3 rounded-2xl border-white/5 text-center">
-                        <div className={cn("text-2xl font-black tracking-tighter", s.color)}>{s.valor}</div>
-                        <div className="text-[8px] font-black uppercase tracking-widest text-text-muted/60 mt-0.5">{s.label}</div>
-                    </Card>
+                    { label: 'Total', valor: stats.total, color: 'text-primary', icon: ParkingSquare },
+                    { label: 'Libres', valor: stats.libres, color: 'text-success', icon: CheckCircle2 },
+                    { label: 'Ocupados', valor: stats.ocupados, color: 'text-danger', icon: Car },
+                    { label: 'Reservados', valor: stats.reservados, color: 'text-warning', icon: Shield },
+                ].map((s, i) => (
+                    <div key={i} className="p-4 bg-bg-card/40 border border-white/5 rounded-2xl flex items-center gap-4 group hover:bg-bg-high/80 transition-all border-b-2 border-b-transparent hover:border-b-primary/50">
+                        <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center bg-black/40 border border-white/5 shrink-0", s.color)}>
+                            <s.icon size={18} />
+                        </div>
+                        <div className="min-w-0">
+                            <div className={cn("text-xl font-black leading-tight truncate", s.color)}>{s.valor}</div>
+                            <div className="text-[9px] font-black uppercase text-text-muted tracking-widest truncate">{s.label}</div>
+                        </div>
+                    </div>
                 ))}
             </div>
 

@@ -485,6 +485,47 @@ CAPA 4 — Modales/Overlays:surface-highest  #2F3445  (glassmorphism)
   text-transform: uppercase;
   color: #86948A;                /* outline */
 }
+
+/* 6.6.1 Estándar de KPIs Tácticos (v2.1) */
+/* Todos los resúmenes de métricas deben seguir este patrón: */
+.grid-stats-tactico {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr); /* 2x2 en móviles */
+  gap: 12px;
+}
+
+@media (min-width: 1024px) {
+  .grid-stats-tactico {
+    grid-template-columns: repeat(4, 1fr); /* 4 columnas en desktop */
+  }
+}
+
+.stat-item-tactico {
+  padding: 16px;
+  background: rgba(26, 31, 47, 0.40);    /* bg-card/40 */
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 16px;                   /* radius-2xl */
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  transition: all 0.2s ease;
+}
+
+.stat-item-tactico:hover {
+  background: rgba(37, 41, 58, 0.80);    /* bg-high/80 */
+  border-bottom: 2px solid var(--primary);
+}
+
+.stat-icon-container {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.40);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
 ```
 
 ### 6.7 Status Beacon (Indicador Pulsante)
