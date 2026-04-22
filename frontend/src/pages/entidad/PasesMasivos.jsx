@@ -13,7 +13,8 @@ import {
     Users, QrCode, ChevronRight, Share2, Mail,
     ParkingSquare, Car, Tag, Edit3, RefreshCw,
     Upload, CheckCircle2, MapPin, MoreVertical, Copy,
-    Shield, Camera, Star, AlertTriangle, FileSpreadsheet, PlusCircle, Trash2
+    Shield, Camera, Star, AlertTriangle, FileSpreadsheet, PlusCircle, Trash2,
+    ShieldAlert, XCircle, Zap, ArrowRight, Info, Loader2
 } from 'lucide-react';
 import { eventosService } from '../../services/eventos.service';
 import { pasesService } from '../../services/pasesService';
@@ -470,15 +471,11 @@ const ModalNuevoLote = ({ isOpen, onClose, zonas, tiposCustom, onCreated }) => {
         max_accesos_por_pase: 1,
     });
     const [guardando, setGuardando] = useState(false);
-    const [maxPasesZona, setMaxPasesZona] = useState(9999);
-    const [capacidadExcedida, setCapacidadExcedida] = useState(false);
-    const [warningIgnorada, setWarningIgnorada] = useState(false);
     const [excelPases, setExcelPases] = useState(null);
     
-    // Estados para disponibilidad dinámica por traslape
-    const [ocupacionProyectada, setOcupacionProyectada] = useState(0);
-    const [sugerencia, setSugerencia] = useState(null);
-    const [cargandoDisp, setCargandoDisp] = useState(false);
+    // ── Sistema de Validación Inteligente de Capacidad v3.0 ──────────────
+    const [validacion, setValidacion] = useState(null);
+    const [validando, setValidando] = useState(false);
 
     // Opciones de acceso: 'Público General' fijo + tipos custom de la entidad
     const OPCION_GENERAL = { id: 'general', label: 'Público General', icon: Users, color: null };
@@ -500,63 +497,53 @@ const ModalNuevoLote = ({ isOpen, onClose, zonas, tiposCustom, onCreated }) => {
         return zonas.reduce((acc, z) => acc + (z.cupo_asignado || 0) - (z.cupo_reservado_base || 0), 0);
     }, [zonas]);
 
+    // ── Validación en Tiempo Real (3 niveles) ────────────────────────────
     useEffect(() => {
-        const fetchDisponibilidad = async () => {
-            if (!form.zona_asignada_id || !form.fecha_inicio || !form.fecha_fin) {
-                setCapacidadExcedida(false);
-                setSugerencia(null);
+        const validarCapacidad = async () => {
+            if (!form.fecha_inicio || !form.fecha_fin || form.cantidad_pases < 1) {
+                setValidacion(null);
                 return;
             }
 
-            setCargandoDisp(true);
+            setValidando(true);
             try {
-                const res = await pasesService.obtenerDisponibilidad(
-                    form.zona_asignada_id,
-                    form.fecha_inicio,
-                    form.fecha_fin
-                );
-                
-                setOcupacionProyectada(res.ocupacion_proyectada);
-                const asig = zonas.find(z => z.zona_id === form.zona_asignada_id);
-                const cupoTotal = asig?.cupo_asignado || 0;
-                const disponibleReal = Math.max(0, cupoTotal - res.ocupacion_proyectada);
-                
-                // Actualizar límite visual
-                setMaxPasesZona(disponibleReal);
-
-                if (form.cantidad_pases > disponibleReal && !warningIgnorada) {
-                    setCapacidadExcedida(true);
-                    // Consultar sugerencia de distribución
-                    const sug = await pasesService.sugerirDistribucion(
-                        form.cantidad_pases,
-                        form.fecha_inicio,
-                        form.fecha_fin
-                    );
-                    setSugerencia(sug);
-                } else {
-                    setCapacidadExcedida(false);
-                    setSugerencia(null);
-                }
+                const resultado = await pasesService.validarCapacidad({
+                    zona_id: form.zona_asignada_id,
+                    tipo_acceso: form.tipo_acceso_custom_id ? 'custom' : form.tipo_acceso,
+                    tipo_acceso_custom_id: form.tipo_acceso_custom_id,
+                    cantidad: form.cantidad_pases,
+                    inicio: form.fecha_inicio,
+                    fin: form.fecha_fin
+                });
+                setValidacion(resultado);
             } catch (error) {
-                console.error("Error validando disponibilidad proyectada:", error);
+                console.error("Error en validación inteligente:", error);
             } finally {
-                setCargandoDisp(false);
+                setValidando(false);
             }
         };
 
-        const timer = setTimeout(fetchDisponibilidad, 500); // Debounce táctico
+        const timer = setTimeout(validarCapacidad, 600); // Debounce táctico
         return () => clearTimeout(timer);
-    }, [form.zona_asignada_id, form.fecha_inicio, form.fecha_fin, form.cantidad_pases, zonas, warningIgnorada]);
+    }, [form.zona_asignada_id, form.fecha_inicio, form.fecha_fin, form.cantidad_pases, form.tipo_acceso, form.tipo_acceso_custom_id]);
 
-    const handleAjustarCapacidad = () => {
-        setForm(prev => ({ ...prev, cantidad_pases: maxPasesZona }));
-        setCapacidadExcedida(false);
-        setWarningIgnorada(false);
-    };
+    // Helpers derivados de la validación
+    const tieneAlertas = validacion?.alertas?.length > 0;
+    const bloqueado = validacion?.puede_crear === false;
+    const alertasNivel1 = validacion?.alertas?.filter(a => a.nivel === 1) || [];
+    const alertasNivel2 = validacion?.alertas?.filter(a => a.nivel === 2) || [];
+    const alertasNivel3 = validacion?.alertas?.filter(a => a.nivel === 3) || [];
 
-    const handleIgnorarWarning = () => {
-        setWarningIgnorada(true);
-        setCapacidadExcedida(false);
+    const handleAplicarSugerencia = (sugerencia) => {
+        if (sugerencia.accion === 'ajustar_cantidad' && sugerencia.cantidad_sugerida !== undefined) {
+            setForm(prev => ({ ...prev, cantidad_pases: sugerencia.cantidad_sugerida }));
+        } else if (sugerencia.accion === 'tomar_general_zona' && sugerencia.cantidad_sugerida !== undefined) {
+            setForm(prev => ({ ...prev, cantidad_pases: sugerencia.cantidad_sugerida }));
+        } else if (sugerencia.accion === 'usar_otra_zona' || sugerencia.accion === 'distribuir_otra_zona') {
+            // Cambiar la zona seleccionada
+            setForm(prev => ({ ...prev, zona_asignada_id: sugerencia.zona_id }));
+            toast.success(`Zona cambiada a: ${sugerencia.zona_nombre}`);
+        }
     };
 
     const handleDescargarPlantilla = () => {
@@ -618,12 +605,10 @@ const ModalNuevoLote = ({ isOpen, onClose, zonas, tiposCustom, onCreated }) => {
             return;
         }
 
-        // BLOQUEO TÁCTICO: No permitir si supera la capacidad total de la entidad
-        if (form.cantidad_pases > totalCapacidadEntidad) {
-            toast.error(`CAPACIDAD AGOTADA: Solicitaste ${form.cantidad_pases} pases, pero la entidad solo tiene ${totalCapacidadEntidad} puestos disponibles en total.`, {
-                icon: '🚨',
-                duration: 6000
-            });
+        // BLOQUEO TÁCTICO NIVEL 3: No permitir si supera la capacidad total de la entidad
+        if (bloqueado) {
+            const msg = alertasNivel3[0]?.mensaje || 'Capacidad total de la entidad superada';
+            toast.error(`🚨 BLOQUEADO: ${msg}`, { duration: 6000 });
             return;
         }
 
@@ -734,14 +719,15 @@ const ModalNuevoLote = ({ isOpen, onClose, zonas, tiposCustom, onCreated }) => {
                         <Input label="Fecha fin *" type="date" value={form.fecha_fin}
                             onChange={e => setForm({ ...form, fecha_fin: e.target.value })} />
                         <div className="space-y-1">
-                            <Input label="Cantidad de pases" type="number" min="1" max={maxPasesZona} value={form.cantidad_pases}
+                            <Input label="Cantidad de pases" type="number" min="1" value={form.cantidad_pases}
                                 onChange={e => {
-                                    let v = parseInt(e.target.value) || 1;
-                                    if (v > maxPasesZona) v = maxPasesZona;
-                                    setForm({ ...form, cantidad_pases: v });
+                                    const v = e.target.value === '' ? '' : parseInt(e.target.value) || 0;
+                                    setForm({ ...form, cantidad_pases: v === '' ? '' : Math.max(1, v) });
                                 }} />
-                            {maxPasesZona !== 9999 && (
-                                <p className="text-[8px] text-warning uppercase font-bold px-1">Límite por zona: {maxPasesZona}</p>
+                            {validando && (
+                                <p className="text-[8px] text-primary uppercase font-bold px-1 flex items-center gap-1">
+                                    <Loader2 size={10} className="animate-spin" /> Validando capacidad...
+                                </p>
                             )}
                         </div>
                         <Input label="Máx. accesos por pase" type="number" value={form.max_accesos_por_pase}
@@ -766,57 +752,129 @@ const ModalNuevoLote = ({ isOpen, onClose, zonas, tiposCustom, onCreated }) => {
                             isClearable
                         />
 
-                        {/* Alerta de Capacidad */}
-                        {capacidadExcedida && (
-                            <div className="bg-warning/10 border border-warning/30 rounded-2xl p-4 space-y-4 animate-in zoom-in-95">
-                                <div className="flex gap-3">
-                                    <AlertTriangle className="text-warning shrink-0" size={18} />
-                                    <div className="flex-1">
-                                        <p className="text-[10px] font-black text-warning uppercase tracking-widest">Capacidad Excedida por Traslape</p>
-                                        <p className="text-[9px] text-text-muted font-bold mt-1 leading-relaxed">
-                                            Solicitaste <span className="text-white">{form.cantidad_pases}</span> pases, pero en este periodo (<span className="text-white">{form.fecha_inicio} al {form.fecha_fin}</span>) solo hay <span className="text-white">{maxPasesZona}</span> cupos libres reales.
-                                        </p>
-                                    </div>
+                        {/* ══ Panel de Inteligencia Táctica — Validación en Tiempo Real ══ */}
+                        {!validando && validacion && !tieneAlertas && form.fecha_fin && (
+                            <div className="bg-success/5 border border-success/20 rounded-xl p-3 flex items-center gap-2.5 animate-in fade-in-50 duration-300">
+                                <CheckCircle2 size={16} className="text-success shrink-0" />
+                                <div>
+                                    <p className="text-[10px] font-black text-success uppercase tracking-widest">Capacidad Disponible</p>
+                                    <p className="text-[8px] text-text-muted font-bold mt-0.5">
+                                        {validacion.resumen.disponible_total_entidad} puestos libres en la entidad
+                                        {validacion.resumen.cupo_zona_disponible !== null && ` · ${validacion.resumen.cupo_zona_disponible} en esta zona`}
+                                    </p>
                                 </div>
+                            </div>
+                        )}
 
-                                {sugerencia?.distribucion?.length > 0 && (
-                                    <div className="bg-black/20 rounded-xl p-3 border border-white/5 space-y-2">
-                                        <p className="text-[8px] font-black text-primary uppercase tracking-widest flex items-center gap-2">
-                                            <ParkingSquare size={10} /> Sugerencia de Distribución Equitativa:
-                                        </p>
-                                        <div className="space-y-1.5">
-                                            {sugerencia.distribucion.map((d, i) => (
-                                                <div key={i} className="flex justify-between items-center bg-white/5 p-2 rounded-lg border border-white/5">
-                                                    <span className="text-[9px] font-black text-text-main uppercase">{d.zona_nombre}</span>
-                                                    <div className="flex items-center gap-2">
-                                                        <span className="text-[8px] text-text-muted">DIPONIBLE: {d.cupo_libre}</span>
-                                                        <span className="text-[10px] font-black text-primary">REPARTIR: {d.sugerencia}</span>
-                                                    </div>
+                        {!validando && tieneAlertas && (
+                            <div className="space-y-3 animate-in slide-in-from-top-2 duration-300">
+                                {/* ── Alertas Nivel 1: Categoría ── */}
+                                {alertasNivel1.map((alerta, i) => (
+                                    <div key={`n1-${i}`} className="bg-amber-500/8 border border-amber-500/25 rounded-xl p-3.5 space-y-3">
+                                        <div className="flex gap-2.5">
+                                            <AlertTriangle size={16} className="text-amber-400 shrink-0 mt-0.5" />
+                                            <div className="flex-1 min-w-0">
+                                                <div className="flex items-center gap-2 flex-wrap">
+                                                    <span className="text-[9px] font-black text-amber-400 uppercase tracking-widest">N1 · {alerta.titulo}</span>
                                                 </div>
-                                            ))}
-                                            {sugerencia.cantidad_restante > 0 && (
-                                                <p className="text-[8px] text-red-400 font-bold uppercase pt-1 italic">
-                                                    * Faltarían {sugerencia.cantidad_restante} pases por ubicar.
+                                                <p className="text-[9px] text-text-muted font-bold mt-1 leading-relaxed">{alerta.mensaje}</p>
+                                                <div className="flex items-center gap-3 mt-2">
+                                                    <span className="text-[8px] text-text-muted">Reservados: <span className="text-white font-black">{alerta.cupo_reservado}</span></span>
+                                                    <span className="text-[8px] text-text-muted">En uso: <span className="text-amber-400 font-black">{alerta.en_uso}</span></span>
+                                                    <span className="text-[8px] text-text-muted">Libres: <span className="text-success font-black">{alerta.disponible}</span></span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        {alerta.sugerencias?.length > 0 && (
+                                            <div className="space-y-1.5 pt-1">
+                                                <p className="text-[7px] font-black text-primary/70 uppercase tracking-widest flex items-center gap-1.5">
+                                                    <Zap size={9} /> Soluciones sugeridas
                                                 </p>
-                                            )}
+                                                {alerta.sugerencias.map((sug, j) => (
+                                                    <button key={j} onClick={() => handleAplicarSugerencia(sug)}
+                                                        className="w-full flex items-center justify-between bg-white/5 hover:bg-primary/10 border border-white/5 hover:border-primary/20 p-2.5 rounded-lg transition-all group cursor-pointer">
+                                                        <span className="text-[9px] font-bold text-text-main group-hover:text-primary transition-colors">{sug.mensaje}</span>
+                                                        <ArrowRight size={12} className="text-text-muted group-hover:text-primary shrink-0" />
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        )}
+                                    </div>
+                                ))}
+
+                                {/* ── Alertas Nivel 2: Zona ── */}
+                                {alertasNivel2.map((alerta, i) => (
+                                    <div key={`n2-${i}`} className="bg-orange-500/8 border border-orange-500/25 rounded-xl p-3.5 space-y-3">
+                                        <div className="flex gap-2.5">
+                                            <ShieldAlert size={16} className="text-orange-400 shrink-0 mt-0.5" />
+                                            <div className="flex-1 min-w-0">
+                                                <span className="text-[9px] font-black text-orange-400 uppercase tracking-widest">N2 · {alerta.titulo}</span>
+                                                <p className="text-[9px] text-text-muted font-bold mt-1 leading-relaxed">{alerta.mensaje}</p>
+                                                <div className="flex items-center gap-3 mt-2">
+                                                    <span className="text-[8px] text-text-muted">Asignados: <span className="text-white font-black">{alerta.cupo_total}</span></span>
+                                                    <span className="text-[8px] text-text-muted">Comprometidos: <span className="text-orange-400 font-black">{alerta.en_uso}</span></span>
+                                                    <span className="text-[8px] text-text-muted">Libres: <span className="text-success font-black">{alerta.disponible}</span></span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        {alerta.sugerencias?.length > 0 && (
+                                            <div className="space-y-1.5 pt-1">
+                                                <p className="text-[7px] font-black text-primary/70 uppercase tracking-widest flex items-center gap-1.5">
+                                                    <Zap size={9} /> Soluciones sugeridas
+                                                </p>
+                                                {alerta.sugerencias.map((sug, j) => (
+                                                    <button key={j} onClick={() => handleAplicarSugerencia(sug)}
+                                                        className="w-full flex items-center justify-between bg-white/5 hover:bg-primary/10 border border-white/5 hover:border-primary/20 p-2.5 rounded-lg transition-all group cursor-pointer">
+                                                        <span className="text-[9px] font-bold text-text-main group-hover:text-primary transition-colors">{sug.mensaje}</span>
+                                                        <ArrowRight size={12} className="text-text-muted group-hover:text-primary shrink-0" />
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        )}
+                                    </div>
+                                ))}
+
+                                {/* ── Alertas Nivel 3: Bloqueo Total ── */}
+                                {alertasNivel3.map((alerta, i) => (
+                                    <div key={`n3-${i}`} className="bg-red-500/10 border-2 border-red-500/40 rounded-xl p-4 space-y-3 animate-in zoom-in-95">
+                                        <div className="flex gap-2.5">
+                                            <XCircle size={18} className="text-red-400 shrink-0 mt-0.5" />
+                                            <div className="flex-1 min-w-0">
+                                                <span className="text-[10px] font-black text-red-400 uppercase tracking-widest">🚨 {alerta.titulo}</span>
+                                                <p className="text-[9px] text-text-muted font-bold mt-1 leading-relaxed">{alerta.mensaje}</p>
+                                                <div className="flex items-center gap-3 mt-2">
+                                                    <span className="text-[8px] text-text-muted">Total: <span className="text-white font-black">{alerta.cupo_total}</span></span>
+                                                    <span className="text-[8px] text-text-muted">En uso: <span className="text-red-400 font-black">{alerta.en_uso}</span></span>
+                                                    <span className="text-[8px] text-text-muted">Máximo: <span className="text-success font-black">{alerta.disponible}</span></span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        {alerta.sugerencias?.length > 0 && (
+                                            <div className="space-y-1.5 pt-1">
+                                                {alerta.sugerencias.map((sug, j) => (
+                                                    <button key={j} onClick={() => handleAplicarSugerencia(sug)}
+                                                        className="w-full flex items-center justify-between bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 p-2.5 rounded-lg transition-all group cursor-pointer">
+                                                        <span className="text-[9px] font-bold text-red-300 group-hover:text-white transition-colors">{sug.mensaje}</span>
+                                                        <ArrowRight size={12} className="text-red-400 shrink-0" />
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        )}
+                                    </div>
+                                ))}
+
+                                {/* Resumen compacto */}
+                                {validacion?.resumen && (
+                                    <div className="bg-white/3 border border-white/5 rounded-lg p-2.5 flex items-center justify-between">
+                                        <span className="text-[7px] font-black text-text-muted uppercase tracking-widest flex items-center gap-1">
+                                            <Info size={9} /> Capacidad Entidad
+                                        </span>
+                                        <div className="flex items-center gap-3">
+                                            <span className="text-[8px] text-text-muted">Total: <span className="text-white font-black">{validacion.resumen.cupo_total_entidad}</span></span>
+                                            <span className="text-[8px] text-text-muted">Libre: <span className={cn("font-black", validacion.resumen.disponible_total_entidad > 0 ? 'text-success' : 'text-red-400')}>{validacion.resumen.disponible_total_entidad}</span></span>
                                         </div>
                                     </div>
                                 )}
-
-                                <div className="flex gap-2">
-                                    <button 
-                                        onClick={handleAjustarCapacidad}
-                                        className="flex-1 bg-warning/20 hover:bg-warning/30 text-warning text-[8px] font-black uppercase py-2 rounded-lg transition-all"
-                                    >
-                                        Ajustar al Máximo ({maxPasesZona})
-                                    </button>
-                                    <button 
-                                        onClick={handleIgnorarWarning}
-                                        className="flex-1 bg-white/5 hover:bg-white/10 text-text-muted text-[8px] font-black uppercase py-2 rounded-lg transition-all"
-                                    >
-                                        Distribución Libre
-                                    </button>
-                                </div>
                             </div>
                         )}
 
@@ -890,9 +948,14 @@ const ModalNuevoLote = ({ isOpen, onClose, zonas, tiposCustom, onCreated }) => {
 
                 <div className="flex gap-3 pt-4">
                     <Boton variant="ghost" className="flex-1 h-11 text-[11px] rounded-xl" onClick={onClose}>Cancelar</Boton>
-                    <Boton onClick={handleSubmit} disabled={guardando}
-                        className="flex-[2] bg-primary text-bg-app h-14 font-black uppercase tracking-widest text-[11px] rounded-xl shadow-tactica hover:scale-[1.02] transition-transform">
-                        {guardando ? <RefreshCw size={16} className="animate-spin" /> : <><Plus size={15} /> Crear Lote</>}
+                    <Boton onClick={handleSubmit} disabled={guardando || bloqueado}
+                        className={cn(
+                            "flex-[2] h-14 font-black uppercase tracking-widest text-[11px] rounded-xl transition-all",
+                            bloqueado 
+                                ? 'bg-red-500/20 text-red-400 border border-red-500/30 cursor-not-allowed opacity-70' 
+                                : 'bg-primary text-bg-app shadow-tactica hover:scale-[1.02]'
+                        )}>
+                        {guardando ? <RefreshCw size={16} className="animate-spin" /> : bloqueado ? <><XCircle size={15} /> BLOQUEADO</> : <><Plus size={15} /> Crear Lote</>}
                     </Boton>
                 </div>
             </div>

@@ -100,7 +100,17 @@ export const pasesService = {
       params: { cantidad, inicio, fin }
     });
     return res.data;
+  },
+
+  async validarCapacidad({ zona_id, tipo_acceso, tipo_acceso_custom_id, cantidad, inicio, fin }) {
+    const params = { cantidad, inicio, fin };
+    if (zona_id) params.zona_id = zona_id;
+    if (tipo_acceso) params.tipo_acceso = tipo_acceso;
+    if (tipo_acceso_custom_id) params.tipo_acceso_custom_id = tipo_acceso_custom_id;
+    const res = await api.get('/pases/lotes/validar-capacidad', { params });
+    return res.data;
   }
 };
 
 export default pasesService;
+

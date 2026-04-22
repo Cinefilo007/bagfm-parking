@@ -227,6 +227,223 @@ class PaseService:
             "completo": restante == 0
         }
 
+    async def calcular_ocupacion_por_tipo(self, db: AsyncSession, zona_id: uuid.UUID, tipo_acceso: str, tipo_acceso_custom_id: uuid.UUID, inicio: date, fin: date) -> int:
+        """Calcula pases del mismo tipo de acceso que se traslapan con el periodo en la zona."""
+        from sqlalchemy import and_
+        
+        conditions = [
+            LotePaseMasivo.zona_estacionamiento_id == zona_id,
+            LotePaseMasivo.fecha_inicio <= fin,
+            LotePaseMasivo.fecha_fin >= inicio,
+        ]
+        
+        if tipo_acceso == 'custom' and tipo_acceso_custom_id:
+            conditions.append(LotePaseMasivo.tipo_acceso_custom_id == tipo_acceso_custom_id)
+        else:
+            conditions.append(LotePaseMasivo.tipo_acceso == tipo_acceso)
+        
+        query = select(func.sum(LotePaseMasivo.cantidad_pases)).where(and_(*conditions))
+        res = await db.execute(query)
+        return int(res.scalar() or 0)
+
+    async def validar_capacidad_completa(
+        self, db: AsyncSession, entidad_id: uuid.UUID,
+        zona_id: uuid.UUID, tipo_acceso: str, tipo_acceso_custom_id: uuid.UUID,
+        cantidad: int, inicio: date, fin: date
+    ) -> dict:
+        """
+        Validación Inteligente de Capacidad v3.0 — 3 Niveles con sugerencias contextuales.
+        
+        Nivel 1: Validación por categoría → Alerta + sugerencia de redistribución
+        Nivel 2: Validación por zona → Alerta + sugerencia de usar otras zonas
+        Nivel 3: Validación total entidad → Bloqueo duro
+        """
+        from app.models.asignacion_zona import AsignacionZona
+        from app.models.tipo_acceso_custom import TipoAccesoCustom
+        from sqlalchemy import and_
+        
+        alertas = []
+        sugerencias = []
+        puede_crear = True
+        
+        # ── Datos base de la entidad ──────────────────────────────────────
+        query_asigs = select(AsignacionZona).where(
+            and_(AsignacionZona.entidad_id == entidad_id, AsignacionZona.activa == True)
+        )
+        asigs = (await db.execute(query_asigs)).scalars().all()
+        
+        capacidad_total_entidad = sum(a.cupo_asignado for a in asigs)
+        ocupacion_total_entidad = 0
+        for a in asigs:
+            ocupacion_total_entidad += await self.calcular_ocupacion_proyectada(db, a.zona_id, inicio, fin)
+        
+        disponible_total_entidad = max(0, capacidad_total_entidad - ocupacion_total_entidad)
+        
+        # Resolver nombre del tipo de acceso
+        nombre_tipo = tipo_acceso
+        if tipo_acceso == 'custom' and tipo_acceso_custom_id:
+            tc = await db.get(TipoAccesoCustom, tipo_acceso_custom_id)
+            nombre_tipo = tc.nombre if tc else 'Personalizado'
+        
+        # ── NIVEL 1: Validación por Categoría ─────────────────────────────
+        cupo_categoria = None
+        ocupacion_categoria = 0
+        disponible_categoria = None
+        
+        if zona_id:
+            asig_zona = next((a for a in asigs if str(a.zona_id) == str(zona_id)), None)
+            
+            if asig_zona and asig_zona.distribucion_cupos:
+                dist = asig_zona.distribucion_cupos
+                # Buscar cupo para este tipo (por nombre o UUID)
+                cupo_key = None
+                for k in dist.keys():
+                    if tipo_acceso == 'custom' and tipo_acceso_custom_id:
+                        if k == str(tipo_acceso_custom_id) or k.lower() == nombre_tipo.lower():
+                            cupo_key = k
+                            break
+                    else:
+                        if k.lower() == tipo_acceso.lower() or k.lower() == nombre_tipo.lower():
+                            cupo_key = k
+                            break
+                
+                if cupo_key is not None:
+                    cupo_categoria = int(dist[cupo_key])
+                    ocupacion_categoria = await self.calcular_ocupacion_por_tipo(
+                        db, zona_id, tipo_acceso, tipo_acceso_custom_id, inicio, fin
+                    )
+                    disponible_categoria = max(0, cupo_categoria - ocupacion_categoria)
+                    
+                    if cantidad > disponible_categoria:
+                        exceso = cantidad - disponible_categoria
+                        # Calcular cuántos puestos generales hay libres en la misma zona
+                        ocupacion_zona = await self.calcular_ocupacion_proyectada(db, zona_id, inicio, fin)
+                        cupo_zona_total = asig_zona.cupo_asignado
+                        libre_zona_general = max(0, cupo_zona_total - ocupacion_zona)
+                        puede_tomar_general = max(0, libre_zona_general - disponible_categoria)
+                        
+                        sug_nivel1 = []
+                        if puede_tomar_general > 0:
+                            tomar = min(exceso, puede_tomar_general)
+                            sug_nivel1.append({
+                                "accion": "tomar_general_zona",
+                                "mensaje": f"Tomar {tomar} puestos del cupo general disponible en esta zona",
+                                "cantidad_sugerida": min(disponible_categoria + tomar, cantidad),
+                                "zona_id": str(zona_id),
+                                "zona_nombre": asig_zona.zona_nombre
+                            })
+                        
+                        # Buscar puestos del mismo tipo en otras zonas
+                        for otra_asig in asigs:
+                            if str(otra_asig.zona_id) == str(zona_id):
+                                continue
+                            otra_dist = otra_asig.distribucion_cupos or {}
+                            for k, v in otra_dist.items():
+                                k_lower = k.lower()
+                                if k_lower == nombre_tipo.lower() or k == str(tipo_acceso_custom_id or ''):
+                                    ocup_otra = await self.calcular_ocupacion_por_tipo(
+                                        db, otra_asig.zona_id, tipo_acceso, tipo_acceso_custom_id, inicio, fin
+                                    )
+                                    libre_otra = max(0, int(v) - ocup_otra)
+                                    if libre_otra > 0:
+                                        sug_nivel1.append({
+                                            "accion": "usar_otra_zona",
+                                            "mensaje": f"Hay {libre_otra} puestos de {nombre_tipo} en '{otra_asig.zona_nombre}'",
+                                            "cantidad_disponible": libre_otra,
+                                            "zona_id": str(otra_asig.zona_id),
+                                            "zona_nombre": otra_asig.zona_nombre
+                                        })
+                        
+                        alertas.append({
+                            "nivel": 1,
+                            "tipo": "categoria_excedida",
+                            "severidad": "warning",
+                            "titulo": f"CUPO DE {nombre_tipo.upper()} EXCEDIDO",
+                            "mensaje": f"Solo hay {disponible_categoria} puestos reservados para {nombre_tipo}. Solicitaste {cantidad} ({exceso} de exceso).",
+                            "cupo_reservado": cupo_categoria,
+                            "en_uso": ocupacion_categoria,
+                            "disponible": disponible_categoria,
+                            "sugerencias": sug_nivel1
+                        })
+        
+        # ── NIVEL 2: Validación por Zona ──────────────────────────────────
+        cupo_zona_disponible = None
+        if zona_id:
+            asig_zona = next((a for a in asigs if str(a.zona_id) == str(zona_id)), None)
+            if asig_zona:
+                ocupacion_zona = await self.calcular_ocupacion_proyectada(db, zona_id, inicio, fin)
+                cupo_zona_total = asig_zona.cupo_asignado
+                cupo_zona_disponible = max(0, cupo_zona_total - ocupacion_zona)
+                
+                if cantidad > cupo_zona_disponible:
+                    exceso = cantidad - cupo_zona_disponible
+                    
+                    # Buscar disponibilidad en otras zonas
+                    sug_nivel2 = []
+                    for otra_asig in asigs:
+                        if str(otra_asig.zona_id) == str(zona_id):
+                            continue
+                        ocup_otra = await self.calcular_ocupacion_proyectada(db, otra_asig.zona_id, inicio, fin)
+                        libre_otra = max(0, otra_asig.cupo_asignado - ocup_otra)
+                        if libre_otra > 0:
+                            sug_nivel2.append({
+                                "accion": "distribuir_otra_zona",
+                                "mensaje": f"Distribuir {min(exceso, libre_otra)} pases en '{otra_asig.zona_nombre}' ({libre_otra} disponibles)",
+                                "cantidad_disponible": libre_otra,
+                                "zona_id": str(otra_asig.zona_id),
+                                "zona_nombre": otra_asig.zona_nombre
+                            })
+                    
+                    sug_nivel2.append({
+                        "accion": "ajustar_cantidad",
+                        "mensaje": f"Ajustar la cantidad a {cupo_zona_disponible} (máximo disponible en esta zona)",
+                        "cantidad_sugerida": cupo_zona_disponible
+                    })
+                    
+                    alertas.append({
+                        "nivel": 2,
+                        "tipo": "zona_excedida",
+                        "severidad": "warning",
+                        "titulo": "CAPACIDAD DE ZONA EXCEDIDA",
+                        "mensaje": f"La zona tiene {cupo_zona_total} puestos asignados, {ocupacion_zona} comprometidos en este periodo. Disponibles: {cupo_zona_disponible}.",
+                        "cupo_total": cupo_zona_total,
+                        "en_uso": ocupacion_zona,
+                        "disponible": cupo_zona_disponible,
+                        "sugerencias": sug_nivel2
+                    })
+        
+        # ── NIVEL 3: Validación Total Entidad (BLOQUEO DURO) ──────────────
+        if cantidad > disponible_total_entidad:
+            puede_crear = False
+            alertas.append({
+                "nivel": 3,
+                "tipo": "entidad_excedida",
+                "severidad": "error",
+                "titulo": "CAPACIDAD TOTAL DE LA ENTIDAD SUPERADA",
+                "mensaje": f"La entidad tiene {capacidad_total_entidad} puestos totales, {ocupacion_total_entidad} comprometidos. Máximo posible: {disponible_total_entidad}.",
+                "cupo_total": capacidad_total_entidad,
+                "en_uso": ocupacion_total_entidad,
+                "disponible": disponible_total_entidad,
+                "sugerencias": [{
+                    "accion": "ajustar_cantidad",
+                    "mensaje": f"Reducir a {disponible_total_entidad} (máximo de la entidad)",
+                    "cantidad_sugerida": disponible_total_entidad
+                }]
+            })
+        
+        return {
+            "puede_crear": puede_crear,
+            "alertas": alertas,
+            "resumen": {
+                "cantidad_solicitada": cantidad,
+                "cupo_total_entidad": capacidad_total_entidad,
+                "disponible_total_entidad": disponible_total_entidad,
+                "cupo_zona_disponible": cupo_zona_disponible,
+                "cupo_categoria_disponible": disponible_categoria,
+                "nombre_tipo_acceso": nombre_tipo,
+            }
+        }
+
     async def _generar_pases_simples(self, db: AsyncSession, lote: LotePaseMasivo, creado_por_id: uuid.UUID, extras: dict):
         """Genera N pases simples para el lote."""
         expira_at = datetime.combine(lote.fecha_fin, datetime.max.time()).replace(tzinfo=timezone.utc) + timedelta(hours=24)

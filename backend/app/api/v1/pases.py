@@ -62,6 +62,34 @@ async def obtener_disponibilidad_zona(
     ocupacion = await pase_service.calcular_ocupacion_proyectada(db, zona_id, ini_dt, fin_dt)
     return {"ocupacion_proyectada": ocupacion}
 
+@router.get("/lotes/validar-capacidad")
+async def validar_capacidad(
+    cantidad: int,
+    inicio: str,
+    fin: str,
+    zona_id: UUID = None,
+    tipo_acceso: str = 'general',
+    tipo_acceso_custom_id: UUID = None,
+    db: AsyncSession = Depends(obtener_db),
+    usuario_actual: Usuario = Depends(require_rol(ADMIN_ROLES))
+):
+    """Validación Inteligente de Capacidad v3.0 — 3 niveles con sugerencias."""
+    from datetime import datetime as dt
+    if not usuario_actual.entidad_id:
+        raise HTTPException(status_code=400, detail="Usuario sin entidad asociada")
+    
+    try:
+        ini_dt = dt.strptime(inicio, '%Y-%m-%d').date()
+        fin_dt = dt.strptime(fin, '%Y-%m-%d').date()
+    except:
+        raise HTTPException(status_code=400, detail="Formato de fecha inválido (YYYY-MM-DD)")
+    
+    return await pase_service.validar_capacidad_completa(
+        db, usuario_actual.entidad_id,
+        zona_id, tipo_acceso, tipo_acceso_custom_id,
+        cantidad, ini_dt, fin_dt
+    )
+
 @router.get("/lotes/sugerir-distribucion")
 async def sugerir_distribucion(
     cantidad: int,

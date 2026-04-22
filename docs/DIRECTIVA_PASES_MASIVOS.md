@@ -50,6 +50,43 @@ cuota_usada = count(codigos_qr where lote.entidad_id == entidad.id and activo an
 cuota_disponible = cuota_total - cuota_usada
 ```
 
+### Validación Inteligente de Capacidad v3.0 — 3 Niveles
+
+> **ESTÁNDAR OBLIGATORIO**: Todo modal de creación de lotes DEBE implementar esta validación en tiempo real. El sistema consulta `GET /pases/lotes/validar-capacidad` con debounce de 600ms cada vez que cambian: cantidad, zona, tipo de acceso o fechas.
+
+#### Nivel 1 — Categoría de Acceso (Alerta + Sugerencia)
+- **Qué valida**: Si la cantidad solicitada excede el cupo reservado para ese tipo de acceso en la zona seleccionada (campo `distribucion_cupos` de `AsignacionZona`).
+- **Ejemplo**: "Solo hay 2 puestos para Productores, solicitaste 10".
+- **Acción**: Alerta visual (amber/naranja) + botones de sugerencia:
+  - "Tomar N puestos del cupo general disponible en esta zona"
+  - "Hay N puestos de este tipo en otra zona: X"
+- **¿Bloquea?**: NO. El admin puede continuar a su criterio.
+
+#### Nivel 2 — Capacidad de Zona (Alerta + Sugerencia)
+- **Qué valida**: Si la cantidad solicitada excede el cupo total disponible en la zona (considerando ocupación proyectada por traslape de fechas).
+- **Ejemplo**: "La zona tiene 15 puestos asignados, 5 comprometidos. Disponibles: 10".
+- **Acción**: Alerta visual (orange) + botones de sugerencia:
+  - "Distribuir N pases en otra zona: Y (Z disponibles)"
+  - "Ajustar cantidad al máximo de la zona (N)"
+- **¿Bloquea?**: NO. Solo informa y sugiere.
+
+#### Nivel 3 — Capacidad Total de la Entidad (BLOQUEO DURO)
+- **Qué valida**: Si la cantidad solicitada excede la capacidad total en TODAS las zonas de la entidad.
+- **Ejemplo**: "La entidad tiene 25 puestos totales, 20 comprometidos. Máximo posible: 5".
+- **Acción**: Alerta visual ROJA con `XCircle` + botón "Reducir a N (máximo de la entidad)".
+- **¿Bloquea?**: SÍ. El botón "Crear Lote" se deshabilita y muestra "BLOQUEADO".
+
+#### Endpoint Backend
+```
+GET /api/v1/pases/lotes/validar-capacidad
+Params: zona_id?, tipo_acceso, tipo_acceso_custom_id?, cantidad, inicio, fin
+Response: {
+    puede_crear: bool,
+    alertas: [{ nivel, tipo, severidad, titulo, mensaje, sugerencias: [{ accion, mensaje, ... }] }],
+    resumen: { cupo_total_entidad, disponible_total_entidad, cupo_zona_disponible, cupo_categoria_disponible }
+}
+```
+
 ---
 
 ## 3. Clasificación por Tipo de Acceso
