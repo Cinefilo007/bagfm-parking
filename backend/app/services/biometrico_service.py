@@ -8,13 +8,13 @@ from webauthn import (
     verify_registration_response,
     generate_authentication_options,
     verify_authentication_response,
-    parse_registration_credential_json,
-    parse_authentication_credential_json,
 )
 from webauthn.helpers import (
     bytes_to_base64url,
     base64url_to_bytes,
     options_to_json,
+    parse_registration_credential_json,
+    parse_authentication_credential_json,
 )
 from webauthn.helpers.structs import (
     AttestationConveyancePreference,
