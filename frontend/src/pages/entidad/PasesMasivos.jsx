@@ -624,7 +624,7 @@ const ModalNuevoLote = ({ isOpen, onClose, zonas, tiposCustom, onCreated }) => {
                 ...cleanForm,
                 entidad_id: user?.entidad_id,
                 excel_data: excelPases, 
-                distribucion_automatica: capacidadExcedida,
+                distribucion_automatica: tieneAlertas,
                 
                 // Mapeo explícito
                 zona_id: cleanForm.zona_asignada_id,
