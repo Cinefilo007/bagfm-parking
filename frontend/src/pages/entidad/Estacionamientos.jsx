@@ -907,7 +907,7 @@ export default function EstacionamientosEntidad() {
                                             <div className="px-14 pb-3 pr-4 pointer-events-none">
                                                 <div className="flex items-center gap-2 mb-1">
                                                     {pasesVigentes > 0 && (
-                                                        <p className="text-[8px] text-text-muted/60 font-bold">
+                                                        <p className="text-[8px] text-text-sec font-black dark:text-text-muted/60 dark:font-bold">
                                                             {pasesVigentes} pases vigentes · {cupoLibre} libres
                                                         </p>
                                                     )}
@@ -921,11 +921,11 @@ export default function EstacionamientosEntidad() {
                                         </div>
 
                                         {isExpanded && (
-                                            <div className="px-4 pb-4 space-y-4 border-t border-white/5 pt-4 animate-in slide-in-from-top-2 duration-200 bg-black/20">
+                                            <div className="px-4 pb-4 space-y-4 border-t border-white/5 pt-4 animate-in slide-in-from-top-2 duration-200 bg-black/5 dark:bg-black/20">
                                                 {/* Distribución Lógica */}
                                                 <div>
                                                     <div className="flex items-center justify-between mb-3">
-                                                        <p className="text-[8px] font-black uppercase tracking-widest text-text-muted/50 flex items-center gap-1.5">
+                                                        <p className="text-[8px] font-black uppercase tracking-widest text-text-muted dark:text-text-muted/50 flex items-center gap-1.5">
                                                             <LayoutGrid size={9} className="text-primary" /> Distribución Lógica
                                                         </p>
                                                         <button onClick={(e) => { e.stopPropagation(); handleAbrirDistribucion(asig); }} className="text-[9px] text-sky-400 font-bold hover:underline flex items-center gap-1">
@@ -935,13 +935,13 @@ export default function EstacionamientosEntidad() {
                                                     {asig.distribucion_cupos && Object.keys(asig.distribucion_cupos).length > 0 ? (
                                                         <div className="flex flex-wrap gap-2">
                                                             {Object.entries(asig.distribucion_cupos).map(([k, v]) => (
-                                                                <span key={k} className="text-[10px] font-bold bg-white/5 px-2 py-1 rounded border border-white/5">
-                                                                    {k}: <span className="text-primary">{v}</span>
+                                                                <span key={k} className="text-[10px] font-bold bg-white/40 dark:bg-white/5 px-2 py-1 rounded border border-white/10 dark:border-white/5 text-text-sec dark:text-text-main">
+                                                                    {k}: <span className="text-primary-dark dark:text-primary font-black">{v}</span>
                                                                 </span>
                                                             ))}
                                                         </div>
                                                     ) : (
-                                                        <p className="text-[9px] text-text-muted/40 italic">Sin distribución configurada</p>
+                                                        <p className="text-[9px] text-text-muted/60 italic">Sin distribución configurada</p>
                                                     )}
                                                 </div>
 
@@ -949,10 +949,10 @@ export default function EstacionamientosEntidad() {
                                                 {pasesMuestra.length > 0 && (
                                                     <div>
                                                         <div className="flex items-center justify-between mb-2">
-                                                            <p className="text-[8px] font-black uppercase tracking-widest text-text-muted/50 flex items-center gap-1.5">
-                                                                <QrCode size={9} className="text-sky-400" />
+                                                            <p className="text-[8px] font-black uppercase tracking-widest text-text-muted dark:text-text-muted/50 flex items-center gap-1.5">
+                                                                <QrCode size={9} className="text-sky-600 dark:text-sky-400" />
                                                                 Pases registrados · {fechaLegible}
-                                                                <span className="ml-1 text-sky-400">({resumZona?.total_pases_zona ?? pasesVigentes})</span>
+                                                                <span className="ml-1 text-sky-600 dark:text-sky-400">({resumZona?.total_pases_zona ?? pasesVigentes})</span>
                                                             </p>
                                                         </div>
                                                         {/* Grid adaptativo: 1 col móvil · 2 col tablet · 3 col PC */}
@@ -965,8 +965,8 @@ export default function EstacionamientosEntidad() {
                                                                         className={cn(
                                                                             "flex items-center gap-2 px-2 py-1.5 rounded-xl border group relative",
                                                                             p.tiene_datos
-                                                                                ? 'bg-white/3 border-white/5 hover:border-white/10'
-                                                                                : 'bg-warning/5 border-warning/20 hover:border-warning/30'
+                                                                                ? 'bg-white/50 dark:bg-white/3 border-white/20 dark:border-white/5 hover:border-white/40 dark:hover:border-white/10'
+                                                                                : 'bg-warning/10 dark:bg-warning/5 border-warning/30 dark:border-warning/20 hover:border-warning/50 dark:hover:border-warning/30'
                                                                         )}
                                                                     >
                                                                         {/* Icono QR */}
@@ -987,10 +987,10 @@ export default function EstacionamientosEntidad() {
                                                                                 </>
                                                                             ) : (
                                                                                 <>
-                                                                                    <p className="text-[7px] text-warning/80 font-bold flex items-center gap-1">
+                                                                                    <p className="text-[7px] text-warning dark:text-warning/80 font-black flex items-center gap-1 uppercase">
                                                                                         <AlertTriangle size={7} /> Sin identificar
                                                                                     </p>
-                                                                                    <p className="text-[7px] font-mono text-text-muted/50 truncate">{p.serial_legible}</p>
+                                                                                    <p className="text-[7px] font-mono text-text-muted dark:text-text-muted/50 truncate">{p.serial_legible}</p>
                                                                                 </>
                                                                             )}
                                                                         </div>
@@ -1006,10 +1006,10 @@ export default function EstacionamientosEntidad() {
                                                                         {/* Botón editar (siempre visible) */}
                                                                         <button
                                                                             onClick={() => handleAbrirEditPase(p)}
-                                                                            className="p-1 rounded-lg bg-white/5 hover:bg-primary/20 shrink-0 transition-colors"
+                                                                            className="p-1 rounded-lg bg-white/40 dark:bg-white/5 hover:bg-primary/20 shrink-0 transition-colors border border-white/20 dark:border-transparent"
                                                                             title="Editar datos del pase"
                                                                         >
-                                                                            <Pencil size={9} className="text-text-muted/60 group-hover:text-primary transition-colors" />
+                                                                            <Pencil size={9} className="text-text-sec dark:text-text-muted/60 group-hover:text-primary transition-colors" />
                                                                         </button>
                                                                     </div>
                                                                 );
