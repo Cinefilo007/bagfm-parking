@@ -8,6 +8,8 @@ from webauthn import (
     verify_registration_response,
     generate_authentication_options,
     verify_authentication_response,
+    parse_registration_credential_json,
+    parse_authentication_credential_json,
 )
 from webauthn.helpers import (
     bytes_to_base64url,
@@ -15,7 +17,7 @@ from webauthn.helpers import (
     options_to_json,
 )
 from webauthn.helpers.structs import (
-    AttestationPreference,
+    AttestationConveyancePreference,
     AuthenticatorSelectionCriteria,
     UserVerificationRequirement,
     AuthenticatorAttachment,
@@ -58,7 +60,7 @@ class BiometricoService:
             user_id=str(usuario.id).encode('utf-8'),
             user_name=usuario.cedula,
             user_display_name=usuario.nombre_completo,
-            attestation=AttestationPreference.NONE,
+            attestation=AttestationConveyancePreference.NONE,
             authenticator_selection=AuthenticatorSelectionCriteria(
                 authenticator_attachment=None, # Permite tanto plataforma como roaming
                 user_verification=UserVerificationRequirement.PREFERRED,
@@ -96,7 +98,7 @@ class BiometricoService:
 
         try:
             verificacion = verify_registration_response(
-                credential=datos.registration_response,
+                credential=parse_registration_credential_json(datos.registration_response),
                 expected_challenge=challenge_db.challenge,
                 expected_origin=config.webauthn_origin,
                 expected_rp_id=config.webauthn_rp_id,
@@ -200,7 +202,7 @@ class BiometricoService:
 
         try:
             verificacion = verify_authentication_response(
-                credential=datos.authentication_response,
+                credential=parse_authentication_credential_json(datos.authentication_response),
                 expected_challenge=challenge_db.challenge,
                 expected_origin=config.webauthn_origin,
                 expected_rp_id=config.webauthn_rp_id,

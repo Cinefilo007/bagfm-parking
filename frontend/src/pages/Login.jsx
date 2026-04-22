@@ -122,7 +122,7 @@ export default function Login() {
             <Boton 
               type="button"
               variante="secundario"
-              className="w-full group"
+              className="mt-3 w-full group"
               onClick={handleLoginBiometrico}
               disabled={loading}
             >
