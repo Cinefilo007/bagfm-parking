@@ -145,20 +145,24 @@ const MapaBaseReal = ({ situacion, onSelectEntity, assignmentMode, onMapClick, s
             center={center} 
             zoom={15} 
             minZoom={14}
-            maxZoom={18}
+            maxZoom={20}
             maxBounds={bounds}
             maxBoundsViscosity={1.0}
             scrollWheelZoom={true} 
+            attributionControl={false}
             className="w-full h-full"
             style={{ background: isDarkMode ? '#0E1322' : '#F8FAFC', cursor: assignmentMode ? 'crosshair' : 'grab' }}
           >
             <TileLayer
-              attribution='Tiles &copy; Esri &mdash; Esri, DeLorme, NAVTEQ, TomTom, Intermap, iPC, USGS, FAO, NPS, NRCAN, GeoBase, Kadaster NL, Ordnance Survey, Esri Japan, METI, Esri China (Hong Kong), and the GIS User Community'
               url="https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}"
+              maxZoom={20}
+              maxNativeZoom={16}
             />
             {isDarkMode && (
               <TileLayer
                 url="https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Reference/MapServer/tile/{z}/{y}/{x}"
+                maxZoom={20}
+                maxNativeZoom={16}
               />
             )}
 
