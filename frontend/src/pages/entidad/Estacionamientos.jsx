@@ -1610,22 +1610,22 @@ export default function EstacionamientosEntidad() {
                         </div>
 
                         {/* Acciones */}
-                        <div className="flex gap-2 pt-2 border-t border-white/5">
+                        <div className="flex gap-4 pt-6 mt-4 border-t border-slate-100 dark:border-white/5">
                             <Boton
-                                variant="ghost"
-                                className="flex-1"
+                                variant="outline"
+                                className="flex-1 h-12 border-slate-200 dark:border-white/10 text-slate-600 dark:text-text-muted hover:bg-slate-50 dark:hover:bg-white/5 font-black uppercase tracking-widest text-[10px]"
                                 onClick={() => setModalEditPase(false)}
                                 disabled={guardandoPase}
                             >
-                                Cancelar
+                                CANCELAR
                             </Boton>
                             <Boton
-                                variant="primary"
-                                className="flex-1"
+                                variant="primario"
+                                className="flex-[1.5] h-12 bg-primary text-white dark:text-on-primary font-black uppercase tracking-widest text-[10px] shadow-lg shadow-primary/20"
                                 onClick={handleGuardarPase}
                                 disabled={guardandoPase}
                             >
-                                {guardandoPase ? 'Guardando...' : 'Guardar Cambios'}
+                                {guardandoPase ? 'Procesando...' : 'GUARDAR CAMBIOS'}
                             </Boton>
                         </div>
                     </div>
