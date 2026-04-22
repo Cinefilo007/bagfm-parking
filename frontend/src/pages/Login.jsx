@@ -1,30 +1,35 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuthStore } from '../store/auth.store';
 import { Boton } from '../components/ui/Boton';
 import { Input } from '../components/ui/Input';
 import { 
   ShieldCheck, 
-  Info,
-  Fingerprint
+  Fingerprint,
+  ArrowRight,
+  User as UserIcon,
+  Lock,
+  ChevronLeft
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-hot-toast';
-
 import { ThemeToggle } from '../components/ui/ThemeToggle';
 
 export default function Login() {
+  const [step, setStep] = useState(1); // 1: Usuario, 2: Autenticación
   const [cedula, setCedula] = useState('');
   const [password, setPassword] = useState('');
+  const [authMethod, setAuthMethod] = useState('password'); // 'biometric' | 'password'
+  const [hasBiometrics, setHasBiometrics] = useState(false);
+  
   const [errorLocal, setErrorLocal] = useState('');
   const [rememberAccount, setRememberAccount] = useState(false);
-  const { login, isLoading: isAuthLoading } = useAuthStore();
   const [loading, setLoading] = useState(false);
+  
+  const { login, loginBiometrico, verificarBiometria } = useAuthStore();
   const navigate = useNavigate();
 
-  const loginBiometrico = useAuthStore(state => state.loginBiometrico);
-
   // Cargar cédula recordada al montar
-  React.useEffect(() => {
+  useEffect(() => {
     const savedCedula = localStorage.getItem('remembered_cedula');
     if (savedCedula) {
       setCedula(savedCedula);
@@ -32,20 +37,43 @@ export default function Login() {
     }
   }, []);
 
-  const handleLoginBiometrico = async () => {
-    if (!cedula) {
-      setErrorLocal('Ingresa tu cédula para iniciar acceso biométrico');
-      toast.error('Se requiere la cédula para identificar el dispositivo');
+  const handleNextStep = async (e) => {
+    if (e) e.preventDefault();
+    if (!cedula.trim()) {
+      toast.error('Ingresa tu usuario');
       return;
     }
 
     setLoading(true);
+    setErrorLocal('');
     try {
-      await loginBiometrico(cedula.trim());
-      navigate('/');
-      toast.success('Acceso biométrico concedido');
+      const isAvailable = await verificarBiometria(cedula.trim());
+      setHasBiometrics(isAvailable);
+      setAuthMethod(isAvailable ? 'biometric' : 'password');
+      setStep(2);
     } catch (err) {
-      const msg = err.response?.data?.detail || 'Error en autenticación biométrica.';
+      setHasBiometrics(false);
+      setAuthMethod('password');
+      setStep(2);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleLoginBiometrico = async () => {
+    setLoading(true);
+    setErrorLocal('');
+    try {
+      const result = await loginBiometrico(cedula.trim());
+      if (result === true) {
+        navigate('/');
+        toast.success('Acceso biométrico concedido');
+      } else if (result?.cancelado) {
+        // No mostrar error si el usuario canceló
+        console.log("BAGFM: Login biométrico cancelado");
+      }
+    } catch (err) {
+      const msg = err.response?.data?.detail || 'Fallo en biometría.';
       setErrorLocal(msg);
       toast.error(msg);
     } finally {
@@ -53,127 +81,189 @@ export default function Login() {
     }
   };
 
-  const handleLogin = async (e) => {
+  const handleLoginPassword = async (e) => {
     e.preventDefault();
     setErrorLocal('');
     
-    if (!cedula || !password) {
-      setErrorLocal('Todos los campos son obligatorios');
+    if (!password) {
+      setErrorLocal('Ingresa tu contraseña');
       return;
     }
 
     setLoading(true);
-    const cedulaLimpia = cedula.trim();
-    const passwordLimpia = password.trim();
-
     try {
-      await login(cedulaLimpia, passwordLimpia);
+      await login(cedula.trim(), password.trim());
       
-      // Persistencia de cuenta recordada
       if (rememberAccount) {
-        localStorage.setItem('remembered_cedula', cedulaLimpia);
+        localStorage.setItem('remembered_cedula', cedula.trim());
       } else {
         localStorage.removeItem('remembered_cedula');
       }
 
-      // Redirigir basado en el rol (lo lee del store hidratado)
-      // Como RutaProtegida se encarga de esto si vas a "/", lo enviamos al base
       navigate('/');
     } catch (err) {
-      const msg = err.response?.data?.detail || 'Error de credenciales o red.';
+      const msg = err.response?.data?.detail || 'Error de credenciales.';
       setErrorLocal(msg);
-      toast.error(msg, { duration: 20000 });
+      toast.error(msg);
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen bg-bg-app flex flex-col justify-center px-6 antialiased">
+    <div className="min-h-screen bg-bg-app flex flex-col justify-center px-6 antialiased transition-colors duration-500">
       <ThemeToggle />
       
       <div className="w-full max-w-sm mx-auto">
         {/* LOGO SIMULADO */}
-        <div className="flex flex-col items-center mb-10 text-center">
-          <div className="w-16 h-16 bg-gradient-to-br from-primary to-primary-dark rounded-2xl flex flex-col items-center justify-center mb-4 shadow-[0_0_30px_rgba(78,222,163,0.3)]">
-            <ShieldCheck size={32} color="#003824" strokeWidth={2} />
+        <div className="flex flex-col items-center mb-10 text-center animate-in fade-in slide-in-from-top-4 duration-700">
+          <div className="w-16 h-16 bg-gradient-to-br from-primary to-primary-dark rounded-2xl flex flex-col items-center justify-center mb-4 shadow-[0_0_40px_rgba(78,222,163,0.25)] border border-white/10 group">
+            <ShieldCheck size={32} color="#003824" strokeWidth={2} className="group-hover:scale-110 transition-transform" />
           </div>
-          <h1 className="font-display font-bold text-3xl tracking-tight text-text-main uppercase">BAGFM</h1>
-          <p className="text-primary tracking-[0.2em] text-[10px] font-semibold uppercase mt-1">Control Táctico</p>
+          <h1 className="font-display font-black text-3xl tracking-tight text-white uppercase italic">BAGFM</h1>
+          <p className="text-primary tracking-[0.3em] text-[10px] font-black uppercase mt-1 opacity-80">Control Táctico</p>
         </div>
 
         {/* CARTA DE LOGIN */}
-        <div className="bg-bg-modal rounded-2xl p-6 shadow-2xl relative overflow-hidden">
+        <div className="bg-bg-modal border border-white/5 rounded-3xl p-8 shadow-2xl relative overflow-hidden backdrop-blur-xl">
           {/* Acento decorativo */}
-          <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-primary to-transparent opacity-50"></div>
+          <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-primary/50 to-transparent"></div>
           
-          <h2 className="font-display font-semibold text-text-main text-lg mb-6 text-center underline decoration-primary/20 decoration-2 underline-offset-8">Acceso de Seguridad</h2>
-          
-          <form onSubmit={handleLogin} className="mt-8">
-            <Input 
-              label="Cédula de Identidad" 
-              placeholder="V-12345678"
-              value={cedula}
-              onChange={(e) => setCedula(e.target.value)}
-              disabled={loading}
-              error={errorLocal && !cedula ? 'Requerido' : null}
-            />
-            
-            <Input 
-              label="Contraseña" 
-              type="password" 
-              placeholder="••••••••"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              disabled={loading}
-              error={errorLocal && cedula ? errorLocal : null} // Muestra el request error
-            />
+          <div className="relative z-10">
+            {step === 1 ? (
+              <div className="animate-in fade-in slide-in-from-right-4 duration-500">
+                <h2 className="font-display font-bold text-white text-lg mb-2 text-center uppercase tracking-tight">Identificación</h2>
+                <p className="text-[10px] text-text-muted text-center uppercase font-bold tracking-widest mb-8 opacity-60">Acceso al Sistema Central</p>
+                
+                <form onSubmit={handleNextStep} className="space-y-6">
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black text-text-muted uppercase tracking-[0.2em] ml-1">Usuario</label>
+                    <div className="relative">
+                      <UserIcon className="absolute left-4 top-1/2 -translate-y-1/2 text-text-muted" size={16} />
+                      <input 
+                        type="text"
+                        placeholder="Ingresa tu cédula"
+                        className="w-full h-14 bg-bg-app/50 border border-white/10 focus:border-primary rounded-xl pl-12 pr-4 text-sm font-bold text-white transition-all placeholder:text-text-muted/30"
+                        value={cedula}
+                        onChange={(e) => setCedula(e.target.value)}
+                        disabled={loading}
+                        autoFocus
+                      />
+                    </div>
+                  </div>
 
-            {/* RECORDAR CUENTA */}
-            <div className="flex items-center gap-2 mb-6 px-1">
-              <input 
-                id="remember"
-                type="checkbox" 
-                className="w-4 h-4 rounded border-white/10 bg-bg-app text-primary focus:ring-primary accent-primary"
-                checked={rememberAccount}
-                onChange={(e) => setRememberAccount(e.target.checked)}
-              />
-              <label htmlFor="remember" className="text-[11px] font-bold text-text-muted uppercase tracking-widest cursor-pointer select-none">
-                Recordar mi cédula
-              </label>
-            </div>
-            
-            <Boton 
-              type="submit" 
-              className="mt-4 w-full"
-              isLoading={loading}
-            >
-              Iniciar Sesión
-            </Boton>
+                  <div className="flex items-center gap-2 px-1">
+                    <input 
+                      id="remember"
+                      type="checkbox" 
+                      className="w-4 h-4 rounded border-white/10 bg-bg-app text-primary focus:ring-primary accent-primary"
+                      checked={rememberAccount}
+                      onChange={(e) => setRememberAccount(e.target.checked)}
+                    />
+                    <label htmlFor="remember" className="text-[10px] font-bold text-text-muted uppercase tracking-widest cursor-pointer select-none opacity-70">
+                      Recordar mi usuario
+                    </label>
+                  </div>
 
-            <Boton 
-              type="button"
-              variante="secundario"
-              className="mt-3 w-full group"
-              onClick={handleLoginBiometrico}
-              disabled={loading}
-            >
-              <Fingerprint className="mr-2 group-hover:text-primary transition-colors" size={18} />
-              Acceso Biométrico
-            </Boton>
+                  <Boton 
+                    type="submit" 
+                    className="w-full h-14 bg-primary text-bg-app font-black uppercase tracking-widest text-xs flex justify-center items-center gap-2 group shadow-lg shadow-primary/20"
+                    isLoading={loading}
+                  >
+                    Continuar
+                    <ArrowRight size={16} className="group-hover:translate-x-1 transition-transform" />
+                  </Boton>
+                </form>
+              </div>
+            ) : (
+              <div className="animate-in fade-in slide-in-from-left-4 duration-500">
+                <button 
+                  onClick={() => setStep(1)}
+                  className="absolute -top-2 -left-2 p-2 text-text-muted hover:text-white transition-colors"
+                >
+                  <ChevronLeft size={20} />
+                </button>
+                
+                <div className="text-center mb-8">
+                  <div className="w-12 h-12 rounded-full bg-white/5 flex items-center justify-center mx-auto mb-3 border border-white/10">
+                    <UserIcon size={20} className="text-primary/70" />
+                  </div>
+                  <h3 className="text-sm font-bold text-white uppercase tracking-tight">{cedula}</h3>
+                  <p className="text-[9px] text-primary font-black uppercase tracking-widest mt-1 opacity-60">Personal Autorizado</p>
+                </div>
+
+                {authMethod === 'biometric' ? (
+                  <div className="space-y-6">
+                    <Boton 
+                      type="button"
+                      className="w-full h-20 bg-primary/10 hover:bg-primary border border-primary/20 hover:border-primary text-primary hover:text-bg-app font-black uppercase tracking-widest text-xs flex flex-col justify-center items-center gap-2 transition-all group rounded-2xl"
+                      onClick={handleLoginBiometrico}
+                      isLoading={loading}
+                    >
+                      <Fingerprint size={32} className="group-hover:scale-110 transition-transform" />
+                      Acceso Biométrico
+                    </Boton>
+                    
+                    <button 
+                      onClick={() => setAuthMethod('password')}
+                      className="w-full py-2 text-[10px] font-black text-text-muted hover:text-white uppercase tracking-[0.2em] transition-colors"
+                    >
+                      O usar mi contraseña
+                    </button>
+                  </div>
+                ) : (
+                  <form onSubmit={handleLoginPassword} className="space-y-6">
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-black text-text-muted uppercase tracking-[0.2em] ml-1">Contraseña</label>
+                      <div className="relative">
+                        <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-text-muted" size={16} />
+                        <input 
+                          type="password"
+                          placeholder="••••••••"
+                          className="w-full h-14 bg-bg-app/50 border border-white/10 focus:border-primary rounded-xl pl-12 pr-4 text-sm font-bold text-white transition-all placeholder:text-text-muted/30"
+                          value={password}
+                          onChange={(e) => setPassword(e.target.value)}
+                          disabled={loading}
+                          autoFocus
+                        />
+                      </div>
+                    </div>
+
+                    <Boton 
+                      type="submit" 
+                      className="w-full h-14 bg-primary text-bg-app font-black uppercase tracking-widest text-xs shadow-lg shadow-primary/20"
+                      isLoading={loading}
+                    >
+                      Iniciar Sesión
+                    </Boton>
+
+                    {hasBiometrics && (
+                      <button 
+                        type="button"
+                        onClick={() => setAuthMethod('biometric')}
+                        className="w-full flex items-center justify-center gap-2 py-2 text-[10px] font-black text-primary hover:brightness-125 uppercase tracking-[0.2em] transition-all"
+                      >
+                        <Fingerprint size={14} />
+                        Usar Biometría
+                      </button>
+                    )}
+                  </form>
+                )}
+              </div>
+            )}
             
             {errorLocal && (
-              <div className="mt-4 p-3 bg-red-500/10 border border-red-500/20 rounded-xl animate-fade-in">
-                <p className="text-[10px] text-red-500 font-bold uppercase tracking-widest text-center leading-tight">
+              <div className="mt-6 p-4 bg-danger/10 border border-danger/20 rounded-2xl animate-shake">
+                <p className="text-[9px] text-danger font-black uppercase tracking-[0.15em] text-center leading-relaxed">
                   {errorLocal}
                 </p>
               </div>
             )}
-          </form>
+          </div>
         </div>
         
-        <p className="text-center text-text-muted mt-8 text-xs font-medium uppercase tracking-widest">
-          Sistema de Acceso Restringido
+        <p className="text-center text-text-muted mt-8 text-[9px] font-black uppercase tracking-[0.3em] opacity-30">
+          BAGFM • Sistema Táctico de Acceso
         </p>
       </div>
     </div>

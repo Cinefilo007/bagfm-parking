@@ -260,4 +260,17 @@ class BiometricoService:
             await db.rollback()
             raise CredencialesInvalidas(f"Falla biométrica: {str(e)}")
 
+    async def verificar_disponibilidad(self, db: AsyncSession, cedula: str) -> bool:
+        """Verifica si un usuario tiene al menos una credencial biométrica registrada."""
+        q_usuario = select(Usuario).where(Usuario.cedula == cedula)
+        res_usuario = await db.execute(q_usuario)
+        usuario = res_usuario.scalar_one_or_none()
+        
+        if not usuario:
+            return False
+            
+        q_creds = select(CredencialBiometrica).where(CredencialBiometrica.usuario_id == usuario.id)
+        res_creds = await db.execute(q_creds)
+        return len(res_creds.scalars().all()) > 0
+
 biometrico_service = BiometricoService()

@@ -59,6 +59,15 @@ async def verify_login(
     """Verifica la firma biométrica y emite el token de acceso."""
     return await biometrico_service.verificar_login(db, datos)
 
+@router.get("/check-usuario/{cedula}")
+async def check_biometria_disponible(
+    cedula: str,
+    db: AsyncSession = Depends(obtener_db)
+):
+    """Verifica si un usuario tiene biometría configurada."""
+    disponible = await biometrico_service.verificar_disponibilidad(db, cedula)
+    return {"disponible": disponible}
+
 @router.get("/credenciales", response_model=List[CredencialBiometricaSchema])
 async def listar_credenciales(
     db: AsyncSession = Depends(obtener_db),

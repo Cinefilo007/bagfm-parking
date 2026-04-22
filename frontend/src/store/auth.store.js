@@ -117,8 +117,24 @@ export const useAuthStore = create((set) => ({
       });
       return true;
     } catch (error) {
+      // Manejo silencioso de cancelaciones
+      if (error.name === 'NotAllowedError' || error.name === 'AbortError') {
+        console.warn("BAGFM: Operación biométrica cancelada por el usuario");
+        return { cancelado: true };
+      }
+
       console.error("Error en login biométrico", error);
       throw error;
+    }
+  },
+
+  verificarBiometria: async (cedula) => {
+    try {
+      const response = await api.get(`biometrico/check-usuario/${cedula}`);
+      return response.data.disponible;
+    } catch (error) {
+      console.error("Error al verificar disponibilidad biométrica", error);
+      return false;
     }
   },
 
