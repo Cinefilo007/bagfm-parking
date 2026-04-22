@@ -23,6 +23,7 @@ from webauthn.helpers.structs import (
     AuthenticatorAttachment,
     RegistrationCredential,
     AuthenticationCredential,
+    PublicKeyCredentialDescriptor,
 )
 
 from app.core.config import obtener_config
@@ -148,7 +149,7 @@ class BiometricoService:
         q_creds = select(CredencialBiometrica).where(CredencialBiometrica.usuario_id == usuario.id)
         res_creds = await db.execute(q_creds)
         creds_permitidas = [
-            {"id": base64url_to_bytes(c.credential_id), "type": "public-key"} 
+            PublicKeyCredentialDescriptor(id=base64url_to_bytes(c.credential_id)) 
             for c in res_creds.scalars().all()
         ]
 
@@ -243,7 +244,7 @@ class BiometricoService:
 
             token_data = {
                 "sub": str(usuario.id),
-                "rol": usuario.rol.value,
+                "rol": usuario.rol.value if hasattr(usuario.rol, 'value') else usuario.rol,
                 "entidad_id": str(usuario.entidad_id) if usuario.entidad_id else None,
                 "entidad_nombre": entidad_nombre,
                 "nombre": usuario.nombre,
