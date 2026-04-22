@@ -16,11 +16,21 @@ export default function Login() {
   const [cedula, setCedula] = useState('');
   const [password, setPassword] = useState('');
   const [errorLocal, setErrorLocal] = useState('');
+  const [rememberAccount, setRememberAccount] = useState(false);
   const { login, isLoading: isAuthLoading } = useAuthStore();
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
   const loginBiometrico = useAuthStore(state => state.loginBiometrico);
+
+  // Cargar cédula recordada al montar
+  React.useEffect(() => {
+    const savedCedula = localStorage.getItem('remembered_cedula');
+    if (savedCedula) {
+      setCedula(savedCedula);
+      setRememberAccount(true);
+    }
+  }, []);
 
   const handleLoginBiometrico = async () => {
     if (!cedula) {
@@ -58,6 +68,14 @@ export default function Login() {
 
     try {
       await login(cedulaLimpia, passwordLimpia);
+      
+      // Persistencia de cuenta recordada
+      if (rememberAccount) {
+        localStorage.setItem('remembered_cedula', cedulaLimpia);
+      } else {
+        localStorage.removeItem('remembered_cedula');
+      }
+
       // Redirigir basado en el rol (lo lee del store hidratado)
       // Como RutaProtegida se encarga de esto si vas a "/", lo enviamos al base
       navigate('/');
@@ -110,6 +128,20 @@ export default function Login() {
               disabled={loading}
               error={errorLocal && cedula ? errorLocal : null} // Muestra el request error
             />
+
+            {/* RECORDAR CUENTA */}
+            <div className="flex items-center gap-2 mb-6 px-1">
+              <input 
+                id="remember"
+                type="checkbox" 
+                className="w-4 h-4 rounded border-white/10 bg-bg-app text-primary focus:ring-primary accent-primary"
+                checked={rememberAccount}
+                onChange={(e) => setRememberAccount(e.target.checked)}
+              />
+              <label htmlFor="remember" className="text-[11px] font-bold text-text-muted uppercase tracking-widest cursor-pointer select-none">
+                Recordar mi cédula
+              </label>
+            </div>
             
             <Boton 
               type="submit" 

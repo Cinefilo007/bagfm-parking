@@ -36,12 +36,18 @@ export const useAuthStore = create((set) => ({
       });
 
       const { access_token } = response.data;
+      if (!access_token) throw new Error("No se recibió un token de acceso del servidor");
       
       localStorage.setItem('token', access_token);
       
       // Decodificar token manual o hacer request a /me
       // Por brevedad, el backend asume JWT, aqui lo desencriptamos (base64url)
-      const base64Url = access_token.split('.')[1];
+      const tokenParts = access_token.split('.');
+      if (tokenParts.length < 2) throw new Error("Token de acceso malformado");
+
+      const base64Url = tokenParts[1];
+      if (!base64Url) throw new Error("Payload del token no encontrado");
+
       const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
       const jsonPayload = decodeURIComponent(window.atob(base64).split('').map(function(c) {
           return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
@@ -79,10 +85,16 @@ export const useAuthStore = create((set) => ({
       });
 
       const { access_token } = verifyRes.data;
+      if (!access_token) throw new Error("No se recibió un token de acceso tras verificación");
       
       localStorage.setItem('token', access_token);
       
-      const base64Url = access_token.split('.')[1];
+      const tokenParts = access_token.split('.');
+      if (tokenParts.length < 2) throw new Error("Token de acceso biométrico malformado");
+
+      const base64Url = tokenParts[1];
+      if (!base64Url) throw new Error("Payload del token biométrico no encontrado");
+
       const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
       const jsonPayload = decodeURIComponent(window.atob(base64).split('').map(function(c) {
           return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
@@ -108,6 +120,9 @@ export const useAuthStore = create((set) => ({
       // 1. Obtener opciones de registro
       const optionsRes = await api.get('biometrico/registro-options');
       const options = optionsRes.data;
+      if (!options || typeof options !== 'object') {
+        throw new Error("Las opciones de registro recibidas no son válidas");
+      }
 
       // 2. Iniciar registro en el navegador
       const attResp = await startRegistration({ optionsJSON: options });
