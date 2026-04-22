@@ -228,63 +228,61 @@ class PaseService:
         }
 
     async def contar_pases_activos_en_zona_para_fecha(
-        self, db: AsyncSession, zona_id: uuid.UUID, fecha: date, limite: int = 10
+        self, db: AsyncSession, zona_id: uuid.UUID, fecha: date, limite: int = 20, offset: int = 0
     ) -> dict:
         """
         Devuelve el conteo de QRs vigentes en una zona para un día específico
-        y una muestra de hasta `limite` registros para el panel compacto del frontend.
-        
-        Un QR se considera vigente si su lote padre tiene:
-          fecha_inicio <= fecha <= fecha_fin
+        y una muestra con paginación para el panel compacto del frontend.
         """
-        from sqlalchemy import and_, join
-        from sqlalchemy.orm import aliased
+        from sqlalchemy import and_
 
-        # Contar por lotes que solapan la fecha y tienen QRs en esa zona
+        _WHERE = and_(
+            CodigoQR.zona_asignada_id == zona_id,
+            CodigoQR.activo == True,
+            LotePaseMasivo.fecha_inicio <= fecha,
+            LotePaseMasivo.fecha_fin >= fecha,
+        )
+
+        # Total
         q_count = (
             select(func.count(CodigoQR.id))
             .join(LotePaseMasivo, CodigoQR.lote_id == LotePaseMasivo.id)
-            .where(
-                and_(
-                    CodigoQR.zona_asignada_id == zona_id,
-                    CodigoQR.activo == True,
-                    LotePaseMasivo.fecha_inicio <= fecha,
-                    LotePaseMasivo.fecha_fin >= fecha,
-                )
-            )
+            .where(_WHERE)
         )
         total = int((await db.execute(q_count)).scalar() or 0)
 
-        # Muestra compacta (máx limite registros)
+        # Muestra paginada con campos enriquecidos
         q_muestra = (
             select(
+                CodigoQR.id,
                 CodigoQR.serial_legible,
                 CodigoQR.nombre_portador,
+                CodigoQR.cedula_portador,
                 CodigoQR.vehiculo_placa,
                 CodigoQR.datos_completos,
                 CodigoQR.puesto_asignado_id,
+                CodigoQR.tipo_acceso,
+                CodigoQR.tipo_acceso_custom_id,
             )
             .join(LotePaseMasivo, CodigoQR.lote_id == LotePaseMasivo.id)
-            .where(
-                and_(
-                    CodigoQR.zona_asignada_id == zona_id,
-                    CodigoQR.activo == True,
-                    LotePaseMasivo.fecha_inicio <= fecha,
-                    LotePaseMasivo.fecha_fin >= fecha,
-                )
-            )
+            .where(_WHERE)
             .order_by(CodigoQR.serial_legible.asc())
+            .offset(offset)
             .limit(limite)
         )
         rows = (await db.execute(q_muestra)).all()
 
         muestra = [
             {
+                "id": str(r.id),
                 "serial_legible": r.serial_legible,
                 "nombre_portador": r.nombre_portador,
+                "cedula_portador": r.cedula_portador,
                 "vehiculo_placa": r.vehiculo_placa,
                 "tiene_datos": bool(r.datos_completos or r.nombre_portador),
                 "puesto_asignado_id": str(r.puesto_asignado_id) if r.puesto_asignado_id else None,
+                "tipo_acceso": r.tipo_acceso.value if r.tipo_acceso else "general",
+                "tipo_acceso_custom_id": str(r.tipo_acceso_custom_id) if r.tipo_acceso_custom_id else None,
             }
             for r in rows
         ]

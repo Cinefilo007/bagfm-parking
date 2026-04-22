@@ -317,3 +317,34 @@ async def calendario_lotes_entidad(
         return {}
 
     return await pase_service.obtener_fechas_con_lotes_por_entidad(db, current_user.entidad_id)
+
+
+@router.get("/entidad/pases-zona")
+async def pases_zona_paginados(
+    zona_id: UUID,
+    fecha: str = None,
+    page: int = 1,
+    limite: int = 20,
+    db: AsyncSession = Depends(obtener_db),
+    current_user: Usuario = Depends(require_rol(["ADMIN_ENTIDAD"]))
+):
+    """
+    Retorna pases paginados de una zona específica para una fecha.
+    Usado por el panel "Ver todos" del acordeón.
+    """
+    from datetime import date as date_type, datetime
+    from app.services.pase_service import pase_service
+
+    try:
+        fecha_dt = datetime.strptime(fecha, "%Y-%m-%d").date() if fecha else date_type.today()
+    except (ValueError, TypeError):
+        fecha_dt = date_type.today()
+
+    offset = (page - 1) * limite
+    resultado = await pase_service.contar_pases_activos_en_zona_para_fecha(
+        db, zona_id, fecha_dt, limite=limite, offset=offset
+    )
+    resultado["page"] = page
+    resultado["limite"] = limite
+    resultado["total_paginas"] = max(1, -(-resultado["total"] // limite))  # ceiling division
+    return resultado

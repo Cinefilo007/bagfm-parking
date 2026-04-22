@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { Card } from '../../components/ui/Card';
 import { Boton } from '../../components/ui/Boton';
 import { Modal } from '../../components/ui/Modal';
@@ -13,9 +13,22 @@ import {
     ParkingSquare, Car, Plus, Trash2, RefreshCw,
     Shield, MapPin, Users, Tag, CheckCircle2, QrCode,
     Circle, Edit3, ToggleLeft, ToggleRight, Zap, AlertTriangle,
-    ChevronDown, LayoutGrid, Settings, Activity, Hash, PackagePlus, Palette, Filter, ZapOff, Calendar
+    ChevronDown, ChevronLeft, ChevronRight, LayoutGrid, Settings, Activity,
+    Hash, PackagePlus, Palette, Filter, ZapOff, Calendar, Pencil, User
 } from 'lucide-react';
 import { zonaService } from '../../services/zona.service';
+
+/** Mapa de etiquetas de tipo de acceso a mostrar como badge */
+const TIPO_ACCESO_LABEL = {
+    general:    { label: 'PÚBLICO', color: 'text-sky-400 bg-sky-500/10 border-sky-500/20' },
+    logistica:  { label: 'LOGÍSTICA', color: 'text-amber-400 bg-amber-500/10 border-amber-500/20' },
+    produccion: { label: 'PRODUCCIÓN', color: 'text-orange-400 bg-orange-500/10 border-orange-500/20' },
+    staff:      { label: 'STAFF', color: 'text-violet-400 bg-violet-500/10 border-violet-500/20' },
+    vip:        { label: 'VIP', color: 'text-yellow-400 bg-yellow-500/10 border-yellow-500/20' },
+    prensa:     { label: 'PRENSA', color: 'text-blue-400 bg-blue-500/10 border-blue-500/20' },
+    artista:    { label: 'ARTISTA', color: 'text-pink-400 bg-pink-500/10 border-pink-500/20' },
+    custom:     { label: 'CUSTOM', color: 'text-text-muted bg-white/5 border-white/10' },
+};
 
 const PRESET_COLORS = [
     '#4EDEA3', '#3B82F6', '#F59E0B', '#EF4444', 
@@ -241,6 +254,15 @@ export default function EstacionamientosEntidad() {
     const hoyISO = new Date().toISOString().split('T')[0];
     const [fechaConsulta, setFechaConsulta] = useState(hoyISO);
 
+    // Estado del modal de edición de pase
+    const [modalEditPase, setModalEditPase] = useState(false);
+    const [paseEditando, setPaseEditando] = useState(null);
+    const [formEditPase, setFormEditPase] = useState({});
+    const [guardandoPase, setGuardandoPase] = useState(false);
+    // Estado de paginación expandida del panel de pases
+    const [panelPasesExpandido, setPanelPasesExpandido] = useState({});
+    const [paginaPases, setPaginaPases] = useState({});
+
     const [modalGenerar, setModalGenerar] = useState(false);
     const [formGenerar, setFormGenerar] = useState({ cantidad: 1, prefijo: 'V' });
     const [generando, setGenerando] = useState(false);
@@ -347,6 +369,46 @@ export default function EstacionamientosEntidad() {
         setFechaConsulta(nuevaFecha);
         cargarResumenDisponibilidad(nuevaFecha);
     }, [cargarResumenDisponibilidad]);
+
+    /** Avanza o retrocede un día desde la fecha actual de consulta */
+    const handleNavFecha = useCallback((dias) => {
+        const f = new Date(fechaConsulta + 'T12:00:00');
+        f.setDate(f.getDate() + dias);
+        const nueva = f.toISOString().split('T')[0];
+        setFechaConsulta(nueva);
+        cargarResumenDisponibilidad(nueva);
+    }, [fechaConsulta, cargarResumenDisponibilidad]);
+
+    /** Abre el modal de edición de un pase */
+    const handleAbrirEditPase = useCallback((pase) => {
+        setPaseEditando(pase);
+        setFormEditPase({
+            nombre_portador: pase.nombre_portador || '',
+            cedula_portador: pase.cedula_portador || '',
+            vehiculo_placa: pase.vehiculo_placa || '',
+            vehiculo_marca: '',
+            vehiculo_modelo: '',
+            vehiculo_color: '',
+        });
+        setModalEditPase(true);
+    }, []);
+
+    /** Guarda los datos editados del pase vía PATCH */
+    const handleGuardarPase = useCallback(async () => {
+        if (!paseEditando?.id) return;
+        setGuardandoPase(true);
+        try {
+            await zonaService.actualizarPaseDatos(paseEditando.id, formEditPase);
+            toast.success('¡Pase actualizado correctamente!');
+            setModalEditPase(false);
+            // Recargar el resumen para reflejar los cambios
+            cargarResumenDisponibilidad(fechaConsulta);
+        } catch (e) {
+            toast.error('Error al guardar los datos del pase');
+        } finally {
+            setGuardandoPase(false);
+        }
+    }, [paseEditando, formEditPase, fechaConsulta, cargarResumenDisponibilidad]);
 
     const handleAbrirDistribucion = (asig) => {
         setAsignacionEdicion(asig);
@@ -660,7 +722,16 @@ export default function EstacionamientosEntidad() {
                             {asignaciones.length} Zonas asignadas por el Comandante
                         </p>
                         <div className="flex items-center gap-2">
-                            {/* Chip selector de fecha */}
+                            {/* Flecha izquierda: día anterior */}
+                            <button
+                                onClick={() => handleNavFecha(-1)}
+                                className="p-1.5 rounded-lg bg-white/5 hover:bg-white/10 transition-all border border-white/5"
+                                title="Día anterior"
+                            >
+                                <ChevronLeft size={13} className="text-text-muted" />
+                            </button>
+
+                            {/* Chip selector de fecha (abre el calendario modal) */}
                             <button
                                 onClick={() => { cargarCalendarioLotes(); setModalCalendario(true); }}
                                 className={cn(
@@ -674,6 +745,16 @@ export default function EstacionamientosEntidad() {
                                 {esFechaHoy ? 'HOY' : fechaLegible}
                                 {!esFechaHoy && <span className="ml-1 text-[7px] bg-warning/20 px-1 rounded">FUTURA</span>}
                             </button>
+
+                            {/* Flecha derecha: día siguiente */}
+                            <button
+                                onClick={() => handleNavFecha(1)}
+                                className="p-1.5 rounded-lg bg-white/5 hover:bg-white/10 transition-all border border-white/5"
+                                title="Día siguiente"
+                            >
+                                <ChevronRight size={13} className="text-text-muted" />
+                            </button>
+
                             {!esFechaHoy && (
                                 <button
                                     onClick={() => handleCambiarFecha(hoyISO)}
@@ -819,45 +900,63 @@ export default function EstacionamientosEntidad() {
                                                         </div>
                                                         {/* Grid adaptativo: 1 col móvil · 2 col tablet · 3 col PC */}
                                                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-1.5">
-                                                            {pasesMuestra.map((p, pi) => (
-                                                                <div
-                                                                    key={pi}
-                                                                    className={cn(
-                                                                        "flex items-center gap-2 px-2 py-1.5 rounded-xl border",
-                                                                        p.tiene_datos
-                                                                            ? 'bg-white/3 border-white/5'
-                                                                            : 'bg-warning/5 border-warning/20'
-                                                                    )}
-                                                                >
-                                                                    <div className="w-5 h-5 rounded-lg bg-white/5 flex items-center justify-center shrink-0">
-                                                                        <QrCode size={10} className={p.tiene_datos ? 'text-text-muted/60' : 'text-warning/60'} />
-                                                                    </div>
-                                                                    <div className="flex-1 min-w-0">
-                                                                        {p.tiene_datos ? (
-                                                                            <>
-                                                                                <p className="text-[8px] font-black text-text-main uppercase truncate">
-                                                                                    {p.nombre_portador || p.serial_legible}
-                                                                                </p>
-                                                                                <p className="text-[7px] text-text-muted/60 font-mono truncate">
-                                                                                    {p.vehiculo_placa ? `${p.vehiculo_placa} · ` : ''}{p.serial_legible}
-                                                                                </p>
-                                                                            </>
-                                                                        ) : (
-                                                                            <>
-                                                                                <p className="text-[7px] text-warning/80 font-bold flex items-center gap-1">
-                                                                                    <AlertTriangle size={7} /> Sin identificar
-                                                                                </p>
-                                                                                <p className="text-[7px] font-mono text-text-muted/50 truncate">{p.serial_legible}</p>
-                                                                            </>
+                                                            {pasesMuestra.map((p, pi) => {
+                                                                const tipoInfo = TIPO_ACCESO_LABEL[p.tipo_acceso] || TIPO_ACCESO_LABEL.custom;
+                                                                return (
+                                                                    <div
+                                                                        key={p.id || pi}
+                                                                        className={cn(
+                                                                            "flex items-center gap-2 px-2 py-1.5 rounded-xl border group relative",
+                                                                            p.tiene_datos
+                                                                                ? 'bg-white/3 border-white/5 hover:border-white/10'
+                                                                                : 'bg-warning/5 border-warning/20 hover:border-warning/30'
                                                                         )}
-                                                                    </div>
-                                                                    {p.vehiculo_placa && (
-                                                                        <div className="hidden sm:flex items-center gap-1 text-[7px] text-primary/80 bg-primary/5 px-1.5 py-0.5 rounded shrink-0">
-                                                                            <Car size={8} /> {p.vehiculo_placa}
+                                                                    >
+                                                                        {/* Icono QR */}
+                                                                        <div className="w-5 h-5 rounded-lg bg-white/5 flex items-center justify-center shrink-0">
+                                                                            <QrCode size={10} className={p.tiene_datos ? 'text-text-muted/60' : 'text-warning/60'} />
                                                                         </div>
-                                                                    )}
-                                                                </div>
-                                                            ))}
+
+                                                                        {/* Contenido central */}
+                                                                        <div className="flex-1 min-w-0">
+                                                                            {p.tiene_datos ? (
+                                                                                <>
+                                                                                    <p className="text-[8px] font-black text-text-main uppercase truncate">
+                                                                                        {p.nombre_portador || p.serial_legible}
+                                                                                    </p>
+                                                                                    <p className="text-[7px] text-text-muted/60 font-mono truncate">
+                                                                                        {p.cedula_portador ? `CI: ${p.cedula_portador} · ` : ''}{p.vehiculo_placa ? `🚗 ${p.vehiculo_placa}` : p.serial_legible}
+                                                                                    </p>
+                                                                                </>
+                                                                            ) : (
+                                                                                <>
+                                                                                    <p className="text-[7px] text-warning/80 font-bold flex items-center gap-1">
+                                                                                        <AlertTriangle size={7} /> Sin identificar
+                                                                                    </p>
+                                                                                    <p className="text-[7px] font-mono text-text-muted/50 truncate">{p.serial_legible}</p>
+                                                                                </>
+                                                                            )}
+                                                                        </div>
+
+                                                                        {/* Badge tipo acceso */}
+                                                                        <span className={cn(
+                                                                            "text-[6px] font-black uppercase px-1.5 py-0.5 rounded border shrink-0",
+                                                                            tipoInfo.color
+                                                                        )}>
+                                                                            {tipoInfo.label}
+                                                                        </span>
+
+                                                                        {/* Botón editar (visible al hover) */}
+                                                                        <button
+                                                                            onClick={() => handleAbrirEditPase(p)}
+                                                                            className="opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded-lg bg-primary/10 hover:bg-primary/20 shrink-0"
+                                                                            title="Editar datos del pase"
+                                                                        >
+                                                                            <Pencil size={9} className="text-primary" />
+                                                                        </button>
+                                                                    </div>
+                                                                );
+                                                            })}
                                                         </div>
                                                         {pasesVigentes > pasesMuestra.length && (
                                                             <p className="text-[8px] text-text-muted/50 mt-2 text-center italic">
@@ -1354,6 +1453,95 @@ export default function EstacionamientosEntidad() {
                 calendarioLotes={calendarioLotes}
                 cargando={cargandoResumen}
             />
+
+            {/* ── MODAL: Editar Datos del Pase ── */}
+            <Modal
+                isOpen={modalEditPase}
+                onClose={() => setModalEditPase(false)}
+                title="Editar Datos del Pase"
+            >
+                {paseEditando && (
+                    <div className="space-y-4 min-w-[280px]">
+                        {/* Info del serial */}
+                        <div className="flex items-center gap-2 p-2 bg-white/5 rounded-xl border border-white/5">
+                            <QrCode size={14} className="text-sky-400 shrink-0" />
+                            <div>
+                                <p className="text-[8px] font-black text-text-muted uppercase tracking-wider">Serial</p>
+                                <p className="text-[11px] font-mono text-text-main">{paseEditando.serial_legible}</p>
+                            </div>
+                            {paseEditando.tipo_acceso && (
+                                <span className={cn(
+                                    "ml-auto text-[7px] font-black uppercase px-2 py-0.5 rounded border",
+                                    (TIPO_ACCESO_LABEL[paseEditando.tipo_acceso] || TIPO_ACCESO_LABEL.custom).color
+                                )}>
+                                    {(TIPO_ACCESO_LABEL[paseEditando.tipo_acceso] || TIPO_ACCESO_LABEL.custom).label}
+                                </span>
+                            )}
+                        </div>
+
+                        {/* Datos del portador */}
+                        <div>
+                            <p className="text-[8px] font-black text-text-muted uppercase tracking-widest mb-2 flex items-center gap-1.5">
+                                <User size={9} /> Datos del Portador
+                            </p>
+                            <div className="grid grid-cols-2 gap-2">
+                                <div className="col-span-2">
+                                    <Input
+                                        label="Nombre completo"
+                                        value={formEditPase.nombre_portador || ''}
+                                        onChange={e => setFormEditPase(p => ({ ...p, nombre_portador: e.target.value }))}
+                                        placeholder="Nombre y apellido"
+                                    />
+                                </div>
+                                <Input
+                                    label="Cédula / ID"
+                                    value={formEditPase.cedula_portador || ''}
+                                    onChange={e => setFormEditPase(p => ({ ...p, cedula_portador: e.target.value }))}
+                                    placeholder="Ej: V-12345678"
+                                />
+                                <Input
+                                    label="Placa del vehículo"
+                                    value={formEditPase.vehiculo_placa || ''}
+                                    onChange={e => setFormEditPase(p => ({ ...p, vehiculo_placa: e.target.value.toUpperCase() }))}
+                                    placeholder="Ej: ABC123"
+                                />
+                                <Input
+                                    label="Marca"
+                                    value={formEditPase.vehiculo_marca || ''}
+                                    onChange={e => setFormEditPase(p => ({ ...p, vehiculo_marca: e.target.value }))}
+                                    placeholder="Toyota, Ford..."
+                                />
+                                <Input
+                                    label="Color"
+                                    value={formEditPase.vehiculo_color || ''}
+                                    onChange={e => setFormEditPase(p => ({ ...p, vehiculo_color: e.target.value }))}
+                                    placeholder="Negro, Blanco..."
+                                />
+                            </div>
+                        </div>
+
+                        {/* Acciones */}
+                        <div className="flex gap-2 pt-2 border-t border-white/5">
+                            <Boton
+                                variant="ghost"
+                                className="flex-1"
+                                onClick={() => setModalEditPase(false)}
+                                disabled={guardandoPase}
+                            >
+                                Cancelar
+                            </Boton>
+                            <Boton
+                                variant="primary"
+                                className="flex-1"
+                                onClick={handleGuardarPase}
+                                disabled={guardandoPase}
+                            >
+                                {guardandoPase ? 'Guardando...' : 'Guardar Cambios'}
+                            </Boton>
+                        </div>
+                    </div>
+                )}
+            </Modal>
         </div>
     );
 }

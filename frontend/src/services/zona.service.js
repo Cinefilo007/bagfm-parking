@@ -57,6 +57,31 @@ export const zonaService = {
     },
 
     /**
+     * Retorna todos los pases de una zona en una fecha con paginación.
+     * Usado por el panel "Ver todos" del acordeón de zonas.
+     * @param {string} zonaId - UUID de la zona
+     * @param {string|null} fecha - Formato 'YYYY-MM-DD'
+     * @param {number} page - Página (empieza en 1)
+     * @param {number} limite - Pases por página
+     */
+    async getPasesZona(zonaId, fecha = null, page = 1, limite = 20) {
+        const params = { zona_id: zonaId, page, limite };
+        if (fecha) params.fecha = fecha;
+        const { data } = await api.get('/zonas/entidad/pases-zona', { params });
+        return data;
+    },
+
+    /**
+     * Actualiza los datos de identificación de un pase (portador, placa, etc.)
+     * @param {string} paseId - UUID del CodigoQR
+     * @param {Object} datos - Campos a actualizar (nombre_portador, cedula_portador, vehiculo_placa, etc.)
+     */
+    async actualizarPaseDatos(paseId, datos) {
+        const { data } = await api.patch(`/pases/${paseId}`, datos);
+        return data;
+    },
+
+    /**
      * Permite a la entidad configurar cómo subdivide su cupo lógico.
      */
     async configurarDistribucionCupos(asignacionId, distribucion) {
