@@ -21,7 +21,7 @@ export const Modal = ({ isOpen, onClose, title, children, className, balanced = 
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-[9999] flex transition-all duration-300">
+    <div className={cn("fixed inset-0 z-[9999] flex transition-all duration-300", balanced && "lg:left-72")}>
       {/* Backdrop: Cubre toda la pantalla */}
       <div 
         className="absolute inset-0 bg-black/80 backdrop-blur-sm animate-in fade-in duration-300" 
@@ -29,10 +29,7 @@ export const Modal = ({ isOpen, onClose, title, children, className, balanced = 
       />
       
       {/* Container que balancea respecto al Sidebar si balanced=true */}
-      <div className={cn(
-        "relative flex-1 flex items-center justify-center p-4 min-h-screen",
-        balanced && "lg:ml-72"
-      )}>
+      <div className="relative flex-1 flex items-center justify-center p-4 min-h-screen">
         {/* Modal Content */}
         <div 
           className={cn(
