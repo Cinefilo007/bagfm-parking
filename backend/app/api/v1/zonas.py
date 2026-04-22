@@ -307,7 +307,7 @@ async def resumen_disponibilidad_entidad(
             "distribucion_cupos": asig.distribucion_cupos,
             "pases_vigentes": datos_zona["total"],
             "cupo_libre": cupo_libre,
-            "pases_muestra": datos_zona["muestra"],
+            "pases_muestra": datos_zona["pases"],
             "asignacion_id": str(asig.id),
             "fecha_consulta": fecha_dt.isoformat(),
             "parqueros": parqueros
