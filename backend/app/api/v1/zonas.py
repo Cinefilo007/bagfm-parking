@@ -285,6 +285,19 @@ async def resumen_disponibilidad_entidad(
         datos_zona = await pase_service.contar_pases_activos_en_zona_para_fecha(
             db, asig.zona_id, fecha_dt, limite=10
         )
+
+        # Consultar parqueros asignados a esta zona
+        from app.models.enums import RolTipo
+        rs_p = await db.execute(
+            select(Usuario.nombre, Usuario.apellido)
+            .where(
+                Usuario.zona_asignada_id == asig.zona_id,
+                Usuario.rol == RolTipo.PARQUERO,
+                Usuario.activo == True
+            )
+        )
+        parqueros = [{"nombre": p.nombre, "apellido": p.apellido} for p in rs_p.all()]
+
         cupo_libre = max(0, asig.cupo_asignado - datos_zona["total"])
         resultado.append({
             "zona_id": str(asig.zona_id),
@@ -297,6 +310,7 @@ async def resumen_disponibilidad_entidad(
             "pases_muestra": datos_zona["muestra"],
             "asignacion_id": str(asig.id),
             "fecha_consulta": fecha_dt.isoformat(),
+            "parqueros": parqueros
         })
 
     return resultado

@@ -14,7 +14,7 @@ import {
     Shield, MapPin, Users, Tag, CheckCircle2, QrCode,
     Circle, Edit3, ToggleLeft, ToggleRight, Zap, AlertTriangle,
     ChevronDown, ChevronLeft, ChevronRight, LayoutGrid, Settings, Activity,
-    Hash, PackagePlus, Palette, Filter, ZapOff, Calendar, Pencil, User
+    Hash, PackagePlus, Palette, Filter, ZapOff, Calendar, Pencil, User, Eye
 } from 'lucide-react';
 import { zonaService } from '../../services/zona.service';
 
@@ -263,6 +263,13 @@ export default function EstacionamientosEntidad() {
     const [panelPasesExpandido, setPanelPasesExpandido] = useState({});
     const [paginaPases, setPaginaPases] = useState({});
 
+    // Modal de visualización completa de todos los pases de una zona
+    const [modalTodosPases, setModalTodosPases] = useState(false);
+    const [zonaSeleccionadaParaTodos, setZonaSeleccionadaParaTodos] = useState(null);
+    const [pasesZonaCompletos, setPasesZonaCompletos] = useState([]);
+    const [cargandoTodosPases, setCargandoTodosPases] = useState(false);
+    const [paginacionTodos, setPaginacionTodos] = useState({ total: 0, pagina: 1, paginas: 1 });
+
     const [modalGenerar, setModalGenerar] = useState(false);
     const [formGenerar, setFormGenerar] = useState({ cantidad: 1, prefijo: 'V' });
     const [generando, setGenerando] = useState(false);
@@ -409,6 +416,46 @@ export default function EstacionamientosEntidad() {
             setGuardandoPase(false);
         }
     }, [paseEditando, formEditPase, fechaConsulta, cargarResumenDisponibilidad]);
+
+    /** Abre el modal de todos los pases de una zona y carga la primera página */
+    const handleAbrirTodosPases = useCallback(async (resumZona) => {
+        setZonaSeleccionadaParaTodos(resumZona);
+        setModalTodosPases(true);
+        setPasesZonaCompletos([]);
+        setCargandoTodosPases(true);
+        try {
+            const data = await zonaService.getPasesZona(resumZona.zona_id, fechaConsulta, 1, 30);
+            setPasesZonaCompletos(data.pases || []);
+            setPaginacionTodos({
+                total: data.total,
+                pagina: data.pagina,
+                paginas: data.paginas
+            });
+        } catch (e) {
+            toast.error('Error al cargar la lista de pases');
+        } finally {
+            setCargandoTodosPases(false);
+        }
+    }, [fechaConsulta]);
+
+    /** Cambia la página en el modal de todos los pases */
+    const handleCambiarPaginaTodos = useCallback(async (nuevaPag) => {
+        if (!zonaSeleccionadaParaTodos) return;
+        setCargandoTodosPases(true);
+        try {
+            const data = await zonaService.getPasesZona(zonaSeleccionadaParaTodos.zona_id, fechaConsulta, nuevaPag, 30);
+            setPasesZonaCompletos(data.pases || []);
+            setPaginacionTodos({
+                total: data.total,
+                pagina: data.pagina,
+                paginas: data.paginas
+            });
+        } catch (e) {
+            toast.error('Error al cambiar de página');
+        } finally {
+            setCargandoTodosPases(false);
+        }
+    }, [zonaSeleccionadaParaTodos, fechaConsulta]);
 
     const handleAbrirDistribucion = (asig) => {
         setAsignacionEdicion(asig);
@@ -823,6 +870,12 @@ export default function EstacionamientosEntidad() {
                                                         <span className="text-[9px] text-text-muted flex items-center gap-1">
                                                             <Shield size={9} /> Base: {asig.cupo_reservado_base}
                                                         </span>
+                                                        {asig.parqueros && asig.parqueros.length > 0 && (
+                                                            <span className="text-[9px] text-emerald-400/80 font-black flex items-center gap-1 uppercase tracking-tight">
+                                                                <User size={9} className="text-emerald-500" /> 
+                                                                Parquero: <span className="text-text-main">{asig.parqueros.map(p => p.nombre).join(', ')}</span>
+                                                            </span>
+                                                        )}
                                                         <span className="sm:hidden text-[9px] text-primary/70 font-bold uppercase">
                                                             {utilizable} Util.
                                                         </span>
@@ -946,22 +999,25 @@ export default function EstacionamientosEntidad() {
                                                                             {tipoInfo.label}
                                                                         </span>
 
-                                                                        {/* Botón editar (visible al hover) */}
+                                                                        {/* Botón editar (siempre visible) */}
                                                                         <button
                                                                             onClick={() => handleAbrirEditPase(p)}
-                                                                            className="opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded-lg bg-primary/10 hover:bg-primary/20 shrink-0"
+                                                                            className="p-1 rounded-lg bg-white/5 hover:bg-primary/20 shrink-0 transition-colors"
                                                                             title="Editar datos del pase"
                                                                         >
-                                                                            <Pencil size={9} className="text-primary" />
+                                                                            <Pencil size={9} className="text-text-muted/60 group-hover:text-primary transition-colors" />
                                                                         </button>
                                                                     </div>
                                                                 );
                                                             })}
                                                         </div>
                                                         {pasesVigentes > pasesMuestra.length && (
-                                                            <p className="text-[8px] text-text-muted/50 mt-2 text-center italic">
-                                                                + {pasesVigentes - pasesMuestra.length} pases más en esta zona
-                                                            </p>
+                                                            <button 
+                                                                onClick={() => handleAbrirTodosPases(resumZona)}
+                                                                className="w-full text-[8px] font-black uppercase tracking-widest text-sky-400/80 hover:text-sky-300 mt-2 text-center transition-all flex items-center justify-center gap-1.5 py-2 rounded-xl bg-sky-400/5 hover:bg-sky-400/10 border border-sky-400/10"
+                                                            >
+                                                                <Eye size={10} /> + {pasesVigentes - pasesMuestra.length} pases más · Ver todos
+                                                            </button>
                                                         )}
                                                     </div>
                                                 )}
@@ -1541,6 +1597,118 @@ export default function EstacionamientosEntidad() {
                         </div>
                     </div>
                 )}
+            </Modal>
+
+            {/* ── MODAL: Listado Completo de Pases ── */}
+            <Modal
+                isOpen={modalTodosPases}
+                onClose={() => setModalTodosPases(false)}
+                title="Pases Registrados"
+                subtitle={zonaSeleccionadaParaTodos?.zona_nombre || ''}
+                className="max-w-4xl"
+            >
+                <div className="space-y-4">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-white/5 pb-3">
+                        <div className="flex flex-col">
+                            <p className="text-[10px] font-black uppercase tracking-widest text-text-main flex items-center gap-2">
+                                <QrCode size={12} className="text-sky-400" />
+                                {zonaSeleccionadaParaTodos?.zona_nombre}
+                            </p>
+                            <p className="text-[8px] text-text-muted/60 font-medium">
+                                Total: {paginacionTodos.total} pases detectados en esta zona
+                            </p>
+                        </div>
+                        <div className="flex items-center gap-1 self-end sm:self-auto">
+                            <button 
+                                onClick={() => handleCambiarPaginaTodos(paginacionTodos.pagina - 1)}
+                                disabled={paginacionTodos.pagina === 1 || cargandoTodosPases}
+                                className="p-1.5 rounded-lg bg-white/5 hover:bg-white/10 disabled:opacity-30 transition-all border border-white/5"
+                            >
+                                <ChevronLeft size={14} />
+                            </button>
+                            <div className="flex items-center gap-1.5 px-3 py-1 bg-white/5 rounded-lg border border-white/5">
+                                <span className="text-[10px] font-mono text-primary font-bold">{paginacionTodos.pagina}</span>
+                                <span className="text-[10px] font-mono text-text-muted/40">/</span>
+                                <span className="text-[10px] font-mono text-text-muted">{paginacionTodos.paginas}</span>
+                            </div>
+                            <button 
+                                onClick={() => handleCambiarPaginaTodos(paginacionTodos.pagina + 1)}
+                                disabled={paginacionTodos.pagina === paginacionTodos.paginas || cargandoTodosPases}
+                                className="p-1.5 rounded-lg bg-white/5 hover:bg-white/10 disabled:opacity-30 transition-all border border-white/5"
+                            >
+                                <ChevronRight size={14} />
+                            </button>
+                        </div>
+                    </div>
+
+                    {cargandoTodosPases ? (
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 py-4">
+                            {Array(9).fill(0).map((_, i) => (
+                                <div key={i} className="h-14 bg-white/5 rounded-xl border border-white/5 animate-pulse" />
+                            ))}
+                        </div>
+                    ) : (
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 max-h-[60vh] overflow-y-auto pr-1 custom-scrollbar min-h-[200px]">
+                            {pasesZonaCompletos.length === 0 ? (
+                                <div className="col-span-full flex flex-col items-center justify-center py-12 text-text-muted/30">
+                                    <QrCode size={40} className="mb-2 opacity-10" />
+                                    <p className="text-[10px] font-black uppercase tracking-widest">No hay pases adicionales</p>
+                                </div>
+                            ) : pasesZonaCompletos.map((p, pi) => {
+                                const tipoInfo = TIPO_ACCESO_LABEL[p.tipo_acceso] || TIPO_ACCESO_LABEL.custom;
+                                return (
+                                    <div
+                                        key={p.id || pi}
+                                        className={cn(
+                                            "flex items-center gap-2 px-3 py-2 rounded-xl border group transition-all",
+                                            p.tiene_datos
+                                                ? 'bg-white/3 border-white/5 hover:border-white/10'
+                                                : 'bg-warning/5 border-warning/20 hover:border-warning/30'
+                                        )}
+                                    >
+                                        <div className="w-7 h-7 rounded-lg bg-white/5 flex items-center justify-center shrink-0">
+                                            <QrCode size={13} className={p.tiene_datos ? 'text-text-muted/40' : 'text-warning/50'} />
+                                        </div>
+                                        <div className="flex-1 min-w-0">
+                                            {p.tiene_datos ? (
+                                                <>
+                                                    <p className="text-[9px] font-black text-text-main uppercase truncate leading-tight">
+                                                        {p.nombre_portador || p.serial_legible}
+                                                    </p>
+                                                    <p className="text-[8px] text-text-muted/60 font-mono truncate">
+                                                        {p.cedula_portador ? `CI: ${p.cedula_portador} · ` : ''}{p.vehiculo_placa ? `🚗 ${p.vehiculo_placa}` : p.serial_legible}
+                                                    </p>
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <p className="text-[8px] text-warning/80 font-bold flex items-center gap-1 leading-tight">
+                                                        <AlertTriangle size={8} /> Sin identificar
+                                                    </p>
+                                                    <p className="text-[8px] font-mono text-text-muted/50 truncate">{p.serial_legible}</p>
+                                                </>
+                                            )}
+                                        </div>
+                                        <div className="flex flex-col items-end gap-1.5">
+                                            <span className={cn(
+                                                "text-[6px] font-black uppercase px-2 py-0.5 rounded border leading-none shrink-0",
+                                                tipoInfo.color
+                                            )}>
+                                                {tipoInfo.label}
+                                            </span>
+                                            <button
+                                                onClick={() => handleAbrirEditPase(p)}
+                                                className="p-1 rounded-lg bg-white/5 hover:bg-primary/20 shrink-0 transition-colors"
+                                                title="Editar pase"
+                                            >
+                                                <Pencil size={10} className="text-text-muted/40 group-hover:text-primary" />
+                                            </button>
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    )}
+                </div>
             </Modal>
         </div>
     );
