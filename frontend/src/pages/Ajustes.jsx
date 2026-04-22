@@ -172,7 +172,7 @@ export default function Ajustes() {
                   </h1>
                   <div className="flex items-center justify-center gap-3 mt-2">
                     <span className="text-xs font-black text-primary uppercase tracking-[0.2em] opacity-80">
-                      {user.rol.replace('_', ' ')}
+                      {(user?.rol || '').replace('_', ' ')}
                     </span>
                     <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_8px_#10b981]" />
                     <span className="text-[10px] text-text-muted font-bold tracking-widest uppercase">Base BAGFM</span>

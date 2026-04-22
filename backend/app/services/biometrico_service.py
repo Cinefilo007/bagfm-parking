@@ -65,7 +65,7 @@ class BiometricoService:
                 authenticator_attachment=None, # Permite tanto plataforma como roaming
                 user_verification=UserVerificationRequirement.PREFERRED,
             ),
-            exclude_credentials=credenciales_excluir if credenciales_excluir else None,
+            exclude_credentials=credenciales_excluir if credenciales_excluir else [],
         )
 
         # Guardar el challenge en la base de datos para verificación posterior

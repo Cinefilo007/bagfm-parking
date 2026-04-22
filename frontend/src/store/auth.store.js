@@ -125,6 +125,14 @@ export const useAuthStore = create((set) => ({
       }
 
       // 2. Iniciar registro en el navegador
+      console.log("WebAuthn Registro Options:", options);
+      
+      // Validación profunda antes de llamar a la librería
+      if (!options.challenge || !options.user || !options.user.id) {
+        console.error("Opciones de registro incompletas:", options);
+        throw new Error("El servidor envió datos incompletos para el registro biométrico");
+      }
+
       const attResp = await startRegistration({ optionsJSON: options });
 
       // 3. Verificar en el backend

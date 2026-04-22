@@ -60,7 +60,7 @@ export const Sidebar = () => {
   
   const displaySub = (user?.rol === 'ALCABALA' && tacticalIdentity)
     ? tacticalIdentity.punto
-    : user?.rol.replace('_', ' ');
+    : (user?.rol || '').replace('_', ' ');
 
   return (
     <aside className="w-72 bg-bg-low h-screen sticky top-0 hidden lg:flex flex-col border-r border-bg-high/20 shadow-2xl z-[1000]">
