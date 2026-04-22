@@ -11,7 +11,7 @@ import { toast } from 'react-hot-toast';
 import { cn } from '../../lib/utils';
 import {
     ParkingSquare, Car, Plus, Trash2, RefreshCw,
-    Shield, MapPin, Users, Tag, CheckCircle2, QrCode,
+    Shield, MapPin, Users, Tag, CheckCircle2, QrCode, Search,
     Circle, Edit3, ToggleLeft, ToggleRight, Zap, AlertTriangle,
     ChevronDown, ChevronLeft, ChevronRight, LayoutGrid, Settings, Activity,
     Hash, PackagePlus, Palette, Filter, ZapOff, Calendar, Pencil, User, Eye
@@ -269,6 +269,7 @@ export default function EstacionamientosEntidad() {
     const [pasesZonaCompletos, setPasesZonaCompletos] = useState([]);
     const [cargandoTodosPases, setCargandoTodosPases] = useState(false);
     const [paginacionTodos, setPaginacionTodos] = useState({ total: 0, pagina: 1, paginas: 1 });
+    const [busquedaTodos, setBusquedaTodos] = useState('');
 
     const [modalGenerar, setModalGenerar] = useState(false);
     const [formGenerar, setFormGenerar] = useState({ cantidad: 1, prefijo: 'V' });
@@ -424,6 +425,7 @@ export default function EstacionamientosEntidad() {
         setZonaSeleccionadaParaTodos(resumZona);
         setModalTodosPases(true);
         setPasesZonaCompletos([]);
+        setBusquedaTodos('');
         setCargandoTodosPases(true);
         try {
             const data = await zonaService.getPasesZona(resumZona.zona_id, fechaConsulta, 1, 30);
@@ -441,11 +443,11 @@ export default function EstacionamientosEntidad() {
     }, [fechaConsulta]);
 
     /** Cambia la página en el modal de todos los pases */
-    const handleCambiarPaginaTodos = useCallback(async (nuevaPag) => {
+    const handleCambiarPaginaTodos = useCallback(async (nuevaPag, query = busquedaTodos) => {
         if (!zonaSeleccionadaParaTodos) return;
         setCargandoTodosPases(true);
         try {
-            const data = await zonaService.getPasesZona(zonaSeleccionadaParaTodos.zona_id, fechaConsulta, nuevaPag, 30);
+            const data = await zonaService.getPasesZona(zonaSeleccionadaParaTodos.zona_id, fechaConsulta, nuevaPag, 30, query);
             setPasesZonaCompletos(data.pases || []);
             setPaginacionTodos({
                 total: data.total,
@@ -1639,36 +1641,55 @@ export default function EstacionamientosEntidad() {
                 className="max-w-4xl"
             >
                 <div className="space-y-4">
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-white/5 pb-3">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-white/5 pb-4">
                         <div className="flex flex-col">
                             <p className="text-[10px] font-black uppercase tracking-widest text-text-main flex items-center gap-2">
                                 <QrCode size={12} className="text-sky-400" />
                                 {zonaSeleccionadaParaTodos?.zona_nombre}
                             </p>
                             <p className="text-[8px] text-text-muted/60 font-medium">
-                                Total: {paginacionTodos.total} pases detectados en esta zona
+                                Total: {paginacionTodos.total} pases detectados
                             </p>
                         </div>
-                        <div className="flex items-center gap-1 self-end sm:self-auto">
-                            <button 
-                                onClick={() => handleCambiarPaginaTodos(paginacionTodos.pagina - 1)}
-                                disabled={paginacionTodos.pagina === 1 || cargandoTodosPases}
-                                className="p-1.5 rounded-lg bg-white/5 hover:bg-white/10 disabled:opacity-30 transition-all border border-white/5"
-                            >
-                                <ChevronLeft size={14} />
-                            </button>
-                            <div className="flex items-center gap-1.5 px-3 py-1 bg-white/5 rounded-lg border border-white/5">
+                        
+                        {/* Buscador Táctico */}
+                        <div className="relative flex-1 max-w-sm">
+                            <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted/40" />
+                            <input 
+                                type="text"
+                                value={busquedaTodos}
+                                onChange={(e) => {
+                                    setBusquedaTodos(e.target.value);
+                                    handleCambiarPaginaTodos(1, e.target.value);
+                                }}
+                                placeholder="Buscar por QR, Cédula, Nombre o Placa..."
+                                className="w-full bg-white/5 border border-white/10 rounded-xl py-2 pl-9 pr-4 text-[10px] text-text-main placeholder:text-text-muted/20 focus:outline-none focus:border-primary/50 transition-all"
+                            />
+                        </div>
+
+                        {/* Paginación minimalista inferior o lateral */}
+                        <div className="flex items-center gap-3">
+                            <div className="flex items-center gap-1.5 px-3 py-1.5 bg-white/5 rounded-lg border border-white/5">
                                 <span className="text-[10px] font-mono text-primary font-bold">{paginacionTodos.pagina}</span>
                                 <span className="text-[10px] font-mono text-text-muted/40">/</span>
                                 <span className="text-[10px] font-mono text-text-muted">{paginacionTodos.paginas}</span>
                             </div>
-                            <button 
-                                onClick={() => handleCambiarPaginaTodos(paginacionTodos.pagina + 1)}
-                                disabled={paginacionTodos.pagina === paginacionTodos.paginas || cargandoTodosPases}
-                                className="p-1.5 rounded-lg bg-white/5 hover:bg-white/10 disabled:opacity-30 transition-all border border-white/5"
-                            >
-                                <ChevronRight size={14} />
-                            </button>
+                            <div className="flex items-center gap-1">
+                                <button 
+                                    onClick={() => handleCambiarPaginaTodos(paginacionTodos.pagina - 1)}
+                                    disabled={paginacionTodos.pagina === 1 || cargandoTodosPases}
+                                    className="p-2 rounded-lg bg-white/5 hover:bg-white/10 disabled:opacity-20 transition-all border border-white/5"
+                                >
+                                    <ChevronLeft size={14} />
+                                </button>
+                                <button 
+                                    onClick={() => handleCambiarPaginaTodos(paginacionTodos.pagina + 1)}
+                                    disabled={paginacionTodos.pagina === paginacionTodos.paginas || cargandoTodosPases}
+                                    className="p-2 rounded-lg bg-white/5 hover:bg-white/10 disabled:opacity-20 transition-all border border-white/5"
+                                >
+                                    <ChevronRight size={14} />
+                                </button>
+                            </div>
                         </div>
                     </div>
 

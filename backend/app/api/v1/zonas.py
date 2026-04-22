@@ -337,6 +337,7 @@ async def calendario_lotes_entidad(
 async def pases_zona_paginados(
     zona_id: UUID,
     fecha: str = None,
+    busqueda: str = None,
     page: int = 1,
     limite: int = 20,
     db: AsyncSession = Depends(obtener_db),
@@ -356,7 +357,7 @@ async def pases_zona_paginados(
 
     offset = (page - 1) * limite
     resultado = await pase_service.contar_pases_activos_en_zona_para_fecha(
-        db, zona_id, fecha_dt, limite=limite, offset=offset
+        db, zona_id, fecha_dt, limite=limite, offset=offset, busqueda=busqueda
     )
     resultado["page"] = page
     resultado["limite"] = limite

@@ -242,20 +242,34 @@ class PaseService:
         }
 
     async def contar_pases_activos_en_zona_para_fecha(
-        self, db: AsyncSession, zona_id: uuid.UUID, fecha: date, limite: int = 20, offset: int = 0
+        self, db: AsyncSession, zona_id: uuid.UUID, fecha: date, limite: int = 20, offset: int = 0, busqueda: str = None
     ) -> dict:
         """
         Devuelve el conteo de QRs vigentes en una zona para un día específico
         y una muestra con paginación para el panel compacto del frontend.
+        Se agregó parámetro de búsqueda.
         """
-        from sqlalchemy import and_
+        from sqlalchemy import and_, or_
 
-        _WHERE = and_(
+        condiciones = [
             CodigoQR.zona_asignada_id == zona_id,
             CodigoQR.activo == True,
             LotePaseMasivo.fecha_inicio <= fecha,
             LotePaseMasivo.fecha_fin >= fecha,
-        )
+        ]
+
+        if busqueda:
+            term = f"%{busqueda.lower()}%"
+            condiciones.append(or_(
+                func.lower(CodigoQR.serial_legible).like(term),
+                func.lower(CodigoQR.nombre_portador).like(term),
+                func.lower(CodigoQR.cedula_portador).like(term),
+                func.lower(CodigoQR.vehiculo_placa).like(term),
+                func.lower(CodigoQR.vehiculo_modelo).like(term),
+                func.lower(CodigoQR.vehiculo_marca).like(term),
+            ))
+
+        _WHERE = and_(*condiciones)
 
         # Total
         q_count = (

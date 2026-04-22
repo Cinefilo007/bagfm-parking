@@ -64,9 +64,10 @@ export const zonaService = {
      * @param {number} page - Página (empieza en 1)
      * @param {number} limite - Pases por página
      */
-    async getPasesZona(zonaId, fecha = null, page = 1, limite = 20) {
+    async getPasesZona(zonaId, fecha = null, page = 1, limite = 20, busqueda = null) {
         const params = { zona_id: zonaId, page, limite };
         if (fecha) params.fecha = fecha;
+        if (busqueda) params.busqueda = busqueda;
         const { data } = await api.get('/zonas/entidad/pases-zona', { params });
         return data;
     },
