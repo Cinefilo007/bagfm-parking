@@ -252,7 +252,7 @@ const ModalListaPases = ({ isOpen, onClose, lote, zonas }) => {
                     </div>
                 </div>
 
-                <div className="max-h-[60vh] overflow-y-auto space-y-2 pr-2 scrollbar-thin">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-[60vh] overflow-y-auto pr-2 scrollbar-thin">
                     {loading ? (
                         Array(5).fill(0).map((_, i) => (
                             <div key={i} className="h-16 w-full animate-pulse bg-white/5 rounded-xl border border-white/5" />
