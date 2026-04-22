@@ -907,8 +907,8 @@ export default function EstacionamientosEntidad() {
                                             <div className="px-14 pb-3 pr-4 pointer-events-none">
                                                 <div className="flex items-center gap-2 mb-1">
                                                     {pasesVigentes > 0 && (
-                                                        <p className="text-[8px] text-text-sec font-black dark:text-text-muted/60 dark:font-bold">
-                                                            {pasesVigentes} pases vigentes · {cupoLibre} libres
+                                                        <p className="text-[9px] text-text-main font-black dark:text-text-muted/60 dark:font-bold">
+                                                            {pasesVigentes} PASES VIGENTES · {cupoLibre} LIBRES
                                                         </p>
                                                     )}
                                                 </div>
@@ -925,8 +925,8 @@ export default function EstacionamientosEntidad() {
                                                 {/* Distribución Lógica */}
                                                 <div>
                                                     <div className="flex items-center justify-between mb-3">
-                                                        <p className="text-[8px] font-black uppercase tracking-widest text-text-muted dark:text-text-muted/50 flex items-center gap-1.5">
-                                                            <LayoutGrid size={9} className="text-primary" /> Distribución Lógica
+                                                        <p className="text-[9px] font-black uppercase tracking-widest text-text-main dark:text-text-muted/50 flex items-center gap-1.5">
+                                                            <LayoutGrid size={10} className="text-primary-dark dark:text-primary" /> Distribución Lógica
                                                         </p>
                                                         <button onClick={(e) => { e.stopPropagation(); handleAbrirDistribucion(asig); }} className="text-[9px] text-sky-400 font-bold hover:underline flex items-center gap-1">
                                                             <Settings size={10} /> Configurar
@@ -935,8 +935,8 @@ export default function EstacionamientosEntidad() {
                                                     {asig.distribucion_cupos && Object.keys(asig.distribucion_cupos).length > 0 ? (
                                                         <div className="flex flex-wrap gap-2">
                                                             {Object.entries(asig.distribucion_cupos).map(([k, v]) => (
-                                                                <span key={k} className="text-[10px] font-bold bg-white/40 dark:bg-white/5 px-2 py-1 rounded border border-white/10 dark:border-white/5 text-text-sec dark:text-text-main">
-                                                                    {k}: <span className="text-primary-dark dark:text-primary font-black">{v}</span>
+                                                                <span key={k} className="text-[11px] font-black bg-slate-200 dark:bg-white/5 px-2.5 py-1.5 rounded-lg border border-slate-300 dark:border-white/5 text-slate-800 dark:text-text-main flex items-center gap-2 shadow-sm">
+                                                                    {k.toUpperCase()}: <span className="text-emerald-700 dark:text-primary font-black border-l border-slate-300 dark:border-white/10 pl-2">{v}</span>
                                                                 </span>
                                                             ))}
                                                         </div>
@@ -948,11 +948,11 @@ export default function EstacionamientosEntidad() {
                                                 {/* Panel de Pases Registrados */}
                                                 {pasesMuestra.length > 0 && (
                                                     <div>
-                                                        <div className="flex items-center justify-between mb-2">
-                                                            <p className="text-[8px] font-black uppercase tracking-widest text-text-muted dark:text-text-muted/50 flex items-center gap-1.5">
-                                                                <QrCode size={9} className="text-sky-600 dark:text-sky-400" />
+                                                        <div className="flex items-center justify-between mb-3 pb-2 border-b border-black/5 dark:border-white/5">
+                                                            <p className="text-[9px] font-black uppercase tracking-widest text-text-main dark:text-text-muted/50 flex items-center gap-1.5">
+                                                                <QrCode size={10} className="text-sky-700 dark:text-sky-400" />
                                                                 Pases registrados · {fechaLegible}
-                                                                <span className="ml-1 text-sky-600 dark:text-sky-400">({resumZona?.total_pases_zona ?? pasesVigentes})</span>
+                                                                <span className="ml-1 text-sky-700 dark:text-sky-400 px-2 py-0.5 bg-sky-100 dark:bg-sky-400/10 rounded-full border border-sky-200 dark:border-sky-400/20">({resumZona?.total_pases_zona ?? pasesVigentes})</span>
                                                             </p>
                                                         </div>
                                                         {/* Grid adaptativo: 1 col móvil · 2 col tablet · 3 col PC */}
@@ -963,34 +963,34 @@ export default function EstacionamientosEntidad() {
                                                                     <div
                                                                         key={p.id || pi}
                                                                         className={cn(
-                                                                            "flex items-center gap-2 px-2 py-1.5 rounded-xl border group relative",
+                                                                            "flex items-center gap-2 px-2 py-1.5 rounded-xl border group relative shadow-sm",
                                                                             p.tiene_datos
-                                                                                ? 'bg-white/50 dark:bg-white/3 border-white/20 dark:border-white/5 hover:border-white/40 dark:hover:border-white/10'
-                                                                                : 'bg-warning/10 dark:bg-warning/5 border-warning/30 dark:border-warning/20 hover:border-warning/50 dark:hover:border-warning/30'
+                                                                                ? 'bg-white border-slate-200 dark:bg-white/3 dark:border-white/5 hover:border-slate-400 dark:hover:border-white/10'
+                                                                                : 'bg-amber-50 border-amber-200 dark:bg-warning/5 dark:border-warning/20 hover:border-amber-400 dark:hover:border-warning/30'
                                                                         )}
                                                                     >
                                                                         {/* Icono QR */}
-                                                                        <div className="w-5 h-5 rounded-lg bg-white/5 flex items-center justify-center shrink-0">
-                                                                            <QrCode size={10} className={p.tiene_datos ? 'text-text-muted/60' : 'text-warning/60'} />
+                                                                        <div className="w-5 h-5 rounded-lg bg-slate-100 dark:bg-white/5 flex items-center justify-center shrink-0 border border-slate-200 dark:border-white/5">
+                                                                            <QrCode size={10} className={p.tiene_datos ? 'text-slate-600 dark:text-text-muted/60' : 'text-amber-600 dark:text-warning/60'} />
                                                                         </div>
 
                                                                         {/* Contenido central */}
                                                                         <div className="flex-1 min-w-0">
                                                                             {p.tiene_datos ? (
                                                                                 <>
-                                                                                    <p className="text-[8px] font-black text-text-main uppercase truncate">
+                                                                                    <p className="text-[8px] font-black text-slate-900 dark:text-text-main uppercase truncate">
                                                                                         {p.nombre_portador || p.serial_legible}
                                                                                     </p>
-                                                                                    <p className="text-[7px] text-text-muted/60 font-mono truncate">
+                                                                                    <p className="text-[7px] text-slate-600 dark:text-text-muted/60 font-black font-mono truncate">
                                                                                         {p.cedula_portador ? `CI: ${p.cedula_portador} · ` : ''}{p.vehiculo_placa ? `🚗 ${p.vehiculo_placa}` : p.serial_legible}
                                                                                     </p>
                                                                                 </>
                                                                             ) : (
                                                                                 <>
-                                                                                    <p className="text-[7px] text-warning dark:text-warning/80 font-black flex items-center gap-1 uppercase">
+                                                                                    <p className="text-[7px] text-amber-700 dark:text-warning/80 font-black flex items-center gap-1 uppercase">
                                                                                         <AlertTriangle size={7} /> Sin identificar
                                                                                     </p>
-                                                                                    <p className="text-[7px] font-mono text-text-muted dark:text-text-muted/50 truncate">{p.serial_legible}</p>
+                                                                                    <p className="text-[7px] font-black font-mono text-slate-500 dark:text-text-muted/50 truncate uppercase">{p.serial_legible}</p>
                                                                                 </>
                                                                             )}
                                                                         </div>
