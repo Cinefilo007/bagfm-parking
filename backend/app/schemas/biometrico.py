@@ -1,6 +1,7 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from typing import Optional, List, Dict, Any
 from datetime import datetime
+from uuid import UUID
 
 class BiometricoOptionsRequest(BaseModel):
     """Solicitud inicial para registro o login."""
@@ -37,9 +38,9 @@ class WebAuthnLoginVerify(BaseModel):
 
 class CredencialBiometricaSchema(BaseModel):
     """Esquema para listar dispositivos registrados."""
-    id: str
+    id: UUID
     nombre_dispositivo: str
-    creado_en: datetime
+    creado_en: datetime = Field(validation_alias="created_at")
 
     class Config:
         from_attributes = True
