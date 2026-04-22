@@ -186,13 +186,18 @@ class PaseService:
             tentativo += 1
 
     async def calcular_ocupacion_proyectada(self, db: AsyncSession, zona_id: uuid.UUID, inicio: date, fin: date) -> int:
-        """Suma pases de lotes que se traslapan con el periodo solicitado."""
+        """Suma pases individuales que se traslapan con el periodo solicitado basándose en los QRs asignados."""
         from sqlalchemy import and_
-        query = select(func.sum(LotePaseMasivo.cantidad_pases)).where(
-            and_(
-                LotePaseMasivo.zona_estacionamiento_id == zona_id,
-                LotePaseMasivo.fecha_inicio <= fin,
-                LotePaseMasivo.fecha_fin >= inicio
+        query = (
+            select(func.count(CodigoQR.id))
+            .join(LotePaseMasivo, CodigoQR.lote_id == LotePaseMasivo.id)
+            .where(
+                and_(
+                    CodigoQR.zona_asignada_id == zona_id,
+                    CodigoQR.activo == True,
+                    LotePaseMasivo.fecha_inicio <= fin,
+                    LotePaseMasivo.fecha_fin >= inicio
+                )
             )
         )
         res = await db.execute(query)
@@ -368,21 +373,26 @@ class PaseService:
 
 
     async def calcular_ocupacion_por_tipo(self, db: AsyncSession, zona_id: uuid.UUID, tipo_acceso: str, tipo_acceso_custom_id: uuid.UUID, inicio: date, fin: date) -> int:
-        """Calcula pases del mismo tipo de acceso que se traslapan con el periodo en la zona."""
+        """Calcula pases exactos del mismo tipo de acceso que se traslapan con el periodo en la zona basándose en los QRs asignados."""
         from sqlalchemy import and_
         
         conditions = [
-            LotePaseMasivo.zona_estacionamiento_id == zona_id,
+            CodigoQR.zona_asignada_id == zona_id,
+            CodigoQR.activo == True,
             LotePaseMasivo.fecha_inicio <= fin,
             LotePaseMasivo.fecha_fin >= inicio,
         ]
         
         if tipo_acceso == 'custom' and tipo_acceso_custom_id:
-            conditions.append(LotePaseMasivo.tipo_acceso_custom_id == tipo_acceso_custom_id)
+            conditions.append(CodigoQR.tipo_acceso_custom_id == tipo_acceso_custom_id)
         else:
-            conditions.append(LotePaseMasivo.tipo_acceso == tipo_acceso)
+            conditions.append(CodigoQR.tipo_acceso == tipo_acceso)
         
-        query = select(func.sum(LotePaseMasivo.cantidad_pases)).where(and_(*conditions))
+        query = (
+            select(func.count(CodigoQR.id))
+            .join(LotePaseMasivo, CodigoQR.lote_id == LotePaseMasivo.id)
+            .where(and_(*conditions))
+        )
         res = await db.execute(query)
         return int(res.scalar() or 0)
 
