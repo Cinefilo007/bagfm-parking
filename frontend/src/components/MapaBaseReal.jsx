@@ -168,12 +168,12 @@ const MapaBaseReal = ({ situacion, onSelectEntity, assignmentMode, onMapClick, s
             center={center} 
             zoom={15.5} 
             minZoom={15}
-            maxZoom={20}
+            maxZoom={19}
             maxBounds={bounds}
             maxBoundsViscosity={1.0}
             scrollWheelZoom={true} 
             attributionControl={false}
-            className={`w-full h-full ${mapType === 'tactical' ? 'tactical-dark-inversion' : ''}`}
+            className="w-full h-full"
             style={{ background: isDarkMode ? '#0E1322' : '#F8FAFC', cursor: assignmentMode ? 'crosshair' : 'grab' }}
           >
             {mapType === 'satellite' ? (
@@ -191,10 +191,18 @@ const MapaBaseReal = ({ situacion, onSelectEntity, assignmentMode, onMapClick, s
                 />
               </>
             ) : (
-              <TileLayer
-                url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}"
-                maxZoom={19}
-              />
+              <>
+                <TileLayer
+                  url="https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}"
+                  maxZoom={19}
+                  maxNativeZoom={16}
+                />
+                <TileLayer
+                  url="https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Reference/MapServer/tile/{z}/{y}/{x}"
+                  maxZoom={19}
+                  maxNativeZoom={16}
+                />
+              </>
             )}
 
             <MapClickHandler onMapClick={onMapClick} assignmentMode={assignmentMode} />
