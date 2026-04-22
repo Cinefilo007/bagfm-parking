@@ -142,17 +142,17 @@ export default function Ajustes() {
   };
 
   return (
-    <div className="p-4 space-y-6 md:space-y-8 pb-32 animate-in fade-in slide-in-from-bottom-4 duration-500">
+    <div className="p-2 md:p-4 space-y-4 md:space-y-8 pb-32 animate-in fade-in slide-in-from-bottom-4 duration-500">
       
       {/* Header Visual de Perfil */}
       <section className="relative">
-        <div className="h-32 md:h-48 rounded-3xl bg-gradient-to-br from-primary/30 via-bg-low to-secondary/10 border border-white/5 overflow-hidden shadow-2xl">
+        <div className="h-28 md:h-48 rounded-3xl bg-gradient-to-br from-primary/30 via-bg-low to-secondary/10 border border-white/5 overflow-hidden shadow-2xl">
            <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-20" />
         </div>
 
-        <div className="max-w-4xl mx-auto px-6 -mt-16 relative z-10">
+        <div className="max-w-4xl mx-auto px-2 md:px-6 -mt-12 md:-mt-16 relative z-10">
           <Card className="bg-bg-low/80 backdrop-blur-2xl border-white/10 shadow-2xl overflow-visible">
-            <CardContent className="pt-0 pb-10 px-8">
+            <CardContent className="pt-0 pb-6 md:pb-10 px-4 md:px-8">
               <div className="flex flex-col items-center -mt-12 md:mt-[-4rem]">
                 <div className="relative group">
                   <div className="w-24 h-24 md:w-32 md:h-32 rounded-3xl bg-bg-app p-1 md:p-1.5 shadow-2xl group-hover:rotate-3 transition-transform duration-500 ring-4 ring-primary/20">
@@ -181,7 +181,7 @@ export default function Ajustes() {
               </div>
 
               {/* Grid de Información Actual (Expediente) */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6 mt-12">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3 md:gap-6 mt-8 md:mt-12">
                  <div className="p-3 md:p-4 rounded-2xl bg-bg-app/50 dark:bg-white/[0.02] border border-bg-high/20 dark:border-white/5 hover:border-primary/40 transition-colors group">
                     <p className="text-[9px] text-text-muted font-black uppercase tracking-widest opacity-60 mb-2">Identificación</p>
                     <div className="flex items-center gap-3">
@@ -228,7 +228,7 @@ export default function Ajustes() {
       </section>
 
       {/* Seguridad Invisible (Biometría) */}
-      <section className="max-w-4xl mx-auto px-6 space-y-4">
+      <section className="max-w-4xl mx-auto px-2 md:px-6 space-y-4">
         <p className="text-[10px] text-text-muted uppercase font-black tracking-[0.3em] opacity-40 ml-2">Seguridad Invisible</p>
         <Card className="bg-bg-low/40 border-white/5 backdrop-blur-md">
           <CardContent className="p-6">
@@ -290,7 +290,7 @@ export default function Ajustes() {
 
 
       {/* Cerrar Sesión (Estilo Botón Eliminar) */}
-      <section className="max-w-4xl mx-auto px-6 pt-4">
+      <section className="max-w-4xl mx-auto px-2 md:px-6 pt-4">
         <button 
           className="w-full h-14 bg-red-500 hover:bg-red-600 active:scale-[0.98] transition-all rounded-xl flex items-center justify-center gap-3 px-8 shadow-[0_10px_20px_-5px_rgba(239,68,68,0.4)] group border border-white/10"
           onClick={logout}
