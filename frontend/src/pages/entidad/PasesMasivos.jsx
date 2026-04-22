@@ -56,37 +56,39 @@ const PaseRow = ({ pase, zonas, onCompartir, onEmail, onEditar }) => {
             <div className="w-8 h-8 bg-primary/10 rounded-lg flex items-center justify-center border border-primary/15 shrink-0">
                 <QrCode size={15} className="text-primary" />
             </div>
-            <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2 flex-wrap">
-                    {pase.nombre_portador && (
-                        <p className="text-[10px] font-black text-text-main uppercase truncate">{pase.nombre_portador}</p>
-                    )}
-                    <span className="text-[8px] text-text-muted font-mono tracking-tighter bg-white/5 px-1.5 py-0.5 rounded border border-white/5">
+            <div className="flex-1 min-w-0 flex items-center gap-3">
+                {/* Info Principal: Portador y Serial */}
+                <div className="flex items-center gap-2 min-w-0">
+                    <span className="text-[10px] font-mono text-text-muted/60 tracking-tighter bg-white/5 px-1.5 py-0.5 rounded border border-white/5 shrink-0">
                         {pase.serial_legible}
                     </span>
-                    {pase.cedula_portador && (
-                        <span className="text-[8px] text-text-muted font-mono">{pase.cedula_portador}</span>
-                    )}
-                    {!pase.nombre_portador && (
-                        <p className="text-[9px] text-text-muted/50 italic">Sin asignar</p>
+                    {pase.nombre_portador ? (
+                        <p className="text-[10px] font-black text-text-main uppercase truncate max-w-[120px]">{pase.nombre_portador}</p>
+                    ) : (
+                        <p className="text-[9px] text-text-muted/50 italic shrink-0">Sin asignar</p>
                     )}
                 </div>
-                <div className="flex items-center gap-2 mt-1.5 flex-wrap">
+
+                {/* Placa y Zona (Visible si hay espacio) */}
+                <div className="hidden sm:flex items-center gap-2 min-w-0 overflow-hidden">
                     {pase.vehiculo_placa && (
-                        <div className="flex items-center gap-1.5 px-2 py-1 bg-white/5 rounded-lg border border-white/5 text-[9px] font-black text-primary">
-                            <Car size={10} /> {pase.vehiculo_placa}
+                        <div className="flex items-center gap-1 px-2 py-0.5 bg-white/5 rounded-lg border border-white/5 text-[8px] font-black text-primary shrink-0">
+                            <Car size={9} /> {pase.vehiculo_placa}
                         </div>
                     )}
                     
                     {(pase.puesto_asignado_codigo || pase.zona_asignada_nombre) && (
-                        <span className="text-[8px] font-bold text-success flex items-center gap-1 ml-auto bg-success/5 px-2 py-0.5 rounded-lg border border-success/20">
+                        <span className="text-[8px] font-bold text-success/80 flex items-center gap-1 bg-success/5 px-2 py-0.5 rounded-lg border border-success/10 truncate">
                             <ParkingSquare size={9} /> 
-                            {pase.puesto_asignado_codigo ? `PUESTO ${pase.puesto_asignado_codigo}` : (pase.zona_asignada_nombre || 'ZONA ASIGNADA')}
+                            {pase.puesto_asignado_codigo ? `PUESTO ${pase.puesto_asignado_codigo}` : (pase.zona_asignada_nombre || 'ZONA')}
                         </span>
                     )}
+                </div>
 
+                {/* Status (Empujado al final) */}
+                <div className="ml-auto flex items-center gap-2 shrink-0">
                     <span className={cn(
-                        "text-[7px] font-black uppercase px-1.5 py-0.5 rounded-full ml-auto",
+                        "text-[7px] font-black uppercase px-2 py-0.5 rounded-full",
                         pase.activo ? 'bg-success/15 text-success' : 'bg-text-muted/10 text-text-muted/50'
                     )}>
                         {pase.activo ? 'ACTIVO' : 'INACTIVO'}
@@ -734,7 +736,10 @@ const ModalNuevoLote = ({ isOpen, onClose, zonas, tiposCustom, onCreated }) => {
                             )}
                         </div>
                         <Input label="Máx. accesos por pase" type="number" value={form.max_accesos_por_pase}
-                            onChange={e => setForm({ ...form, max_accesos_por_pase: parseInt(e.target.value) || 1 })} />
+                            onChange={e => {
+                                const v = e.target.value === '' ? '' : parseInt(e.target.value) || 0;
+                                setForm({ ...form, max_accesos_por_pase: v === '' ? '' : Math.max(1, v) });
+                            }} />
                     </div>
                 </div>
                 </div>
