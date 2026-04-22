@@ -145,26 +145,25 @@ const MapaBaseReal = ({ situacion, onSelectEntity, assignmentMode, onMapClick, s
             center={center} 
             zoom={15} 
             minZoom={14}
-            maxZoom={20}
+            maxZoom={19}
             maxBounds={bounds}
             maxBoundsViscosity={1.0}
             scrollWheelZoom={true} 
             attributionControl={false}
-            className="w-full h-full"
+            className="w-full h-full tactical-map-filter"
             style={{ background: isDarkMode ? '#0E1322' : '#F8FAFC', cursor: assignmentMode ? 'crosshair' : 'grab' }}
           >
             <TileLayer
-              url="https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}"
-              maxZoom={20}
-              maxNativeZoom={16}
+              url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
+              maxZoom={19}
+              maxNativeZoom={18}
             />
-            {isDarkMode && (
-              <TileLayer
-                url="https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Reference/MapServer/tile/{z}/{y}/{x}"
-                maxZoom={20}
-                maxNativeZoom={16}
-              />
-            )}
+            <TileLayer
+              url="https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Reference/MapServer/tile/{z}/{y}/{x}"
+              maxZoom={19}
+              maxNativeZoom={18}
+              opacity={0.8}
+            />
 
             <MapClickHandler onMapClick={onMapClick} assignmentMode={assignmentMode} />
             <MapResizer isFullscreen={isFullscreen} />
