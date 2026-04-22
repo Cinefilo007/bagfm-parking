@@ -196,11 +196,11 @@ export default function Login() {
                   <div className="space-y-6">
                     <Boton 
                       type="button"
-                      className="w-full h-20 bg-primary/10 hover:bg-primary border border-primary/20 hover:border-primary text-primary hover:text-bg-app font-black uppercase tracking-widest text-xs flex flex-col justify-center items-center gap-2 transition-all group rounded-2xl"
+                      className="w-full h-14 bg-primary text-bg-app font-black uppercase tracking-widest text-xs flex justify-center items-center gap-2 transition-all group shadow-lg shadow-primary/20"
                       onClick={handleLoginBiometrico}
                       isLoading={loading}
                     >
-                      <Fingerprint size={32} className="group-hover:scale-110 transition-transform" />
+                      <Fingerprint size={20} className="group-hover:scale-110 transition-transform" />
                       Acceso Biométrico
                     </Boton>
                     
