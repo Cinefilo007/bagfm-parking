@@ -142,11 +142,11 @@ export default function Ajustes() {
   };
 
   return (
-    <div className="p-4 space-y-8 pb-32 animate-in fade-in slide-in-from-bottom-4 duration-500">
+    <div className="p-4 space-y-6 md:space-y-8 pb-32 animate-in fade-in slide-in-from-bottom-4 duration-500">
       
       {/* Header Visual de Perfil */}
       <section className="relative">
-        <div className="h-48 rounded-3xl bg-gradient-to-br from-primary/30 via-bg-low to-secondary/10 border border-white/5 overflow-hidden shadow-2xl">
+        <div className="h-32 md:h-48 rounded-3xl bg-gradient-to-br from-primary/30 via-bg-low to-secondary/10 border border-white/5 overflow-hidden shadow-2xl">
            <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-20" />
            <div className="absolute top-6 right-8">
               <span className="px-3 py-1 rounded-full bg-primary/10 text-primary text-[10px] font-black uppercase tracking-widest border border-primary/20 backdrop-blur-md">
@@ -158,11 +158,11 @@ export default function Ajustes() {
         <div className="max-w-4xl mx-auto px-6 -mt-16 relative z-10">
           <Card className="bg-bg-low/80 backdrop-blur-2xl border-white/10 shadow-2xl overflow-visible">
             <CardContent className="pt-0 pb-10 px-8">
-              <div className="flex flex-col items-center -mt-16">
+              <div className="flex flex-col items-center -mt-12 md:mt-[-4rem]">
                 <div className="relative group">
-                  <div className="w-32 h-32 rounded-3xl bg-bg-app p-1.5 shadow-2xl group-hover:rotate-3 transition-transform duration-500 ring-4 ring-primary/20">
+                  <div className="w-24 h-24 md:w-32 md:h-32 rounded-3xl bg-bg-app p-1 md:p-1.5 shadow-2xl group-hover:rotate-3 transition-transform duration-500 ring-4 ring-primary/20">
                     <div className="w-full h-full rounded-2xl bg-gradient-to-br from-primary/10 to-transparent flex items-center justify-center text-primary overflow-hidden relative border border-white/5">
-                      <User size={64} className="group-hover:scale-110 transition-transform duration-500 opacity-80" />
+                      <User size={48} className="md:w-16 md:h-16 group-hover:scale-110 transition-transform duration-500 opacity-80" />
                       {/* Badge de Seguridad */}
                       <div className="absolute bottom-2 right-2 w-6 h-6 bg-emerald-500 rounded-full border-2 border-bg-app flex items-center justify-center text-white">
                          <BadgeCheck size={14} />
@@ -172,7 +172,7 @@ export default function Ajustes() {
                 </div>
                 
                 <div className="mt-6 text-center">
-                  <h1 className="text-3xl font-black text-white uppercase tracking-tight italic">
+                  <h1 className="text-2xl md:text-3xl font-black text-white uppercase tracking-tight italic">
                     {user.nombre} {user.apellido}
                   </h1>
                   <div className="flex items-center justify-center gap-3 mt-2">
@@ -186,45 +186,45 @@ export default function Ajustes() {
               </div>
 
               {/* Grid de Información Actual (Expediente) */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-12">
-                 <div className="p-4 rounded-2xl bg-white/[0.02] border border-white/5 hover:border-primary/20 transition-colors group">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6 mt-12">
+                 <div className="p-3 md:p-4 rounded-2xl bg-bg-app/50 dark:bg-white/[0.02] border border-bg-high/20 dark:border-white/5 hover:border-primary/40 transition-colors group">
                     <p className="text-[9px] text-text-muted font-black uppercase tracking-widest opacity-60 mb-2">Identificación</p>
                     <div className="flex items-center gap-3">
                        <Fingerprint size={18} className="text-primary opacity-40 group-hover:opacity-100 transition-opacity" />
-                       <span className="text-sm font-mono font-bold text-white">{user.cedula}</span>
+                       <span className="text-sm font-mono font-bold text-text-main dark:text-white">{user.cedula}</span>
                     </div>
                  </div>
-                 <div className="p-4 rounded-2xl bg-white/[0.02] border border-white/5 hover:border-primary/20 transition-colors group">
+                 <div className="p-3 md:p-4 rounded-2xl bg-bg-app/50 dark:bg-white/[0.02] border border-bg-high/20 dark:border-white/5 hover:border-primary/40 transition-colors group">
                     <p className="text-[9px] text-text-muted font-black uppercase tracking-widest opacity-60 mb-2">Comunicación</p>
                     <div className="flex items-center gap-3">
                        <AtSign size={18} className="text-primary opacity-40 group-hover:opacity-100 transition-opacity" />
-                       <span className="text-sm font-bold text-white truncate">{user.email || 'SIN REGISTRO'}</span>
+                       <span className="text-sm font-bold text-text-main dark:text-white truncate">{user.email || 'SIN REGISTRO'}</span>
                     </div>
                  </div>
-                 <div className="p-4 rounded-2xl bg-white/[0.02] border border-white/5 hover:border-primary/20 transition-colors group">
+                 <div className="p-3 md:p-4 rounded-2xl bg-bg-app/50 dark:bg-white/[0.02] border border-bg-high/20 dark:border-white/5 hover:border-primary/40 transition-colors group">
                     <p className="text-[9px] text-text-muted font-black uppercase tracking-widest opacity-60 mb-2">Contacto Directo</p>
                     <div className="flex items-center gap-3">
                        <Smartphone size={18} className="text-primary opacity-40 group-hover:opacity-100 transition-opacity" />
-                       <span className="text-sm font-bold text-white">{user.telefono || 'SIN REGISTRO'}</span>
+                       <span className="text-sm font-bold text-text-main dark:text-white">{user.telefono || 'SIN REGISTRO'}</span>
                     </div>
                  </div>
               </div>
 
               {/* Botones de Acción */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-10">
+              <div className="flex flex-col md:flex-row justify-center items-center gap-4 mt-8 md:mt-10">
                  <Boton 
                     onClick={() => setActiveModal('perfil')}
-                    className="h-14 bg-primary/10 hover:bg-primary text-primary hover:text-bg-app border border-primary/20 font-black uppercase tracking-widest text-[11px] flex items-center justify-center gap-3 group transition-all"
+                    className="h-12 md:h-14 w-full md:max-w-[260px] bg-primary/10 hover:bg-primary text-primary hover:text-bg-app border border-primary/20 font-black uppercase tracking-widest text-[10px] md:text-[11px] flex items-center justify-center gap-3 group transition-all"
                  >
-                    <UserCog size={20} className="group-hover:rotate-12 transition-transform" />
+                    <UserCog size={18} className="group-hover:rotate-12 transition-transform" />
                     Actualizar Datos Personales
                  </Boton>
                  <Boton 
                     onClick={() => setActiveModal('password')}
-                    className="h-14 bg-danger/5 hover:bg-danger text-danger hover:text-white border border-danger/10 font-black uppercase tracking-widest text-[11px] flex items-center justify-center gap-3 group transition-all"
+                    className="h-12 md:h-14 w-full md:max-w-[260px] bg-danger/5 hover:bg-danger text-danger hover:text-white border border-danger/10 font-black uppercase tracking-widest text-[10px] md:text-[11px] flex items-center justify-center gap-3 group transition-all"
                  >
-                    <Lock size={20} className="group-hover:scale-110 transition-transform" />
-                    Cambiar Contraseña de Acceso
+                    <Lock size={18} className="group-hover:scale-110 transition-transform" />
+                    Seguridad de Acceso
                  </Boton>
               </div>
             </CardContent>
@@ -249,7 +249,7 @@ export default function Ajustes() {
               </div>
               <Boton 
                 variante="secundario" 
-                className="h-10 px-4 text-[10px] font-black uppercase tracking-widest border border-primary/20 hover:bg-primary/10 text-primary"
+                className="h-10 px-4 text-[10px] font-black uppercase tracking-widest border border-primary/30 hover:bg-primary/20 text-primary dark:text-primary backdrop-blur-sm"
                 onClick={() => setActiveModal('biometria')}
               >
                 <Plus size={16} className="mr-2" />
@@ -269,7 +269,7 @@ export default function Ajustes() {
                 </div>
               ) : (
                 dispositivos.map((disp, idx) => (
-                  <div key={disp.id} className="group flex items-center justify-between p-4 rounded-2xl bg-white/[0.02] border border-white/5 hover:border-primary/20 transition-all hover:translate-x-1">
+                  <div key={disp.id} className="group flex items-center justify-between p-4 rounded-2xl bg-bg-app/50 dark:bg-white/[0.02] border border-white/5 hover:border-primary/20 transition-all hover:translate-x-1">
                     <div className="flex items-center gap-4">
                       <div className="w-10 h-10 rounded-lg bg-bg-app border border-white/10 flex items-center justify-center text-text-muted group-hover:text-primary transition-colors">
                         <Smartphone size={18} />
@@ -294,45 +294,23 @@ export default function Ajustes() {
         </Card>
       </section>
 
-      {/* Accesos Rápidos Tácticos */}
-      {showEventos && (
-        <section className="max-w-4xl mx-auto px-6 space-y-4">
-          <p className="text-[10px] text-text-muted uppercase font-black tracking-[0.3em] opacity-40 ml-2">Protocolos de Mando Disponibles</p>
-          <NavLink to={eventosLink}>
-            <Card className="hover:bg-primary/5 border-white/5 transition-all group overflow-hidden relative active:scale-95 duration-300">
-              <div className="absolute top-0 right-0 p-4 text-primary/5 -rotate-12 group-hover:rotate-0 transition-all duration-700">
-                <CalendarRange size={150} />
-              </div>
-              <CardContent className="p-6 flex items-center justify-between relative">
-                <div className="flex items-center gap-6">
-                  <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center text-primary group-hover:rotate-6 transition-transform shadow-xl shadow-primary/5">
-                    <CalendarRange size={32} />
-                  </div>
-                  <div>
-                    <h4 className="text-lg font-black text-white uppercase tracking-tight italic">Panel de Eventos Masivos</h4>
-                    <p className="text-[11px] text-text-muted font-bold uppercase tracking-widest mt-1">Gestión de Autorizaciones FL-08</p>
-                  </div>
-                </div>
-                <ChevronRight size={28} className="text-text-muted group-hover:translate-x-2 transition-transform" />
-              </CardContent>
-            </Card>
-          </NavLink>
-        </section>
-      )}
 
-      {/* Cerrar Sesión */}
-      <section className="max-w-4xl mx-auto px-6">
-        <Boton 
-          variant="ghost" 
-          className="w-full h-16 border-white/5 text-text-muted hover:bg-danger/10 hover:text-danger group rounded-3xl flex items-center justify-between px-8 bg-bg-low/40"
+      {/* Cerrar Sesión (Botón de Pánico) */}
+      <section className="max-w-4xl mx-auto px-6 pt-4">
+        <button 
+          className="w-full h-16 bg-gradient-to-r from-red-600 to-red-700 hover:from-red-500 hover:to-red-600 active:scale-[0.98] transition-all rounded-2xl flex items-center justify-between px-8 shadow-[0_0_20px_rgba(220,38,38,0.3)] group border border-red-500/30"
           onClick={logout}
         >
-          <span className="flex items-center gap-4 font-black uppercase text-xs tracking-widest">
-            <LogOut size={22} className="group-hover:-translate-x-1 transition-transform" />
-            Finalizar Sesión Operativa
-          </span>
-          <ChevronRight size={24} />
-        </Boton>
+          <div className="flex items-center gap-4">
+            <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center backdrop-blur-sm group-hover:rotate-12 transition-transform">
+               <LogOut size={20} className="text-white" />
+            </div>
+            <span className="font-black uppercase text-xs tracking-[0.2em] text-white">
+              Finalizar Sesión Operativa
+            </span>
+          </div>
+          <ChevronRight size={24} className="text-white/50 group-hover:text-white group-hover:translate-x-1 transition-all" />
+        </button>
       </section>
 
       {/* --- MODALES --- */}
