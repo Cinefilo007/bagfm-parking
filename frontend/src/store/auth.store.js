@@ -1,5 +1,9 @@
 import { create } from 'zustand';
 import api from '../services/api';
+import { 
+  startRegistration, 
+  startAuthentication 
+} from '@simplewebauthn/browser';
 
 export const RolTipo = {
   COMANDANTE: "COMANDANTE",
@@ -55,6 +59,88 @@ export const useAuthStore = create((set) => ({
       return true;
     } catch (error) {
       console.error("Error en login", error);
+      throw error;
+    }
+  },
+
+  loginBiometrico: async (cedula) => {
+    try {
+      // 1. Obtener opciones del backend
+      const optionsRes = await api.post('biometrico/login-options', { cedula });
+      const options = optionsRes.data;
+
+      // 2. Iniciar autenticación en el navegador
+      const asseResp = await startAuthentication({ optionsJSON: options });
+
+      // 3. Verificar en el backend
+      const verifyRes = await api.post('biometrico/login-verify', {
+        cedula,
+        authentication_response: asseResp
+      });
+
+      const { access_token } = verifyRes.data;
+      
+      localStorage.setItem('token', access_token);
+      
+      const base64Url = access_token.split('.')[1];
+      const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+      const jsonPayload = decodeURIComponent(window.atob(base64).split('').map(function(c) {
+          return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+      }).join(''));
+      
+      const sessionUser = JSON.parse(jsonPayload);
+      localStorage.setItem('user', JSON.stringify(sessionUser));
+
+      set({ 
+        token: access_token, 
+        user: sessionUser, 
+        isAuthenticated: true 
+      });
+      return true;
+    } catch (error) {
+      console.error("Error en login biométrico", error);
+      throw error;
+    }
+  },
+
+  registrarDispositivoBiometrico: async (nombreDispositivo) => {
+    try {
+      // 1. Obtener opciones de registro
+      const optionsRes = await api.get('biometrico/registro-options');
+      const options = optionsRes.data;
+
+      // 2. Iniciar registro en el navegador
+      const attResp = await startRegistration({ optionsJSON: options });
+
+      // 3. Verificar en el backend
+      await api.post('biometrico/registro-verify', {
+        registration_response: attResp,
+        nombre_dispositivo: nombreDispositivo
+      });
+
+      return true;
+    } catch (error) {
+      console.error("Error al registrar dispositivo", error);
+      throw error;
+    }
+  },
+
+  getCredenciales: async () => {
+    try {
+      const response = await api.get('biometrico/credenciales');
+      return response.data;
+    } catch (error) {
+      console.error("Error al obtener credenciales", error);
+      throw error;
+    }
+  },
+
+  eliminarDispositivo: async (id) => {
+    try {
+      await api.delete(`biometrico/credenciales/${id}`);
+      return true;
+    } catch (error) {
+      console.error("Error al eliminar dispositivo", error);
       throw error;
     }
   },

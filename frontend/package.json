@@ -24,7 +24,8 @@
     "react-select": "^5.10.2",
     "tailwind-merge": "^3.5.0",
     "xlsx": "^0.18.5",
-    "zustand": "^5.0.12"
+    "zustand": "^5.0.12",
+    "@simplewebauthn/browser": "^10.0.0"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.4",

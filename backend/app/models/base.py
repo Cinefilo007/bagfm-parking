@@ -26,3 +26,5 @@ from app.models.mensaje_broadcast import MensajeBroadcast
 from app.models.vehiculo_pase import VehiculoPase
 from app.models.incentivo_parquero import IncentivoParquero
 from app.models.sancion_parquero import SancionParquero
+from app.models.credencial_biometrica import CredencialBiometrica
+from app.models.challenge_biometrico import ChallengeBiometrico

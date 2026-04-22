@@ -41,6 +41,11 @@ class Configuracion(BaseSettings):
     # Inteligencia Artificial
     gemini_api_key: str = ""
 
+    # WebAuthn / Biometría
+    webauthn_rp_id: str = "localhost" # Debería ser el dominio en producción
+    webauthn_rp_name: str = "BAGFM - Sistema Táctico"
+    webauthn_origin: str = "http://localhost:5173" # Debería ser la URL del frontend
+
     @property
     def cors_lista(self) -> list[str]:
         """Retorna la lista de orígenes CORS permitidos."""

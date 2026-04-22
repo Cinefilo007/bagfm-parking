@@ -1,9 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuthStore, RolTipo } from '../store/auth.store';
 import { 
   User, LogOut, Shield, Mail, BadgeCheck, Settings, 
   CalendarRange, ChevronRight, Phone, Lock, Save,
-  UserCog, Edit3, Key, Fingerprint, AtSign, Smartphone
+  UserCog, Edit3, Key, Fingerprint, AtSign, Smartphone,
+  Trash2, Plus, MonitorSmartphone
 } from 'lucide-react';
 import { Card, CardContent } from '../components/ui/Card';
 import { Boton } from '../components/ui/Boton';
@@ -12,10 +13,16 @@ import { NavLink } from 'react-router-dom';
 import toast from 'react-hot-toast';
 
 export default function Ajustes() {
-  const { user, logout, updatePerfil, cambiarPassword } = useAuthStore();
+  const { 
+    user, logout, updatePerfil, cambiarPassword, 
+    getCredenciales, registrarDispositivoBiometrico, eliminarDispositivo 
+  } = useAuthStore();
 
   // Estados para modales
-  const [activeModal, setActiveModal] = useState(null); // 'perfil', 'password'
+  const [activeModal, setActiveModal] = useState(null); // 'perfil', 'password', 'biometria'
+  const [dispositivos, setDispositivos] = useState([]);
+  const [loadingDispositivos, setLoadingDispositivos] = useState(false);
+  const [nombreNuevoDispositivo, setNombreNuevoDispositivo] = useState('');
 
   // Estados formularios
   const [perfilData, setPerfilData] = useState({
@@ -32,6 +39,52 @@ export default function Ajustes() {
   });
 
   const [isSaving, setIsSaving] = useState(false);
+
+  useEffect(() => {
+    cargarDispositivos();
+  }, []);
+
+  const cargarDispositivos = async () => {
+    setLoadingDispositivos(true);
+    try {
+      const data = await getCredenciales();
+      setDispositivos(data);
+    } catch (error) {
+      console.error("Error al cargar dispositivos", error);
+    } finally {
+      setLoadingDispositivos(false);
+    }
+  };
+
+  const handleRegistrarDispositivo = async (e) => {
+    e.preventDefault();
+    if (!nombreNuevoDispositivo) return toast.error('Asigna un nombre al dispositivo');
+    
+    setIsSaving(true);
+    try {
+      await registrarDispositivoBiometrico(nombreNuevoDispositivo);
+      toast.success('Dispositivo vinculado correctamente');
+      setNombreNuevoDispositivo('');
+      setActiveModal(null);
+      await cargarDispositivos();
+    } catch (error) {
+      toast.error('Error al registrar dispositivo');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleEliminarDispositivo = async (id) => {
+    if (!confirm('¿Seguro que deseas desvincular este dispositivo? Perderás el acceso rápido desde él.')) return;
+    
+    try {
+      await eliminarDispositivo(id);
+      toast.success('Dispositivo desvinculado');
+      await cargarDispositivos();
+    } catch (error) {
+      toast.error('Error al eliminar');
+    }
+  };
 
   if (!user) return null;
 
@@ -177,6 +230,68 @@ export default function Ajustes() {
             </CardContent>
           </Card>
         </div>
+      </section>
+
+      {/* Seguridad Invisible (Biometría) */}
+      <section className="max-w-4xl mx-auto px-6 space-y-4">
+        <p className="text-[10px] text-text-muted uppercase font-black tracking-[0.3em] opacity-40 ml-2">Seguridad Invisible</p>
+        <Card className="bg-bg-low/40 border-white/5 backdrop-blur-md">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center text-primary shadow-lg shadow-primary/5">
+                  <Fingerprint size={24} />
+                </div>
+                <div>
+                  <h4 className="text-sm font-black text-white uppercase tracking-tight italic">Acceso por Biometría</h4>
+                  <p className="text-[10px] text-text-muted font-bold uppercase tracking-widest mt-0.5">Dispositivos de Confianza Masivos</p>
+                </div>
+              </div>
+              <Boton 
+                variante="secundario" 
+                className="h-10 px-4 text-[10px] font-black uppercase tracking-widest border border-primary/20 hover:bg-primary/10 text-primary"
+                onClick={() => setActiveModal('biometria')}
+              >
+                <Plus size={16} className="mr-2" />
+                Vincular Nuevo
+              </Boton>
+            </div>
+
+            <div className="space-y-3">
+              {loadingDispositivos ? (
+                <div className="py-8 flex justify-center">
+                  <div className="w-6 h-6 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
+                </div>
+              ) : dispositivos.length === 0 ? (
+                <div className="py-10 text-center rounded-2xl border border-dashed border-white/5 bg-white/[0.01]">
+                   <MonitorSmartphone size={32} className="mx-auto text-text-muted opacity-20 mb-3" />
+                   <p className="text-[10px] text-text-muted font-bold uppercase tracking-widest">Sin dispositivos vinculados</p>
+                </div>
+              ) : (
+                dispositivos.map((disp, idx) => (
+                  <div key={disp.id} className="group flex items-center justify-between p-4 rounded-2xl bg-white/[0.02] border border-white/5 hover:border-primary/20 transition-all hover:translate-x-1">
+                    <div className="flex items-center gap-4">
+                      <div className="w-10 h-10 rounded-lg bg-bg-app border border-white/10 flex items-center justify-center text-text-muted group-hover:text-primary transition-colors">
+                        <Smartphone size={18} />
+                      </div>
+                      <div>
+                        <p className="text-xs font-bold text-white uppercase tracking-tight">{disp.nombre_dispositivo}</p>
+                        <p className="text-[9px] text-text-muted font-bold uppercase tracking-widest">Registrado: {new Date(disp.creado_en).toLocaleDateString()}</p>
+                      </div>
+                    </div>
+                    <button 
+                      onClick={() => handleEliminarDispositivo(disp.id)}
+                      className="p-2 text-text-muted hover:text-danger hover:bg-danger/10 rounded-lg transition-all"
+                      title="Eliminar Dispositivo"
+                    >
+                      <Trash2 size={16} />
+                    </button>
+                  </div>
+                ))
+              )}
+            </div>
+          </CardContent>
+        </Card>
       </section>
 
       {/* Accesos Rápidos Tácticos */}
@@ -356,6 +471,50 @@ export default function Ajustes() {
           >
             <Lock size={18} />
             {isSaving ? 'Cifrando...' : 'Actualizar Acceso'}
+          </Boton>
+        </form>
+      </Modal>
+
+      {/* Modal de Biometría */}
+      <Modal 
+        isOpen={activeModal === 'biometria'} 
+        onClose={closeModals} 
+        title="Vínculo de Seguridad Táctica"
+        className="max-w-md"
+      >
+        <form onSubmit={handleRegistrarDispositivo} className="space-y-6">
+          <div className="p-4 rounded-2xl bg-primary/5 border border-primary/20 mb-6">
+             <div className="flex gap-3">
+                <Shield size={20} className="text-primary shrink-0" />
+                <div>
+                   <p className="text-xs font-bold text-white uppercase mb-1">Protección WebAuthn (Passkeys)</p>
+                   <p className="text-[10px] text-text-muted leading-relaxed font-medium">Al vincular este dispositivo, el sistema solicitará tu huella, rostro o PIN local para acceder sin contraseñas. El proceso es invisible y seguro.</p>
+                </div>
+             </div>
+          </div>
+
+          <div className="space-y-2">
+             <label className="text-[10px] font-black text-text-muted uppercase tracking-widest ml-1">Nombre para este Dispositivo</label>
+             <div className="relative">
+                <MonitorSmartphone className="absolute left-4 top-1/2 -translate-y-1/2 text-text-muted" size={16} />
+                <input 
+                   type="text"
+                   placeholder="Ej: Mi iPhone 15, Laptop Oficina"
+                   className="w-full h-12 bg-bg-app border border-white/10 focus:border-primary rounded-xl pl-12 pr-4 text-sm font-bold text-white transition-all"
+                   value={nombreNuevoDispositivo}
+                   onChange={(e) => setNombreNuevoDispositivo(e.target.value)}
+                   required
+                />
+             </div>
+          </div>
+          
+          <Boton 
+            type="submit" 
+            className="w-full h-14 bg-primary text-bg-app font-black uppercase tracking-widest text-xs flex justify-center items-center gap-3 transition-all"
+            disabled={isSaving}
+          >
+            <Fingerprint size={18} />
+            {isSaving ? 'Vinculando Hardware...' : 'Activar Seguridad Invisible'}
           </Boton>
         </form>
       </Modal>

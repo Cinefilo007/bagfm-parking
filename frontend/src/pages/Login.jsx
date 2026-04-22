@@ -4,7 +4,8 @@ import { Boton } from '../components/ui/Boton';
 import { Input } from '../components/ui/Input';
 import { 
   ShieldCheck, 
-  Info 
+  Info,
+  Fingerprint
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-hot-toast';
@@ -18,6 +19,29 @@ export default function Login() {
   const { login, isLoading: isAuthLoading } = useAuthStore();
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+
+  const loginBiometrico = useAuthStore(state => state.loginBiometrico);
+
+  const handleLoginBiometrico = async () => {
+    if (!cedula) {
+      setErrorLocal('Ingresa tu cédula para iniciar acceso biométrico');
+      toast.error('Se requiere la cédula para identificar el dispositivo');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      await loginBiometrico(cedula.trim());
+      navigate('/');
+      toast.success('Acceso biométrico concedido');
+    } catch (err) {
+      const msg = err.response?.data?.detail || 'Error en autenticación biométrica.';
+      setErrorLocal(msg);
+      toast.error(msg);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -93,6 +117,17 @@ export default function Login() {
               isLoading={loading}
             >
               Iniciar Sesión
+            </Boton>
+
+            <Boton 
+              type="button"
+              variante="secundario"
+              className="w-full group"
+              onClick={handleLoginBiometrico}
+              disabled={loading}
+            >
+              <Fingerprint className="mr-2 group-hover:text-primary transition-colors" size={18} />
+              Acceso Biométrico
             </Boton>
             
             {errorLocal && (
