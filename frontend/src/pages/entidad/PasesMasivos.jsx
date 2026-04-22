@@ -649,9 +649,12 @@ const ModalNuevoLote = ({ isOpen, onClose, zonas, tiposCustom, onCreated }) => {
     };
 
     return (
-        <Modal isOpen={isOpen} onClose={onClose} title="NUEVO LOTE DE PASES">
-            <div className="space-y-6">
-                {/* Tipo de pase */}
+        <Modal isOpen={isOpen} onClose={onClose} title="NUEVO LOTE DE PASES" className="max-w-4xl w-[95vw]">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-x-8 gap-y-6">
+                
+                {/* ══ COLUMNA IZQUIERDA ══ */}
+                <div className="space-y-6">
+                    {/* Tipo de pase */}
                 <div>
                     <label className="text-[10px] font-black text-text-muted/60 uppercase tracking-widest block mb-3">1. Selecciona el Tipo de Pase</label>
                     <div className="grid grid-cols-3 gap-2">
@@ -733,9 +736,13 @@ const ModalNuevoLote = ({ isOpen, onClose, zonas, tiposCustom, onCreated }) => {
                         <Input label="Máx. accesos por pase" type="number" value={form.max_accesos_por_pase}
                             onChange={e => setForm({ ...form, max_accesos_por_pase: parseInt(e.target.value) || 1 })} />
                     </div>
+                </div>
+                </div>
 
+                {/* ══ COLUMNA DERECHA ══ */}
+                <div className="space-y-6 flex flex-col h-full">
                     {/* Asignación táctica zona/puesto */}
-                    <div className="space-y-4 pt-2">
+                    <div className="space-y-4">
                         <SelectTactivo 
                             label="Zona de Estacionamiento"
                             icon={<MapPin size={10} className="text-primary" />}
@@ -944,20 +951,21 @@ const ModalNuevoLote = ({ isOpen, onClose, zonas, tiposCustom, onCreated }) => {
                             </div>
                         </div>
                     )}
+                    {/* Botones de acción al final de la columna derecha */}
+                    <div className="flex items-center gap-3 pt-6 mt-auto border-t border-white/5">
+                        <Boton variant="ghost" className="flex-1 h-14 bg-white/5 border-white/5 hover:bg-white/10 text-[11px] font-black uppercase rounded-xl transition-all" onClick={onClose}>Cancelar</Boton>
+                        <Boton onClick={handleSubmit} disabled={guardando || bloqueado}
+                            className={cn(
+                                "flex-[2] h-14 font-black uppercase tracking-widest text-[11px] rounded-xl transition-all",
+                                bloqueado 
+                                    ? 'bg-red-500/20 text-red-400 border border-red-500/30 cursor-not-allowed opacity-70' 
+                                    : 'bg-primary text-bg-app shadow-tactica hover:scale-[1.02]'
+                            )}>
+                            {guardando ? <RefreshCw size={16} className="animate-spin" /> : bloqueado ? <><XCircle size={15} /> BLOQUEADO</> : <><Plus size={15} /> Crear Lote</>}
+                        </Boton>
+                    </div>
                 </div>
 
-                <div className="flex gap-3 pt-4">
-                    <Boton variant="ghost" className="flex-1 h-11 text-[11px] rounded-xl" onClick={onClose}>Cancelar</Boton>
-                    <Boton onClick={handleSubmit} disabled={guardando || bloqueado}
-                        className={cn(
-                            "flex-[2] h-14 font-black uppercase tracking-widest text-[11px] rounded-xl transition-all",
-                            bloqueado 
-                                ? 'bg-red-500/20 text-red-400 border border-red-500/30 cursor-not-allowed opacity-70' 
-                                : 'bg-primary text-bg-app shadow-tactica hover:scale-[1.02]'
-                        )}>
-                        {guardando ? <RefreshCw size={16} className="animate-spin" /> : bloqueado ? <><XCircle size={15} /> BLOQUEADO</> : <><Plus size={15} /> Crear Lote</>}
-                    </Boton>
-                </div>
             </div>
         </Modal>
     );
