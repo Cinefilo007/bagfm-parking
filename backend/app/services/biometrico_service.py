@@ -71,7 +71,7 @@ class BiometricoService:
         # Guardar el challenge en la base de datos para verificación posterior
         nuevo_challenge = ChallengeBiometrico(
             usuario_id=usuario.id,
-            challenge=opciones.challenge,
+            challenge=bytes_to_base64url(opciones.challenge),
             tipo='registro',
             expires_at=datetime.now(timezone.utc) + timedelta(minutes=5)
         )
@@ -99,7 +99,7 @@ class BiometricoService:
         try:
             verificacion = verify_registration_response(
                 credential=parse_registration_credential_json(datos.registration_response),
-                expected_challenge=challenge_db.challenge,
+                expected_challenge=base64url_to_bytes(challenge_db.challenge),
                 expected_origin=config.webauthn_origin,
                 expected_rp_id=config.webauthn_rp_id,
             )
@@ -156,7 +156,7 @@ class BiometricoService:
         # Guardar challenge
         nuevo_challenge = ChallengeBiometrico(
             usuario_id=usuario.id,
-            challenge=opciones.challenge,
+            challenge=bytes_to_base64url(opciones.challenge),
             tipo='login',
             expires_at=datetime.now(timezone.utc) + timedelta(minutes=5)
         )
@@ -203,7 +203,7 @@ class BiometricoService:
         try:
             verificacion = verify_authentication_response(
                 credential=parse_authentication_credential_json(datos.authentication_response),
-                expected_challenge=challenge_db.challenge,
+                expected_challenge=base64url_to_bytes(challenge_db.challenge),
                 expected_origin=config.webauthn_origin,
                 expected_rp_id=config.webauthn_rp_id,
                 credential_public_key=cred_db.public_key,
