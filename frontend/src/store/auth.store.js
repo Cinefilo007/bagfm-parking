@@ -76,7 +76,14 @@ export const useAuthStore = create((set) => ({
       const options = optionsRes.data;
 
       // 2. Iniciar autenticación en el navegador
-      const asseResp = await startAuthentication({ optionsJSON: options });
+      let asseResp;
+      try {
+        console.log("BAGFM: Intentando autenticación formato v10+");
+        asseResp = await startAuthentication({ optionsJSON: options });
+      } catch (e) {
+        console.warn("BAGFM: Fallo formato v10+, intentando v9-", e);
+        asseResp = await startAuthentication(options);
+      }
 
       // 3. Verificar en el backend
       const verifyRes = await api.post('biometrico/login-verify', {
@@ -127,13 +134,20 @@ export const useAuthStore = create((set) => ({
       // 2. Iniciar registro en el navegador
       console.log("WebAuthn Registro Options:", options);
       
-      // Validación profunda antes de llamar a la librería
+      // Validación profunda
       if (!options.challenge || !options.user || !options.user.id) {
-        console.error("Opciones de registro incompletas:", options);
-        throw new Error("El servidor envió datos incompletos para el registro biométrico");
+        throw new Error("Datos incompletos para el registro biométrico");
       }
 
-      const attResp = await startRegistration({ optionsJSON: options });
+      let attResp;
+      try {
+        console.log("BAGFM: Intentando registro formato v10+");
+        attResp = await startRegistration({ optionsJSON: options });
+      } catch (e) {
+        console.warn("BAGFM: Fallo formato v10+, intentando v9-", e);
+        // Fallback para versiones antiguas
+        attResp = await startRegistration(options);
+      }
 
       // 3. Verificar en el backend
       await api.post('biometrico/registro-verify', {

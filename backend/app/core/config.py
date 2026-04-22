@@ -42,9 +42,9 @@ class Configuracion(BaseSettings):
     gemini_api_key: str = ""
 
     # WebAuthn / Biometría
-    webauthn_rp_id: str = "localhost" # Debería ser el dominio en producción
+    webauthn_rp_id: str = "bagfm-frontend-production.up.railway.app"
     webauthn_rp_name: str = "BAGFM - Sistema Táctico"
-    webauthn_origin: str = "http://localhost:5173" # Debería ser la URL del frontend
+    webauthn_origin: str = "https://bagfm-frontend-production.up.railway.app"
 
     @property
     def cors_lista(self) -> list[str]:
