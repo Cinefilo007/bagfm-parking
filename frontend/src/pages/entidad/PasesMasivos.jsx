@@ -649,7 +649,7 @@ const ModalNuevoLote = ({ isOpen, onClose, zonas, tiposCustom, onCreated }) => {
     };
 
     return (
-        <Modal isOpen={isOpen} onClose={onClose} title="NUEVO LOTE DE PASES" className="max-w-7xl w-[95vw]">
+        <Modal isOpen={isOpen} onClose={onClose} title="NUEVO LOTE DE PASES" className="max-w-4xl w-[95vw]">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-x-8 gap-y-6">
                 
                 {/* ══ COLUMNA IZQUIERDA ══ */}
