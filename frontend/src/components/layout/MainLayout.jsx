@@ -20,7 +20,7 @@ export const MainLayout = ({ hideNav: forceHideNav = false }) => {
 
        {/* Contenedor Principal Adaptativo */}
        <main className={`flex-1 flex flex-col ${!finalHideBottom ? 'pb-20 lg:pb-0' : ''} h-screen overflow-hidden`}>
-          <div className="flex-1 overflow-y-auto w-full no-scrollbar bg-bg-app relative z-0">
+          <div className="flex-1 overflow-y-auto w-full no-scrollbar bg-bg-app relative">
              {/* Renderizado de la Página */}
              <Outlet />
           </div>
