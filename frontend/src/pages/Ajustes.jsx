@@ -148,11 +148,6 @@ export default function Ajustes() {
       <section className="relative">
         <div className="h-32 md:h-48 rounded-3xl bg-gradient-to-br from-primary/30 via-bg-low to-secondary/10 border border-white/5 overflow-hidden shadow-2xl">
            <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-20" />
-           <div className="absolute top-6 right-8">
-              <span className="px-3 py-1 rounded-full bg-primary/10 text-primary text-[10px] font-black uppercase tracking-widest border border-primary/20 backdrop-blur-md">
-                 Sistema Operativo v4.2
-              </span>
-           </div>
         </div>
 
         <div className="max-w-4xl mx-auto px-6 -mt-16 relative z-10">
@@ -214,14 +209,14 @@ export default function Ajustes() {
               <div className="flex flex-col md:flex-row justify-center items-center gap-4 mt-8 md:mt-10">
                  <Boton 
                     onClick={() => setActiveModal('perfil')}
-                    className="h-12 md:h-14 w-full md:max-w-[260px] bg-primary/10 hover:bg-primary text-primary hover:text-bg-app border border-primary/20 font-black uppercase tracking-widest text-[10px] md:text-[11px] flex items-center justify-center gap-3 group transition-all"
+                    className="h-12 md:h-14 w-full md:max-w-[260px] bg-primary hover:bg-primary-dark text-bg-app border border-white/10 font-bold uppercase tracking-[0.1em] text-[10px] md:text-[11px] flex items-center justify-center gap-3 group transition-all shadow-[0_10px_20px_-5px_rgba(16,185,129,0.3)] hover:shadow-[0_15px_25px_-5px_rgba(16,185,129,0.4)]"
                  >
                     <UserCog size={18} className="group-hover:rotate-12 transition-transform" />
-                    Actualizar Datos Personales
+                    Actualizar Perfil
                  </Boton>
                  <Boton 
                     onClick={() => setActiveModal('password')}
-                    className="h-12 md:h-14 w-full md:max-w-[260px] bg-danger/5 hover:bg-danger text-danger hover:text-white border border-danger/10 font-black uppercase tracking-widest text-[10px] md:text-[11px] flex items-center justify-center gap-3 group transition-all"
+                    className="h-12 md:h-14 w-full md:max-w-[260px] bg-[#252a3d] hover:bg-[#2f3448] text-white border border-white/5 font-bold uppercase tracking-[0.1em] text-[10px] md:text-[11px] flex items-center justify-center gap-3 group transition-all shadow-xl"
                  >
                     <Lock size={18} className="group-hover:scale-110 transition-transform" />
                     Seguridad de Acceso
@@ -237,7 +232,7 @@ export default function Ajustes() {
         <p className="text-[10px] text-text-muted uppercase font-black tracking-[0.3em] opacity-40 ml-2">Seguridad Invisible</p>
         <Card className="bg-bg-low/40 border-white/5 backdrop-blur-md">
           <CardContent className="p-6">
-            <div className="flex items-center justify-between mb-6">
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mb-6">
               <div className="flex items-center gap-4">
                 <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center text-primary shadow-lg shadow-primary/5">
                   <Fingerprint size={24} />
@@ -248,8 +243,7 @@ export default function Ajustes() {
                 </div>
               </div>
               <Boton 
-                variante="secundario" 
-                className="h-10 px-4 text-[10px] font-black uppercase tracking-widest border border-primary/30 hover:bg-primary/20 text-primary dark:text-primary backdrop-blur-sm"
+                className="h-10 px-6 text-[10px] font-black uppercase tracking-widest bg-primary text-bg-app border border-white/10 hover:bg-primary-dark transition-all shadow-lg shadow-primary/20 w-full sm:w-auto"
                 onClick={() => setActiveModal('biometria')}
               >
                 <Plus size={16} className="mr-2" />
@@ -295,21 +289,16 @@ export default function Ajustes() {
       </section>
 
 
-      {/* Cerrar Sesión (Botón de Pánico) */}
+      {/* Cerrar Sesión (Estilo Botón Eliminar) */}
       <section className="max-w-4xl mx-auto px-6 pt-4">
         <button 
-          className="w-full h-16 bg-gradient-to-r from-red-600 to-red-700 hover:from-red-500 hover:to-red-600 active:scale-[0.98] transition-all rounded-2xl flex items-center justify-between px-8 shadow-[0_0_20px_rgba(220,38,38,0.3)] group border border-red-500/30"
+          className="w-full h-14 bg-red-500 hover:bg-red-600 active:scale-[0.98] transition-all rounded-xl flex items-center justify-center gap-3 px-8 shadow-[0_10px_20px_-5px_rgba(239,68,68,0.4)] group border border-white/10"
           onClick={logout}
         >
-          <div className="flex items-center gap-4">
-            <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center backdrop-blur-sm group-hover:rotate-12 transition-transform">
-               <LogOut size={20} className="text-white" />
-            </div>
-            <span className="font-black uppercase text-xs tracking-[0.2em] text-white">
-              Finalizar Sesión Operativa
-            </span>
-          </div>
-          <ChevronRight size={24} className="text-white/50 group-hover:text-white group-hover:translate-x-1 transition-all" />
+          <LogOut size={18} className="text-white" />
+          <span className="font-bold uppercase text-[11px] tracking-[0.1em] text-white">
+            Finalizar Sesión Operativa
+          </span>
         </button>
       </section>
 
