@@ -78,71 +78,71 @@ const ZonaRow = ({ zona, entidades, asignaciones, onEditar, onEliminar, onGestio
 
     return (
         <div className="bg-bg-card/40 border border-white/5 rounded-2xl overflow-hidden transition-all">
-            {/* Cabecera de la zona */}
-            <div className="flex items-center gap-3 p-4">
-                <button
-                    onClick={() => setExpandida(!expandida)}
-                    className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center hover:bg-white/10 transition-all shrink-0"
-                >
-                    <ChevronDown size={16} className={cn("text-text-muted transition-transform", expandida && "rotate-180")} />
-                </button>
-                <div className="w-10 h-10 bg-primary/10 rounded-xl flex items-center justify-center border border-primary/20 shrink-0">
-                    <ParkingSquare size={18} className="text-primary" />
-                </div>
-                <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2">
-                        <h3 className="text-sm font-black text-text-main uppercase tracking-tight truncate">{zona.nombre}</h3>
-                        {zona.es_perimetral && (
-                            <span className="text-[7px] font-black bg-sky-500/15 text-sky-400 px-1.5 py-0.5 rounded-full border border-sky-500/20 uppercase">
-                                Perim.
-                            </span>
-                        )}
+            {/* Cabecera de la zona (Responsiva) */}
+            <div className="p-4 flex flex-col sm:flex-row sm:items-center gap-4">
+                {/* Bloque 1: Identificación y Nombre */}
+                <div className="flex items-center gap-3 flex-1 min-w-0">
+                    <button
+                        onClick={() => setExpandida(!expandida)}
+                        className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center hover:bg-white/10 transition-all shrink-0"
+                    >
+                        <ChevronDown size={16} className={cn("text-text-muted transition-transform", expandida && "rotate-180")} />
+                    </button>
+                    <div className="w-10 h-10 bg-primary/10 rounded-xl flex items-center justify-center border border-primary/20 shrink-0">
+                        <ParkingSquare size={18} className="text-primary" />
                     </div>
-                    <div className="flex items-center gap-3 mt-0.5">
-                        <span className="text-[9px] text-text-muted flex items-center gap-1">
-                            <Hash size={9} /> Cap: {zona.capacidad_total || '∞'}
-                        </span>
-                        {zona.tiempo_limite_llegada_min && (
-                            <span className="text-[9px] text-text-muted flex items-center gap-1">
-                                <Clock size={9} /> {zona.tiempo_limite_llegada_min} min
+                    <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                            <h3 className="text-sm font-black text-text-main uppercase tracking-tight truncate">{zona.nombre}</h3>
+                            {zona.es_perimetral && (
+                                <span className="text-[7px] font-black bg-sky-500/15 text-sky-400 px-1.5 py-0.5 rounded-full border border-sky-500/20 uppercase">
+                                    Perim.
+                                </span>
+                            )}
+                        </div>
+                        <div className="flex items-center gap-3 mt-0.5 opacity-60">
+                            <span className="text-[8px] text-text-muted flex items-center gap-1">
+                                <Hash size={9} /> Cap: {zona.capacidad_total || '∞'}
                             </span>
-                        )}
-                        {zona.latitud && (
-                            <span className="text-[9px] text-text-muted flex items-center gap-1">
-                                <MapPin size={9} /> GPS
-                            </span>
-                        )}
+                            {zona.tiempo_limite_llegada_min && (
+                                <span className="text-[8px] text-text-muted flex items-center gap-1">
+                                    <Clock size={9} /> {zona.tiempo_limite_llegada_min} min
+                                </span>
+                            )}
+                        </div>
                     </div>
                 </div>
 
-                <div className="hidden sm:flex items-center gap-4 px-4 border-l border-white/5">
-                    <StatBadge valor={puestosLibres} label="Libres" color="text-success" />
-                    <StatBadge valor={puestosOcupados} label="Ocup." color="text-danger" />
-                    <StatBadge valor={puestosReservados} label="Reserv." color="text-warning" />
-                </div>
+                {/* Bloque 2: Indicadores (KPIs internos) y Botones de Acción */}
+                <div className="flex items-center justify-between sm:justify-end gap-2 sm:gap-4 md:pl-4 sm:border-l border-white/5">
+                    <div className="flex items-center gap-3 pr-2 sm:pr-0">
+                        <StatBadge valor={puestosLibres} label="Lib." color="text-success" />
+                        <StatBadge valor={puestosOcupados} label="Ocu." color="text-danger" />
+                        <StatBadge valor={puestosReservados} label="Res." color="text-warning" />
+                    </div>
 
-                {/* Acciones */}
-                <div className="flex items-center gap-1 shrink-0">
-                    <button onClick={() => onAsignar(zona)} title="Asignar puestos a entidad"
-                        className="p-2 rounded-lg hover:bg-primary/10 text-text-muted hover:text-primary transition-all">
-                        <Building2 size={15} />
-                    </button>
-                    <button onClick={() => onAjustarTiempo(zona)} title="Ajustar tiempo límite"
-                        className="p-2 rounded-lg hover:bg-warning/10 text-text-muted hover:text-warning transition-all">
-                        <Timer size={15} />
-                    </button>
-                    <button onClick={() => onGestionarPuestos(zona)} title="Gestionar puestos"
-                        className="p-2 rounded-lg hover:bg-sky-500/10 text-text-muted hover:text-sky-400 transition-all">
-                        <LayoutGrid size={15} />
-                    </button>
-                    <button onClick={() => onEditar(zona)} title="Editar zona"
-                        className="p-2 rounded-lg hover:bg-white/10 text-text-muted hover:text-text-main transition-all">
-                        <Edit3 size={15} />
-                    </button>
-                    <button onClick={() => onEliminar(zona)} title="Eliminar zona"
-                        className="p-2 rounded-lg hover:bg-danger/10 text-text-muted/40 hover:text-danger transition-all">
-                        <Trash2 size={15} />
-                    </button>
+                    <div className="flex items-center gap-0.5 bg-white/5 sm:bg-transparent p-1 sm:p-0 rounded-xl">
+                        <button onClick={() => onAsignar(zona)} title="Asignar"
+                            className="p-2 rounded-lg hover:bg-primary/10 text-text-muted hover:text-primary transition-all">
+                            <Building2 size={14} />
+                        </button>
+                        <button onClick={() => onAjustarTiempo(zona)} title="Tiempo"
+                            className="p-2 rounded-lg hover:bg-warning/10 text-text-muted hover:text-warning transition-all">
+                            <Timer size={14} />
+                        </button>
+                        <button onClick={() => onGestionarPuestos(zona)} title="Puestos"
+                            className="p-2 rounded-lg hover:bg-sky-500/10 text-text-muted hover:text-sky-400 transition-all">
+                            <LayoutGrid size={14} />
+                        </button>
+                        <button onClick={() => onEditar(zona)} title="Editar"
+                            className="p-2 rounded-lg hover:bg-white/10 text-text-muted hover:text-text-main transition-all">
+                            <Edit3 size={14} />
+                        </button>
+                        <button onClick={() => onEliminar(zona)} title="Eliminar"
+                            className="p-2 rounded-lg hover:bg-danger/10 text-text-muted/40 hover:text-danger transition-all">
+                            <Trash2 size={14} />
+                        </button>
+                    </div>
                 </div>
             </div>
 
@@ -569,7 +569,7 @@ export default function GestionZonas() {
             </header>
 
             {/* KPIs */}
-            <div className="grid grid-cols-4 gap-3">
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
                 {[
                     { label: 'Zonas Activas', valor: zonas.length, color: 'text-primary', icon: ParkingSquare },
                     { label: 'Cap. Total', valor: totalCapacidad || '—', color: 'text-success', icon: Hash },
@@ -577,7 +577,7 @@ export default function GestionZonas() {
                     { label: 'Reservados', valor: totalReservados, color: 'text-warning', icon: Shield },
 
                 ].map(s => (
-                    <Card key={s.label} className="p-4 rounded-2xl border-white/5 flex items-center gap-3">
+                    <Card key={s.label} className="p-3 md:p-4 rounded-2xl border-white/5 flex items-center gap-3">
                         <div className="w-9 h-9 bg-white/5 rounded-xl flex items-center justify-center shrink-0">
                             <s.icon size={18} className={s.color} />
                         </div>
