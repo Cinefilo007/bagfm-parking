@@ -119,10 +119,12 @@ function MapResizer({ isFullscreen }) {
 
 const MapaBaseReal = ({ situacion, onSelectEntity, assignmentMode, onMapClick, selectedForMove, isFullscreen }) => {
   const { isDarkMode } = useThemeStore();
+  const [mapType, setMapType] = React.useState('satellite'); // 'satellite' | 'tactical'
+
   const center = [10.4851, -66.8436]; 
   const bounds = [
-    [10.46, -66.88],
-    [10.51, -66.80]
+    [10.475, -66.862],
+    [10.498, -66.825]
   ];
 
   const hasCoords = (item) => {
@@ -133,9 +135,30 @@ const MapaBaseReal = ({ situacion, onSelectEntity, assignmentMode, onMapClick, s
     <div className="w-full h-full bg-bg-app relative flex flex-col gap-4">
       <div className="flex-1 min-h-[400px] border border-white/5 rounded-2xl shadow-tactica overflow-hidden relative z-0">
           
+          {/* Selector de Capas Tácticas */}
+          <div className="absolute top-4 right-4 z-[1000] flex flex-col gap-2">
+              <button 
+                onClick={() => setMapType(mapType === 'satellite' ? 'tactical' : 'satellite')}
+                className="p-3 bg-bg-modal/80 backdrop-blur-xl border border-white/10 rounded-xl shadow-2xl hover:bg-primary/20 hover:border-primary/40 transition-all group"
+                title={mapType === 'satellite' ? 'Cambiar a Vista Táctica' : 'Cambiar a Vista Satelital'}
+              >
+                  {mapType === 'satellite' ? (
+                    <div className="flex items-center gap-2">
+                       <Shield size={18} className="text-primary group-hover:scale-110 transition-transform"/>
+                       <span className="text-[10px] font-black uppercase tracking-widest text-text-main pr-1">TÁCTICA</span>
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-2">
+                       <Target size={18} className="text-warning group-hover:scale-110 transition-transform"/>
+                       <span className="text-[10px] font-black uppercase tracking-widest text-text-main pr-1">MISIÓN</span>
+                    </div>
+                  )}
+              </button>
+          </div>
+
           {/* Capas de Feedback Visual modo asignación */}
           {assignmentMode && (
-             <div className="absolute top-4 right-4 z-[1000] bg-warning/90 backdrop-blur-md px-4 py-2 rounded-lg border border-warning shadow-[0_0_20px_rgba(245,158,11,0.3)] flex items-center gap-3 animate-pulse">
+             <div className="absolute top-4 left-16 z-[1000] bg-warning/90 backdrop-blur-md px-4 py-2 rounded-lg border border-warning shadow-[0_0_20px_rgba(245,158,11,0.3)] flex items-center gap-3 animate-pulse">
                 <Crosshair size={18} className="text-bg-app animate-spin" />
                 <span className="text-[10px] font-black text-bg-app uppercase tracking-widest leading-none">Modo Georreferencia Activo: Haz clic en el mapa</span>
              </div>
@@ -143,27 +166,36 @@ const MapaBaseReal = ({ situacion, onSelectEntity, assignmentMode, onMapClick, s
 
           <MapContainer 
             center={center} 
-            zoom={15} 
-            minZoom={14}
+            zoom={15.5} 
+            minZoom={15}
             maxZoom={19}
             maxBounds={bounds}
             maxBoundsViscosity={1.0}
             scrollWheelZoom={true} 
             attributionControl={false}
-            className="w-full h-full tactical-map-filter"
+            className="w-full h-full"
             style={{ background: isDarkMode ? '#0E1322' : '#F8FAFC', cursor: assignmentMode ? 'crosshair' : 'grab' }}
           >
-            <TileLayer
-              url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
-              maxZoom={19}
-              maxNativeZoom={18}
-            />
-            <TileLayer
-              url="https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Reference/MapServer/tile/{z}/{y}/{x}"
-              maxZoom={19}
-              maxNativeZoom={18}
-              opacity={0.8}
-            />
+            {mapType === 'satellite' ? (
+              <>
+                <TileLayer
+                  url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
+                  maxZoom={19}
+                  maxNativeZoom={18}
+                />
+                <TileLayer
+                  url="https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Reference/MapServer/tile/{z}/{y}/{x}"
+                  maxZoom={19}
+                  maxNativeZoom={18}
+                  opacity={0.8}
+                />
+              </>
+            ) : (
+              <TileLayer
+                url="https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}"
+                maxZoom={19}
+              />
+            )}
 
             <MapClickHandler onMapClick={onMapClick} assignmentMode={assignmentMode} />
             <MapResizer isFullscreen={isFullscreen} />
