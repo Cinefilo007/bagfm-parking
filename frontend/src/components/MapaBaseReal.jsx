@@ -168,32 +168,32 @@ const MapaBaseReal = ({ situacion, onSelectEntity, assignmentMode, onMapClick, s
             center={center} 
             zoom={15.5} 
             minZoom={15}
-            maxZoom={19}
+            maxZoom={20}
             maxBounds={bounds}
             maxBoundsViscosity={1.0}
             scrollWheelZoom={true} 
             attributionControl={false}
-            className="w-full h-full"
+            className={`w-full h-full ${mapType === 'tactical' ? 'tactical-dark-inversion' : ''}`}
             style={{ background: isDarkMode ? '#0E1322' : '#F8FAFC', cursor: assignmentMode ? 'crosshair' : 'grab' }}
           >
             {mapType === 'satellite' ? (
               <>
                 <TileLayer
                   url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
-                  maxZoom={19}
+                  maxZoom={20}
                   maxNativeZoom={18}
                 />
                 <TileLayer
                   url="https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Reference/MapServer/tile/{z}/{y}/{x}"
-                  maxZoom={19}
+                  maxZoom={20}
                   maxNativeZoom={18}
                   opacity={0.8}
                 />
               </>
             ) : (
               <TileLayer
-                url="https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}"
-                maxZoom={19}
+                url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                maxZoom={20}
               />
             )}
 

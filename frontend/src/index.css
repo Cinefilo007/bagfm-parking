@@ -255,8 +255,19 @@
   }
 
   /* Asegurar que las etiquetas de referencia no se filtren para mantener legibilidad */
-  .tactical-map-filter .leaflet-tile-pane .leaflet-layer:nth-child(2) .leaflet-tile-container {
-    filter: brightness(1.2) contrast(1.1) saturate(1.5) !important;
+  /* ──── Tactical Dark Inversion (For OSM) ──── */
+  .tactical-dark-inversion .leaflet-tile-container {
+    filter: invert(100%) hue-rotate(180deg) brightness(0.9) contrast(0.9) !important;
+  }
+  
+  .dark .tactical-dark-inversion .leaflet-tile-container {
+    filter: invert(100%) hue-rotate(180deg) brightness(0.85) contrast(0.8) saturate(0.5) !important;
+  }
+
+  /* Ajustar marcadores para que NO se inviertan si están dentro del contenedor */
+  .tactical-dark-inversion .leaflet-marker-pane,
+  .tactical-dark-inversion .leaflet-popup-pane {
+    filter: none !important;
   }
 }
 
