@@ -239,3 +239,81 @@ async def reasignar_tipo_puesto(
         .where(PuestoEstacionamiento.id == puesto_id)
     )
     return rs.scalars().first()
+
+
+# ──────────────────────────────────────────────────────────────────────────────
+# Endpoints de Disponibilidad Inteligente (para el dashboard de estacionamientos)
+# ──────────────────────────────────────────────────────────────────────────────
+
+@router.get("/entidad/resumen-disponibilidad")
+async def resumen_disponibilidad_entidad(
+    fecha: str = None,
+    db: AsyncSession = Depends(obtener_db),
+    current_user: Usuario = Depends(require_rol(["ADMIN_ENTIDAD"]))
+):
+    """
+    Retorna el resumen de disponibilidad real por zona para una fecha específica.
+    Descuenta los pases masivos vigentes ese día del cupo asignado.
+    Si no se pasa fecha, usa la fecha actual.
+    """
+    from datetime import date as date_type, datetime
+    from app.models.asignacion_zona import AsignacionZona
+    from app.services.pase_service import pase_service
+
+    if not current_user.entidad_id:
+        return []
+
+    # Parsear o usar hoy
+    try:
+        fecha_dt = datetime.strptime(fecha, "%Y-%m-%d").date() if fecha else date_type.today()
+    except (ValueError, TypeError):
+        fecha_dt = date_type.today()
+
+    # Obtener asignaciones activas de la entidad
+    rs = await db.execute(
+        select(AsignacionZona)
+        .options(joinedload(AsignacionZona.zona))
+        .where(
+            AsignacionZona.entidad_id == current_user.entidad_id,
+            AsignacionZona.activa == True
+        )
+    )
+    asignaciones = rs.scalars().all()
+
+    resultado = []
+    for asig in asignaciones:
+        datos_zona = await pase_service.contar_pases_activos_en_zona_para_fecha(
+            db, asig.zona_id, fecha_dt, limite=10
+        )
+        cupo_libre = max(0, asig.cupo_asignado - datos_zona["total"])
+        resultado.append({
+            "zona_id": str(asig.zona_id),
+            "zona_nombre": asig.zona_nombre or (asig.zona.nombre if asig.zona else "Sin nombre"),
+            "cupo_asignado": asig.cupo_asignado,
+            "cupo_reservado_base": asig.cupo_reservado_base,
+            "distribucion_cupos": asig.distribucion_cupos,
+            "pases_vigentes": datos_zona["total"],
+            "cupo_libre": cupo_libre,
+            "pases_muestra": datos_zona["muestra"],
+            "asignacion_id": str(asig.id),
+            "fecha_consulta": fecha_dt.isoformat(),
+        })
+
+    return resultado
+
+
+@router.get("/entidad/calendario-lotes")
+async def calendario_lotes_entidad(
+    db: AsyncSession = Depends(obtener_db),
+    current_user: Usuario = Depends(require_rol(["ADMIN_ENTIDAD"]))
+):
+    """
+    Retorna un dict { 'YYYY-MM-DD': ['Zona A', 'Zona B'] } para colorear
+    el calendario de fechas con lotes activos en el frontend.
+    """
+    from app.services.pase_service import pase_service
+
+    if not current_user.entidad_id:
+        return {}
+
+    return await pase_service.obtener_fechas_con_lotes_por_entidad(db, current_user.entidad_id)

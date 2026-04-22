@@ -34,12 +34,23 @@ async def listar_lotes(
     db: AsyncSession = Depends(obtener_db),
     usuario_actual: Usuario = Depends(require_rol(ADMIN_ROLES + [RolTipo.ALCABALA]))
 ):
-    """Lista todos los lotes de pases masivos."""
+    """Lista lotes de pases masivos. Para ADMIN_ENTIDAD excluye los lotes ya vencidos."""
     from sqlalchemy.orm import selectinload
+    from datetime import date as date_type
+
     query = select(LotePaseMasivo).options(
         selectinload(LotePaseMasivo.zona_asignada),
         selectinload(LotePaseMasivo.tipo_acceso_custom)
-    ).order_by(LotePaseMasivo.created_at.desc())
+    )
+
+    # Filtrar por entidad y excluir vencidos para ADMIN_ENTIDAD
+    if usuario_actual.rol == RolTipo.ADMIN_ENTIDAD and usuario_actual.entidad_id:
+        query = query.where(
+            LotePaseMasivo.entidad_id == usuario_actual.entidad_id,
+            LotePaseMasivo.fecha_fin >= date_type.today()
+        )
+
+    query = query.order_by(LotePaseMasivo.created_at.desc())
     res = await db.execute(query)
     return res.scalars().all()
 

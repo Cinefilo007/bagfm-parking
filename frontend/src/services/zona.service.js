@@ -37,6 +37,26 @@ export const zonaService = {
     },
 
     /**
+     * Retorna el resumen de disponibilidad real por zona para una fecha específica.
+     * Descuenta los pases masivos vigentes del cupo asignado.
+     * @param {string|null} fecha - Formato 'YYYY-MM-DD'. Si es null, usa la fecha actual del servidor.
+     */
+    async getResumenDisponibilidad(fecha = null) {
+        const params = fecha ? { fecha } : {};
+        const { data } = await api.get('/zonas/entidad/resumen-disponibilidad', { params });
+        return data;
+    },
+
+    /**
+     * Retorna un dict { 'YYYY-MM-DD': ['Zona A', 'Zona B'] } para pintar
+     * el calendario con las fechas que tienen lotes activos.
+     */
+    async getCalendarioLotes() {
+        const { data } = await api.get('/zonas/entidad/calendario-lotes');
+        return data;
+    },
+
+    /**
      * Permite a la entidad configurar cómo subdivide su cupo lógico.
      */
     async configurarDistribucionCupos(asignacionId, distribucion) {

@@ -5,14 +5,15 @@ import { Modal } from '../../components/ui/Modal';
 import { Input } from '../../components/ui/Input';
 import { ChipFiltro } from '../../components/ui/ChipFiltro';
 import { ModalConfirmacion } from '../../components/ui/ModalConfirmacion';
+import { CalendarioLotes } from '../../components/ui/CalendarioLotes';
 import { useAuthStore } from '../../store/auth.store';
 import { toast } from 'react-hot-toast';
 import { cn } from '../../lib/utils';
 import {
     ParkingSquare, Car, Plus, Trash2, RefreshCw,
-    Shield, MapPin, Users, Tag, CheckCircle2,
+    Shield, MapPin, Users, Tag, CheckCircle2, QrCode,
     Circle, Edit3, ToggleLeft, ToggleRight, Zap, AlertTriangle,
-    ChevronDown, LayoutGrid, Settings, Activity, Hash, PackagePlus, Palette, Filter, ZapOff
+    ChevronDown, LayoutGrid, Settings, Activity, Hash, PackagePlus, Palette, Filter, ZapOff, Calendar
 } from 'lucide-react';
 import { zonaService } from '../../services/zona.service';
 
@@ -43,17 +44,22 @@ const BadgeEstado = ({ estado, tieneTipo = false }) => {
 };
 
 
-const TarjetaPuesto = ({ puesto, onAsignar, onLiberar, onReasignar, tipos }) => {
+const TarjetaPuesto = ({ puesto, onAsignar, onLiberar, onReasignar, tipos, puestosPorQR = {} }) => {
     const isOcupado = puesto.estado === 'ocupado';
     const tipo = tipos?.find(t => t.id === puesto.tipo_acceso_id);
+
+    // Pase QR reservado en este puesto para la fecha consultada
+    const paseReservado = puestosPorQR?.[puesto.id];
+    const esQRReservado = !!paseReservado;
 
     return (
         <div className={cn(
             "p-2 md:p-3 rounded-2xl border transition-all hover:bg-white/5",
-            puesto.estado === 'libre' && 'bg-success/5 border-success/20',
+            puesto.estado === 'libre' && !esQRReservado && 'bg-success/5 border-success/20',
             isOcupado && 'bg-danger/5 border-danger/15',
-            puesto.estado === 'reservado' && 'bg-warning/5 border-warning/20',
+            puesto.estado === 'reservado' && !esQRReservado && 'bg-warning/5 border-warning/20',
             puesto.estado === 'mantenimiento' && 'bg-white/3 border-white/5 opacity-60',
+            esQRReservado && !isOcupado && 'bg-sky-500/5 border-sky-500/20',
         )}>
             <div className="flex flex-col md:flex-row items-stretch md:items-center gap-2 md:gap-4">
                 {/* Lado Izquierdo: Icono + Identificación Principal */}
@@ -72,9 +78,37 @@ const TarjetaPuesto = ({ puesto, onAsignar, onLiberar, onReasignar, tipos }) => 
                             <p className="text-[11px] md:text-xs font-black text-text-main uppercase truncate">
                                 {puesto.numero_puesto || puesto.codigo || `Puesto ${puesto.id?.slice(-4)}`}
                             </p>
-                            <BadgeEstado estado={puesto.estado} tieneTipo={!!puesto.tipo_acceso_id} />
+                            {esQRReservado ? (
+                                <span className="text-[7px] font-black uppercase px-2 py-0.5 rounded-full bg-sky-500/15 text-sky-400 border border-sky-500/20 flex items-center gap-1">
+                                    <QrCode size={8} /> QR RESERVADO
+                                </span>
+                            ) : (
+                                <BadgeEstado estado={puesto.estado} tieneTipo={!!puesto.tipo_acceso_id} />
+                            )}
                         </div>
-                        
+
+                        {/* Info del portador si está reservado por QR */}
+                        {esQRReservado && (
+                            <div className="flex items-center gap-2 text-[8px]">
+                                {paseReservado.tiene_datos ? (
+                                    <>
+                                        <span className="text-sky-400/80 font-bold uppercase truncate max-w-[120px]">
+                                            {paseReservado.nombre_portador || '—'}
+                                        </span>
+                                        {paseReservado.vehiculo_placa && (
+                                            <span className="text-text-muted/70 flex items-center gap-1">
+                                                <Car size={8} /> {paseReservado.vehiculo_placa}
+                                            </span>
+                                        )}
+                                    </>
+                                ) : (
+                                    <span className="text-warning/70 flex items-center gap-1">
+                                        <AlertTriangle size={8} /> SIN IDENTIFICAR · {paseReservado.serial_legible}
+                                    </span>
+                                )}
+                            </div>
+                        )}
+
                         {/* Ubicación y tipo que se ocultan o mueven según pantalla */}
                         <div className="flex items-center gap-3">
                             {puesto.zona_nombre && (
@@ -199,6 +233,14 @@ export default function EstacionamientosEntidad() {
     const [asignacionEdicion, setAsignacionEdicion] = useState(null);
     const [formDistribucion, setFormDistribucion] = useState({});
 
+    // Estado de disponibilidad inteligente
+    const [resumenDisponibilidad, setResumenDisponibilidad] = useState([]);
+    const [cargandoResumen, setCargandoResumen] = useState(false);
+    const [calendarioLotes, setCalendarioLotes] = useState({});
+    const [modalCalendario, setModalCalendario] = useState(false);
+    const hoyISO = new Date().toISOString().split('T')[0];
+    const [fechaConsulta, setFechaConsulta] = useState(hoyISO);
+
     const [modalGenerar, setModalGenerar] = useState(false);
     const [formGenerar, setFormGenerar] = useState({ cantidad: 1, prefijo: 'V' });
     const [generando, setGenerando] = useState(false);
@@ -280,6 +322,32 @@ export default function EstacionamientosEntidad() {
         }
     }, []);
 
+    const cargarResumenDisponibilidad = useCallback(async (fecha = null) => {
+        setCargandoResumen(true);
+        try {
+            const data = await zonaService.getResumenDisponibilidad(fecha);
+            setResumenDisponibilidad(data || []);
+        } catch (e) {
+            console.warn('Error cargando resumen de disponibilidad:', e);
+        } finally {
+            setCargandoResumen(false);
+        }
+    }, []);
+
+    const cargarCalendarioLotes = useCallback(async () => {
+        try {
+            const data = await zonaService.getCalendarioLotes();
+            setCalendarioLotes(data || {});
+        } catch (e) {
+            console.warn('Error cargando calendario de lotes:', e);
+        }
+    }, []);
+
+    const handleCambiarFecha = useCallback((nuevaFecha) => {
+        setFechaConsulta(nuevaFecha);
+        cargarResumenDisponibilidad(nuevaFecha);
+    }, [cargarResumenDisponibilidad]);
+
     const handleAbrirDistribucion = (asig) => {
         setAsignacionEdicion(asig);
         setFormDistribucion(asig.distribucion_cupos || {});
@@ -321,6 +389,8 @@ export default function EstacionamientosEntidad() {
     useEffect(() => { cargarPuestos(); }, [cargarPuestos]);
     useEffect(() => { cargarTipos(); }, [cargarTipos]);
     useEffect(() => { cargarAsignaciones(); }, [cargarAsignaciones]);
+    useEffect(() => { cargarResumenDisponibilidad(fechaConsulta); }, [cargarResumenDisponibilidad]);
+    useEffect(() => { cargarCalendarioLotes(); }, [cargarCalendarioLotes]);
 
     // ── Acciones: Puestos ─────────────────────────────────────────────────────
 
@@ -492,13 +562,32 @@ export default function EstacionamientosEntidad() {
 
     // ── Estadísticas rápidas ──────────────────────────────────────────────────
 
+    // Mapa puesto_id → pase para la vista de TarjetaPuesto
+    const puestosPorQR = resumenDisponibilidad.reduce((acc, zona) => {
+        (zona.pases_muestra || []).forEach(p => {
+            if (p.puesto_asignado_id) acc[p.puesto_asignado_id] = p;
+        });
+        return acc;
+    }, {});
+
     const stats = {
-        total: asignaciones.reduce((acc, a) => acc + a.cupo_asignado, 0),
-        reservados: asignaciones.reduce((acc, asig) => 
-            acc + Object.values(asig.distribucion_cupos || {}).reduce((sum, val) => sum + val, 0), 0),
+        total: resumenDisponibilidad.length > 0
+            ? resumenDisponibilidad.reduce((acc, z) => acc + z.cupo_asignado, 0)
+            : asignaciones.reduce((acc, a) => acc + a.cupo_asignado, 0),
+        reservados: resumenDisponibilidad.length > 0
+            ? resumenDisponibilidad.reduce((acc, z) => acc + z.pases_vigentes, 0)
+            : asignaciones.reduce((acc, asig) =>
+                acc + Object.values(asig.distribucion_cupos || {}).reduce((sum, val) => sum + val, 0), 0),
         ocupados: puestos.filter(p => p.estado === 'ocupado').length,
     };
     stats.libres = Math.max(0, stats.total - (stats.reservados + stats.ocupados));
+
+    // Formateador de fecha para mostrar al usuario
+    const fechaLegible = (() => {
+        const f = new Date(fechaConsulta + 'T12:00:00');
+        return f.toLocaleDateString('es-VE', { weekday: 'short', day: '2-digit', month: 'short', year: 'numeric' });
+    })();
+    const esFechaHoy = fechaConsulta === hoyISO;
 
     // ── Render ────────────────────────────────────────────────────────────────
 
@@ -570,9 +659,34 @@ export default function EstacionamientosEntidad() {
                             <MapPin size={11} className="text-primary" />
                             {asignaciones.length} Zonas asignadas por el Comandante
                         </p>
-                        <button onClick={cargarAsignaciones} className="p-1.5 rounded-lg bg-white/5 hover:bg-white/10 transition-all">
-                            <RefreshCw size={14} className={cn("text-text-muted", cargandoAsignaciones && 'animate-spin')} />
-                        </button>
+                        <div className="flex items-center gap-2">
+                            {/* Chip selector de fecha */}
+                            <button
+                                onClick={() => { cargarCalendarioLotes(); setModalCalendario(true); }}
+                                className={cn(
+                                    "flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-[9px] font-black uppercase tracking-wider transition-all",
+                                    esFechaHoy
+                                        ? 'bg-white/5 border-white/10 text-text-muted hover:bg-white/10'
+                                        : 'bg-warning/10 border-warning/30 text-warning hover:bg-warning/20'
+                                )}
+                            >
+                                <Calendar size={11} />
+                                {esFechaHoy ? 'HOY' : fechaLegible}
+                                {!esFechaHoy && <span className="ml-1 text-[7px] bg-warning/20 px-1 rounded">FUTURA</span>}
+                            </button>
+                            {!esFechaHoy && (
+                                <button
+                                    onClick={() => handleCambiarFecha(hoyISO)}
+                                    className="text-[8px] text-text-muted/60 hover:text-text-main transition-all px-2 py-1.5 rounded-lg hover:bg-white/5"
+                                    title="Volver a hoy"
+                                >
+                                    ↩ Hoy
+                                </button>
+                            )}
+                            <button onClick={cargarAsignaciones} className="p-1.5 rounded-lg bg-white/5 hover:bg-white/10 transition-all">
+                                <RefreshCw size={14} className={cn("text-text-muted", (cargandoAsignaciones || cargandoResumen) && 'animate-spin')} />
+                            </button>
+                        </div>
                     </div>
 
                     {cargandoAsignaciones ? (
@@ -591,9 +705,17 @@ export default function EstacionamientosEntidad() {
                     ) : (
                         <div className="space-y-3">
                             {asignaciones.map(asig => {
-                                const utilizable = asig.cupo_asignado;
+                                // Buscar datos del resumen dinámico (si ya cargó)
+                                const resumZona = resumenDisponibilidad.find(r => r.zona_id === asig.zona_id);
+                                const pasesVigentes = resumZona?.pases_vigentes ?? 0;
+                                const cupoLibre = resumZona?.cupo_libre ?? asig.cupo_asignado;
+                                const pasesMuestra = resumZona?.pases_muestra ?? [];
+                                const utilizable = cupoLibre;
+                                const porcentajeOcupado = asig.cupo_asignado > 0
+                                    ? Math.min(100, (pasesVigentes / asig.cupo_asignado) * 100)
+                                    : 0;
                                 const isExpanded = !!asignacionEdicion && asignacionEdicion.id === asig.id;
-                                
+
                                 return (
                                     <div key={asig.id} className="bg-bg-card/40 border border-white/5 rounded-2xl overflow-hidden transition-all">
                                         <div>
@@ -645,15 +767,24 @@ export default function EstacionamientosEntidad() {
                                                     </div>
                                             </div>
                                             <div className="px-14 pb-3 pr-4 pointer-events-none">
+                                                <div className="flex items-center gap-2 mb-1">
+                                                    {pasesVigentes > 0 && (
+                                                        <p className="text-[8px] text-text-muted/60 font-bold">
+                                                            {pasesVigentes} pases vigentes · {cupoLibre} libres
+                                                        </p>
+                                                    )}
+                                                </div>
                                                 <div className="h-1.5 w-full bg-black/40 rounded-full overflow-hidden flex border border-white/5 shadow-inner">
                                                     {asig.cupo_reservado_base > 0 && <div style={{ width: `${(asig.cupo_reservado_base / (asig.cupo_asignado + asig.cupo_reservado_base)) * 100}%` }} className="bg-danger/80 border-r border-black/50" title={`Reserva Base (${asig.cupo_reservado_base})`} />}
-                                                    {utilizable > 0 && <div style={{ width: `${(utilizable / (asig.cupo_asignado + asig.cupo_reservado_base)) * 100}%` }} className="bg-primary/80" title={`Utilizables (${utilizable})`} />}
+                                                    {pasesVigentes > 0 && <div style={{ width: `${porcentajeOcupado}%` }} className="bg-warning/70" title={`Pases vigentes (${pasesVigentes})`} />}
+                                                    {utilizable > 0 && <div style={{ width: `${(cupoLibre / (asig.cupo_asignado + asig.cupo_reservado_base)) * 100}%` }} className="bg-primary/80" title={`Libres (${cupoLibre})`} />}
                                                 </div>
                                             </div>
                                         </div>
 
                                         {isExpanded && (
                                             <div className="px-4 pb-4 space-y-4 border-t border-white/5 pt-4 animate-in slide-in-from-top-2 duration-200 bg-black/20">
+                                                {/* Distribución Lógica */}
                                                 <div>
                                                     <div className="flex items-center justify-between mb-3">
                                                         <p className="text-[8px] font-black uppercase tracking-widest text-text-muted/50 flex items-center gap-1.5">
@@ -675,6 +806,66 @@ export default function EstacionamientosEntidad() {
                                                         <p className="text-[9px] text-text-muted/40 italic">Sin distribución configurada</p>
                                                     )}
                                                 </div>
+
+                                                {/* Panel de Pases Registrados */}
+                                                {pasesMuestra.length > 0 && (
+                                                    <div>
+                                                        <div className="flex items-center justify-between mb-2">
+                                                            <p className="text-[8px] font-black uppercase tracking-widest text-text-muted/50 flex items-center gap-1.5">
+                                                                <QrCode size={9} className="text-sky-400" />
+                                                                Pases registrados · {fechaLegible}
+                                                                <span className="ml-1 text-sky-400">({resumZona?.total_pases_zona ?? pasesVigentes})</span>
+                                                            </p>
+                                                        </div>
+                                                        {/* Grid adaptativo: 1 col móvil · 2 col tablet · 3 col PC */}
+                                                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-1.5">
+                                                            {pasesMuestra.map((p, pi) => (
+                                                                <div
+                                                                    key={pi}
+                                                                    className={cn(
+                                                                        "flex items-center gap-2 px-2 py-1.5 rounded-xl border",
+                                                                        p.tiene_datos
+                                                                            ? 'bg-white/3 border-white/5'
+                                                                            : 'bg-warning/5 border-warning/20'
+                                                                    )}
+                                                                >
+                                                                    <div className="w-5 h-5 rounded-lg bg-white/5 flex items-center justify-center shrink-0">
+                                                                        <QrCode size={10} className={p.tiene_datos ? 'text-text-muted/60' : 'text-warning/60'} />
+                                                                    </div>
+                                                                    <div className="flex-1 min-w-0">
+                                                                        {p.tiene_datos ? (
+                                                                            <>
+                                                                                <p className="text-[8px] font-black text-text-main uppercase truncate">
+                                                                                    {p.nombre_portador || p.serial_legible}
+                                                                                </p>
+                                                                                <p className="text-[7px] text-text-muted/60 font-mono truncate">
+                                                                                    {p.vehiculo_placa ? `${p.vehiculo_placa} · ` : ''}{p.serial_legible}
+                                                                                </p>
+                                                                            </>
+                                                                        ) : (
+                                                                            <>
+                                                                                <p className="text-[7px] text-warning/80 font-bold flex items-center gap-1">
+                                                                                    <AlertTriangle size={7} /> Sin identificar
+                                                                                </p>
+                                                                                <p className="text-[7px] font-mono text-text-muted/50 truncate">{p.serial_legible}</p>
+                                                                            </>
+                                                                        )}
+                                                                    </div>
+                                                                    {p.vehiculo_placa && (
+                                                                        <div className="hidden sm:flex items-center gap-1 text-[7px] text-primary/80 bg-primary/5 px-1.5 py-0.5 rounded shrink-0">
+                                                                            <Car size={8} /> {p.vehiculo_placa}
+                                                                        </div>
+                                                                    )}
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                        {pasesVigentes > pasesMuestra.length && (
+                                                            <p className="text-[8px] text-text-muted/50 mt-2 text-center italic">
+                                                                + {pasesVigentes - pasesMuestra.length} pases más en esta zona
+                                                            </p>
+                                                        )}
+                                                    </div>
+                                                )}
                                             </div>
                                         )}
                                     </div>
@@ -791,6 +982,7 @@ export default function EstacionamientosEntidad() {
                                                     key={p.id}
                                                     puesto={p}
                                                     tipos={tipos}
+                                                    puestosPorQR={puestosPorQR}
                                                     onAsignar={handleAbrirAsignar}
                                                     onLiberar={handleLiberar}
                                                     onReasignar={handleAbrirReasignar}
@@ -1151,6 +1343,16 @@ export default function EstacionamientosEntidad() {
                 title="DISTRIBUCIÓN INTELIGENTE"
                 message="¿Deseas aplicar la distribución inteligente a todos los puestos físicos vacíos? Esto sobrescribirá las asignaciones lógicas manuales actuales."
                 confirmText="APLICAR DISTRIBUCIÓN"
+            />
+
+            {/* ── MODAL: Calendario de Lotes ── */}
+            <CalendarioLotes
+                abierto={modalCalendario}
+                onCerrar={() => setModalCalendario(false)}
+                fechaSeleccionada={fechaConsulta}
+                onSeleccionarFecha={handleCambiarFecha}
+                calendarioLotes={calendarioLotes}
+                cargando={cargandoResumen}
             />
         </div>
     );

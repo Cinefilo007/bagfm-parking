@@ -227,6 +227,129 @@ class PaseService:
             "completo": restante == 0
         }
 
+    async def contar_pases_activos_en_zona_para_fecha(
+        self, db: AsyncSession, zona_id: uuid.UUID, fecha: date, limite: int = 10
+    ) -> dict:
+        """
+        Devuelve el conteo de QRs vigentes en una zona para un día específico
+        y una muestra de hasta `limite` registros para el panel compacto del frontend.
+        
+        Un QR se considera vigente si su lote padre tiene:
+          fecha_inicio <= fecha <= fecha_fin
+        """
+        from sqlalchemy import and_, join
+        from sqlalchemy.orm import aliased
+
+        # Contar por lotes que solapan la fecha y tienen QRs en esa zona
+        q_count = (
+            select(func.count(CodigoQR.id))
+            .join(LotePaseMasivo, CodigoQR.lote_id == LotePaseMasivo.id)
+            .where(
+                and_(
+                    CodigoQR.zona_asignada_id == zona_id,
+                    CodigoQR.activo == True,
+                    LotePaseMasivo.fecha_inicio <= fecha,
+                    LotePaseMasivo.fecha_fin >= fecha,
+                )
+            )
+        )
+        total = int((await db.execute(q_count)).scalar() or 0)
+
+        # Muestra compacta (máx limite registros)
+        q_muestra = (
+            select(
+                CodigoQR.serial_legible,
+                CodigoQR.nombre_portador,
+                CodigoQR.vehiculo_placa,
+                CodigoQR.datos_completos,
+                CodigoQR.puesto_asignado_id,
+            )
+            .join(LotePaseMasivo, CodigoQR.lote_id == LotePaseMasivo.id)
+            .where(
+                and_(
+                    CodigoQR.zona_asignada_id == zona_id,
+                    CodigoQR.activo == True,
+                    LotePaseMasivo.fecha_inicio <= fecha,
+                    LotePaseMasivo.fecha_fin >= fecha,
+                )
+            )
+            .order_by(CodigoQR.serial_legible.asc())
+            .limit(limite)
+        )
+        rows = (await db.execute(q_muestra)).all()
+
+        muestra = [
+            {
+                "serial_legible": r.serial_legible,
+                "nombre_portador": r.nombre_portador,
+                "vehiculo_placa": r.vehiculo_placa,
+                "tiene_datos": bool(r.datos_completos or r.nombre_portador),
+                "puesto_asignado_id": str(r.puesto_asignado_id) if r.puesto_asignado_id else None,
+            }
+            for r in rows
+        ]
+
+        return {"total": total, "muestra": muestra}
+
+    async def obtener_fechas_con_lotes_por_entidad(
+        self, db: AsyncSession, entidad_id: uuid.UUID
+    ) -> dict:
+        """
+        Retorna un dict { 'YYYY-MM-DD': ['Zona A', 'Zona B'] } con todas las fechas
+        en las que la entidad tiene lotes activos (no vencidos).
+        Usado por el CalendarioLotes en el frontend para colorear días.
+        """
+        from app.models.asignacion_zona import AsignacionZona
+        from app.models.zona_estacionamiento import ZonaEstacionamiento
+
+        hoy = date.today()
+
+        # Traer lotes activos (no vencidos) de la entidad
+        q = (
+            select(
+                LotePaseMasivo.fecha_inicio,
+                LotePaseMasivo.fecha_fin,
+                LotePaseMasivo.zona_estacionamiento_id,
+            )
+            .where(
+                and_(
+                    LotePaseMasivo.entidad_id == entidad_id,
+                    LotePaseMasivo.fecha_fin >= hoy,
+                )
+            )
+        )
+        lotes = (await db.execute(q)).all()
+
+        # Resolver nombres de zona en una sola query
+        zona_ids = list({l.zona_estacionamiento_id for l in lotes if l.zona_estacionamiento_id})
+        zonas_map = {}
+        if zona_ids:
+            q_zonas = select(ZonaEstacionamiento.id, ZonaEstacionamiento.nombre).where(
+                ZonaEstacionamiento.id.in_(zona_ids)
+            )
+            for row in (await db.execute(q_zonas)).all():
+                zonas_map[str(row.id)] = row.nombre
+
+        # Construir el dict de fechas → zonas
+        calendario: dict = {}
+        for lote in lotes:
+            if not lote.fecha_inicio or not lote.fecha_fin:
+                continue
+            zona_nombre = zonas_map.get(str(lote.zona_estacionamiento_id), "Sin zona")
+            # Expandir cada día del rango del lote
+            dia = lote.fecha_inicio if isinstance(lote.fecha_inicio, date) else lote.fecha_inicio.date()
+            fin = lote.fecha_fin if isinstance(lote.fecha_fin, date) else lote.fecha_fin.date()
+            while dia <= fin:
+                key = dia.isoformat()
+                if key not in calendario:
+                    calendario[key] = []
+                if zona_nombre not in calendario[key]:
+                    calendario[key].append(zona_nombre)
+                dia += timedelta(days=1)
+
+        return calendario
+
+
     async def calcular_ocupacion_por_tipo(self, db: AsyncSession, zona_id: uuid.UUID, tipo_acceso: str, tipo_acceso_custom_id: uuid.UUID, inicio: date, fin: date) -> int:
         """Calcula pases del mismo tipo de acceso que se traslapan con el periodo en la zona."""
         from sqlalchemy import and_
