@@ -68,7 +68,15 @@ class BiometricoService:
             exclude_credentials=credenciales_excluir if credenciales_excluir else [],
         )
 
-        # Guardar el challenge en la base de datos para verificación posterior
+        # 1.1 Limpiar desafíos anteriores del mismo tipo para este usuario
+        await db.execute(
+            delete(ChallengeBiometrico).where(
+                ChallengeBiometrico.usuario_id == usuario.id,
+                ChallengeBiometrico.tipo == 'registro'
+            )
+        )
+
+        # 2. Guardar el nuevo challenge
         nuevo_challenge = ChallengeBiometrico(
             usuario_id=usuario.id,
             challenge=bytes_to_base64url(opciones.challenge),
@@ -91,7 +99,7 @@ class BiometricoService:
         ).order_by(ChallengeBiometrico.created_at.desc())
         
         res_challenge = await db.execute(q_challenge)
-        challenge_db = res_challenge.scalar_one_or_none()
+        challenge_db = res_challenge.scalars().first()
 
         if not challenge_db or challenge_db.expires_at < datetime.now(timezone.utc):
             raise CredencialesInvalidas("El desafío ha expirado o no existe")
@@ -153,7 +161,15 @@ class BiometricoService:
             user_verification=UserVerificationRequirement.PREFERRED,
         )
 
-        # Guardar challenge
+        # 1.1 Limpiar desafíos anteriores de login para este usuario
+        await db.execute(
+            delete(ChallengeBiometrico).where(
+                ChallengeBiometrico.usuario_id == usuario.id,
+                ChallengeBiometrico.tipo == 'login'
+            )
+        )
+
+        # 2. Guardar el nuevo desafío
         nuevo_challenge = ChallengeBiometrico(
             usuario_id=usuario.id,
             challenge=bytes_to_base64url(opciones.challenge),
@@ -183,7 +199,7 @@ class BiometricoService:
         ).order_by(ChallengeBiometrico.created_at.desc())
         
         res_challenge = await db.execute(q_challenge)
-        challenge_db = res_challenge.scalar_one_or_none()
+        challenge_db = res_challenge.scalars().first()
 
         if not challenge_db or challenge_db.expires_at < datetime.now(timezone.utc):
             raise CredencialesInvalidas("El desafío ha expirado")
