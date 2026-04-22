@@ -99,8 +99,18 @@ class PaseService:
                     cupo_disponible = max(0, cupo_total - ocupacion_actual)
                     
                     dist_auto = datos.get('distribucion_automatica') or datos.get('distribucion_automatic', False)
-                    if not dist_auto and datos['cantidad_pases'] > cupo_disponible:
-                         raise ValueError(f"CAPACIDAD AGOTADA para estas fechas: Libre {cupo_disponible}, Requerido {datos['cantidad_pases']}.")
+                    if datos['cantidad_pases'] > cupo_disponible:
+                        if not dist_auto:
+                            raise ValueError(f"CAPACIDAD AGOTADA para estas fechas: Libre {cupo_disponible}, Requerido {datos['cantidad_pases']}.")
+                        else:
+                            # Auto-distribución desde una zona principal
+                            res_plan = await self.sugerir_distribucion_entidad(db, entidad.id, datos['cantidad_pases'], fecha_ini, fecha_fin)
+                            if not res_plan["completo"]:
+                                raise ValueError(f"CAPACIDAD TOTAL SUPERADA: La entidad solo tiene {datos['cantidad_pases'] - res_plan['cantidad_restante']} puestos disponibles en total.")
+                            
+                            plan_distribucion = res_plan["distribucion"]
+                            # Priorizar la zona elegida poniéndola de primera en el plan
+                            plan_distribucion.sort(key=lambda x: 0 if str(x["zona_id"]) == str(zona_id) else 1)
             else:
                 # 2c. DISTRIBUCIÓN AUTOMÁTICA (Si no hay zona_id)
                 res_plan = await self.sugerir_distribucion_entidad(db, entidad.id, datos['cantidad_pases'], fecha_ini, fecha_fin)
@@ -109,7 +119,7 @@ class PaseService:
                     raise ValueError(f"CAPACIDAD TOTAL SUPERADA: La entidad solo tiene {datos['cantidad_pases'] - res_plan['cantidad_restante']} puestos disponibles en total.")
                 
                 plan_distribucion = res_plan["distribucion"]
-                # Usar la primera zona con espacio como referencia para el lote
+                # Usar la primera zona lograda como referencia para el lote
                 if plan_distribucion:
                     zona_id = plan_distribucion[0]["zona_id"]
 
@@ -582,7 +592,7 @@ class PaseService:
         
         for i in range(1, lote.cantidad_pases + 1):
             # Lógica de Distribución Inteligente
-            zona_final_id = extras.get('zona_id')
+            zona_final_id = extras.get('zona_id') or lote.zona_estacionamiento_id
             if plan and cursor_plan < len(plan):
                 zona_final_id = plan[cursor_plan]["zona_id"]
                 puestos_en_zona_actual += 1
@@ -622,7 +632,7 @@ class PaseService:
 
         for i in range(1, lote.cantidad_pases + 1):
             # Lógica de Distribución Inteligente
-            zona_final_id = extras.get('zona_id')
+            zona_final_id = extras.get('zona_id') or lote.zona_estacionamiento_id
             if plan and cursor_plan < len(plan):
                 zona_final_id = plan[cursor_plan]["zona_id"]
                 puestos_en_zona_actual += 1
