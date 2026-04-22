@@ -236,7 +236,7 @@ const ModalListaPases = ({ isOpen, onClose, lote, zonas }) => {
     };
 
     return (
-        <Modal isOpen={isOpen} onClose={onClose} title={`GESTIÓN DE PASES: ${lote?.nombre_evento}`} size="xl">
+        <Modal isOpen={isOpen} onClose={onClose} title={`GESTIÓN DE PASES: ${lote?.nombre_evento}`} className="max-w-7xl w-[95vw]">
             <div className="space-y-4">
                 <div className="flex items-center gap-3">
                     <div className="relative flex-1">
@@ -649,7 +649,7 @@ const ModalNuevoLote = ({ isOpen, onClose, zonas, tiposCustom, onCreated }) => {
     };
 
     return (
-        <Modal isOpen={isOpen} onClose={onClose} title="NUEVO LOTE DE PASES" className="max-w-4xl w-[95vw]">
+        <Modal isOpen={isOpen} onClose={onClose} title="NUEVO LOTE DE PASES" className="max-w-7xl w-[95vw]">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-x-8 gap-y-6">
                 
                 {/* ══ COLUMNA IZQUIERDA ══ */}

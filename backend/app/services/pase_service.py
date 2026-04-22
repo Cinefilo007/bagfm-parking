@@ -70,13 +70,13 @@ class PaseService:
         if tipo_acc == 'custom' and not custom_id:
             tipo_acc = 'general'
 
+        plan_distribucion = None
         if entidad:
             from app.models.asignacion_zona import AsignacionZona
             from sqlalchemy import and_
             
-            # 2a. Parsear fechas para validación temporal
+            # 2a. Parsear fechas
             try:
-                # Si vienen como string del API
                 fecha_ini = datetime.strptime(datos['fecha_inicio'], '%Y-%m-%d').date() if isinstance(datos['fecha_inicio'], str) else datos['fecha_inicio']
                 fecha_fin = datetime.strptime(datos['fecha_fin'], '%Y-%m-%d').date() if isinstance(datos['fecha_fin'], str) else datos['fecha_fin']
             except Exception:
@@ -85,7 +85,6 @@ class PaseService:
 
             # 2b. Validación por Zona Específica (si se seleccionó una)
             if zona_id:
-                # Obtener la asignación específica para esta zona
                 query_asig = select(AsignacionZona).where(
                     and_(
                         AsignacionZona.entidad_id == entidad.id, 
@@ -96,25 +95,24 @@ class PaseService:
                 asig_especifica = (await db.execute(query_asig)).scalar()
                 
                 if asig_especifica:
-                    # Cálculo de Ocupación Proyectada (Traslape de fechas)
                     ocupacion_actual = await self.calcular_ocupacion_proyectada(db, zona_id, fecha_ini, fecha_fin)
                     cupo_total = asig_especifica.cupo_asignado
                     cupo_disponible = max(0, cupo_total - ocupacion_actual)
                     
-                    # Si no es distribución libre (advertencia ignorada en frontend), somos estrictos
                     dist_auto = datos.get('distribucion_automatica') or datos.get('distribucion_automatic', False)
                     if not dist_auto and datos['cantidad_pases'] > cupo_disponible:
-                         raise ValueError(f"CAPACIDAD AGOTADA para estas fechas: Libre {cupo_disponible}, Requerido {datos['cantidad_pases']}. Sugerencia: Distribuir en otras zonas.")
+                         raise ValueError(f"CAPACIDAD AGOTADA para estas fechas: Libre {cupo_disponible}, Requerido {datos['cantidad_pases']}.")
             else:
-                # Si no hay zona_id, validamos contra la capacidad TOTAL de la entidad (legacy check)
-                query_asigs = select(AsignacionZona).where(
-                    and_(AsignacionZona.entidad_id == entidad.id, AsignacionZona.activa == True)
-                )
-                asignaciones = (await db.execute(query_asigs)).scalars().all()
-                capacidad_total_entidad = sum(asig.cupo_asignado for asig in asignaciones)
+                # 2c. DISTRIBUCIÓN AUTOMÁTICA (Si no hay zona_id)
+                res_plan = await self.sugerir_distribucion_entidad(db, entidad.id, datos['cantidad_pases'], fecha_ini, fecha_fin)
+                if not res_plan["completo"]:
+                    # Si no hay espacio suficiente en todas las zonas juntas
+                    raise ValueError(f"CAPACIDAD TOTAL SUPERADA: La entidad solo tiene {datos['cantidad_pases'] - res_plan['cantidad_restante']} puestos disponibles en total.")
                 
-                if datos['cantidad_pases'] > capacidad_total_entidad:
-                    raise ValueError(f"CAPACIDAD TOTAL SUPERADA: La entidad solo tiene {capacidad_total_entidad} puestos totales.")
+                plan_distribucion = res_plan["distribucion"]
+                # Usar la primera zona con espacio como referencia para el lote
+                if plan_distribucion:
+                    zona_id = plan_distribucion[0]["zona_id"]
 
         # 3. Generar serial y persistir lote
         serial_lote = await self._generar_serial_lote(db)
@@ -136,23 +134,25 @@ class PaseService:
         db.add(nuevo_lote)
         await db.flush()
 
-        # Si viene de una solicitud, vincular
+        # 4. Generar QRs con plan de distribución
+        tipo_lote_val = nuevo_lote.tipo_pase.value if hasattr(nuevo_lote.tipo_pase, 'value') else str(nuevo_lote.tipo_pase)
+        
+        # Inyectar plan en extras para los generadores
+        extras = {**datos, "plan_distribucion": plan_distribucion}
+
+        if tipo_lote_val == PasseTipo.simple.value:
+            await self._generar_pases_simples(db, nuevo_lote, creado_por_id, extras)
+        elif tipo_lote_val == PasseTipo.portal.value:
+            await self._generar_pases_portal(db, nuevo_lote, creado_por_id, extras)
+        elif tipo_lote_val == PasseTipo.identificado.value:
+            if datos.get('excel_data'):
+                await self.procesar_json_identificado(db, nuevo_lote, datos['excel_data'], creado_por_id, extras)
+        
         if solicitud_id:
             solicitud = await db.get(SolicitudEvento, solicitud_id)
             if solicitud:
                 solicitud.lote_id = nuevo_lote.id
 
-        # 4. Generar QRs según el tipo (Uso de .value para máxima robustez en comparaciones de Enum)
-        tipo_lote_val = nuevo_lote.tipo_pase.value if hasattr(nuevo_lote.tipo_pase, 'value') else str(nuevo_lote.tipo_pase)
-        
-        if tipo_lote_val == PasseTipo.simple.value:
-            await self._generar_pases_simples(db, nuevo_lote, creado_por_id, datos)
-        elif tipo_lote_val == PasseTipo.portal.value:
-            await self._generar_pases_portal(db, nuevo_lote, creado_por_id, datos)
-        elif tipo_lote_val == PasseTipo.identificado.value:
-            if datos.get('excel_data'):
-                await self.procesar_json_identificado(db, nuevo_lote, datos['excel_data'], creado_por_id)
-        
         await db.commit()
         await db.refresh(nuevo_lote, attribute_names=["zona_asignada", "tipo_acceso_custom"])
         return nuevo_lote
@@ -448,7 +448,20 @@ class PaseService:
         """Genera N pases simples para el lote."""
         expira_at = datetime.combine(lote.fecha_fin, datetime.max.time()).replace(tzinfo=timezone.utc) + timedelta(hours=24)
         
+        plan = extras.get('plan_distribucion')
+        cursor_plan = 0
+        puestos_en_zona_actual = 0
+        
         for i in range(1, lote.cantidad_pases + 1):
+            # Lógica de Distribución Inteligente
+            zona_final_id = extras.get('zona_id')
+            if plan and cursor_plan < len(plan):
+                zona_final_id = plan[cursor_plan]["zona_id"]
+                puestos_en_zona_actual += 1
+                if puestos_en_zona_actual >= plan[cursor_plan]["sugerencia"]:
+                    cursor_plan += 1
+                    puestos_en_zona_actual = 0
+
             serial_qr = f"{lote.codigo_serial}{str(i).zfill(4)}"
             token = crear_token_evento(serial_qr, expira_at)
             
@@ -464,7 +477,7 @@ class PaseService:
                 # v2.0 campos
                 tipo_acceso=extras.get('tipo_acceso', 'general'),
                 tipo_acceso_custom_id=extras.get('tipo_acceso_custom_id'),
-                zona_asignada_id=extras.get('zona_id'),
+                zona_asignada_id=zona_final_id,
                 puesto_asignado_id=extras.get('puesto_id'),
                 multi_vehiculo=extras.get('multi_vehiculo', False)
             )
@@ -475,7 +488,20 @@ class PaseService:
         from app.core.security import hashear_password
         expira_at = datetime.combine(lote.fecha_fin, datetime.max.time()).replace(tzinfo=timezone.utc) + timedelta(hours=24)
         
+        plan = extras.get('plan_distribucion')
+        cursor_plan = 0
+        puestos_en_zona_actual = 0
+
         for i in range(1, lote.cantidad_pases + 1):
+            # Lógica de Distribución Inteligente
+            zona_final_id = extras.get('zona_id')
+            if plan and cursor_plan < len(plan):
+                zona_final_id = plan[cursor_plan]["zona_id"]
+                puestos_en_zona_actual += 1
+                if puestos_en_zona_actual >= plan[cursor_plan]["sugerencia"]:
+                    cursor_plan += 1
+                    puestos_en_zona_actual = 0
+
             serial_qr = f"{lote.codigo_serial}{str(i).zfill(4)}"
             
             # Verificar si el usuario ya existe (por si es un huérfano de intento fallido o colisión)
@@ -517,7 +543,7 @@ class PaseService:
                 # v2.0 campos
                 tipo_acceso=extras.get('tipo_acceso', 'general'),
                 tipo_acceso_custom_id=extras.get('tipo_acceso_custom_id'),
-                zona_asignada_id=extras.get('zona_id'),
+                zona_asignada_id=zona_final_id,
                 puesto_asignado_id=extras.get('puesto_id'),
                 multi_vehiculo=extras.get('multi_vehiculo', False)
             )
@@ -533,11 +559,16 @@ class PaseService:
         filas = df.values.tolist()
         await self.procesar_json_identificado(db, lote, filas, creado_por_id)
 
-    async def procesar_json_identificado(self, db: AsyncSession, lote: LotePaseMasivo, filas: List[list], creado_por_id: uuid.UUID):
+    async def procesar_json_identificado(self, db: AsyncSession, lote: LotePaseMasivo, filas: List[list], creado_por_id: uuid.UUID, extras: dict = None):
         """Parsea arreglo JSON (proveniente de Excel prevalidado) y crea pases identificados."""
         from app.core.security import hashear_password
         from app.models.vehiculo_pase import VehiculoPase
         
+        extras = extras or {}
+        plan = extras.get('plan_distribucion')
+        cursor_plan = 0
+        puestos_en_zona_actual = 0
+
         # Límite de expiración
         expira_at = datetime.combine(lote.fecha_fin, datetime.max.time()).replace(tzinfo=timezone.utc) + timedelta(hours=24)
         count = 0
@@ -545,6 +576,15 @@ class PaseService:
         for row in filas:
             if not len(row) > 0 or not row[0]: continue # Nombre mandatorio
             
+            # Lógica de Distribución Inteligente
+            zona_final_id = extras.get('zona_id') or lote.zona_estacionamiento_id
+            if plan and cursor_plan < len(plan):
+                zona_final_id = plan[cursor_plan]["zona_id"]
+                puestos_en_zona_actual += 1
+                if puestos_en_zona_actual >= plan[cursor_plan]["sugerencia"]:
+                    cursor_plan += 1
+                    puestos_en_zona_actual = 0
+
             # Nuevo Formato Excel (20 Col): [NOMBRE, CEDULA, EMAIL, TELEFONO, 
             # V1_PLACA, V1_MARCA, V1_MODELO, V1_COLOR, 
             # V2_PLACA, V2_MARCA, V2_MODELO, V2_COLOR,
@@ -581,7 +621,7 @@ class PaseService:
                 vehiculo_color=str(v1_data[3]).upper() if v1_data[3] else None,
                 tipo_acceso=lote.tipo_acceso,
                 tipo_acceso_custom_id=lote.tipo_acceso_custom_id if hasattr(lote, 'tipo_acceso_custom_id') else None,
-                zona_asignada_id=lote.zona_estacionamiento_id,
+                zona_asignada_id=zona_final_id,
                 multi_vehiculo=bool(v2_data[0] or v3_data[0] or v4_data[0])
             )
             db.add(nuevo_qr)
@@ -596,7 +636,7 @@ class PaseService:
                         marca=str(v_data[1]).upper() if v_data[1] else None,
                         modelo=str(v_data[2]).upper() if v_data[2] else None,
                         color=str(v_data[3]).upper() if v_data[3] else None,
-                        zona_asignada_id=lote.zona_estacionamiento_id
+                        zona_asignada_id=zona_final_id
                     )
                     db.add(v_extra)
             
