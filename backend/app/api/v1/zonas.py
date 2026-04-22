@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, status, Body
 from sqlalchemy.ext.asyncio import AsyncSession
 from uuid import UUID
 from typing import List, Optional
-from sqlalchemy import select
+from sqlalchemy import select, and_, or_
 from sqlalchemy.orm import joinedload
 from app.models.puesto_estacionamiento import PuestoEstacionamiento
 

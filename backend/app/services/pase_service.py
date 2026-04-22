@@ -5,7 +5,7 @@ import qrcode
 from datetime import datetime, date, timedelta, timezone
 from typing import List, Optional, Tuple
 from sqlalchemy.future import select
-from sqlalchemy import func
+from sqlalchemy import func, and_, or_
 from sqlalchemy.ext.asyncio import AsyncSession
 from supabase import create_client, Client
 
@@ -15,6 +15,9 @@ from app.models.codigo_qr import CodigoQR
 from app.models.enums import PasseTipo, QRTipo, RolTipo
 from app.models.usuario import Usuario
 from app.models.vehiculo import Vehiculo
+from app.models.asignacion_zona import AsignacionZona
+from app.models.tipo_acceso_custom import TipoAccesoCustom
+from app.models.entidad_civil import EntidadCivil
 from app.core.security import crear_token_evento
 # Importación diferida para evitar ciclos
 
@@ -53,7 +56,6 @@ class PaseService:
         
         entidad = None
         if usuario.entidad_id:
-            from app.models.entidad_civil import EntidadCivil
             entidad = await db.get(EntidadCivil, usuario.entidad_id)
             if not entidad:
                 raise ValueError("Entidad no encontrada.")
@@ -72,9 +74,6 @@ class PaseService:
 
         plan_distribucion = None
         if entidad:
-            from app.models.asignacion_zona import AsignacionZona
-            from sqlalchemy import and_
-            
             # 2a. Parsear fechas
             try:
                 fecha_ini = datetime.strptime(datos['fecha_inicio'], '%Y-%m-%d').date() if isinstance(datos['fecha_inicio'], str) else datos['fecha_inicio']
@@ -263,6 +262,11 @@ class PaseService:
                 CodigoQR.puesto_asignado_id,
                 CodigoQR.tipo_acceso,
                 CodigoQR.tipo_acceso_custom_id,
+                CodigoQR.vehiculo_marca,
+                CodigoQR.vehiculo_modelo,
+                CodigoQR.vehiculo_color,
+                CodigoQR.email_portador,
+                CodigoQR.telefono_portador,
             )
             .join(LotePaseMasivo, CodigoQR.lote_id == LotePaseMasivo.id)
             .where(_WHERE)
@@ -279,6 +283,11 @@ class PaseService:
                 "nombre_portador": r.nombre_portador,
                 "cedula_portador": r.cedula_portador,
                 "vehiculo_placa": r.vehiculo_placa,
+                "vehiculo_marca": r.vehiculo_marca,
+                "vehiculo_modelo": r.vehiculo_modelo,
+                "vehiculo_color": r.vehiculo_color,
+                "email_portador": r.email_portador,
+                "telefono_portador": r.telefono_portador,
                 "tiene_datos": bool(r.datos_completos or r.nombre_portador),
                 "puesto_asignado_id": str(r.puesto_asignado_id) if r.puesto_asignado_id else None,
                 "tipo_acceso": r.tipo_acceso.value if r.tipo_acceso else "general",
@@ -287,7 +296,7 @@ class PaseService:
             for r in rows
         ]
 
-        return {"total": total, "muestra": muestra}
+        return {"total": total, "pases": muestra}
 
     async def obtener_fechas_con_lotes_por_entidad(
         self, db: AsyncSession, entidad_id: uuid.UUID
@@ -297,7 +306,7 @@ class PaseService:
         en las que la entidad tiene lotes activos (no vencidos).
         Usado por el CalendarioLotes en el frontend para colorear días.
         """
-        from app.models.asignacion_zona import AsignacionZona
+
         from app.models.zona_estacionamiento import ZonaEstacionamiento
 
         hoy = date.today()
@@ -379,9 +388,7 @@ class PaseService:
         Nivel 2: Validación por zona → Alerta + sugerencia de usar otras zonas
         Nivel 3: Validación total entidad → Bloqueo duro
         """
-        from app.models.asignacion_zona import AsignacionZona
-        from app.models.tipo_acceso_custom import TipoAccesoCustom
-        from sqlalchemy import and_
+
         
         alertas = []
         sugerencias = []

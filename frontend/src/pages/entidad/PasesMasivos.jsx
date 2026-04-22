@@ -737,8 +737,12 @@ const ModalNuevoLote = ({ isOpen, onClose, zonas, tiposCustom, onCreated }) => {
                         </div>
                         <Input label="Máx. accesos por pase" type="number" value={form.max_accesos_por_pase}
                             onChange={e => {
-                                const v = e.target.value === '' ? '' : parseInt(e.target.value) || 0;
-                                setForm({ ...form, max_accesos_por_pase: v === '' ? '' : Math.max(1, v) });
+                                const valStr = e.target.value;
+                                if (valStr === '') {
+                                    setForm({ ...form, max_accesos_por_pase: '' });
+                                } else {
+                                    setForm({ ...form, max_accesos_por_pase: parseInt(valStr) || 0 });
+                                }
                             }} />
                     </div>
                 </div>

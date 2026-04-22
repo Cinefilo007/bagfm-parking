@@ -392,10 +392,12 @@ export default function EstacionamientosEntidad() {
         setFormEditPase({
             nombre_portador: pase.nombre_portador || '',
             cedula_portador: pase.cedula_portador || '',
+            email_portador: pase.email_portador || '',
+            telefono_portador: pase.telefono_portador || '',
             vehiculo_placa: pase.vehiculo_placa || '',
-            vehiculo_marca: '',
-            vehiculo_modelo: '',
-            vehiculo_color: '',
+            vehiculo_marca: pase.vehiculo_marca || '',
+            vehiculo_modelo: pase.vehiculo_modelo || '',
+            vehiculo_color: pase.vehiculo_color || '',
         });
         setModalEditPase(true);
     }, []);
@@ -1556,6 +1558,29 @@ export default function EstacionamientosEntidad() {
                                     placeholder="Ej: V-12345678"
                                 />
                                 <Input
+                                    label="Teléfono"
+                                    value={formEditPase.telefono_portador || ''}
+                                    onChange={e => setFormEditPase(p => ({ ...p, telefono_portador: e.target.value }))}
+                                    placeholder="Ej: 0412..."
+                                />
+                                <div className="col-span-2">
+                                    <Input
+                                        label="Correo electrónico"
+                                        value={formEditPase.email_portador || ''}
+                                        onChange={e => setFormEditPase(p => ({ ...p, email_portador: e.target.value }))}
+                                        placeholder="correo@ejemplo.com"
+                                    />
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Datos del vehículo */}
+                        <div>
+                            <p className="text-[8px] font-black text-text-muted uppercase tracking-widest mb-2 flex items-center gap-1.5">
+                                <Car size={9} /> Datos del Vehículo
+                            </p>
+                            <div className="grid grid-cols-2 gap-2">
+                                <Input
                                     label="Placa del vehículo"
                                     value={formEditPase.vehiculo_placa || ''}
                                     onChange={e => setFormEditPase(p => ({ ...p, vehiculo_placa: e.target.value.toUpperCase() }))}
@@ -1566,6 +1591,12 @@ export default function EstacionamientosEntidad() {
                                     value={formEditPase.vehiculo_marca || ''}
                                     onChange={e => setFormEditPase(p => ({ ...p, vehiculo_marca: e.target.value }))}
                                     placeholder="Toyota, Ford..."
+                                />
+                                <Input
+                                    label="Modelo"
+                                    value={formEditPase.vehiculo_modelo || ''}
+                                    onChange={e => setFormEditPase(p => ({ ...p, vehiculo_modelo: e.target.value }))}
+                                    placeholder="Hilux, Corolla..."
                                 />
                                 <Input
                                     label="Color"
