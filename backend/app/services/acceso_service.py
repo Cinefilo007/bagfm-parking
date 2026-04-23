@@ -159,6 +159,24 @@ class AccesoService:
                     if qr_db.nombre_portador and vehiculos_socio:
                         necesita_datos = False
 
+                    # Resolver Zona y Puesto legibles
+                    z_id = qr_db.zona_asignada_id or (lote.zona_estacionamiento_id if lote else None)
+                    p_id = qr_db.puesto_asignado_id
+                    z_nombre = None
+                    p_nombre = None
+
+                    if z_id:
+                        from app.models.zona_estacionamiento import ZonaEstacionamiento
+                        z_db = await db.get(ZonaEstacionamiento, z_id)
+                        if z_db:
+                            z_nombre = z_db.nombre
+                            
+                    if p_id:
+                        from app.models.puesto_estacionamiento import PuestoEstacionamiento
+                        p_db = await db.get(PuestoEstacionamiento, p_id)
+                        if p_db:
+                            p_nombre = str(p_db.codigo)
+
                 return ResultadoValidacion(
                     permitido=True,
                     mensaje="Pase Masivo Válido",
@@ -174,8 +192,10 @@ class AccesoService:
                     vehiculos=vehiculos_socio,
                     vehiculo_id=vehiculo["id"] if isinstance(vehiculo, dict) else getattr(vehiculo, "id", None),
                     requiere_datos_manuales=necesita_datos,
-                    zona_asignada_id=qr_db.zona_asignada_id or (lote.zona_estacionamiento_id if lote else None),
-                    puesto_asignado_id=qr_db.puesto_asignado_id,
+                    zona_asignada_id=z_id,
+                    zona_nombre=z_nombre,
+                    puesto_asignado_id=p_id,
+                    puesto_nombre=p_nombre,
                     tipo_acceso=qr_db.tipo_acceso
                 )
 

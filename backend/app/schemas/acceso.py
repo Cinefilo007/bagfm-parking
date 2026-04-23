@@ -60,7 +60,9 @@ class ResultadoValidacion(BaseModel):
     vehiculos: List[VehiculoSalida] = []
     entidad_nombre: Optional[str] = None
     zona_asignada_id: Optional[UUID] = None
+    zona_nombre: Optional[str] = None
     puesto_asignado_id: Optional[UUID] = None
+    puesto_nombre: Optional[str] = None
     tipo_acceso: Optional[str] = None
     
     # IDs para el registro posterior

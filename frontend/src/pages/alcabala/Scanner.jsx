@@ -521,7 +521,7 @@ const ScannerAlcabala = () => {
                                 >
                                     <ParkingSquare size={12} className="text-primary" />
                                     <span className="text-[9px] font-black text-primary uppercase tracking-wider">
-                                        {resultado.puesto_asignado_id ? `Puesto ${resultado.puesto_asignado_id}` : 'Zona Asignada'}
+                                        {resultado.puesto_nombre ? `${resultado.zona_nombre || 'ZONA'} — Puesto ${resultado.puesto_nombre}` : resultado.zona_nombre || 'Zona Asignada'}
                                     </span>
                                 </div>
                             )}
