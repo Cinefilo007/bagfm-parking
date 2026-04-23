@@ -118,15 +118,23 @@ const LiveEventLog = ({ puntoNombre = null }) => {
                 ) : (
                     eventos.map((evento) => (
                         <div key={evento.id} className="flex items-start gap-3 p-3 bg-bg-low/30 rounded-2xl border border-white/5 hover:bg-bg-high/10 transition-all group animate-in slide-in-from-right-4 duration-300">
-                            <div className={cn(
-                                "mt-0.5 p-2 rounded-xl border",
-                                evento.tipo === 'entrada' ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20' :
-                                evento.tipo === 'salida' ? 'bg-amber-500/10 text-amber-500 border-amber-500/20' :
-                                'bg-red-500/10 text-red-500 border-red-500/20'
-                            )}>
-                                {evento.tipo === 'entrada' ? <LogIn size={14} /> : 
-                                 evento.tipo === 'salida' ? <LogOut size={14} /> : 
-                                 <AlertCircle size={14} />}
+                            
+                            <div className="flex flex-col items-center gap-1.5 mt-0.5">
+                                <div className={cn(
+                                    "p-2 rounded-xl border flex items-center justify-center",
+                                    evento.tipo === 'entrada' ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20' :
+                                    evento.tipo === 'salida' ? 'bg-amber-500/10 text-amber-500 border-amber-500/20' :
+                                    'bg-red-500/10 text-red-500 border-red-500/20'
+                                )}>
+                                    {evento.tipo === 'entrada' ? <LogIn size={14} /> : 
+                                     evento.tipo === 'salida' ? <LogOut size={14} /> : 
+                                     <AlertCircle size={14} />}
+                                </div>
+                                {evento.es_pase_temporal && (
+                                    <span className="px-1 py-[2px] rounded-[3px] bg-cyan-500/10 border border-cyan-500/20 text-[6px] font-black text-cyan-500 uppercase tracking-widest leading-none text-center">
+                                        TEMP<br/>PASS
+                                    </span>
+                                )}
                             </div>
 
                             <div className="flex-1 min-w-0">
@@ -141,19 +149,15 @@ const LiveEventLog = ({ puntoNombre = null }) => {
                                 
                                 <p className="text-[9px] text-text-muted font-bold uppercase tracking-tight mt-0.5 flex items-center gap-1">
                                     <Clock size={10} className="opacity-40" />
-                                    {evento.tipo === 'entrada' ? 'Ingreso por' : 'Egreso por'} <span className="text-primary/70">{evento.punto}</span>
+                                    {evento.tipo === 'entrada' ? 'Ingreso por' : 'Egreso por'} <span className="text-primary/70 truncate">{evento.punto}</span>
                                 </p>
+                                
                                 {evento.vehiculo && evento.vehiculo !== "SIN VEHÍCULO" && (
                                     <div className="flex items-center gap-2 mt-0.5 ml-3.5">
-                                        <p className="text-[8px] font-black text-primary/60 uppercase tracking-widest flex items-center gap-1">
-                                            <span className="w-1 h-1 rounded-full bg-primary/40 inline-block"/>
-                                            Vehículo: {evento.vehiculo}
+                                        <p className="text-[8px] font-black text-primary/60 uppercase tracking-widest flex items-center gap-1 truncate">
+                                            <span className="w-1 h-1 rounded-full bg-primary/40 inline-block shrink-0"/>
+                                            {evento.vehiculo}
                                         </p>
-                                        {evento.es_pase_temporal && (
-                                            <span className="px-1.5 py-0.5 rounded-[4px] bg-cyan-500/10 border border-cyan-500/20 text-[7px] font-black text-cyan-500 text-center tracking-widest">
-                                                TEMP_PASS
-                                            </span>
-                                        )}
                                     </div>
                                 )}
                             </div>
