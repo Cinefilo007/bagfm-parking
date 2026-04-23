@@ -351,22 +351,9 @@ class AccesoService:
                 
                 final_vehiculo_id = v_existente.id
 
-        # 2. Si todavía no tenemos usuario_id, crear visitante anónimo para cumplir NOT NULL
-        if not final_usuario_id:
-            from app.models.usuario import Usuario
-            from app.models.enums import RolTipo
-            import uuid as _uuid
-            visitante_anonimo = Usuario(
-                cedula=f"ANONIMO-{str(_uuid.uuid4())[:8].upper()}",
-                nombre=datos.nombre_manual or "VISITANTE",
-                apellido="ANÓNIMO",
-                rol=RolTipo.SOCIO,
-                password_hash="MANUAL_REG",
-                activo=True
-            )
-            db.add(visitante_anonimo)
-            await db.flush()
-            final_usuario_id = visitante_anonimo.id
+        # 2. Si todavía no tenemos usuario_id, el registro de acceso quedará sin usuario asociado
+        # logueando la entrada exclusivamente por el medio temporal (qr_id).
+        # (Se eliminó la creación del usuario VISITANTE_ANÓNIMO a petición de mantener la tabla limpia)
 
         # 3. Persistir Acceso
         nuevo_acceso = Acceso(
