@@ -24,10 +24,10 @@ class ParqueroService:
 
     async def get_mi_zona(self, db: AsyncSession, usuario_id: UUID) -> Dict[str, Any]:
         """
-        Retorna la zona asignada al parquero con KPIs corregidos.
-        - Reservados: Se cuentan los registros físicos reales en puestos_estacionamiento.
-        - Ocupados: Ocupación actual de la zona (incluye virtuales).
-        - Total: Capacidad máxima de la zona.
+        Retorna la zona asignada al parquero con KPIs de precisión táctica.
+        - Reservados Base: Suma de cupo_reservado_base en asignaciones.
+        - Reservados Entidad: Suma de todos los valores en el JSON distribucion_cupos.
+        - Libres: Capacidad Total - Ocupados - Reservados.
         """
         res_usr = await db.execute(
             select(Usuario)
@@ -41,41 +41,40 @@ class ParqueroService:
 
         zona = usuario.zona_asignada
 
-        # ── 1. Contar Puestos Físicos Reales (para detectar los "Apartados") ──
-        res_puestos = await db.execute(
-            select(PuestoEstacionamiento)
-            .where(PuestoEstacionamiento.zona_id == zona.id)
+        # ── 1. Obtener Asignaciones para calcular Reservados desde JSON y Columnas ──
+        res_asig = await db.execute(
+            select(AsignacionZona)
+            .where(AsignacionZona.zona_id == zona.id, AsignacionZona.activa == True)
         )
-        puestos_bd = res_puestos.scalars().all()
+        asignaciones = res_asig.scalars().all()
         
-        # Clasificar los puestos que SÍ están en la base de datos
         n_reservados_base = 0
         n_reservados_entidad = 0
-        n_mantenimiento = 0
-        fisicos_ocupados = 0
         
-        for p in puestos_bd:
-            if p.estado == EstadoPuesto.mantenimiento:
-                n_mantenimiento += 1
-            elif p.reservado_base or p.estado == EstadoPuesto.reservado_base:
-                n_reservados_base += 1
-            elif p.reservado_entidad_id is not None:
-                n_reservados_entidad += 1
-            elif p.estado == EstadoPuesto.ocupado:
-                fisicos_ocupados += 1
+        for asig in asignaciones:
+            # Sumar reservado base de la columna
+            n_reservados_base += (asig.cupo_reservado_base or 0)
+            
+            # Sumar desgloses del JSON (VIP, Productores, etc.)
+            if asig.distribucion_cupos and isinstance(asig.distribucion_cupos, dict):
+                for val in asig.distribucion_cupos.values():
+                    if isinstance(val, (int, float)):
+                        n_reservados_entidad += int(val)
 
-        # ── 2. Calcular KPIs ─────────────────────────────────────────────────
+        # ── 2. Contar Puestos Físicos (Para saber si la zona está mapeada) ────
+        res_p_count = await db.execute(
+            select(sql_func.count(PuestoEstacionamiento.id))
+            .where(PuestoEstacionamiento.zona_id == zona.id)
+        )
+        tiene_puestos_fisicos = (res_p_count.scalar() or 0) > 0
+
+        # ── 3. Calcular KPIs Finales ─────────────────────────────────────────
         total = zona.capacidad_total or 0
-        # Ocupados: Usamos el contador de la zona (que es la fuente de verdad)
         ocupados = zona.ocupacion_actual or 0
+        reservados_totales = n_reservados_base + n_reservados_entidad
         
-        # Reservados Totales (los apartados VIP y Base)
-        reservados = n_reservados_base + n_reservados_entidad
-        
-        # Libres = Total - (Ocupados + Reservados + Mantenimiento)
-        # Nota: Si los reservados están ocupados, el contador de zona ya los incluye.
-        # Pero normalmente los apartados se cuentan fuera de la ocupación general si están libres.
-        libres = max(0, total - ocupados - reservados - n_mantenimiento)
+        # Libres son los puestos que no están ni ocupados ni apartados (reservados)
+        libres = max(0, total - ocupados - reservados_totales)
 
         return {
             "id": str(zona.id),
@@ -89,14 +88,15 @@ class ParqueroService:
             "kpis": {
                 "libres":              libres,
                 "ocupados":            ocupados,
-                "reservados":          reservados,
+                "reservados":          reservados_totales,
                 "reservados_base":     n_reservados_base,
                 "reservados_entidad":  n_reservados_entidad,
-                "mantenimiento":       n_mantenimiento,
+                "mantenimiento":       0, # Podría sumarse si hay puestos físicos
                 "total":               total,
-                "tiene_puestos_fisicos": len(puestos_bd) > 0,
+                "tiene_puestos_fisicos": tiene_puestos_fisicos,
             }
         }
+
 
 
 
