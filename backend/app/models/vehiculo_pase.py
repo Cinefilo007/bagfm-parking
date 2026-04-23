@@ -14,7 +14,7 @@ class VehiculoPase(Base):
     __tablename__ = "vehiculos_pase"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    qr_id = Column(UUID(as_uuid=True), ForeignKey("codigos_qr.id", ondelete="CASCADE"), nullable=False, index=True)
+    qr_id = Column(UUID(as_uuid=True), ForeignKey("codigos_qr.id", ondelete="CASCADE"), nullable=True, index=True)  # nullable para registros manuales por placa
     
     placa = Column(String(20), nullable=False)
     marca = Column(String(50), nullable=True)
@@ -30,4 +30,5 @@ class VehiculoPase(Base):
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
 
     # Relaciones
+    puesto_asignado = relationship("PuestoEstacionamiento", foreign_keys=[puesto_asignado_id], lazy="selectin")
     # codigo_qr = relationship("CodigoQR")

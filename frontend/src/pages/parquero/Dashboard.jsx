@@ -1,21 +1,22 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
-    Car, ParkingSquare, Scan, CheckCircle2, XCircle,
-    RefreshCw, Clock, Shield, Zap, Activity,
-    AlertTriangle, LogIn, LogOut, Users, MapPin,
-    LayoutGrid, List, ChevronRight, Circle, Share2
+    Car, ParkingSquare, CheckCircle2, XCircle,
+    RefreshCw, Shield, Zap, Activity,
+    LogIn, LogOut, LayoutGrid, Share2,
+    Bell, Clock, Tag, Lock
 } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import { toast } from 'react-hot-toast';
 import { useAuthStore } from '../../store/auth.store';
 import { Card } from '../../components/ui/Card';
-import { Boton } from '../../components/ui/Boton';
 import { parqueroService } from '../../services/parquero.service';
-import { QRScanner } from '../../components/alcabala/QRScanner';
+import ModalInfoPuesto from '../../components/parquero/ModalInfoPuesto';
 import ReporteRapido from '../../components/infracciones/ReporteRapido';
 
-// ──── Componentes internos ────────────────────────────────────────────────────
+// ──────────────────────────────────────────────────────────────────────────────
+// Sub-componentes
+// ──────────────────────────────────────────────────────────────────────────────
 
 const KpiCard = ({ label, valor, icon: Icon, color = 'text-primary' }) => (
     <Card className="flex flex-col p-4 relative overflow-hidden group hover:bg-bg-high transition-all border-white/5 rounded-2xl">
@@ -23,170 +24,143 @@ const KpiCard = ({ label, valor, icon: Icon, color = 'text-primary' }) => (
             <Icon size={22} className={color} />
             <div className="w-1.5 h-1.5 rounded-full bg-primary/20 group-hover:bg-primary/50 transition-colors" />
         </div>
-        <div className="font-black text-2xl tracking-tighter leading-none mb-1 text-text-main">
-            {valor}
-        </div>
-        <div className="text-[9px] uppercase font-black tracking-widest text-text-muted opacity-60">
-            {label}
-        </div>
+        <div className="font-black text-2xl tracking-tighter leading-none mb-1 text-text-main">{valor}</div>
+        <div className="text-[9px] uppercase font-black tracking-widest text-text-muted opacity-60">{label}</div>
     </Card>
 );
 
-const EstadoPuesto = ({ label, color, count }) => (
-    <div className="flex items-center gap-2">
-        <div className={cn("w-2 h-2 rounded-full", color)} />
-        <span className="text-[10px] font-bold text-text-muted uppercase tracking-wider">{label}</span>
-        <span className="ml-auto text-[10px] font-black text-text-main">{count}</span>
-    </div>
-);
+// ── Tarjeta de puesto en el mapa ──────────────────────────────────────────
+const TarjetaPuesto = ({ puesto, onClick }) => {
+    const esBase = puesto.reservado_base === true;
+    const esEntidad = !esBase && puesto.reservado_entidad_id;
 
-const TarjetaPuesto = ({ puesto, onAsignar, seleccionado, onClick }) => {
-    const estadoColor = {
-        libre: 'border-success/30 bg-success/5',
-        ocupado: 'border-danger/20 bg-danger/5',
-        reservado: 'border-warning/30 bg-warning/5',
-        mantenimiento: 'border-text-muted/20 bg-white/3',
-    };
-    const dotColor = {
-        libre: 'bg-success',
-        ocupado: 'bg-danger',
-        reservado: 'bg-warning',
-        mantenimiento: 'bg-text-muted',
-    };
+    const config = esBase
+        ? { border: 'border-indigo-500/30', bg: 'bg-indigo-500/8', dot: 'bg-indigo-400', icon: 'text-indigo-400' }
+        : esEntidad
+        ? { border: 'border-warning/30', bg: 'bg-warning/8', dot: 'bg-warning', icon: 'text-warning' }
+        : puesto.estado === 'libre'
+        ? { border: 'border-success/30', bg: 'bg-success/5', dot: 'bg-success', icon: 'text-success' }
+        : puesto.estado === 'ocupado'
+        ? { border: 'border-danger/20', bg: 'bg-danger/5', dot: 'bg-danger', icon: 'text-danger/70' }
+        : puesto.estado === 'mantenimiento'
+        ? { border: 'border-white/10', bg: 'bg-white/3', dot: 'bg-text-muted', icon: 'text-text-muted/50' }
+        : { border: 'border-white/10', bg: 'bg-white/5', dot: 'bg-text-muted', icon: 'text-text-muted' };
 
-    const estadoLabel = {
-        libre: 'Libre',
-        ocupado: 'Ocupado',
-        reservado: 'Reservado',
-        mantenimiento: 'Mant.',
-    };
+    const etiqueta = esBase ? 'BASE'
+        : esEntidad ? (puesto.tipo_acceso_nombre || 'VIP')
+        : puesto.estado === 'libre' ? 'Libre'
+        : puesto.estado === 'ocupado' ? 'Ocup.'
+        : puesto.estado === 'mantenimiento' ? 'Mant.'
+        : puesto.estado || '—';
 
     return (
         <button
             onClick={onClick}
-            disabled={puesto.estado !== 'libre'}
             className={cn(
-                "relative flex flex-col items-center justify-center p-3 rounded-xl border-2 transition-all active:scale-95",
-                estadoColor[puesto.estado] || 'border-white/10',
-                puesto.estado === 'libre' && 'hover:border-primary/50 hover:bg-primary/10 cursor-pointer',
-                puesto.estado !== 'libre' && 'cursor-not-allowed opacity-60',
-                seleccionado && puesto.estado === 'libre' && 'border-primary shadow-[0_0_12px_rgba(var(--color-primary),0.3)] ring-1 ring-primary/50'
+                'relative flex flex-col items-center justify-center p-3 rounded-xl border-2 transition-all active:scale-95 hover:brightness-110',
+                config.border, config.bg
             )}
         >
-            <div className={cn(
-                "w-3 h-3 rounded-full mb-1.5",
-                dotColor[puesto.estado] || 'bg-text-muted',
-                seleccionado && puesto.estado === 'libre' && 'animate-pulse'
-            )} />
-            <ParkingSquare size={20} className={cn(
-                puesto.estado === 'libre' ? 'text-success' : 
-                puesto.estado === 'ocupado' ? 'text-danger/70' : 
-                puesto.estado === 'reservado' ? 'text-warning/70' : 'text-text-muted/50'
-            )} />
-            <span className="text-[8px] font-black uppercase tracking-wider mt-1 text-text-main">{puesto.codigo || puesto.numero || '—'}</span>
+            <div className={cn('w-2.5 h-2.5 rounded-full mb-1.5', config.dot)} />
+            <ParkingSquare size={18} className={config.icon} />
+            <span className="text-[8px] font-black uppercase tracking-tight mt-1 text-text-main leading-none">
+                {puesto.numero_puesto || puesto.codigo || '—'}
+            </span>
             <span className={cn(
-                "text-[7px] font-bold uppercase",
-                puesto.estado === 'libre' ? 'text-success' : 
-                puesto.estado === 'ocupado' ? 'text-danger/70' :
-                puesto.estado === 'reservado' ? 'text-warning/70' : 'text-text-muted/50'
-            )}>{estadoLabel[puesto.estado] || puesto.estado}</span>
-            {seleccionado && puesto.estado === 'libre' && (
-                <div className="absolute inset-0 rounded-xl border-2 border-primary/70 animate-pulse" />
-            )}
+                'text-[6px] font-black uppercase tracking-wide leading-none mt-0.5',
+                esBase ? 'text-indigo-400' : esEntidad ? 'text-warning' : config.icon
+            )}>
+                {etiqueta}
+            </span>
+            {esBase && <Lock size={8} className="absolute top-1 right-1 text-indigo-400/60" />}
         </button>
     );
 };
 
-const TarjetaVehiculo = ({ vehiculo, puestos, onAsignarPuesto }) => (
-    <div className="flex items-start gap-3 p-3 bg-bg-card/30 rounded-xl border border-white/5">
-        <div className="w-10 h-10 bg-primary/10 rounded-xl flex items-center justify-center shrink-0 border border-primary/20">
-            <Car size={20} className="text-primary" />
+// ── Vehículo en zona ──────────────────────────────────────────────────────
+const TarjetaVehiculo = ({ vehiculo }) => {
+    const tiempoDisplay = () => {
+        if (!vehiculo.tiempo_en_zona_min) return null;
+        const h = Math.floor(vehiculo.tiempo_en_zona_min / 60);
+        const m = vehiculo.tiempo_en_zona_min % 60;
+        return h > 0 ? `${h}h ${m}min` : `${m} min`;
+    };
+
+    return (
+        <div className="flex items-center gap-3 p-3 bg-bg-card/30 rounded-xl border border-white/5">
+            <div className="w-10 h-10 bg-primary/10 rounded-xl flex items-center justify-center shrink-0 border border-primary/20">
+                <Car size={18} className="text-primary" />
+            </div>
+            <div className="flex-1 min-w-0">
+                <p className="text-xs font-black text-text-main uppercase tracking-tight">{vehiculo.placa}</p>
+                <p className="text-[9px] text-text-muted uppercase tracking-wide">
+                    {[vehiculo.color, vehiculo.marca, vehiculo.modelo].filter(Boolean).join(' · ') || 'Sin datos'}
+                </p>
+                <div className="flex items-center gap-2 mt-1 flex-wrap">
+                    {vehiculo.puesto_codigo && (
+                        <span className="inline-flex items-center gap-1 text-[8px] font-black text-success bg-success/10 px-2 py-0.5 rounded-full">
+                            <ParkingSquare size={8} /> {vehiculo.puesto_codigo}
+                        </span>
+                    )}
+                    {tiempoDisplay() && (
+                        <span className="inline-flex items-center gap-1 text-[8px] text-text-muted bg-white/5 px-2 py-0.5 rounded-full">
+                            <Clock size={8} /> {tiempoDisplay()}
+                        </span>
+                    )}
+                </div>
+            </div>
         </div>
-        <div className="flex-1 min-w-0">
-            <p className="text-xs font-black text-text-main uppercase tracking-tight">{vehiculo.placa}</p>
-            <p className="text-[9px] text-text-muted uppercase tracking-wide">{vehiculo.marca} {vehiculo.modelo}</p>
-            {vehiculo.puesto_asignado_id ? (
-                <span className="inline-flex items-center gap-1 text-[8px] font-black text-success bg-success/10 px-2 py-0.5 rounded-full mt-1">
-                    <CheckCircle2 size={9} /> Puesto asignado
-                </span>
-            ) : (
-                <span className="inline-flex items-center gap-1 text-[8px] font-black text-warning bg-warning/10 px-2 py-0.5 rounded-full mt-1">
-                    <Circle size={9} /> Sin puesto
-                </span>
-            )}
-        </div>
-        {!vehiculo.puesto_asignado_id && (
-            <button
-                onClick={() => onAsignarPuesto(vehiculo)}
-                className="shrink-0 h-8 px-3 rounded-lg bg-primary/20 text-primary border border-primary/30 flex items-center gap-1.5 text-[9px] font-black uppercase"
-            >
-                <ParkingSquare size={12} />
-                Asignar
-            </button>
-        )}
+    );
+};
+
+// ── Leyenda del mapa ─────────────────────────────────────────────────────
+const ItemLeyenda = ({ color, label, count }) => (
+    <div className="flex items-center gap-1.5">
+        <div className={cn('w-2 h-2 rounded-full', color)} />
+        <span className="text-[9px] font-bold text-text-muted uppercase tracking-wider">{label}</span>
+        {count !== undefined && <span className="text-[9px] font-black text-text-main ml-0.5">{count}</span>}
     </div>
 );
 
-// ──── Página Principal ────────────────────────────────────────────────────────
-
-const VISTAS = { PANEL: 'panel', SCANNER: 'scanner', MAPA: 'mapa' };
-
+// ══════════════════════════════════════════════════════════════════════════════
+// PÁGINA PRINCIPAL
+// ══════════════════════════════════════════════════════════════════════════════
 const DashboardParquero = () => {
     const navigate = useNavigate();
     const { user } = useAuthStore();
 
-    const [vista, setVista] = useState(VISTAS.PANEL);
     const [zonaInfo, setZonaInfo] = useState(null);
     const [puestos, setPuestos] = useState([]);
     const [vehiculosEnZona, setVehiculosEnZona] = useState([]);
-    const [vehiculosPendientes, setVehiculosPendientes] = useState([]);
     const [cargando, setCargando] = useState(true);
-
-    // Estados del scanner
-    const [modoScanner, setModoScanner] = useState(null); // 'llegada' | 'salida'
-    const [escaneando, setEscaneando] = useState(false);
-    const [ultimoEscaneo, setUltimoEscaneo] = useState(null);
-    const scannerRef = useRef(null);
-
-    // Asignación de puesto
-    const [vehiculoSeleccionado, setVehiculoSeleccionado] = useState(null);
-    const [puestoSeleccionado, setPuestoSeleccionado] = useState(null);
-    const [asignando, setAsignando] = useState(false);
+    const [puestoModal, setPuestoModal] = useState(null); // puesto seleccionado
 
     const cargarDatos = useCallback(async () => {
         try {
-            const zona = await parqueroService.getMiZona();
-            setZonaInfo(zona);
-            if (zona?.id) {
-                const [p, vz] = await Promise.all([
-                    parqueroService.getPuestosZona(zona.id),
-                    parqueroService.getVehiculosEnZona(zona.id),
+            // Cargar zona con KPIs reales
+            const zonaData = await parqueroService.getMiZona();
+            setZonaInfo(zonaData);
+
+            if (zonaData?.id) {
+                const [puestosData, vehiculosData] = await Promise.all([
+                    parqueroService.getPuestosZona(zonaData.id),
+                    parqueroService.getVehiculosEnZona(zonaData.id),
                 ]);
-                setPuestos(p || []);
-                setVehiculosEnZona(vz || []);
+
+                // Si la zona NO usa puestos identificados pero tiene capacidad definida,
+                // generamos puestos virtuales basados en la capacidad
+                if (!zonaData.usa_puestos_identificados && (!puestosData || puestosData.length === 0)) {
+                    const puestosVirtuales = generarPuestosVirtuales(zonaData);
+                    setPuestos(puestosVirtuales);
+                } else {
+                    setPuestos(puestosData || []);
+                }
+
+                setVehiculosEnZona(vehiculosData || []);
             }
         } catch (e) {
-            // Si la API falla, usar datos simulados para UI
-            setZonaInfo({ id: 'demo', nombre: 'Zona Alpha - Parqueo VIP', capacidad: 12 });
-            setPuestos([
-                { id: '1', codigo: 'A-01', estado: 'libre' },
-                { id: '2', codigo: 'A-02', estado: 'ocupado' },
-                { id: '3', codigo: 'A-03', estado: 'libre' },
-                { id: '4', codigo: 'A-04', estado: 'reservado' },
-                { id: '5', codigo: 'A-05', estado: 'libre' },
-                { id: '6', codigo: 'A-06', estado: 'ocupado' },
-                { id: '7', codigo: 'A-07', estado: 'libre' },
-                { id: '8', codigo: 'A-08', estado: 'libre' },
-                { id: '9', codigo: 'A-09', estado: 'mantenimiento' },
-                { id: '10', codigo: 'A-10', estado: 'libre' },
-                { id: '11', codigo: 'A-11', estado: 'ocupado' },
-                { id: '12', codigo: 'A-12', estado: 'libre' },
-            ]);
-            setVehiculosEnZona([
-                { id: 'v1', placa: 'AB123CD', marca: 'TOYOTA', modelo: 'HILUX', puesto_asignado_id: '2' },
-                { id: 'v2', placa: 'XZ456FG', marca: 'FORD', modelo: 'F150', puesto_asignado_id: null },
-                { id: 'v3', placa: 'NG789HK', marca: 'CHEVROLET', modelo: 'SILVERADO', puesto_asignado_id: '6' },
-            ]);
+            console.warn('Error al cargar datos del parquero:', e);
+            toast.error('No se pudieron cargar los datos de la zona');
         } finally {
             setCargando(false);
         }
@@ -198,74 +172,50 @@ const DashboardParquero = () => {
         return () => clearInterval(interval);
     }, [cargarDatos]);
 
-    const stats = {
+    // ── Generar puestos virtuales si la zona no tiene físicos ──────────────
+    const generarPuestosVirtuales = (zona) => {
+        const total = zona.capacidad_total || 0;
+        const ocupados = zona.ocupacion_actual || 0;
+        return Array.from({ length: total }, (_, i) => ({
+            id: `virtual-${i}`,
+            numero_puesto: `P-${String(i + 1).padStart(2, '0')}`,
+            estado: i < ocupados ? 'ocupado' : 'libre',
+            reservado_base: false,
+            reservado_entidad_id: null,
+            virtual: true,
+        }));
+    };
+
+    // ── KPIs reales desde el backend ──────────────────────────────────────
+    const kpis = zonaInfo?.kpis || {
         libres: puestos.filter(p => p.estado === 'libre').length,
         ocupados: puestos.filter(p => p.estado === 'ocupado').length,
         reservados: puestos.filter(p => p.estado === 'reservado').length,
+        mantenimiento: puestos.filter(p => p.estado === 'mantenimiento').length,
         total: puestos.length,
-    };
-
-    const handleScanQR = async (qrToken) => {
-        if (escaneando) return;
-        setEscaneando(true);
-        try {
-            if (modoScanner === 'llegada' && zonaInfo?.id) {
-                const result = await parqueroService.registrarLlegada(qrToken, zonaInfo.id);
-                setUltimoEscaneo({ tipo: 'llegada', ...result });
-                toast.success('Vehículo registrado en zona', { icon: '🚗' });
-            } else if (modoScanner === 'salida') {
-                const result = await parqueroService.registrarSalida(qrToken);
-                setUltimoEscaneo({ tipo: 'salida', ...result });
-                toast.success('Salida registrada', { icon: '✅' });
-            }
-            await cargarDatos();
-        } catch (e) {
-            toast.error(e.response?.data?.detail || 'Error al procesar QR');
-        } finally {
-            setEscaneando(false);
-        }
-    };
-
-    const handleAsignarPuesto = async () => {
-        if (!vehiculoSeleccionado || !puestoSeleccionado) return;
-        setAsignando(true);
-        try {
-            await parqueroService.asignarPuesto(vehiculoSeleccionado.id, puestoSeleccionado.id);
-            toast.success(`Puesto ${puestoSeleccionado.codigo} asignado a ${vehiculoSeleccionado.placa}`);
-            setVehiculoSeleccionado(null);
-            setPuestoSeleccionado(null);
-            await cargarDatos();
-        } catch (e) {
-            toast.error('No se pudo asignar el puesto');
-        } finally {
-            setAsignando(false);
-        }
     };
 
     const handleCompartirUbicacion = async () => {
         const nombre = zonaInfo?.nombre || 'Zona de Estacionamiento';
-        let mensaje = `Parking BAGFM — ${nombre}`;
+        const mensaje = `Parking BAGFM — ${nombre}`;
         if (zonaInfo?.latitud && zonaInfo?.longitud) {
             const url = `https://maps.google.com/?q=${zonaInfo.latitud},${zonaInfo.longitud}`;
-            if (navigator.share) {
-                await navigator.share({ title: `BAGFM - ${nombre}`, text: mensaje, url });
-                return;
-            }
+            if (navigator.share) { await navigator.share({ title: `BAGFM - ${nombre}`, text: mensaje, url }); return; }
             await navigator.clipboard.writeText(`${mensaje}\n${url}`);
-            toast.success('Ubicacion copiada al portapapeles');
+            toast.success('Ubicación copiada');
         } else if (navigator.geolocation) {
             navigator.geolocation.getCurrentPosition(async (pos) => {
                 const url = `https://maps.google.com/?q=${pos.coords.latitude},${pos.coords.longitude}`;
-                if (navigator.share) {
-                    await navigator.share({ title: `BAGFM - ${nombre}`, text: mensaje, url });
-                } else {
-                    await navigator.clipboard.writeText(`${mensaje}\n${url}`);
-                    toast.success('Ubicacion copiada al portapapeles');
-                }
+                if (navigator.share) await navigator.share({ title: `BAGFM - ${nombre}`, text: mensaje, url });
+                else { await navigator.clipboard.writeText(`${mensaje}\n${url}`); toast.success('Ubicación copiada'); }
             }, () => toast.error('No se pudo obtener GPS'));
         } else {
-            toast.error('Comparte la ubicacion de la zona manualmente');
+            toast.error('Comparte la ubicación manualmente');
         }
+    };
+
+    const navegarConZona = (ruta) => {
+        navigate(ruta, { state: { zonaData: zonaInfo } });
     };
 
     if (cargando) return (
@@ -280,7 +230,7 @@ const DashboardParquero = () => {
     return (
         <div className="min-h-screen bg-bg-app pb-24">
             <ReporteRapido zonaId={zonaInfo?.id} />
-            
+
             {/* ── Header ── */}
             <header className="sticky top-0 z-40 bg-bg-card/90 backdrop-blur-md border-b border-white/5 px-4 py-3">
                 <div className="flex items-center justify-between max-w-2xl mx-auto">
@@ -297,10 +247,18 @@ const DashboardParquero = () => {
                         </div>
                     </div>
                     <div className="flex items-center gap-2">
-                        <button onClick={handleCompartirUbicacion}
-                            className="flex items-center gap-1.5 h-9 px-3 rounded-xl bg-primary/10 text-primary border border-primary/20 text-[9px] font-black uppercase hover:bg-primary/20 transition-all"
-                            title="Compartir ubicacion de zona">
-                            <Share2 size={13} /> Compartir
+                        <button
+                            onClick={() => navegarConZona('/parquero/notificaciones')}
+                            className="relative flex items-center gap-1.5 h-9 px-3 rounded-xl bg-primary/10 text-primary border border-primary/20 text-[9px] font-black uppercase hover:bg-primary/20 transition-all"
+                        >
+                            <Bell size={13} />
+                        </button>
+                        <button
+                            onClick={handleCompartirUbicacion}
+                            className="flex items-center gap-1.5 h-9 px-3 rounded-xl bg-white/5 text-text-muted border border-white/10 text-[9px] font-black uppercase hover:bg-white/10 transition-all"
+                            title="Compartir ubicación de zona"
+                        >
+                            <Share2 size={13} />
                         </button>
                         <button onClick={() => cargarDatos()} className="p-2 rounded-lg bg-white/5 hover:bg-white/10 transition-all active:scale-90">
                             <RefreshCw size={16} className="text-text-muted" />
@@ -311,197 +269,124 @@ const DashboardParquero = () => {
 
             <div className="max-w-2xl mx-auto p-4 space-y-4">
 
-                {/* ── KPIs ── */}
-                <div className="grid grid-cols-4 gap-2">
-                    <KpiCard label="Libres" valor={stats.libres} icon={CheckCircle2} color="text-success" />
-                    <KpiCard label="Ocupados" valor={stats.ocupados} icon={Car} color="text-danger" />
-                    <KpiCard label="Reservados" valor={stats.reservados} icon={Shield} color="text-warning" />
-                    <KpiCard label="Total" valor={stats.total} icon={LayoutGrid} color="text-primary" />
-                </div>
-
-                {/* ── Acciones de Escaneo ── */}
-                <Card className="p-4 rounded-2xl border-white/5">
-                    <p className="text-[9px] font-black text-text-muted uppercase tracking-widest mb-3 flex items-center gap-2">
-                        <Scan size={12} className="text-primary" />
-                        Acciones de Escaneo QR
-                    </p>
-                    <div className="grid grid-cols-2 gap-3">
-                        <button
-                            onClick={() => { setModoScanner('llegada'); setVista(VISTAS.SCANNER); setUltimoEscaneo(null); }}
-                            className="flex flex-col items-center gap-2 p-4 rounded-xl bg-success/5 border-2 border-success/30 hover:bg-success/10 hover:border-success/50 active:scale-95 transition-all"
-                        >
-                            <div className="w-10 h-10 bg-success/20 rounded-xl flex items-center justify-center">
-                                <LogIn size={22} className="text-success" />
-                            </div>
-                            <span className="text-[10px] font-black uppercase tracking-widest text-success">Recibir</span>
-                            <span className="text-[8px] text-text-muted uppercase tracking-wide">Registrar Llegada</span>
-                        </button>
-                        <button
-                            onClick={() => { setModoScanner('salida'); setVista(VISTAS.SCANNER); setUltimoEscaneo(null); }}
-                            className="flex flex-col items-center gap-2 p-4 rounded-xl bg-warning/5 border-2 border-warning/30 hover:bg-warning/10 hover:border-warning/50 active:scale-95 transition-all"
-                        >
-                            <div className="w-10 h-10 bg-warning/20 rounded-xl flex items-center justify-center">
-                                <LogOut size={22} className="text-warning" />
-                            </div>
-                            <span className="text-[10px] font-black uppercase tracking-widest text-warning">Despachar</span>
-                            <span className="text-[8px] text-text-muted uppercase tracking-wide">Registrar Salida</span>
-                        </button>
-                    </div>
-                </Card>
-
-                {/* ── PANEL DE SCANNER (in-page) ── */}
-                {vista === VISTAS.SCANNER && (
-                    <Card className="p-0 rounded-2xl border-white/5 overflow-hidden">
-                        <div className="bg-bg-app/60 px-4 py-3 flex items-center justify-between border-b border-white/5">
-                            <div className="flex items-center gap-2">
-                                <div className={cn("w-2 h-2 rounded-full animate-pulse", modoScanner === 'llegada' ? 'bg-success' : 'bg-warning')} />
-                                <span className="text-[10px] font-black uppercase tracking-widest text-text-main">
-                                    {modoScanner === 'llegada' ? 'Modo Recepción' : 'Modo Despacho'}
-                                </span>
-                            </div>
-                            <button
-                                onClick={() => setVista(VISTAS.PANEL)}
-                                className="text-[9px] font-black uppercase text-text-muted/60 px-3 py-1 rounded-lg bg-white/5 hover:bg-white/10"
-                            >
-                                Cerrar
-                            </button>
-                        </div>
-
-                        {/* Scanner */}
-                        <div className="aspect-video max-h-72 bg-black relative">
-                            <QRScanner
-                                ref={scannerRef}
-                                onScanSuccess={handleScanQR}
-                                autoStart={true}
-                            />
-                            {escaneando && (
-                                <div className="absolute inset-0 bg-black/70 flex flex-col items-center justify-center backdrop-blur-sm">
-                                    <RefreshCw className="text-primary animate-spin mb-3" size={36} />
-                                    <span className="text-[10px] font-black uppercase tracking-widest text-primary">Procesando...</span>
-                                </div>
-                            )}
-                        </div>
-
-                        {/* Resultado último escaneo */}
-                        {ultimoEscaneo && (
-                            <div className={cn(
-                                "flex items-center gap-3 p-3 border-t",
-                                ultimoEscaneo.tipo === 'llegada' ? 'bg-success/5 border-success/20' : 'bg-warning/5 border-warning/20'
-                            )}>
-                                {ultimoEscaneo.tipo === 'llegada' 
-                                    ? <CheckCircle2 size={18} className="text-success shrink-0" />
-                                    : <LogOut size={18} className="text-warning shrink-0" />
-                                }
-                                <div>
-                                    <p className="text-[10px] font-black uppercase tracking-wide text-text-main">
-                                        {ultimoEscaneo.placa || 'Vehículo'} — {ultimoEscaneo.tipo === 'llegada' ? 'Ingresado' : 'Despachado'}
-                                    </p>
-                                    <p className="text-[8px] text-text-muted">
-                                        {ultimoEscaneo.puesto_asignado_id ? `Puesto: ${ultimoEscaneo.puesto_asignado_id}` : 'Sin puesto asignado aún'}
-                                    </p>
-                                </div>
-                            </div>
-                        )}
-                        
-                        <p className="text-center text-[9px] font-black text-text-muted/40 uppercase tracking-widest py-3">
-                            Apunte la cámara al código QR del vehículo
-                        </p>
+                {/* ── Sin zona asignada ── */}
+                {!zonaInfo && (
+                    <Card className="p-8 rounded-2xl border-white/5 text-center">
+                        <ParkingSquare size={40} className="mx-auto mb-3 text-text-muted/30" />
+                        <p className="text-sm font-black text-text-muted uppercase tracking-widest">Sin zona asignada</p>
+                        <p className="text-[10px] text-text-muted/60 mt-1">Contacta a tu supervisor</p>
                     </Card>
                 )}
 
-                {/* ── MAPA DE PUESTOS ── */}
-                <Card className="p-4 rounded-2xl border-white/5">
-                    <div className="flex items-center justify-between mb-3">
-                        <p className="text-[9px] font-black text-text-muted uppercase tracking-widest flex items-center gap-2">
-                            <LayoutGrid size={12} className="text-primary" />
-                            Mapa de Puestos — {zonaInfo?.nombre}
+                {zonaInfo && <>
+
+                    {/* ── KPIs ── */}
+                    <div className="grid grid-cols-4 gap-2">
+                        <KpiCard label="Libres" valor={kpis.libres} icon={CheckCircle2} color="text-success" />
+                        <KpiCard label="Ocupados" valor={kpis.ocupados} icon={Car} color="text-danger" />
+                        <KpiCard label="Reservados" valor={kpis.reservados} icon={Shield} color="text-warning" />
+                        <KpiCard label="Total" valor={kpis.total} icon={LayoutGrid} color="text-primary" />
+                    </div>
+
+                    {/* ── RECIBIR / DESPACHAR ── */}
+                    <Card className="p-4 rounded-2xl border-white/5">
+                        <p className="text-[9px] font-black text-text-muted uppercase tracking-widest mb-3 flex items-center gap-2">
+                            <Activity size={12} className="text-primary" />
+                            Operaciones de Zona
                         </p>
-                        {(vehiculoSeleccionado && puestoSeleccionado) && (
+                        <div className="grid grid-cols-2 gap-3">
                             <button
-                                onClick={handleAsignarPuesto}
-                                disabled={asignando}
-                                className="h-8 px-3 rounded-lg bg-primary text-bg-app text-[9px] font-black uppercase tracking-wider flex items-center gap-1.5"
+                                onClick={() => navegarConZona('/parquero/recibir')}
+                                className="flex flex-col items-center gap-2 p-5 rounded-xl bg-success/5 border-2 border-success/30 hover:bg-success/10 hover:border-success/50 active:scale-95 transition-all"
                             >
-                                {asignando ? <RefreshCw size={12} className="animate-spin" /> : <CheckCircle2 size={12} />}
-                                Confirmar Asignación
+                                <div className="w-12 h-12 bg-success/15 rounded-xl flex items-center justify-center">
+                                    <LogIn size={26} className="text-success" />
+                                </div>
+                                <span className="text-[11px] font-black uppercase tracking-widest text-success">Recibir</span>
+                                <span className="text-[8px] text-text-muted uppercase tracking-wide">Registrar Llegada</span>
                             </button>
-                        )}
-                    </div>
-
-                    {/* Leyenda */}
-                    <div className="flex flex-wrap gap-4 mb-4 px-1">
-                        <EstadoPuesto label="Libre" color="bg-success" count={stats.libres} />
-                        <EstadoPuesto label="Ocupado" color="bg-danger" count={stats.ocupados} />
-                        <EstadoPuesto label="Reservado" color="bg-warning" count={stats.reservados} />
-                    </div>
-
-                    {vehiculoSeleccionado && (
-                        <div className="mb-3 p-3 rounded-xl bg-primary/5 border border-primary/20 flex items-center gap-3">
-                            <div className="w-8 h-8 bg-primary/10 rounded-lg flex items-center justify-center">
-                                <Car size={16} className="text-primary" />
-                            </div>
-                            <div>
-                                <p className="text-[9px] font-black text-primary uppercase">Asignando para:</p>
-                                <p className="text-xs font-black text-text-main">{vehiculoSeleccionado.placa}</p>
-                            </div>
-                            <button onClick={() => { setVehiculoSeleccionado(null); setPuestoSeleccionado(null); }} className="ml-auto text-[8px] text-text-muted/60 font-black uppercase">Cancelar</button>
+                            <button
+                                onClick={() => navegarConZona('/parquero/despachar')}
+                                className="flex flex-col items-center gap-2 p-5 rounded-xl bg-warning/5 border-2 border-warning/30 hover:bg-warning/10 hover:border-warning/50 active:scale-95 transition-all"
+                            >
+                                <div className="w-12 h-12 bg-warning/15 rounded-xl flex items-center justify-center">
+                                    <LogOut size={26} className="text-warning" />
+                                </div>
+                                <span className="text-[11px] font-black uppercase tracking-widest text-warning">Despachar</span>
+                                <span className="text-[8px] text-text-muted uppercase tracking-wide">Registrar Salida</span>
+                            </button>
                         </div>
-                    )}
+                    </Card>
 
-                    {/* Grilla de puestos */}
-                    <div className="grid grid-cols-4 sm:grid-cols-6 gap-2">
-                        {puestos.map(puesto => (
-                            <TarjetaPuesto
-                                key={puesto.id}
-                                puesto={puesto}
-                                seleccionado={puestoSeleccionado?.id === puesto.id}
-                                onClick={() => {
-                                    if (puesto.estado !== 'libre') return;
-                                    setPuestoSeleccionado(prev => prev?.id === puesto.id ? null : puesto);
-                                }}
-                            />
-                        ))}
-                    </div>
-
-                    {puestos.length === 0 && (
-                        <div className="text-center py-8 text-text-muted/50">
-                            <ParkingSquare size={40} className="mx-auto mb-3 opacity-30" />
-                            <p className="text-[10px] font-black uppercase tracking-widest">Esta zona no tiene puestos gestionados</p>
-                        </div>
-                    )}
-                </Card>
-
-                {/* ── VEHÍCULOS EN ZONA ── */}
-                <Card className="p-4 rounded-2xl border-white/5">
-                    <div className="flex items-center gap-2 mb-3">
-                        <Activity size={14} className="text-primary" />
-                        <p className="text-[9px] font-black text-text-muted uppercase tracking-widest">
-                            Vehículos en Zona ({vehiculosEnZona.length})
+                    {/* ── MAPA DE PUESTOS ── */}
+                    <Card className="p-4 rounded-2xl border-white/5">
+                        <p className="text-[9px] font-black text-text-muted uppercase tracking-widest mb-3 flex items-center gap-2">
+                            <LayoutGrid size={12} className="text-primary" />
+                            Mapa de Puestos — {zonaInfo.nombre}
                         </p>
-                    </div>
-                    <div className="space-y-2">
-                        {vehiculosEnZona.map(v => (
-                            <TarjetaVehiculo
-                                key={v.id}
-                                vehiculo={v}
-                                puestos={puestos.filter(p => p.estado === 'libre')}
-                                onAsignarPuesto={(veh) => {
-                                    setVehiculoSeleccionado(veh);
-                                    setPuestoSeleccionado(null);
-                                    window.scrollTo({ top: document.documentElement.scrollHeight, behavior: 'smooth' });
-                                }}
-                            />
-                        ))}
-                        {vehiculosEnZona.length === 0 && (
-                            <div className="text-center py-6 text-text-muted/40">
-                                <Car size={32} className="mx-auto mb-2 opacity-40" />
-                                <p className="text-[9px] font-black uppercase tracking-widest">Sin vehículos activos en zona</p>
+
+                        {/* Leyenda */}
+                        <div className="flex flex-wrap gap-3 mb-4 px-1">
+                            <ItemLeyenda color="bg-indigo-400" label="Base" />
+                            <ItemLeyenda color="bg-warning" label="Entidad" />
+                            <ItemLeyenda color="bg-success" label="Libre" count={kpis.libres} />
+                            <ItemLeyenda color="bg-danger" label="Ocup." count={kpis.ocupados} />
+                            {kpis.mantenimiento > 0 && <ItemLeyenda color="bg-text-muted" label="Mant." count={kpis.mantenimiento} />}
+                        </div>
+
+                        {/* Grid de puestos */}
+                        {puestos.length > 0 ? (
+                            <div className="grid grid-cols-4 sm:grid-cols-6 gap-2">
+                                {puestos.map(puesto => (
+                                    <TarjetaPuesto
+                                        key={puesto.id}
+                                        puesto={puesto}
+                                        onClick={() => !puesto.virtual && setPuestoModal(puesto)}
+                                    />
+                                ))}
+                            </div>
+                        ) : (
+                            <div className="text-center py-8 text-text-muted/40">
+                                <ParkingSquare size={36} className="mx-auto mb-3 opacity-30" />
+                                <p className="text-[10px] font-black uppercase tracking-widest">Zona sin mapa de puestos físicos</p>
+                                <p className="text-[9px] opacity-60 mt-1">Capacidad total: {zonaInfo.capacidad_total}</p>
                             </div>
                         )}
-                    </div>
-                </Card>
+                    </Card>
 
+                    {/* ── VEHÍCULOS EN ZONA ── */}
+                    <Card className="p-4 rounded-2xl border-white/5">
+                        <div className="flex items-center gap-2 mb-3">
+                            <Activity size={14} className="text-primary" />
+                            <p className="text-[9px] font-black text-text-muted uppercase tracking-widest">
+                                Vehículos en Zona ({vehiculosEnZona.length})
+                            </p>
+                        </div>
+                        <div className="space-y-2">
+                            {vehiculosEnZona.map(v => (
+                                <TarjetaVehiculo key={v.id} vehiculo={v} />
+                            ))}
+                            {vehiculosEnZona.length === 0 && (
+                                <div className="text-center py-6 text-text-muted/40">
+                                    <Car size={32} className="mx-auto mb-2 opacity-40" />
+                                    <p className="text-[9px] font-black uppercase tracking-widest">Sin vehículos activos en zona</p>
+                                </div>
+                            )}
+                        </div>
+                    </Card>
+
+                </>}
             </div>
+
+            {/* ── Modal info puesto ── */}
+            {puestoModal && (
+                <ModalInfoPuesto
+                    puesto={puestoModal}
+                    vehiculosEnZona={vehiculosEnZona}
+                    onClose={() => setPuestoModal(null)}
+                    onActualizar={() => { setPuestoModal(null); cargarDatos(); }}
+                />
+            )}
         </div>
     );
 };

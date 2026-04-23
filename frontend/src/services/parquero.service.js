@@ -6,10 +6,29 @@ import api from './api';
 export const parqueroService = {
 
     /**
-     * Obtiene las zonas y puestos asignados al parquero activo.
+     * Obtiene la zona asignada al parquero con KPIs reales.
+     * @returns {{ id, nombre, capacidad_total, usa_puestos_identificados, kpis: { libres, ocupados, reservados, total } }}
      */
     async getMiZona() {
         const { data } = await api.get('/parqueros/mi-zona');
+        return data;
+    },
+
+    /**
+     * Obtiene los puestos físicos de una zona.
+     * @param {string} zonaId UUID de la zona.
+     */
+    async getPuestosZona(zonaId) {
+        const { data } = await api.get(`/zonas/${zonaId}/puestos`);
+        return data;
+    },
+
+    /**
+     * Obtiene los vehículos actualmente dentro de la zona.
+     * @param {string} zonaId UUID de la zona.
+     */
+    async getVehiculosEnZona(zonaId) {
+        const { data } = await api.get(`/parqueros/zona/${zonaId}/activos`);
         return data;
     },
 
@@ -18,8 +37,38 @@ export const parqueroService = {
      * @param {string} qrId UUID del QR escaneado.
      * @param {string} zonaId UUID de la zona del parquero.
      */
-    async registrarLlegada(qrId, zonaId) {
+    async registrarLlegadaQR(qrId, zonaId) {
         const { data } = await api.post(`/parqueros/llegada-qr/${qrId}/zona/${zonaId}`);
+        return data;
+    },
+
+    /**
+     * Registra la llegada de un vehículo ingresando la placa manualmente.
+     * @param {string} placa Placa del vehículo.
+     * @param {string} zonaId UUID de la zona del parquero.
+     * @returns {{ sin_datos: boolean, placa, vehiculo_pase_id?, marca?, modelo?, color? }}
+     */
+    async registrarLlegadaPlaca(placa, zonaId) {
+        const { data } = await api.post('/parqueros/llegada-placa', { placa, zona_id: zonaId });
+        return data;
+    },
+
+    /**
+     * Registra la salida de un vehículo mediante escaneo de QR.
+     * @param {string} qrId UUID del QR del vehículo.
+     */
+    async registrarSalidaQR(qrId) {
+        const { data } = await api.post(`/parqueros/salida-qr/${qrId}`);
+        return data;
+    },
+
+    /**
+     * Registra la salida de un vehículo ingresando la placa manualmente.
+     * @param {string} placa Placa del vehículo.
+     * @param {string} zonaId UUID de la zona del parquero.
+     */
+    async registrarSalidaPlaca(placa, zonaId) {
+        const { data } = await api.post('/parqueros/salida-placa', { placa, zona_id: zonaId });
         return data;
     },
 
@@ -34,38 +83,21 @@ export const parqueroService = {
     },
 
     /**
-     * Registra la salida del vehículo de la zona y libera el puesto.
-     * @param {string} qrId UUID del QR del vehículo.
+     * Obtiene el historial temporal de vehículos de la zona (trazabilidad).
+     * @param {string} zonaId UUID de la zona.
      */
-    async registrarSalida(qrId) {
-        const { data } = await api.post(`/parqueros/salida-qr/${qrId}`);
+    async getTrazabilidadZona(zonaId) {
+        const { data } = await api.get(`/parqueros/zona/${zonaId}/trazabilidad`);
         return data;
     },
 
     /**
-     * Obtiene los vehículos que se esperan llegar a la zona (pases activos preasignados).
-     * @param {string} zonaId UUID de la zona.
+     * Actualiza el estado de un puesto físico.
+     * @param {string} puestoId UUID del puesto.
+     * @param {object} datos { estado, reservado_base, etc. }
      */
-    async getVehiculosEnEspera(zonaId) {
-        const { data } = await api.get(`/parqueros/zona/${zonaId}/en-espera`);
+    async actualizarPuesto(puestoId, datos) {
+        const { data } = await api.patch(`/zonas/puestos/${puestoId}`, datos);
         return data;
     },
-
-    /**
-     * Obtiene los vehículos actualmente dentro de la zona.
-     * @param {string} zonaId UUID de la zona.
-     */
-    async getVehiculosEnZona(zonaId) {
-        const { data } = await api.get(`/parqueros/zona/${zonaId}/activos`);
-        return data;
-    },
-
-    /**
-     * Obtiene el listado de puestos con su estado actual.
-     * @param {string} zonaId UUID de la zona.
-     */
-    async getPuestosZona(zonaId) {
-        const { data } = await api.get(`/zonas/${zonaId}/puestos`);
-        return data;
-    }
 };

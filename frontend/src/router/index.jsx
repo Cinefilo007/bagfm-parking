@@ -22,6 +22,9 @@ import Personal from '../pages/Personal';
 import PortalSocio from '../pages/socio/Portal';
 import PortalEvento from '../pages/PortalEvento';
 import DashboardParquero from '../pages/parquero/Dashboard';
+import VistaRecibir from '../pages/parquero/VistaRecibir';
+import VistaDespachar from '../pages/parquero/VistaDespachar';
+import VistaNotificaciones from '../pages/parquero/VistaNotificaciones';
 import DashboardSupervisor from '../pages/supervisor/Dashboard';
 import { useAuthStore } from '../store/auth.store';
 
@@ -101,9 +104,13 @@ export const router = createBrowserRouter([
           // PARQUERO
           {
             path: 'parquero',
-            element: <RutaProtegida rolesPermitidos={['PARQUERO', 'ADMIN_BASE', 'COMANDANTE']} />,
+            element: <RutaProtegida rolesPermitidos={['PARQUERO', 'ADMIN_BASE', 'COMANDANTE', 'SUPERVISOR_PARQUEROS']} />,
             children: [
-              { path: 'dashboard', element: <DashboardParquero /> }
+              { path: '', element: <DashboardParquero /> },
+              { path: 'dashboard', element: <DashboardParquero /> },
+              { path: 'recibir', element: <VistaRecibir /> },
+              { path: 'despachar', element: <VistaDespachar /> },
+              { path: 'notificaciones', element: <VistaNotificaciones /> },
             ]
           },
           // SUPERVISOR DE PARQUEROS

@@ -1,4 +1,75 @@
-# DIRECTIVA — MÓDULO PARQUERO Y SUPERVISOR (BAGFM v2.0)
+# DIRECTIVA — MÓDULO PARQUERO Y SUPERVISOR (BAGFM v3.0)
+
+> **Filosofía**: "PREPARARNOS PARA EL CAOS"  
+> Los eventos masivos en vías de una sola dirección son el principal reto. Este módulo debe garantizar la entrada y salida ordenada de vehículos.
+
+> **v3.0 — Portal Parquero**: Rediseño hacia hub de navegación con vistas exclusivas de operación para reducir carga cognitiva en alto aforo.
+
+---
+
+## 1. Visión General
+
+El módulo de parquero gestiona dos roles complementarios:
+
+- **PARQUERO**: Operador de campo en zona de estacionamiento
+- **SUPERVISOR_PARQUEROS**: "Director de orquesta" — coordina parqueros, zonas y flujo vehicular
+
+El parquero asume responsabilidades delegadas de la alcabala:
+- Verificación de identidad con **escaneo de documentos vía IA** (mismo sistema que la alcabala)
+- Registro de datos completos cuando el socio no los tiene
+- Asignación de puestos (pre-asignados, automáticos o manuales)
+- Control de entrada/salida de la zona
+- **Registro manual por placa**: en momentos de alto aforo, el parquero puede registrar llegada/salida ingresando la placa directamente
+
+---
+
+## 2. Autenticación
+
+### Login Personalizado (ambos roles)
+- Cada parquero/supervisor tiene cuenta propia: **cédula + contraseña**
+- Creado por el Admin de la Entidad
+- Credenciales persistentes (a diferencia de la alcabala)
+- Admin puede revocar acceso inmediatamente
+
+---
+
+## 3. Dashboard del Parquero (Hub v3.0)
+
+### Arquitectura: Hub de Navegación
+El dashboard es un **hub central** que no concentra todas las operaciones en una sola vista. Funciona como panel de situación + lanzador de vistas especializadas.
+
+### Información visible en el Hub:
+- **Nombre de zona asignada** (debajo del header "PORTAL PARQUERO")
+- **KPIs en tiempo real** desde el backend (`GET /parqueros/mi-zona`):
+  - Puestos Libres (verde), Ocupados (rojo), Reservados (ámbar), Total
+- **Mapa de Puestos**: renderización inteligente de la zona
+- **Vehículos en zona**: lista de vehicle_pase activos
+
+### Botones de Acción (navegan a vistas exclusivas):
+| Botón | Ruta | Color |
+|-------|------|-------|
+| **RECIBIR** | `/parquero/recibir` | Verde (success) |
+| **DESPACHAR** | `/parquero/despachar` | Ámbar (warning) |
+| **NOTIFICACIONES** | `/parquero/notificaciones` | Primario |
+
+### Estado del Mapa de Puestos:
+| Color | Estado | Significado |
+|-------|--------|-------------|
+| 🔵 Índigo | Reservado Base | Personal de la base |
+| 🟡 Ámbar | Entidad/VIP | Tipo acceso especial |
+| 🟢 Verde | Libre | Disponible |
+| 🔴 Rojo | Ocupado | Vehículo estacionado |
+| ⚫ Gris | Mantenimiento | No disponible |
+
+### Puestos Virtuales vs Físicos:
+- Si `usa_puestos_identificados = true`: usar puestos reales de la BD (nombres reales)
+- Si `usa_puestos_identificados = false`: generar virtualmente P-01, P-02... basado en `capacidad_total`
+
+### Actualizaciones (Poll cada 30s):
+- KPIs y lista de vehículos se actualizan automáticamente
+- Refresh manual disponible con botón en header
+
+---
 
 > **Filosofía**: "PREPARARNOS PARA EL CAOS"  
 > Los eventos masivos en vías de una sola dirección son el principal reto. Este módulo debe garantizar la entrada y salida ordenada de vehículos.
