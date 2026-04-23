@@ -4,7 +4,7 @@ from sqlalchemy import select
 from typing import List
 from uuid import UUID
 
-from app.core.database import get_db
+from app.core.database import obtener_db
 from app.api.v1.auth import get_current_user
 from app.models.usuario import Usuario
 from app.models.push_subscription import PushSubscription
@@ -15,7 +15,7 @@ router = APIRouter(prefix="/notificaciones", tags=["Notificaciones"])
 @router.post("/suscribir", response_model=PushSubscriptionSchema)
 async def suscribir_push(
     datos: PushSubscriptionCreate,
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = Depends(obtener_db),
     current_user: Usuario = Depends(get_current_user)
 ):
     """Registra una suscripción push para el usuario actual"""
@@ -51,7 +51,7 @@ async def suscribir_push(
 @router.delete("/desuscribir")
 async def desuscribir_push(
     endpoint: str,
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = Depends(obtener_db),
     current_user: Usuario = Depends(get_current_user)
 ):
     """Desactiva una suscripción push"""
