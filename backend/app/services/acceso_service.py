@@ -110,6 +110,7 @@ class AccesoService:
                         "apellido": "",
                         "cedula": qr_db.cedula_portador or "",
                         "telefono": qr_db.telefono_portador or "",
+                        "rol": "socio",  # Requerido por Pydantic (UsuarioBase)
                         "activo": True,
                         "entidad_nombre": lote.entidad.nombre if (lote and hasattr(lote, 'entidad')) else "Pase Evento",
                         "updated_at": qr_db.created_at,
@@ -123,7 +124,8 @@ class AccesoService:
                             "modelo": qr_db.vehiculo_modelo or "GENÉRICO",
                             "color": qr_db.vehiculo_color or "SIN COLOR",
                             "activo": True,
-                            "socio_id": socio["id"]
+                            "socio_id": socio["id"],
+                            "created_at": qr_db.created_at # Requerido por Pydantic (VehiculoSalida)
                         }
                         vehiculo = v_mock
                         vehiculos_socio = [v_mock]
