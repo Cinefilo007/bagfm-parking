@@ -175,36 +175,46 @@ const DashboardParquero = () => {
     // ── Generar puestos virtuales si la zona no tiene físicos ──────────────
     const generarPuestosVirtuales = (zona) => {
         const total            = zona.capacidad_total   || 0;
-        const ocupados         = zona.ocupacion_actual  || 0;
         const nBase            = zona.kpis?.reservados_base    || 0;
         const nEntidad         = zona.kpis?.reservados_entidad || 0;
+        
+        const ocBase           = zona.kpis?.ocupados_base      || 0;
+        const ocEntidad        = zona.kpis?.ocupados_entidad   || 0;
+        const ocGeneral        = zona.kpis?.ocupados_general   || 0;
 
         return Array.from({ length: total }, (_, i) => {
             const num = String(i + 1).padStart(2, '0');
-            // Los primeros nBase puestos → reservados_base
-            if (i < nBase) return {
-                id: `virtual-base-${i}`,
-                numero_puesto: `B-${num}`,
-                estado: 'libre',
-                reservado_base: true,
-                reservado_entidad_id: null,
-                virtual: true,
-            };
-            // Los siguientes nEntidad → reservados entidad
-            if (i < nBase + nEntidad) return {
-                id: `virtual-ent-${i}`,
-                numero_puesto: `V-${num}`,
-                estado: 'libre',
-                reservado_base: false,
-                reservado_entidad_id: 'entidad',   // valor truthy suficiente para el color
-                virtual: true,
-            };
-            // El resto: ocupado o libre según ocupacion_actual
-            const esOcupado = (i - nBase - nEntidad) < ocupados;
+            
+            // ── CASO A: Reservados BASE ──
+            if (i < nBase) {
+                return {
+                    id: `virtual-base-${i}`,
+                    numero_puesto: `B-${num}`,
+                    estado: i < ocBase ? 'ocupado' : 'libre',
+                    reservado_base: true,
+                    virtual: true,
+                };
+            }
+            
+            // ── CASO B: Reservados ENTIDAD (VIP/ETC) ──
+            if (i < nBase + nEntidad) {
+                const relativeIdx = i - nBase;
+                return {
+                    id: `virtual-ent-${i}`,
+                    numero_puesto: `V-${num}`,
+                    estado: relativeIdx < ocEntidad ? 'ocupado' : 'libre',
+                    reservado_base: false,
+                    reservado_entidad_id: 'entidad',
+                    virtual: true,
+                };
+            }
+            
+            // ── CASO C: GENERALES ──
+            const relativeIdx = i - nBase - nEntidad;
             return {
                 id: `virtual-${i}`,
                 numero_puesto: `P-${num}`,
-                estado: esOcupado ? 'ocupado' : 'libre',
+                estado: relativeIdx < ocGeneral ? 'ocupado' : 'libre',
                 reservado_base: false,
                 reservado_entidad_id: null,
                 virtual: true,

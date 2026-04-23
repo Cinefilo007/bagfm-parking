@@ -19,15 +19,27 @@ from app.models.enums import EstadoPuesto, AccesoTipo
 class ParqueroService:
 
     # ──────────────────────────────────────────────────────────────────────────
+    # AUXILIARES
+    # ──────────────────────────────────────────────────────────────────────────
+
+    async def _actualizar_ocupacion_zona(self, db: AsyncSession, zona_id: UUID, delta: int):
+        """Incrementa o decrementa la ocupacion_actual de la zona."""
+        res = await db.execute(select(ZonaEstacionamiento).where(ZonaEstacionamiento.id == zona_id))
+        zona = res.scalars().first()
+        if zona:
+            # Asegurar que no baje de 0
+            zona.ocupacion_actual = max(0, (zona.ocupacion_actual or 0) + delta)
+            return zona
+        return None
+
+    # ──────────────────────────────────────────────────────────────────────────
     # DATOS DE ZONA
     # ──────────────────────────────────────────────────────────────────────────
 
     async def get_mi_zona(self, db: AsyncSession, usuario_id: UUID) -> Dict[str, Any]:
         """
         Retorna la zona asignada al parquero con KPIs de precisión táctica.
-        - Reservados Base: Suma de cupo_reservado_base en asignaciones.
-        - Reservados Entidad: Suma de todos los valores en el JSON distribucion_cupos.
-        - Libres: Capacidad Total - Ocupados - Reservados.
+        Desglosa ocupados por tipo (Base, Entidad/VIP, General).
         """
         res_usr = await db.execute(
             select(Usuario)
@@ -41,7 +53,7 @@ class ParqueroService:
 
         zona = usuario.zona_asignada
 
-        # ── 1. Obtener Asignaciones para calcular Reservados desde JSON y Columnas ──
+        # ── 1. Obtener Reservados (Cupos) ──
         res_asig = await db.execute(
             select(AsignacionZona)
             .where(AsignacionZona.zona_id == zona.id, AsignacionZona.activa == True)
@@ -50,52 +62,64 @@ class ParqueroService:
         
         n_reservados_base = 0
         n_reservados_entidad = 0
-        
         for asig in asignaciones:
-            # Sumar reservado base de la columna
             n_reservados_base += (asig.cupo_reservado_base or 0)
-            
-            # Sumar desgloses del JSON (VIP, Productores, etc.)
-            if asig.distribucion_cupos and isinstance(asig.distribucion_cupos, dict):
+            if asig.distribucion_cupos:
                 for val in asig.distribucion_cupos.values():
                     if isinstance(val, (int, float)):
                         n_reservados_entidad += int(val)
 
-        # ── 2. Contar Puestos Físicos (Para saber si la zona está mapeada) ────
-        res_p_count = await db.execute(
-            select(sql_func.count(PuestoEstacionamiento.id))
-            .where(PuestoEstacionamiento.zona_id == zona.id)
+        # ── 2. Analizar Ocupados por Tipo ──
+        # Buscamos vehículos activos en la zona y su tipo de acceso
+        res_activos = await db.execute(
+            select(VehiculoPase, CodigoQR.tipo_acceso)
+            .outerjoin(CodigoQR, VehiculoPase.qr_id == CodigoQR.id)
+            .where(VehiculoPase.zona_asignada_id == zona.id, VehiculoPase.ingresado == True)
         )
-        tiene_puestos_fisicos = (res_p_count.scalar() or 0) > 0
-
-        # ── 3. Calcular KPIs Finales ─────────────────────────────────────────
-        total = zona.capacidad_total or 0
-        ocupados = zona.ocupacion_actual or 0
-        reservados_totales = n_reservados_base + n_reservados_entidad
         
-        # Libres son los puestos que no están ni ocupados ni apartados (reservados)
-        libres = max(0, total - ocupados - reservados_totales)
+        ocupados_base = 0
+        ocupados_entidad = 0
+        ocupados_general = 0
+        
+        for vp, tipo_qr in res_activos.all():
+            tipo = (tipo_qr or 'general').lower()
+            # Clasificación táctica de ocupación
+            if tipo == 'base':
+                ocupados_base += 1
+            elif tipo in ['vip', 'produccion', 'logistica', 'prensa']:
+                ocupados_entidad += 1
+            else:
+                ocupados_general += 1
+
+        # ── 3. Calcular KPIs ──
+        total = zona.capacidad_total or 0
+        reservados_totales = n_reservados_base + n_reservados_entidad
+        ocupados_totales = ocupados_base + ocupados_entidad + ocupados_general
+        
+        # Libres = Total - Reservados (vacíos) - Ocupados Totales
+        # Nota: Si un VIP ocupa un puesto VIP, no resta doble.
+        # Libres Tácticos = Capacidad - (Ocupados fuera de reserva) - Reservas
+        libres = max(0, total - ocupados_general - reservados_totales)
 
         return {
             "id": str(zona.id),
             "nombre": zona.nombre,
-            "capacidad_total": zona.capacidad_total,
-            "ocupacion_actual": zona.ocupacion_actual or 0,
+            "capacidad_total": total,
+            "ocupacion_actual": ocupados_totales,
             "usa_puestos_identificados": zona.usa_puestos_identificados,
-            "tipo": getattr(zona, "tipo", None),
-            "descripcion_ubicacion": zona.descripcion_ubicacion,
-            "activo": zona.activo,
             "kpis": {
                 "libres":              libres,
-                "ocupados":            ocupados,
+                "ocupados":            ocupados_totales,
+                "ocupados_base":       ocupados_base,
+                "ocupados_entidad":    ocupados_entidad,
+                "ocupados_general":    ocupados_general,
                 "reservados":          reservados_totales,
                 "reservados_base":     n_reservados_base,
                 "reservados_entidad":  n_reservados_entidad,
-                "mantenimiento":       0, # Podría sumarse si hay puestos físicos
                 "total":               total,
-                "tiene_puestos_fisicos": tiene_puestos_fisicos,
             }
         }
+
 
 
 
@@ -186,6 +210,10 @@ class ParqueroService:
         if vehiculo_pase:
             vehiculo_pase.ingresado = True
             vehiculo_pase.hora_ingreso = datetime.now(timezone.utc)
+            
+            # Incrementar ocupación
+            await self._actualizar_ocupacion_zona(db, zona_id, 1)
+            
             await db.commit()
             await db.refresh(vehiculo_pase)
             return {
@@ -205,6 +233,13 @@ class ParqueroService:
         vehiculo_db = res_veh.scalars().first()
 
         if vehiculo_db:
+            # Intentar obtener teléfono de la tabla Usuario si el vehículo es de un socio
+            telefono_socio = None
+            if vehiculo_db.usuario_id:
+                res_u = await db.execute(select(Usuario).where(Usuario.id == vehiculo_db.usuario_id))
+                usr = res_u.scalars().first()
+                if usr: telefono_socio = usr.telefono
+
             nuevo_vp = VehiculoPase(
                 placa=placa_norm,
                 marca=vehiculo_db.marca,
@@ -215,6 +250,10 @@ class ParqueroService:
                 hora_ingreso=datetime.now(timezone.utc)
             )
             db.add(nuevo_vp)
+            
+            # Incrementar ocupación
+            await self._actualizar_ocupacion_zona(db, zona_id, 1)
+            
             await db.commit()
             await db.refresh(nuevo_vp)
             return {
@@ -224,6 +263,7 @@ class ParqueroService:
                 "marca": nuevo_vp.marca,
                 "modelo": nuevo_vp.modelo,
                 "color": nuevo_vp.color,
+                "telefono_portador": telefono_socio,
                 "puesto_asignado_id": None,
             }
 
@@ -271,10 +311,16 @@ class ParqueroService:
                     "nombre_portador": qr_encontrado.nombre_portador,
                     "cedula_portador": qr_encontrado.cedula_portador,
                     "telefono_portador": qr_encontrado.telefono_portador,
+                    "zona_id": str(zona_id), # Importante para actualizar ocupación luego
                     "mensaje": "Complete los datos del portador para finalizar el registro.",
                 }
 
-            # QR tiene datos completos → registrar directamente sin formulario
+            # QR tiene datos completos → registrar directamente
+            # Incrementar ocupación
+            await self._actualizar_ocupacion_zona(db, zona_id, 1)
+            
+            await db.commit()
+            await db.refresh(nuevo_vp)
             return {
                 "sin_datos": False,
                 "vehiculo_pase_id": str(nuevo_vp.id),
@@ -296,27 +342,37 @@ class ParqueroService:
 
     async def completar_datos_portador(
         self, db: AsyncSession, qr_id: UUID, vehiculo_pase_id: UUID,
-        nombre: str | None, cedula: str | None, telefono: str | None
+        nombre: str | None, cedula: str | None, telefono: str | None,
+        zona_id: UUID | None = None
     ) -> Dict[str, Any]:
-        """
-        Completa los datos del portador en el CodigoQR (accesos temporales/masivos).
-        No toca la tabla de usuarios.
-        """
+        """Completa los datos y activa el ingreso (ocupación)."""
         res_qr = await db.execute(select(CodigoQR).where(CodigoQR.id == qr_id))
         qr = res_qr.scalars().first()
         if not qr:
             raise ValueError("QR no encontrado")
 
-        if nombre:
-            qr.nombre_portador = nombre.strip().upper()
-        if cedula:
-            qr.cedula_portador = cedula.strip().upper()
-        if telefono:
-            qr.telefono_portador = telefono.strip()
+        res_vp = await db.execute(select(VehiculoPase).where(VehiculoPase.id == vehiculo_pase_id))
+        vp = res_vp.scalars().first()
+
+        if nombre: qr.nombre_portador = nombre.strip().upper()
+        if cedula: qr.cedula_portador = cedula.strip().upper()
+        if telefono: qr.telefono_portador = telefono.strip()
         qr.datos_completos = True
 
+        if vp:
+            vp.nombre_portador = qr.nombre_portador
+            vp.cedula_portador = qr.cedula_portador
+            vp.telefono_portador = qr.telefono_portador
+            vp.ingresado = True
+            vp.hora_ingreso = datetime.now(timezone.utc)
+            
+            # Incrementar ocupación al finalizar registro de datos
+            target_zona = zona_id or vp.zona_asignada_id
+            if target_zona:
+                await self._actualizar_ocupacion_zona(db, target_zona, 1)
+
         await db.commit()
-        return {"ok": True, "qr_id": str(qr_id), "vehiculo_pase_id": str(vehiculo_pase_id)}
+        return {"ok": True, "success": True}
 
 
 
@@ -345,6 +401,9 @@ class ParqueroService:
             raise ValueError(f"No se encontró el vehículo {placa_norm} activo en la zona.")
 
         vehiculo_pase.ingresado = False
+        
+        # Restar ocupación
+        await self._actualizar_ocupacion_zona(db, zona_id, -1)
 
         if vehiculo_pase.puesto_asignado_id:
             res_p = await db.execute(

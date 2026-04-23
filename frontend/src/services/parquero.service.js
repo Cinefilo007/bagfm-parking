@@ -105,6 +105,7 @@ export const parqueroService = {
             nombre: datos.nombre || null,
             cedula: datos.cedula || null,
             telefono: datos.telefono || null,
+            zona_id: datos.zona_id || null,
         });
         return data;
     },

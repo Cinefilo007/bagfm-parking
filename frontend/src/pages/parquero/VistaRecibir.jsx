@@ -85,7 +85,7 @@ const ModalRegistroDatos = ({ resultadoSinDatos, zonaId, onRegistrado, onCerrar 
     // Pre-rellenar desde el backend
     const [nombre,   setNombre]   = useState(resultadoSinDatos?.nombre_portador || '');
     const [cedula,   setCedula]   = useState(resultadoSinDatos?.cedula_portador  || '');
-    const [telefono, setTelefono] = useState('');
+    const [telefono, setTelefono] = useState(resultadoSinDatos?.telefono_portador || '');
     const [placa,    setPlaca]    = useState(resultadoSinDatos?.placa  || '');
     const [marca,    setMarca]    = useState(resultadoSinDatos?.marca  || '');
     const [modelo,   setModelo]   = useState(resultadoSinDatos?.modelo || '');
@@ -134,19 +134,18 @@ const ModalRegistroDatos = ({ resultadoSinDatos, zonaId, onRegistrado, onCerrar 
         setCargando(true);
         try {
             if (soloPersona && qrId && vehiculoPaseId) {
-                // CASO 1: Vehículo ya identificado por QR — guardar portador en codigos_qr
+                // CASO 1: Vehículo ya identificado por QR — guardar portador en codigos_qr e ingresar
                 await parqueroService.completarDatosPortador(qrId, vehiculoPaseId, {
                     nombre:   nombre   || null,
                     cedula:   cedula   || null,
-                    telefono: telefono ? `+58${telefono}` : null,
+                    telefono: telefono ? (telefono.startsWith('+58') ? telefono : `+58${telefono}`) : null,
+                    zona_id:  zonaId   // Envía la zona para activar ocupación
                 });
                 toast.success(`Portador registrado ✔ ${placa}`);
                 onRegistrado?.({ placa, vehiculoPaseId });
             } else {
                 // CASO 2: Sin QR — vehículo completamente desconocido
                 if (!placa.trim()) { toast.error('La placa es obligatoria'); return; }
-                // El VehiculoPase aún NO fue creado porque el backend retorna sin_datos=True ANTES de crearlo
-                // cuando no tiene ningún QR. Llamamos nuevamente para que el backend lo cree.
                 const res = await parqueroService.registrarLlegadaPlaca(placa.trim().toUpperCase(), zonaId);
                 toast.success(`${placa} registrado en zona`);
                 onRegistrado?.(res);
@@ -212,7 +211,7 @@ const ModalRegistroDatos = ({ resultadoSinDatos, zonaId, onRegistrado, onCerrar 
     // ── Formulario ───────────────────────────────────────────────────────────
     return (
         <div
-            className="fixed inset-0 z-[150] flex items-end sm:items-center justify-center bg-black/60 backdrop-blur-sm p-4"
+            className="fixed inset-0 z-[150] flex items-end sm:items-center justify-center sm:ml-64 bg-black/60 backdrop-blur-sm p-4"
             onClick={e => e.target === e.currentTarget && onCerrar()}
         >
             <div className="w-full max-w-sm bg-bg-card rounded-2xl border border-white/10 shadow-2xl overflow-hidden max-h-[90vh] flex flex-col">
