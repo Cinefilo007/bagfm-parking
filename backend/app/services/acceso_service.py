@@ -285,6 +285,7 @@ class AccesoService:
         """
         final_usuario_id = datos.usuario_id
         final_vehiculo_id = datos.vehiculo_id
+        final_vehiculo_pase_id = datos.vehiculo_pase_id
 
         # 0. Validar integridad de IDs provenientes del Frontend (Filtrar IDs mockeados de pases masivos excel)
         from app.models.usuario import Usuario
@@ -298,6 +299,13 @@ class AccesoService:
         if final_vehiculo_id:
             q_exists_v = select(Vehiculo.id).where(Vehiculo.id == final_vehiculo_id)
             if not (await db.execute(q_exists_v)).scalar_one_or_none():
+                # Evaluar si el ID es en realidad un VehiculoPase (Vehículos Múltiples Mock)
+                from app.models.vehiculo_pase import VehiculoPase
+                q_exists_vp = select(VehiculoPase.id).where(VehiculoPase.id == final_vehiculo_id)
+                if (await db.execute(q_exists_vp)).scalar_one_or_none():
+                    final_vehiculo_pase_id = final_vehiculo_id
+                
+                # Desvincular de la tabla permanente para evitar ForeignKeyViolationError
                 final_vehiculo_id = None
 
         # 1. Registro Ligero de Usuario/Vehículo si se proveen datos manuales
@@ -360,6 +368,7 @@ class AccesoService:
             qr_id = datos.qr_id,
             usuario_id = final_usuario_id,
             vehiculo_id = final_vehiculo_id,
+            vehiculo_pase_id = final_vehiculo_pase_id,
             tipo = datos.tipo,
             punto_acceso = datos.punto_acceso,
             registrado_por = registrado_por_id,
@@ -426,6 +435,19 @@ class AccesoService:
                 v = await db.get(Vehiculo, acc.vehiculo_id)
                 if v:
                     vehiculo_str = f"{v.marca} {v.modelo} [{v.placa}]"
+            elif acc.vehiculo_pase_id:
+                # El usuario entró con un vehículo secundario del pase masivo
+                from app.models.vehiculo_pase import VehiculoPase
+                vp = await db.get(VehiculoPase, acc.vehiculo_pase_id)
+                if vp:
+                    mca = vp.marca or ""
+                    mod = vp.modelo or ""
+                    col = vp.color or ""
+                    detalles = " ".join(filter(None, [mca, mod, col]))
+                    if detalles:
+                        vehiculo_str = f"{detalles} [{vp.placa}]"
+                    else:
+                        vehiculo_str = f"PASE [{vp.placa}]"
             elif acc.qr_id:
                 # Reutilizar qr_db si ya se cargó, sino cargarlo
                 if 'qr_db' not in locals() or not qr_db:

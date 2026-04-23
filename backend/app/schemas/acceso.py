@@ -21,6 +21,7 @@ class AccesoRegistrar(BaseModel):
     qr_id: Optional[UUID] = None
     usuario_id: Optional[UUID] = None # Puede ser nulo si es 100% manual inicial
     vehiculo_id: Optional[UUID] = None
+    vehiculo_pase_id: Optional[UUID] = None
     tipo: AccesoTipo
     punto_acceso: str = "Alcabala Principal"
     es_manual: bool = False
