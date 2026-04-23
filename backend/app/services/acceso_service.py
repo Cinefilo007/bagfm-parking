@@ -101,6 +101,37 @@ class AccesoService:
                 # Determinar si requiere datos manuales (Tipo A o falta de datos en el registro)
                 necesita_datos = (qr_db.tipo == QRTipo.evento_simple) or (not socio) or (not vehiculo)
 
+                # Si no hay socio en BD pero el QR ya tiene datos de portador empotrados (Excel), mockeamos para mostrar en frontend
+                if not socio and (qr_db.nombre_portador or qr_db.cedula_portador):
+                    # Solo lo mandamos para lectura en FichaSocio de ResultadoValidacion
+                    socio = {
+                        "id": qr_db.usuario_id or qr_db.id,
+                        "nombre": qr_db.nombre_portador or "Visitante",
+                        "apellido": "",
+                        "cedula": qr_db.cedula_portador or "",
+                        "telefono": qr_db.telefono_portador or "",
+                        "activo": True,
+                        "entidad_nombre": lote.entidad.nombre if (lote and hasattr(lote, 'entidad')) else "Pase Evento",
+                        "updated_at": qr_db.created_at,
+                        "created_at": qr_db.created_at
+                    }
+                    if qr_db.vehiculo_placa:
+                        v_mock = {
+                            "id": qr_db.vehiculo_id or qr_db.id,
+                            "placa": qr_db.vehiculo_placa,
+                            "marca": qr_db.vehiculo_marca or "GENÉRICO",
+                            "modelo": qr_db.vehiculo_modelo or "GENÉRICO",
+                            "color": qr_db.vehiculo_color or "SIN COLOR",
+                            "activo": True,
+                            "socio_id": socio["id"]
+                        }
+                        vehiculo = v_mock
+                        vehiculos_socio = [v_mock]
+                    
+                    # Si ya logramos mockear datos (Tipo B excel), no requiere datos manuales mandatorios
+                    if qr_db.nombre_portador and qr_db.vehiculo_placa:
+                        necesita_datos = False
+
                 return ResultadoValidacion(
                     permitido=True,
                     mensaje="Pase Masivo Válido",

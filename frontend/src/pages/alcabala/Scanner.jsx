@@ -438,10 +438,9 @@ const ScannerAlcabala = () => {
 
                 {/* ══ MODO SCANNER (pantalla inicial) ══ */}
                 {!resultado && !modoEscaneoIA && (
-                    <div className="flex flex-col gap-3 flex-1">
+                    <div className="flex flex-col gap-4 items-center justify-center flex-1 w-full max-w-sm mx-auto">
                         <Card
-                            className="flex-1 border-0 rounded-[2rem] overflow-hidden shadow-2xl min-h-[320px]"
-                            style={{ background: '#000' }}
+                            className="w-full aspect-square border-0 rounded-[2rem] overflow-hidden shadow-2xl bg-black"
                         >
                             <QRScanner
                                 ref={scannerRef}
@@ -451,7 +450,7 @@ const ScannerAlcabala = () => {
                             />
                         </Card>
 
-                        <div className="grid grid-cols-2 gap-2">
+                        <div className="grid grid-cols-2 gap-2 w-full mt-4">
                             <Boton
                                 onClick={() => scannerRef.current?.switchCamera()}
                                 variant="outline"
