@@ -47,7 +47,7 @@ async def actualizar_zona(
 async def listar_zonas(
     skip: int = 0, limit: int = 100, activa: bool = None,
     db: AsyncSession = Depends(obtener_db),
-    current_user: Usuario = Depends(require_rol(["COMANDANTE", "ADMIN_BASE", "SUPERVISOR", "PARQUERO"]))
+    current_user: Usuario = Depends(require_rol(["COMANDANTE", "ADMIN_BASE", "SUPERVISOR", "PARQUERO", "ADMIN_ENTIDAD", "SUPERVISOR_PARQUEROS"]))
 ):
     return await zona_service.obtener_zonas(db, skip, limit, activa)
 
@@ -149,8 +149,6 @@ async def obtener_mis_asignaciones(
     current_user: Usuario = Depends(require_rol(["ADMIN_ENTIDAD"]))
 ):
     """Obtiene las asignaciones de zona vinculadas a la entidad del usuario."""
-    if not current_user.entidad_id:
-        return []
     if not current_user.entidad_id:
         return []
     from app.models.asignacion_zona import AsignacionZona

@@ -19,17 +19,17 @@ import { cn } from '../lib/utils';
 // ─── CONSTANTES Y DATOS DE REFERENCIA ─────────────────────────────────────────
 
 const TIPOS_INCENTIVO = [
-  { valor: 'bono_eficiencia', etiqueta: 'Bono de Eficiencia', icono: Zap },
-  { valor: 'reconocimiento', etiqueta: 'Reconocimiento', icono: Award },
+  { valor: 'bono_eficiencia', etiqueta: 'Bono Efic.', icono: Zap },
+  { valor: 'reconocimiento', etiqueta: 'Reconoc.', icono: Award },
   { valor: 'dia_libre', etiqueta: 'Día Libre', icono: Star },
   { valor: 'ascenso', etiqueta: 'Ascenso', icono: TrendingUp },
 ];
 
 const TIPOS_SANCION = [
-  { valor: 'amonestacion', etiqueta: 'Amonestación Verbal', color: 'text-amber-400' },
-  { valor: 'suspension_temporal', etiqueta: 'Suspensión Temporal', color: 'text-orange-400' },
-  { valor: 'relevo_inmediato', etiqueta: 'Relevo Inmediato', color: 'text-danger' },
-  { valor: 'reportar_autoridades', etiqueta: 'Reportar a Autoridades', color: 'text-red-400' },
+  { valor: 'amonestacion', etiqueta: 'Amonest.', color: 'text-amber-400' },
+  { valor: 'suspension_temporal', etiqueta: 'Suspensión', color: 'text-orange-400' },
+  { valor: 'relevo_inmediato', etiqueta: 'Relevo', color: 'text-danger' },
+  { valor: 'reportar_autoridades', etiqueta: 'Autoridades', color: 'text-red-400' },
 ];
 
 const ETIQUETA_INCENTIVO = {
@@ -66,9 +66,6 @@ const getRolStyles = (rol) => {
 
 // ─── COMPONENTES TÁCTICOS ─────────────────────────────────────────────────────
 
-/**
- * TacticalKPIs: Resumen en la parte superior al estilo de Pases Masivos.
- */
 const TacticalKPIs = ({ personal }) => {
   const stats = useMemo(() => {
     const total = personal.length;
@@ -102,20 +99,15 @@ const TacticalKPIs = ({ personal }) => {
   );
 };
 
-/**
- * MiembroCard: Tarjeta horizontal expandible.
- */
 const MiembroCard = ({ miembro, userActual, zonas, onUpdate, onToggleActivo, onEliminar }) => {
   const [isExpanded, setIsExpanded] = useState(false);
   const [tab, setTab] = useState('kpis');
   const [loadingDetails, setLoadingDetails] = useState(false);
   
-  // Detalle Data
   const [details, setDetails] = useState({ kpis: null, incentivos: [], sanciones: [] });
   const [zonaSeleccionada, setZonaSeleccionada] = useState(miembro.zona_asignada_id || '');
   const [guardandoAction, setGuardandoAction] = useState(false);
 
-  // Form states
   const [formEdit, setFormEdit] = useState({ nombre: miembro.nombre, apellido: miembro.apellido, email: miembro.email || '', telefono: miembro.telefono || '' });
   const [formInc, setFormInc] = useState({ tipo: '', descripcion: '' });
   const [formSanc, setFormSanc] = useState({ tipo: '', motivo: '', ejecutar_inmediato: false });
@@ -284,7 +276,7 @@ const MiembroCard = ({ miembro, userActual, zonas, onUpdate, onToggleActivo, onE
         </div>
       </div>
 
-      {/* ── SECCIÓN EXPANDIBLE ── */}
+      {/* ── SECCIÓN EXPANDIBLE (DISCRETA Y HORIZONTAL) ── */}
       {isExpanded && (
         <div className="bg-black/20 border-t border-white/5 animate-in slide-in-from-top-2 duration-300">
           <div className="flex gap-1 p-2 bg-black/40 border-b border-white/5 sticky top-0 z-10 overflow-x-auto scrollbar-none">
@@ -302,7 +294,7 @@ const MiembroCard = ({ miembro, userActual, zonas, onUpdate, onToggleActivo, onE
             ))}
           </div>
 
-          <div className="p-4 max-h-[500px] overflow-y-auto scrollbar-tactica">
+          <div className="p-4 overflow-y-auto scrollbar-tactica">
             {loadingDetails ? (
               <div className="flex flex-col items-center justify-center py-10 opacity-30">
                 <Clock size={32} className="animate-spin mb-2" />
@@ -355,69 +347,81 @@ const MiembroCard = ({ miembro, userActual, zonas, onUpdate, onToggleActivo, onE
                   </div>
                 )}
 
+                {/* ── TAB: ZONA (REDISEÑO DISCRETO) ── */}
                 {tab === 'zona' && (
-                  <div className="max-w-md space-y-4">
-                  <div className="flex items-center gap-2 px-1">
-                    <MapPin size={14} className="text-primary" />
-                    <span className="text-[10px] font-black text-text-muted uppercase tracking-widest">Asignación de Zona Operativa</span>
-                  </div>
-                  <div className="bg-white/5 border border-white/5 p-4 rounded-2xl flex flex-col gap-4">
-                    <div className="space-y-1">
-                      <label className="text-[10px] font-bold text-text-muted uppercase tracking-widest px-1">Zona Destino</label>
-                      <select
-                        className="w-full h-11 bg-bg-card border border-white/10 rounded-xl px-4 text-sm font-bold text-text-main focus:ring-1 focus:ring-primary outline-none transition-all appearance-none"
-                        value={zonaSeleccionada}
-                        onChange={(e) => setZonaSeleccionada(e.target.value)}
-                      >
-                        <option value="">— SIN ZONA (PATRULLAJE LIBRE) —</option>
-                        {zonas.map(z => <option key={z.id} value={z.id}>{z.nombre}</option>)}
-                      </select>
+                  <div className="space-y-4">
+                    <div className="flex flex-col sm:flex-row items-center gap-4 bg-white/5 border border-white/5 p-4 rounded-2xl">
+                      <div className="flex items-center gap-3 shrink-0">
+                        <div className="p-2 bg-primary/10 rounded-xl text-primary">
+                          <MapPin size={18} />
+                        </div>
+                        <div>
+                          <p className="text-[8px] font-black text-text-muted uppercase tracking-widest">Ubicación Táctica</p>
+                          <p className="text-sm font-black text-text-main uppercase tracking-tight">{miembro.zona_nombre || 'Sin asignación'}</p>
+                        </div>
+                      </div>
+                      
+                      <div className="hidden sm:block w-px h-10 bg-white/5 mx-2" />
+                      
+                      <div className="flex-1 flex flex-col sm:flex-row items-center gap-3 w-full">
+                        <select
+                          className="flex-1 h-10 bg-bg-card border border-white/10 rounded-xl px-4 text-xs font-bold text-text-main focus:ring-1 focus:ring-primary outline-none transition-all appearance-none"
+                          value={zonaSeleccionada}
+                          onChange={(e) => setZonaSeleccionada(e.target.value)}
+                        >
+                          <option value="">— DESASIGNAR (PATRULLAJE) —</option>
+                          {zonas.map(z => <option key={z.id} value={z.id}>{z.nombre}</option>)}
+                        </select>
+                        <Boton onClick={handleAsignarZona} isLoading={guardandoAction} className="h-10 px-6 text-[10px] uppercase font-black tracking-widest w-full sm:w-auto">Asignar Zona</Boton>
+                      </div>
                     </div>
-                    <Boton onClick={handleAsignarZona} isLoading={guardandoAction} className="w-full h-11">Confirmar Asignación</Boton>
                   </div>
-                </div>
                 )}
 
+                {/* ── TAB: INCENTIVOS (REDISEÑO HORIZONTAL) ── */}
                 {tab === 'incentivos' && (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div className="space-y-4">
-                        <div className="flex items-center gap-2 px-1">
-                            <PlusCircle size={14} className="text-amber-400" />
-                            <span className="text-[10px] font-black text-text-muted uppercase tracking-widest">Nuevo Reconocimiento</span>
+                  <div className="space-y-6">
+                    <div className="bg-white/5 border border-amber-400/10 p-3 rounded-2xl">
+                      <div className="flex items-center gap-2 px-1 mb-2">
+                        <PlusCircle size={12} className="text-amber-400" />
+                        <span className="text-[9px] font-black text-text-muted uppercase tracking-widest">Añadir Reconocimiento</span>
+                      </div>
+                      <form onSubmit={handleInc} className="flex flex-col md:flex-row items-end gap-3">
+                        <div className="w-full md:w-56 shrink-0 space-y-1">
+                          <label className="text-[8px] font-black text-text-muted uppercase tracking-widest px-1 opacity-60">Tipo</label>
+                          <select className="w-full h-10 bg-bg-card border border-white/10 rounded-xl px-3 text-xs font-bold text-text-main focus:ring-1 focus:ring-amber-400 outline-none" 
+                              required value={formInc.tipo} onChange={e => setFormInc({...formInc, tipo: e.target.value})}>
+                              <option value="">SELECCIONAR...</option>
+                              {TIPOS_INCENTIVO.map(t => <option key={t.valor} value={t.valor}>{t.etiqueta}</option>)}
+                          </select>
                         </div>
-                        <form onSubmit={handleInc} className="bg-white/5 border border-amber-400/10 p-4 rounded-2xl flex flex-col gap-3">
-                            <div className="space-y-1">
-                                <label className="text-[10px] font-bold text-text-muted uppercase tracking-widest px-1">Tipo</label>
-                                <select className="w-full h-10 bg-bg-card border border-white/10 rounded-xl px-3 text-xs font-bold text-text-main focus:ring-1 focus:ring-amber-400 outline-none" 
-                                    required value={formInc.tipo} onChange={e => setFormInc({...formInc, tipo: e.target.value})}>
-                                    <option value="">SELECCIONAR...</option>
-                                    {TIPOS_INCENTIVO.map(t => <option key={t.valor} value={t.valor}>{t.etiqueta}</option>)}
-                                </select>
-                            </div>
-                            <div className="space-y-1">
-                                <label className="text-[10px] font-bold text-text-muted uppercase tracking-widest px-1">Descripción</label>
-                                <textarea className="w-full bg-bg-card border border-white/10 rounded-xl p-3 text-xs font-bold text-text-main outline-none focus:ring-1 focus:ring-amber-400" 
-                                    rows={2} required placeholder="Motivo del incentivo..." value={formInc.descripcion} onChange={e => setFormInc({...formInc, descripcion: e.target.value})} />
-                            </div>
-                            <Boton type="submit" isLoading={guardandoAction} className="h-10 bg-amber-400 text-bg-app hover:bg-amber-500">Registrar Incentivo</Boton>
-                        </form>
+                        <div className="flex-1 space-y-1 w-full">
+                          <label className="text-[8px] font-black text-text-muted uppercase tracking-widest px-1 opacity-60">Descripción del mérito</label>
+                          <input className="w-full h-10 bg-bg-card border border-white/10 rounded-xl px-3 text-xs font-bold text-text-main outline-none focus:ring-1 focus:ring-amber-400" 
+                              required placeholder="Ej: Excelente manejo de flujo vehicular en Zona A" value={formInc.descripcion} onChange={e => setFormInc({...formInc, descripcion: e.target.value})} />
+                        </div>
+                        <Boton type="submit" isLoading={guardandoAction} className="h-10 px-6 bg-amber-400 text-bg-app hover:bg-amber-500 text-[10px] font-black uppercase tracking-widest w-full md:w-auto">Registrar</Boton>
+                      </form>
                     </div>
+
                     <div className="space-y-3">
                         <div className="flex items-center gap-2 px-1">
-                            <Star size={14} className="text-amber-400 opacity-40" />
-                            <span className="text-[10px] font-black text-text-muted uppercase tracking-widest">Historial de Mérito</span>
+                            <Star size={12} className="text-amber-400 opacity-40" />
+                            <span className="text-[9px] font-black text-text-muted uppercase tracking-widest">Historial de Méritos</span>
                         </div>
-                        <div className="space-y-2">
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
                             {details.incentivos.length === 0 ? (
-                                <p className="text-[10px] text-text-muted italic py-10 text-center uppercase tracking-widest opacity-30">Sin registros de incentivo</p>
+                                <div className="col-span-full py-8 text-center bg-white/2 rounded-xl border border-dashed border-white/5">
+                                  <p className="text-[9px] text-text-muted italic uppercase tracking-widest opacity-30">Sin registros de incentivo</p>
+                                </div>
                             ) : details.incentivos.map(inc => {
                                 const st = ETIQUETA_INCENTIVO[inc.tipo] || {label: inc.tipo, color: 'bg-white/5 text-text-muted'};
                                 return (
                                     <div key={inc.id} className="p-3 bg-white/5 border border-white/5 rounded-xl flex items-start gap-3">
-                                        <div className={cn("px-2 py-0.5 rounded-full text-[7px] font-black uppercase shrink-0 mt-0.5", st.color)}>{st.label}</div>
+                                        <div className={cn("px-2 py-0.5 rounded-md text-[7px] font-black uppercase shrink-0 mt-0.5", st.color)}>{st.label}</div>
                                         <div className="flex-1 min-w-0">
-                                            <p className="text-[11px] font-bold text-text-main leading-tight">{inc.descripcion}</p>
-                                            <p className="text-[8px] text-text-muted mt-1 uppercase font-bold opacity-40">Por {inc.otorgado_por_nombre || 'Sistema'} · {new Date(inc.created_at).toLocaleDateString()}</p>
+                                            <p className="text-[10px] font-bold text-text-main leading-tight truncate">{inc.descripcion}</p>
+                                            <p className="text-[7px] text-text-muted mt-1 uppercase font-bold opacity-40">{new Date(inc.created_at).toLocaleDateString()}</p>
                                         </div>
                                     </div>
                                 )
@@ -427,55 +431,61 @@ const MiembroCard = ({ miembro, userActual, zonas, onUpdate, onToggleActivo, onE
                   </div>
                 )}
 
+                {/* ── TAB: SANCIONES (REDISEÑO DISCRETO) ── */}
                 {tab === 'sanciones' && (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div className="space-y-4">
-                        <div className="flex items-center gap-2 px-1">
-                            <ShieldAlert size={14} className="text-danger" />
-                            <span className="text-[10px] font-black text-text-muted uppercase tracking-widest">Aplicar Medida Disciplinaria</span>
+                  <div className="space-y-6">
+                    <div className="bg-white/5 border border-danger/10 p-3 rounded-2xl">
+                      <div className="flex items-center gap-2 px-1 mb-2">
+                        <ShieldAlert size={12} className="text-danger" />
+                        <span className="text-[9px] font-black text-text-muted uppercase tracking-widest">Aplicar Medida Disciplinaria</span>
+                      </div>
+                      <form onSubmit={handleSanc} className="flex flex-col md:flex-row items-end gap-3">
+                        <div className="w-full md:w-56 shrink-0 space-y-1">
+                          <label className="text-[8px] font-black text-text-muted uppercase tracking-widest px-1 opacity-60">Gravedad / Tipo</label>
+                          <select className="w-full h-10 bg-bg-card border border-white/10 rounded-xl px-3 text-xs font-bold text-text-main focus:ring-1 focus:ring-danger outline-none" 
+                              required value={formSanc.tipo} onChange={e => setFormSanc({...formSanc, tipo: e.target.value})}>
+                              <option value="">SELECCIONAR...</option>
+                              {TIPOS_SANCION.map(t => <option key={t.valor} value={t.valor}>{t.etiqueta}</option>)}
+                          </select>
                         </div>
-                        <form onSubmit={handleSanc} className="bg-white/5 border border-danger/10 p-4 rounded-2xl flex flex-col gap-3">
-                            <div className="space-y-2">
-                                <label className="text-[10px] font-bold text-text-muted uppercase tracking-widest px-1">Gravedad / Tipo</label>
-                                <select className="w-full h-10 bg-bg-card border border-white/10 rounded-xl px-3 text-xs font-bold text-text-main focus:ring-1 focus:ring-danger outline-none" 
-                                    required value={formSanc.tipo} onChange={e => setFormSanc({...formSanc, tipo: e.target.value})}>
-                                    <option value="">SELECCIONAR...</option>
-                                    {TIPOS_SANCION.map(t => <option key={t.valor} value={t.valor}>{t.etiqueta}</option>)}
-                                </select>
-                            </div>
-                            <div className="space-y-2">
-                                <label className="text-[10px] font-bold text-text-muted uppercase tracking-widest px-1">Motivo / Descripción</label>
-                                <textarea className="w-full bg-bg-card border border-white/10 rounded-xl p-3 text-xs font-bold text-text-main outline-none focus:ring-1 focus:ring-danger" 
-                                    rows={2} required placeholder="Detalle de la infracción..." value={formSanc.motivo} onChange={e => setFormSanc({...formSanc, motivo: e.target.value})} />
-                            </div>
-                            {formSanc.tipo === 'relevo_inmediato' && (
-                                <label className="flex items-center gap-2 p-2 bg-danger/10 border border-danger/20 rounded-lg cursor-pointer">
-                                    <input type="checkbox" className="accent-danger" checked={formSanc.ejecutar_inmediato} onChange={e => setFormSanc({...formSanc, ejecutar_inmediato: e.target.checked})} />
-                                    <span className="text-[8px] font-black text-danger uppercase tracking-tight">Ejecución inmediata: Cierre de cuenta automático</span>
-                                </label>
-                            )}
-                            <Boton type="submit" isLoading={guardandoAction} className="h-10 bg-danger text-white hover:bg-red-600">⚠ Sancionar Personal</Boton>
-                        </form>
+                        <div className="flex-1 space-y-1 w-full">
+                          <label className="text-[8px] font-black text-text-muted uppercase tracking-widest px-1 opacity-60">Motivo de la sanción</label>
+                          <input className="w-full h-10 bg-bg-card border border-white/10 rounded-xl px-3 text-xs font-bold text-text-main outline-none focus:ring-1 focus:ring-danger" 
+                              required placeholder="Detalle la infracción cometida..." value={formSanc.motivo} onChange={e => setFormSanc({...formSanc, motivo: e.target.value})} />
+                        </div>
+                        <div className="flex items-center gap-4 w-full md:w-auto">
+                          {formSanc.tipo === 'relevo_inmediato' && (
+                            <label className="flex items-center gap-2 p-2 bg-danger/10 border border-danger/20 rounded-lg cursor-pointer shrink-0">
+                                <input type="checkbox" className="accent-danger" checked={formSanc.ejecutar_inmediato} onChange={e => setFormSanc({...formSanc, ejecutar_inmediato: e.target.checked})} />
+                                <span className="text-[8px] font-black text-danger uppercase tracking-tight">Ejecutar Cierre</span>
+                            </label>
+                          )}
+                          <Boton type="submit" isLoading={guardandoAction} className="h-10 px-6 bg-danger text-white hover:bg-red-600 text-[10px] font-black uppercase tracking-widest w-full">Sancionar</Boton>
+                        </div>
+                      </form>
                     </div>
+
                     <div className="space-y-3">
                         <div className="flex items-center gap-2 px-1">
-                            <Shield size={14} className="text-danger opacity-40" />
-                            <span className="text-[10px] font-black text-text-muted uppercase tracking-widest">Registro de Faltas</span>
+                            <Shield size={12} className="text-danger opacity-40" />
+                            <span className="text-[9px] font-black text-text-muted uppercase tracking-widest">Registro de Faltas</span>
                         </div>
-                        <div className="space-y-2">
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
                              {details.sanciones.length === 0 ? (
-                                <p className="text-[10px] text-text-muted italic py-10 text-center uppercase tracking-widest opacity-30">Sin sanciones registradas</p>
+                                <div className="col-span-full py-8 text-center bg-white/2 rounded-xl border border-dashed border-white/5">
+                                  <p className="text-[9px] text-text-muted italic uppercase tracking-widest opacity-30">Sin sanciones registradas</p>
+                                </div>
                             ) : details.sanciones.map(s => {
                                 const st = ETIQUETA_SANCION[s.tipo] || {label: s.tipo, color: 'bg-white/5 text-text-muted'};
                                 const status = ESTADO_SANCION[s.estado] || {label: s.estado, color: 'text-text-muted'};
                                 return (
                                     <div key={s.id} className="p-3 bg-white/5 border border-white/5 rounded-xl space-y-2">
                                         <div className="flex items-center justify-between">
-                                            <div className={cn("px-2 py-0.5 rounded-full text-[7px] font-black uppercase", st.color)}>{st.label}</div>
+                                            <div className={cn("px-2 py-0.5 rounded-md text-[7px] font-black uppercase", st.color)}>{st.label}</div>
                                             <div className={cn("text-[7px] font-black uppercase", status.color)}>{status.label}</div>
                                         </div>
-                                        <p className="text-[11px] font-bold text-text-main leading-tight">{s.motivo}</p>
-                                        <p className="text-[8px] text-text-muted uppercase font-bold opacity-40">Por {s.sancionado_por_nombre || 'Sistema'} · {new Date(s.created_at).toLocaleDateString()}</p>
+                                        <p className="text-[10px] font-bold text-text-main leading-tight truncate">{s.motivo}</p>
+                                        <p className="text-[7px] text-text-muted uppercase font-bold opacity-40">{new Date(s.created_at).toLocaleDateString()}</p>
                                     </div>
                                 )
                             })}
@@ -484,16 +494,26 @@ const MiembroCard = ({ miembro, userActual, zonas, onUpdate, onToggleActivo, onE
                   </div>
                 )}
 
+                {/* ── TAB: EDITAR ── */}
                 {tab === 'editar' && (
-                  <div className="max-w-2xl">
-                     <form onSubmit={handleEdit} className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <Input label="Nombres" required value={formEdit.nombre} onChange={e => setFormEdit({...formEdit, nombre: e.target.value.toUpperCase()})} />
-                        <Input label="Apellidos" required value={formEdit.apellido} onChange={e => setFormEdit({...formEdit, apellido: e.target.value.toUpperCase()})} />
-                        <Input label="Teléfono / Celular" value={formEdit.telefono} onChange={e => setFormEdit({...formEdit, telefono: e.target.value})} />
-                        <Input label="Correo Electrónico" type="email" value={formEdit.email} onChange={e => setFormEdit({...formEdit, email: e.target.value})} />
-                        <div className="md:col-span-2 pt-4 border-t border-white/5">
-                            <Boton type="submit" isLoading={guardandoAction} className="w-full h-12">Guardar Cambios de Perfil</Boton>
+                  <div className="max-w-4xl bg-white/5 border border-white/5 p-4 rounded-2xl">
+                     <form onSubmit={handleEdit} className="grid grid-cols-2 lg:grid-cols-4 gap-4 items-end">
+                        <div className="space-y-1">
+                          <label className="text-[8px] font-black text-text-muted uppercase tracking-widest px-1">Nombres</label>
+                          <input className="w-full h-10 bg-bg-card border border-white/10 rounded-xl px-3 text-xs font-bold text-text-main outline-none focus:ring-1 focus:ring-primary" 
+                            required value={formEdit.nombre} onChange={e => setFormEdit({...formEdit, nombre: e.target.value.toUpperCase()})} />
                         </div>
+                        <div className="space-y-1">
+                          <label className="text-[8px] font-black text-text-muted uppercase tracking-widest px-1">Apellidos</label>
+                          <input className="w-full h-10 bg-bg-card border border-white/10 rounded-xl px-3 text-xs font-bold text-text-main outline-none focus:ring-1 focus:ring-primary" 
+                            required value={formEdit.apellido} onChange={e => setFormEdit({...formEdit, apellido: e.target.value.toUpperCase()})} />
+                        </div>
+                        <div className="space-y-1">
+                          <label className="text-[8px] font-black text-text-muted uppercase tracking-widest px-1">Teléfono</label>
+                          <input className="w-full h-10 bg-bg-card border border-white/10 rounded-xl px-3 text-xs font-bold text-text-main outline-none focus:ring-1 focus:ring-primary" 
+                            value={formEdit.telefono} onChange={e => setFormEdit({...formEdit, telefono: e.target.value})} />
+                        </div>
+                        <Boton type="submit" isLoading={guardandoAction} className="h-10 text-[10px] font-black uppercase tracking-widest">Guardar</Boton>
                      </form>
                   </div>
                 )}
@@ -505,8 +525,6 @@ const MiembroCard = ({ miembro, userActual, zonas, onUpdate, onToggleActivo, onE
     </div>
   );
 };
-
-// ─── VISTA PRINCIPAL ──────────────────────────────────────────────────────────
 
 export default function Personal() {
   const { user: userActual } = useAuthStore();
@@ -538,10 +556,15 @@ export default function Personal() {
         try { const res = await api.get('/entidades'); setEntidades(res.data); } catch {}
       }
 
+      // LISTADO DE ZONAS (FIX 403: Endpoint adaptado según rol)
       try {
-        const resZonas = await api.get('/zonas?limit=100');
+        let endpointSub = '/zonas';
+        if (userActual.rol === 'ADMIN_ENTIDAD') endpointSub = '/zonas?limit=100'; // Ahora el backend debería permitirlo
+        const resZonas = await api.get(endpointSub);
         setZonas(resZonas.data);
-      } catch {}
+      } catch (err) {
+        console.error("Fallo al cargar zonas tácticas:", err);
+      }
 
     } catch {
       toast.error('Fallo en sincronización de Fuerza de Tareas');
@@ -618,7 +641,6 @@ export default function Personal() {
   return (
     <div className="p-4 md:p-6 space-y-6 pb-24 max-w-[1400px] mx-auto animate-in fade-in duration-500">
 
-      {/* ─── CABECERA TÁCTICA ─── */}
       <header className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-bg-card/30 p-4 md:p-5 rounded-2xl border border-white/5">
         <div className="min-w-0">
           <h1 className="text-2xl font-black text-text-main flex items-center gap-3 tracking-tight uppercase">
@@ -641,10 +663,8 @@ export default function Personal() {
         </Boton>
       </header>
 
-      {/* ─── RESUMEN OPERATIVO (KPIs) ─── */}
       <TacticalKPIs personal={personal} />
 
-      {/* ─── BÚSQUEDA ─── */}
       <div className="flex gap-4 items-center bg-bg-card/20 p-2 rounded-2xl border border-white/5">
         <div className="relative flex-1 w-full">
           <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-text-muted" size={18} />
@@ -658,7 +678,6 @@ export default function Personal() {
         </div>
       </div>
 
-      {/* ─── LISTADO DE OPERATIVOS ─── */}
       <section className="space-y-3">
         {loading ? (
           Array(4).fill(0).map((_, i) => (
@@ -690,7 +709,6 @@ export default function Personal() {
         )}
       </section>
 
-      {/* ─── PAGINACIÓN ─── */}
       {!loading && (personal.length > 0 || page > 0) && (
         <div className="flex items-center justify-between pt-6 border-t border-white/5 mt-4">
           <Boton variant="ghost" disabled={page === 0} onClick={() => setPage(p => Math.max(0, p - 1))}
@@ -708,7 +726,6 @@ export default function Personal() {
         </div>
       )}
 
-      {/* ─── MODAL ALTA DE PERSONAL ─── */}
       <Modal isOpen={isModalCreateOpen} onClose={() => setIsModalCreateOpen(false)} title="PROTOCOLO DE ALTA — PERSONAL">
         <form onSubmit={handleCrearPersonal} className="space-y-5">
           <div className="space-y-4">
