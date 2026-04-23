@@ -8,7 +8,7 @@ import {
   UserMinus, BadgeCheck, Search, ChevronLeft, ChevronRight, MapPin,
   ChevronDown, ChevronUp, Star, AlertTriangle, Edit2, X, Check,
   TrendingUp, Shield, Award, Clock, Zap, AlertCircle, Users, LayoutGrid,
-  ShieldAlert, Mail, PlusCircle
+  ShieldAlert, Mail, PlusCircle, HandMetal
 } from 'lucide-react';
 import personalService from '../services/personal.service';
 import api from '../services/api';
@@ -236,6 +236,12 @@ const MiembroCard = ({ miembro, userActual, zonas, onUpdate, onToggleActivo, onE
             <div className="text-[7px] font-black text-text-muted uppercase">Días Activo</div>
           </div>
           <div className="text-center">
+            <div className={cn("text-sm font-black leading-none", (details.kpis?.asignaciones_manuales > 10) ? 'text-danger' : 'text-sky-400')}>
+                {details.kpis?.asignaciones_manuales || '0'}
+            </div>
+            <div className="text-[7px] font-black text-text-muted uppercase">Asig. Manuales</div>
+          </div>
+          <div className="text-center">
             <div className="text-sm font-black text-amber-400 leading-none">{details.kpis?.total_incentivos || '0'}</div>
             <div className="text-[7px] font-black text-text-muted uppercase">Incentivos</div>
           </div>
@@ -304,7 +310,7 @@ const MiembroCard = ({ miembro, userActual, zonas, onUpdate, onToggleActivo, onE
               <>
                 {tab === 'kpis' && (
                   <div className="space-y-4">
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                    <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
                       <div className="bg-white/5 rounded-xl p-3 border border-white/5">
                         <span className="text-[8px] font-black text-text-muted uppercase tracking-widest block mb-1">Días Operativo</span>
                         <span className="text-2xl font-black text-primary">{details.kpis?.dias_activo || 0}</span>
@@ -312,6 +318,18 @@ const MiembroCard = ({ miembro, userActual, zonas, onUpdate, onToggleActivo, onE
                       <div className="bg-white/5 rounded-xl p-3 border border-white/5">
                         <span className="text-[8px] font-black text-text-muted uppercase tracking-widest block mb-1">Incentivos</span>
                         <span className="text-2xl font-black text-amber-400">{details.kpis?.total_incentivos || 0}</span>
+                      </div>
+                      <div className="bg-white/5 rounded-xl p-3 border border-white/5 relative group/manual">
+                        <div className="flex items-center justify-between mb-1">
+                          <span className="text-[8px] font-black text-text-muted uppercase tracking-widest block">Asig. Manuales</span>
+                          {details.kpis?.asignaciones_manuales > 10 && <AlertTriangle size={10} className="text-danger animate-pulse" />}
+                        </div>
+                        <span className={cn("text-2xl font-black", details.kpis?.asignaciones_manuales > 10 ? 'text-danger' : 'text-sky-400')}>
+                            {details.kpis?.asignaciones_manuales || 0}
+                        </span>
+                        {details.kpis?.asignaciones_manuales > 10 && (
+                            <div className="absolute top-0 right-0 p-1 hidden group-hover/manual:block bg-danger text-white text-[6px] font-black uppercase rounded">Alerta de Integridad</div>
+                        )}
                       </div>
                       <div className="bg-white/5 rounded-xl p-3 border border-white/5">
                         <span className="text-[8px] font-black text-text-muted uppercase tracking-widest block mb-1">Sanciones Totales</span>
@@ -559,7 +577,7 @@ export default function Personal() {
       // LISTADO DE ZONAS (FIX 403: Endpoint adaptado según rol)
       try {
         let endpointSub = '/zonas';
-        if (userActual.rol === 'ADMIN_ENTIDAD') endpointSub = '/zonas?limit=100'; // Ahora el backend debería permitirlo
+        if (userActual.rol === 'ADMIN_ENTIDAD') endpointSub = '/zonas?limit=100';
         const resZonas = await api.get(endpointSub);
         setZonas(resZonas.data);
       } catch (err) {

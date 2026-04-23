@@ -62,3 +62,4 @@ class KPIsOperativo(BaseModel):
     dias_activo: int = 0
     ultimo_incentivo: Optional[str] = None
     ultima_sancion: Optional[str] = None
+    asignaciones_manuales: int = 0

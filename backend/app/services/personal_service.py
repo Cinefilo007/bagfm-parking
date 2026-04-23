@@ -71,12 +71,7 @@ class PersonalService:
         res = await db.execute(query)
         usuarios = res.scalars().all()
 
-        for u in usuarios:
-            if u.entidad_pertenece:
-                u.entidad_nombre = u.entidad_pertenece.nombre
-            if u.zona_asignada:
-                u.zona_nombre = u.zona_asignada.nombre
-
+        # Nota: zona_nombre y entidad_nombre son property en el modelo, no necesitan setteo manual.
         return usuarios
 
     # ─── CREACIÓN ─────────────────────────────────────────────────────────────
@@ -161,12 +156,6 @@ class PersonalService:
 
         await db.commit()
         await db.refresh(usuario)
-
-        if usuario.entidad_pertenece:
-            usuario.entidad_nombre = usuario.entidad_pertenece.nombre
-        if usuario.zona_asignada:
-            usuario.zona_nombre = usuario.zona_asignada.nombre
-
         return usuario
 
     # ─── TOGGLE ACTIVO ────────────────────────────────────────────────────────
@@ -188,12 +177,6 @@ class PersonalService:
         usuario.activo = not usuario.activo
         await db.commit()
         await db.refresh(usuario)
-
-        if usuario.entidad_pertenece:
-            usuario.entidad_nombre = usuario.entidad_pertenece.nombre
-        if usuario.zona_asignada:
-            usuario.zona_nombre = usuario.zona_asignada.nombre
-
         return usuario
 
     # ─── ELIMINACIÓN ──────────────────────────────────────────────────────────
@@ -249,12 +232,6 @@ class PersonalService:
         parquero.zona_asignada_id = zona_id
         await db.commit()
         await db.refresh(parquero)
-
-        if parquero.entidad_pertenece:
-            parquero.entidad_nombre = parquero.entidad_pertenece.nombre
-        if parquero.zona_asignada:
-            parquero.zona_nombre = parquero.zona_asignada.nombre
-
         return parquero
 
     # ─── KPIs DEL OPERATIVO ───────────────────────────────────────────────────
@@ -307,6 +284,16 @@ class PersonalService:
         )
         ult_sanc = res_ult_sanc.scalar_one_or_none()
 
+        # KPIs TÁCTICOS: Monitoreo de Asignaciones Manuales (Anti-Corrupción)
+        from app.models.acceso import Acceso
+        res_man = await db.execute(
+            select(func.count(Acceso.id)).where(
+                Acceso.registrado_por == operativo_id,
+                Acceso.es_manual == True
+            )
+        )
+        asig_manuales = res_man.scalar_one() or 0
+
         return KPIsOperativo(
             total_incentivos=total_incentivos,
             total_sanciones=total_sanciones,
@@ -315,7 +302,8 @@ class PersonalService:
             zona_id=str(operativo.zona_asignada_id) if operativo.zona_asignada_id else None,
             dias_activo=dias_activo,
             ultimo_incentivo=ult_inc.tipo.value if ult_inc else None,
-            ultima_sancion=ult_sanc.tipo.value if ult_sanc else None
+            ultima_sancion=ult_sanc.tipo.value if ult_sanc else None,
+            asignaciones_manuales=asig_manuales
         )
 
     # ─── INCENTIVOS ──────────────────────────────────────────────────────────
