@@ -110,12 +110,15 @@ class AccesoService:
                         "apellido": "",
                         "cedula": qr_db.cedula_portador or "",
                         "telefono": qr_db.telefono_portador or "",
-                        "rol": "socio",  # Requerido por Pydantic (UsuarioBase)
+                        "rol": "SOCIO",  # Requerido por Pydantic (UsuarioBase) en MAYUSCULA (RolTipo)
                         "activo": True,
                         "entidad_nombre": lote.entidad.nombre if (lote and hasattr(lote, 'entidad')) else "Pase Evento",
                         "updated_at": qr_db.created_at,
                         "created_at": qr_db.created_at
                     }
+                    vehiculos_socio = []
+                    
+                    # Primer vehículo (Principal embazado en la tabla codigos_qr)
                     if qr_db.vehiculo_placa:
                         v_mock = {
                             "id": qr_db.vehiculo_id or qr_db.id,
@@ -128,10 +131,32 @@ class AccesoService:
                             "created_at": qr_db.created_at # Requerido por Pydantic (VehiculoSalida)
                         }
                         vehiculo = v_mock
-                        vehiculos_socio = [v_mock]
+                        vehiculos_socio.append(v_mock)
+                    
+                    # Adicionales (Tabla VehiculoPase)
+                    from app.models.vehiculo_pase import VehiculoPase
+                    query_veh_adi = select(VehiculoPase).where(VehiculoPase.qr_id == qr_db.id)
+                    res_veh_adi = await db.execute(query_veh_adi)
+                    vehiculos_adicionales = res_veh_adi.scalars().all()
+                    
+                    for va in vehiculos_adicionales:
+                        v_adi = {
+                            "id": va.id,
+                            "placa": va.placa,
+                            "marca": va.marca or "GENÉRICO",
+                            "modelo": va.modelo or "GENÉRICO",
+                            "color": va.color or "SIN COLOR",
+                            "activo": True,
+                            "socio_id": socio["id"],
+                            "created_at": va.created_at
+                        }
+                        vehiculos_socio.append(v_adi)
+                        
+                    if not vehiculo and vehiculos_socio:
+                        vehiculo = vehiculos_socio[0]
                     
                     # Si ya logramos mockear datos (Tipo B excel), no requiere datos manuales mandatorios
-                    if qr_db.nombre_portador and qr_db.vehiculo_placa:
+                    if qr_db.nombre_portador and vehiculos_socio:
                         necesita_datos = False
 
                 return ResultadoValidacion(
