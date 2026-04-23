@@ -3,6 +3,22 @@
 > Este documento registra todos los cambios significativos al sistema.  
 > Sigue el formato [Keep a Changelog](https://keepachangelog.com/es-ES/1.0.0/).
 
+## [2.2.0] — 2026-04-23
+
+### Añadido — Rediseño Táctico de Personal
+- **Fuerza de Tareas v2.2** (`/pages/Personal.jsx`): Reescrito completamente siguiendo el estándar de Pases Masivos.
+- **KPIs Tácticos Globales**: Resumen de personal (Totales, Activos, Parqueros, Zonas) en la parte superior.
+- **Tarjetas Expandibles (*In-Place Expansion*)**: Se elimina el modal lateral (PanelDetalle) en favor de una expansión vertical dentro de la misma lista.
+- **KPIs Individuales de Alta Densidad**: Días activo, incentivos y sanciones visibles sin expandir la tarjeta.
+- **Gestión Unificada**: Pestañas de KPIs, Zona, Incentivos, Sanciones y Editar integradas en el área expandible.
+- **Modo Pánico Operativo**: Botón de toggle (Activo/Pausa) y Baja Definitiva accesibles desde la vista contraída.
+- **Directiva nueva**: `DIRECTIVA_UI_PERSONAL_V22.md`.
+
+### Modificado
+- **Personal.jsx**: Implementación de `MiembroCard` y `TacticalKPIs`. Se eliminó el subcomonente `PanelDetalle` por redundancia con el nuevo sistema de expansión.
+
+---
+
 ## [2.0.1] — 2026-04-18
 
 ### Añadido — Sprints 2, 3 y 4 Frontend
