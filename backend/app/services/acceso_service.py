@@ -406,18 +406,37 @@ class AccesoService:
             u_query = select(Usuario).where(Usuario.id == acc.usuario_id)
             u = (await db.execute(u_query)).scalar_one_or_none()
             
+            usuario_nombre = "Socio Desconocido"
             vehiculo_str = "SIN VEHÍCULO"
+            
+            # 1. Resolver Nombre
+            if u:
+                usuario_nombre = f"{u.nombre} {u.apellido}"
+            elif acc.qr_id:
+                from app.models.codigo_qr import CodigoQR
+                qr_db = await db.get(CodigoQR, acc.qr_id)
+                if qr_db and qr_db.nombre_portador:
+                    usuario_nombre = f"{qr_db.nombre_portador} (PASE)"
+            
+            # 2. Resolver Vehículo
             if acc.vehiculo_id:
                 from app.models.vehiculo import Vehiculo
                 v = await db.get(Vehiculo, acc.vehiculo_id)
                 if v:
                     vehiculo_str = f"{v.marca} {v.modelo} [{v.placa}]"
+            elif acc.qr_id:
+                # Reutilizar qr_db si ya se cargó, sino cargarlo
+                if 'qr_db' not in locals() or not qr_db:
+                    from app.models.codigo_qr import CodigoQR
+                    qr_db = await db.get(CodigoQR, acc.qr_id)
+                if qr_db and qr_db.vehiculo_placa:
+                    vehiculo_str = f"PASE VEH. [{qr_db.vehiculo_placa}]"
 
             items.append(EventoTactico(
                 id=acc.id,
                 tipo=acc.tipo,
                 timestamp=acc.timestamp,
-                usuario=f"{u.nombre} {u.apellido}" if u else "Socio Desconocido",
+                usuario=usuario_nombre,
                 vehiculo=vehiculo_str,
                 punto=acc.punto_acceso,
                 es_manual=acc.es_manual
