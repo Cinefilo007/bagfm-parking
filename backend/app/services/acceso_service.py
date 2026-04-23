@@ -57,13 +57,15 @@ class AccesoService:
 
             # 4. Lógica de Pases Masivos
             if qr_db.lote_id:
-                # Validar Límites de Acceso
-                if qr_db.max_accesos is not None and qr_db.accesos_usados >= qr_db.max_accesos:
-                    return ResultadoValidacion(
-                        permitido=False, 
-                        mensaje=f"LÍMITE DE ACCESOS ALCANZADO ({qr_db.max_accesos}/{qr_db.max_accesos})", 
-                        tipo_alerta="error"
-                    )
+                # Validar Límites de Acceso - Solo bloquea en ENTRADA
+                from app.models.enums import AccesoTipo
+                if datos.tipo == AccesoTipo.entrada:
+                    if qr_db.max_accesos is not None and qr_db.accesos_usados >= qr_db.max_accesos:
+                        return ResultadoValidacion(
+                            permitido=False, 
+                            mensaje=f"LÍMITE DE ACCESOS ALCANZADO ({qr_db.max_accesos}/{qr_db.max_accesos})", 
+                            tipo_alerta="error"
+                        )
                 
                 # Buscar nombre del evento
                 from app.models.alcabala_evento import LotePaseMasivo
@@ -396,11 +398,12 @@ class AccesoService:
         )
         db.add(nuevo_acceso)
 
-        # Si es un QR vinculado a un lote, incrementar accesos_usados
+        # Si es un QR vinculado a un lote, incrementar accesos_usados SOLO en entrada
         if datos.qr_id:
             qr_db = await db.get(CodigoQR, datos.qr_id)
             if qr_db:
-                if qr_db.lote_id:
+                from app.models.enums import AccesoTipo
+                if qr_db.lote_id and datos.tipo == AccesoTipo.entrada:
                     qr_db.accesos_usados += 1
                 
                 # Si el QR no tenía usuario_id (evento_simple), vincularlo al creado ahora para trazabilidad futura
