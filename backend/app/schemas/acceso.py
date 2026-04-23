@@ -93,6 +93,7 @@ class EventoTactico(BaseModel):
     vehiculo: str
     punto: str
     es_manual: bool
+    es_pase_temporal: bool = False
 
 class PaginatedEventos(BaseModel):
     items: List[EventoTactico]

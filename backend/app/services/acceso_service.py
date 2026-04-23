@@ -408,11 +408,13 @@ class AccesoService:
             
             usuario_nombre = "Socio Desconocido"
             vehiculo_str = "SIN VEHÍCULO"
+            es_pase_temporal = False
             
-            # 1. Resolver Nombre
+            # 1. Resolver Nombre y Tipo
             if u:
                 usuario_nombre = f"{u.nombre} {u.apellido}"
             elif acc.qr_id:
+                es_pase_temporal = True
                 from app.models.codigo_qr import CodigoQR
                 qr_db = await db.get(CodigoQR, acc.qr_id)
                 if qr_db and qr_db.nombre_portador:
@@ -430,7 +432,14 @@ class AccesoService:
                     from app.models.codigo_qr import CodigoQR
                     qr_db = await db.get(CodigoQR, acc.qr_id)
                 if qr_db and qr_db.vehiculo_placa:
-                    vehiculo_str = f"PASE VEH. [{qr_db.vehiculo_placa}]"
+                    mca = qr_db.vehiculo_marca or ""
+                    mod = qr_db.vehiculo_modelo or ""
+                    col = qr_db.vehiculo_color or ""
+                    detalles = " ".join(filter(None, [mca, mod, col]))
+                    if detalles:
+                        vehiculo_str = f"{detalles} [{qr_db.vehiculo_placa}]"
+                    else:
+                        vehiculo_str = f"PASE [{qr_db.vehiculo_placa}]"
 
             items.append(EventoTactico(
                 id=acc.id,
@@ -439,7 +448,8 @@ class AccesoService:
                 usuario=usuario_nombre,
                 vehiculo=vehiculo_str,
                 punto=acc.punto_acceso,
-                es_manual=acc.es_manual
+                es_manual=acc.es_manual,
+                es_pase_temporal=es_pase_temporal
             ))
 
         return {

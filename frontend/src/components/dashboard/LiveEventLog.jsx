@@ -144,10 +144,17 @@ const LiveEventLog = ({ puntoNombre = null }) => {
                                     {evento.tipo === 'entrada' ? 'Ingreso por' : 'Egreso por'} <span className="text-primary/70">{evento.punto}</span>
                                 </p>
                                 {evento.vehiculo && evento.vehiculo !== "SIN VEHÍCULO" && (
-                                    <p className="text-[8px] font-black text-primary/60 uppercase tracking-widest mt-0.5 ml-3.5 flex items-center gap-1">
-                                        <span className="w-1 h-1 rounded-full bg-primary/40 inline-block"/>
-                                        Vehículo: {evento.vehiculo}
-                                    </p>
+                                    <div className="flex items-center gap-2 mt-0.5 ml-3.5">
+                                        <p className="text-[8px] font-black text-primary/60 uppercase tracking-widest flex items-center gap-1">
+                                            <span className="w-1 h-1 rounded-full bg-primary/40 inline-block"/>
+                                            Vehículo: {evento.vehiculo}
+                                        </p>
+                                        {evento.es_pase_temporal && (
+                                            <span className="px-1.5 py-0.5 rounded-[4px] bg-cyan-500/10 border border-cyan-500/20 text-[7px] font-black text-cyan-500 text-center tracking-widest">
+                                                TEMP_PASS
+                                            </span>
+                                        )}
+                                    </div>
                                 )}
                             </div>
                         </div>
