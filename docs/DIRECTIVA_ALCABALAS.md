@@ -117,5 +117,41 @@ El módulo de Alcabala es la interfaz operativa del personal de guardia. Su func
 
 ---
 
-*Última actualización: 2026-04-18 | v2.0 — Alcabala Simplificada*
+## 6. Correcciones v2.1 (2026-04-23)
+
+### BUG-01: Error 500 al registrar acceso de pase masivo sin usuario
+**Causa**: El modelo `accesos.usuario_id` tiene `nullable=False` en BD. Cuando se registra un pase de tipo `evento_simple` sin socio vinculado, el `usuario_id` llegaba como `None` al INSERT.
+
+**Corrección en `acceso_service.py`**:
+- Si `final_usuario_id` es `None` después de toda la lógica de registro manual, se crea automáticamente un usuario anónimo temporal (`ANONIMO-XXXXXXXX`) para cumplir la restricción NOT NULL.
+- Esto aplica a pases de visitantes sin cédula que el guardia confirma directamente.
+
+**Corrección en `schemas/acceso.py`**:
+- `AccesoSalida.usuario_id` cambió de `UUID` a `Optional[UUID]` para que el schema no rompa en la respuesta.
+
+### MEJORA-01: Vista de datos del socio en modo lectura
+El `Scanner.jsx` fue rediseñado con los siguientes principios:
+
+1. **Colores adaptativos**: Todos los fondos usan `color-mix(in srgb, var(--COLOR) X%, var(--bg-app))` en lugar de clases hardcoded `bg-red-50/dark:...`. Esto garantiza coherencia en ambos modos.
+
+2. **Layout centrado**: El scroll del resultado siempre vuelve al tope de pantalla (`window.scrollTo({ top: 0 })`) al recibir un resultado.
+
+3. **FichaSocio (modo lectura)**: Cuando el QR es válido y tiene datos de socio/vehículo, se muestra una tarjeta de lectura con:
+   - Foto + nombre + cédula + entidad
+   - Teléfono de contacto
+   - Vehículo con placa, color, marca, modelo
+   - Si el socio tiene **múltiples vehículos**: lista de selección para que el guardia indique con cuál ingresa
+
+4. **Modal de formulario oculto por defecto**: El formulario de datos manuales (`InputManual`) ahora se muestra ÚNICAMENTE cuando el guardia presiona "Registrar Datos (Opcional)". No aparece automáticamente al escanear.
+
+5. **Badge de pase masivo**: Cuando el resultado es un pase masivo, se muestra un badge con nombre del evento, serial legible y accesos restantes.
+
+### MEJORA-02: Multi-vehículo
+El backend ahora retorna `vehiculos: List[VehiculoSalida]` en `ResultadoValidacion` con todos los vehículos activos del socio. El frontend muestra un selector cuando hay más de uno.
+
+El `vehiculo_id` enviado al registrar se toma del vehículo seleccionado por el guardia.
+
+---
+
+*Última actualización: 2026-04-23 | v2.1 — Corrección de acceso y vista de datos*
 *Docs Relacionados: SCHEMA_BD.md, ROLES_Y_PERMISOS.md, DIRECTIVA_PARQUERO.md*

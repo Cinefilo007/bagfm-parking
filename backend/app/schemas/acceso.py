@@ -38,7 +38,7 @@ class AccesoRegistrar(BaseModel):
 
 class AccesoSalida(AccesoBase):
     id: UUID
-    usuario_id: UUID
+    usuario_id: Optional[UUID] = None  # Puede ser None en pases de visitantes sin registro previo
     vehiculo_id: Optional[UUID] = None
     registrado_por: UUID
     es_manual: bool
@@ -52,9 +52,11 @@ class ResultadoValidacion(BaseModel):
     mensaje: str
     tipo_alerta: Optional[str] = "info" # info, warning, error
     
-    # Datos para la ficha
+    # Datos para la ficha del socio
     socio: Optional[UsuarioSalida] = None
     vehiculo: Optional[VehiculoSalida] = None
+    # Lista de vehículos del socio (para selección cuando tiene más de 1)
+    vehiculos: List[VehiculoSalida] = []
     entidad_nombre: Optional[str] = None
     zona_asignada_id: Optional[UUID] = None
     puesto_asignado_id: Optional[UUID] = None
@@ -64,6 +66,12 @@ class ResultadoValidacion(BaseModel):
     qr_id: Optional[UUID] = None
     usuario_id: Optional[UUID] = None
     vehiculo_id: Optional[UUID] = None
+    
+    # Campos para pases masivos
+    es_pase_masivo: bool = False
+    serial_legible: Optional[str] = None
+    nombre_evento: Optional[str] = None
+    accesos_restantes: Optional[int] = None
     
     # Si hay infracciones relevantes
     infracciones_activas: List[dict] = []

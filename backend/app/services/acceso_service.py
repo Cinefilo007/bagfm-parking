@@ -89,12 +89,14 @@ class AccesoService:
                             tipo_alerta="error"
                         )
 
-                # Buscar vehículo del socio temporal si aplica
+                # Buscar todos los vehículos del socio (para selección múltiple)
+                vehiculos_socio = []
                 vehiculo = None
                 if socio:
-                    query_veh_socio = select(Vehiculo).where(Vehiculo.socio_id == socio.id, Vehiculo.activo == True).limit(1)
+                    query_veh_socio = select(Vehiculo).where(Vehiculo.socio_id == socio.id, Vehiculo.activo == True)
                     res_veh_socio = await db.execute(query_veh_socio)
-                    vehiculo = res_veh_socio.scalar_one_or_none()
+                    vehiculos_socio = res_veh_socio.scalars().all()
+                    vehiculo = vehiculos_socio[0] if vehiculos_socio else None
 
                 # Determinar si requiere datos manuales (Tipo A o falta de datos en el registro)
                 necesita_datos = (qr_db.tipo == QRTipo.evento_simple) or (not socio) or (not vehiculo)
@@ -111,6 +113,7 @@ class AccesoService:
                     usuario_id=socio.id if socio else None,
                     socio=socio,
                     vehiculo=vehiculo,
+                    vehiculos=vehiculos_socio,
                     vehiculo_id=vehiculo.id if vehiculo else None,
                     requiere_datos_manuales=necesita_datos,
                     zona_asignada_id=qr_db.zona_asignada_id or (lote.zona_estacionamiento_id if lote else None),
@@ -138,17 +141,21 @@ class AccesoService:
                         msg = "MEMBRESÍA VENCIDA (PAGO PENDIENTE)"
                 return ResultadoValidacion(permitido=False, mensaje=msg, tipo_alerta="error")
 
-            # 5.b Vehículo
+            # 5.b Vehículos del socio (todos, para selección múltiple)
             vehiculo = None
+            vehiculos_socio = []
             if vehiculo_id_str:
                 query_veh = select(Vehiculo).where(Vehiculo.id == UUID(vehiculo_id_str), Vehiculo.activo == True)
                 res_veh = await db.execute(query_veh)
                 vehiculo = res_veh.scalar_one_or_none()
             
-            if not vehiculo:
-                query_veh_socio = select(Vehiculo).where(Vehiculo.socio_id == socio.id, Vehiculo.activo == True).limit(1)
-                res_veh_socio = await db.execute(query_veh_socio)
-                vehiculo = res_veh_socio.scalar_one_or_none()
+            # Siempre obtener todos los vehículos del socio
+            query_veh_all = select(Vehiculo).where(Vehiculo.socio_id == socio.id, Vehiculo.activo == True)
+            res_veh_all = await db.execute(query_veh_all)
+            vehiculos_socio = res_veh_all.scalars().all()
+            
+            if not vehiculo and vehiculos_socio:
+                vehiculo = vehiculos_socio[0]
 
             # 5.c Infracciones
             query_inf = select(Infraccion).where(
@@ -193,6 +200,7 @@ class AccesoService:
                 tipo_alerta = "error" if bloqueado else ("warning" if infracciones else "info"),
                 socio = socio,
                 vehiculo = vehiculo,
+                vehiculos = vehiculos_socio,
                 entidad_nombre = entidad.nombre if entidad else "N/A",
                 qr_id = qr_db.id,
                 usuario_id = socio.id,
@@ -273,7 +281,24 @@ class AccesoService:
                 
                 final_vehiculo_id = v_existente.id
 
-        # 2. Persistir Acceso
+        # 2. Si todavía no tenemos usuario_id, crear visitante anónimo para cumplir NOT NULL
+        if not final_usuario_id:
+            from app.models.usuario import Usuario
+            from app.models.enums import RolTipo
+            import uuid as _uuid
+            visitante_anonimo = Usuario(
+                cedula=f"ANONIMO-{str(_uuid.uuid4())[:8].upper()}",
+                nombre=datos.nombre_manual or "VISITANTE",
+                apellido="ANÓNIMO",
+                rol=RolTipo.SOCIO,
+                password_hash="MANUAL_REG",
+                activo=True
+            )
+            db.add(visitante_anonimo)
+            await db.flush()
+            final_usuario_id = visitante_anonimo.id
+
+        # 3. Persistir Acceso
         nuevo_acceso = Acceso(
             qr_id = datos.qr_id,
             usuario_id = final_usuario_id,
