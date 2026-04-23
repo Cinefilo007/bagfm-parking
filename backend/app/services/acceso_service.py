@@ -286,10 +286,22 @@ class AccesoService:
         final_usuario_id = datos.usuario_id
         final_vehiculo_id = datos.vehiculo_id
 
+        # 0. Validar integridad de IDs provenientes del Frontend (Filtrar IDs mockeados de pases masivos excel)
+        from app.models.usuario import Usuario
+        from app.models.vehiculo import Vehiculo
+        
+        if final_usuario_id:
+            q_exists_u = select(Usuario.id).where(Usuario.id == final_usuario_id)
+            if not (await db.execute(q_exists_u)).scalar_one_or_none():
+                final_usuario_id = None
+                
+        if final_vehiculo_id:
+            q_exists_v = select(Vehiculo.id).where(Vehiculo.id == final_vehiculo_id)
+            if not (await db.execute(q_exists_v)).scalar_one_or_none():
+                final_vehiculo_id = None
+
         # 1. Registro Ligero de Usuario/Vehículo si se proveen datos manuales
         if datos.cedula_manual:
-            from app.models.usuario import Usuario
-            from app.models.vehiculo import Vehiculo
             from app.models.enums import RolTipo
 
             # Buscar si ya existe por cédula
