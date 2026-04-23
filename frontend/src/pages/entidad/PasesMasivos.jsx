@@ -7,7 +7,7 @@ import { useAuthStore } from '../../store/auth.store';
 import { toast } from 'react-hot-toast';
 import { cn } from '../../lib/utils';
 import SelectTactivo from '../../components/ui/SelectTactivo';
-import { QRCodeSVG } from 'react-qr-code';
+import { QRCode } from 'react-qr-code';
 import {
     Calendar, Plus, Download, Clock, PackageOpen,
     LayoutGrid, Ticket, UserCheck, ExternalLink,
@@ -176,8 +176,8 @@ const ModalVerQR = ({ pase, lote, isOpen, onClose }) => {
                     className="bg-white rounded-2xl p-4 shadow-xl shadow-black/40"
                     style={{ width: 220, height: 220, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
                 >
-                    <QRCodeSVG
-                        value={qrValue}
+                    <QRCode
+                        value={qrValue || ' '}
                         size={188}
                         bgColor="#ffffff"
                         fgColor="#0d1117"
