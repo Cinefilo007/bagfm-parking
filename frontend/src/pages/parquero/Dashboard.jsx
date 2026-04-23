@@ -174,26 +174,55 @@ const DashboardParquero = () => {
 
     // ── Generar puestos virtuales si la zona no tiene físicos ──────────────
     const generarPuestosVirtuales = (zona) => {
-        const total = zona.capacidad_total || 0;
-        const ocupados = zona.ocupacion_actual || 0;
-        return Array.from({ length: total }, (_, i) => ({
-            id: `virtual-${i}`,
-            numero_puesto: `P-${String(i + 1).padStart(2, '0')}`,
-            estado: i < ocupados ? 'ocupado' : 'libre',
-            reservado_base: false,
-            reservado_entidad_id: null,
-            virtual: true,
-        }));
+        const total            = zona.capacidad_total   || 0;
+        const ocupados         = zona.ocupacion_actual  || 0;
+        const nBase            = zona.kpis?.reservados_base    || 0;
+        const nEntidad         = zona.kpis?.reservados_entidad || 0;
+
+        return Array.from({ length: total }, (_, i) => {
+            const num = String(i + 1).padStart(2, '0');
+            // Los primeros nBase puestos → reservados_base
+            if (i < nBase) return {
+                id: `virtual-base-${i}`,
+                numero_puesto: `B-${num}`,
+                estado: 'libre',
+                reservado_base: true,
+                reservado_entidad_id: null,
+                virtual: true,
+            };
+            // Los siguientes nEntidad → reservados entidad
+            if (i < nBase + nEntidad) return {
+                id: `virtual-ent-${i}`,
+                numero_puesto: `V-${num}`,
+                estado: 'libre',
+                reservado_base: false,
+                reservado_entidad_id: 'entidad',   // valor truthy suficiente para el color
+                virtual: true,
+            };
+            // El resto: ocupado o libre según ocupacion_actual
+            const esOcupado = (i - nBase - nEntidad) < ocupados;
+            return {
+                id: `virtual-${i}`,
+                numero_puesto: `P-${num}`,
+                estado: esOcupado ? 'ocupado' : 'libre',
+                reservado_base: false,
+                reservado_entidad_id: null,
+                virtual: true,
+            };
+        });
     };
 
     // ── KPIs reales desde el backend ──────────────────────────────────────
     const kpis = zonaInfo?.kpis || {
-        libres: puestos.filter(p => p.estado === 'libre').length,
-        ocupados: puestos.filter(p => p.estado === 'ocupado').length,
-        reservados: puestos.filter(p => p.estado === 'reservado').length,
-        mantenimiento: puestos.filter(p => p.estado === 'mantenimiento').length,
-        total: puestos.length,
+        libres:             puestos.filter(p => p.estado === 'libre' && !p.reservado_base && !p.reservado_entidad_id).length,
+        ocupados:           puestos.filter(p => p.estado === 'ocupado').length,
+        reservados:         puestos.filter(p => p.reservado_base || p.reservado_entidad_id || p.estado === 'reservado').length,
+        reservados_base:    puestos.filter(p => p.reservado_base).length,
+        reservados_entidad: puestos.filter(p => p.reservado_entidad_id && !p.reservado_base).length,
+        mantenimiento:      puestos.filter(p => p.estado === 'mantenimiento').length,
+        total:              puestos.length,
     };
+
 
     const handleCompartirUbicacion = async () => {
         const nombre = zonaInfo?.nombre || 'Zona de Estacionamiento';
@@ -282,11 +311,36 @@ const DashboardParquero = () => {
 
                     {/* ── KPIs ── */}
                     <div className="grid grid-cols-4 gap-2">
-                        <KpiCard label="Libres" valor={kpis.libres} icon={CheckCircle2} color="text-success" />
-                        <KpiCard label="Ocupados" valor={kpis.ocupados} icon={Car} color="text-danger" />
-                        <KpiCard label="Reservados" valor={kpis.reservados} icon={Shield} color="text-warning" />
-                        <KpiCard label="Total" valor={kpis.total} icon={LayoutGrid} color="text-primary" />
+                        <KpiCard label="Libres"    valor={kpis.libres}    icon={CheckCircle2} color="text-success" />
+                        <KpiCard label="Ocupados"  valor={kpis.ocupados}  icon={Car}          color="text-danger"  />
+
+                        {/* Reservados: card expandida con desglose */}
+                        <Card className="flex flex-col p-4 relative overflow-hidden group hover:bg-bg-high transition-all border-white/5 rounded-2xl">
+                            <div className="flex justify-between items-start mb-1">
+                                <Shield size={22} className="text-warning" />
+                                <div className="w-1.5 h-1.5 rounded-full bg-warning/20 group-hover:bg-warning/50 transition-colors" />
+                            </div>
+                            <div className="font-black text-2xl tracking-tighter leading-none text-text-main">{kpis.reservados}</div>
+                            <div className="text-[9px] uppercase font-black tracking-widest text-text-muted opacity-60 mt-0.5">Reservados</div>
+                            {(kpis.reservados_base > 0 || kpis.reservados_entidad > 0) && (
+                                <div className="flex flex-col gap-0.5 mt-1.5 border-t border-white/5 pt-1.5">
+                                    {kpis.reservados_base > 0 && (
+                                        <span className="text-[7px] font-black text-indigo-400 flex items-center gap-1">
+                                            <span className="w-1.5 h-1.5 bg-indigo-400 rounded-full" /> {kpis.reservados_base} BASE
+                                        </span>
+                                    )}
+                                    {kpis.reservados_entidad > 0 && (
+                                        <span className="text-[7px] font-black text-warning flex items-center gap-1">
+                                            <span className="w-1.5 h-1.5 bg-warning rounded-full" /> {kpis.reservados_entidad} ENTIDAD
+                                        </span>
+                                    )}
+                                </div>
+                            )}
+                        </Card>
+
+                        <KpiCard label="Total"     valor={kpis.total}     icon={LayoutGrid}   color="text-primary" />
                     </div>
+
 
                     {/* ── RECIBIR / DESPACHAR ── */}
                     <Card className="p-4 rounded-2xl border-white/5">
@@ -327,12 +381,13 @@ const DashboardParquero = () => {
 
                         {/* Leyenda */}
                         <div className="flex flex-wrap gap-3 mb-4 px-1">
-                            <ItemLeyenda color="bg-indigo-400" label="Base" />
-                            <ItemLeyenda color="bg-warning" label="Entidad" />
-                            <ItemLeyenda color="bg-success" label="Libre" count={kpis.libres} />
-                            <ItemLeyenda color="bg-danger" label="Ocup." count={kpis.ocupados} />
-                            {kpis.mantenimiento > 0 && <ItemLeyenda color="bg-text-muted" label="Mant." count={kpis.mantenimiento} />}
+                            <ItemLeyenda color="bg-indigo-400" label="Base"    count={kpis.reservados_base    || 0} />
+                            <ItemLeyenda color="bg-warning"    label="Entidad" count={kpis.reservados_entidad || 0} />
+                            <ItemLeyenda color="bg-success"    label="Libre"   count={kpis.libres} />
+                            <ItemLeyenda color="bg-danger"     label="Ocup."   count={kpis.ocupados} />
+                            {(kpis.mantenimiento || 0) > 0 && <ItemLeyenda color="bg-text-muted" label="Mant." count={kpis.mantenimiento} />}
                         </div>
+
 
                         {/* Grid de puestos */}
                         {puestos.length > 0 ? (

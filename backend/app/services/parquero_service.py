@@ -24,8 +24,11 @@ class ParqueroService:
     async def get_mi_zona(self, db: AsyncSession, usuario_id: UUID) -> Dict[str, Any]:
         """
         Retorna la zona asignada al parquero con KPIs reales de puestos.
+        - Para zonas con puestos físicos: cuenta por estado (libre, ocupado, reservado, reservado_base)
+          y también por flags (reservado_base=True, reservado_entidad_id).
+        - Para zonas virtuales: usa ocupacion_actual de la zona y buscas puestos
+          físicos parciales (reservados) que puedan coexistir.
         """
-        # Obtener usuario con zona asignada
         res_usr = await db.execute(
             select(Usuario)
             .options(joinedload(Usuario.zona_asignada))
@@ -38,27 +41,57 @@ class ParqueroService:
 
         zona = usuario.zona_asignada
 
-        # Contar puestos físicos si la zona los tiene
+        # ── Contar TODOS los puestos físicos por estado ──────────────────────
         res_puestos = await db.execute(
             select(PuestoEstacionamiento.estado, sql_func.count(PuestoEstacionamiento.id))
             .where(PuestoEstacionamiento.zona_id == zona.id)
             .group_by(PuestoEstacionamiento.estado)
         )
         conteos = {row[0]: row[1] for row in res_puestos.all()}
+        total_fisicos_bd = sum(conteos.values())
+        tiene_puestos_fisicos = total_fisicos_bd > 0
 
-        tiene_puestos_fisicos = sum(conteos.values()) > 0
+        # ── Contar por flags de reserva (independiente del estado) ──────────
+        res_base = await db.execute(
+            select(sql_func.count(PuestoEstacionamiento.id))
+            .where(
+                PuestoEstacionamiento.zona_id == zona.id,
+                PuestoEstacionamiento.reservado_base == True
+            )
+        )
+        n_reservados_base = res_base.scalar() or 0
 
-        libres = conteos.get(EstadoPuesto.libre, 0)
-        ocupados = conteos.get(EstadoPuesto.ocupado, 0)
-        reservados = conteos.get(EstadoPuesto.reservado, 0)
-        total_fisicos = sum(conteos.values())
+        res_entidad = await db.execute(
+            select(sql_func.count(PuestoEstacionamiento.id))
+            .where(
+                PuestoEstacionamiento.zona_id == zona.id,
+                PuestoEstacionamiento.reservado_entidad_id != None
+            )
+        )
+        n_reservados_entidad = res_entidad.scalar() or 0
 
-        # Si no tiene puestos físicos, usar ocupacion_actual de la zona
-        if not tiene_puestos_fisicos:
-            ocupados = zona.ocupacion_actual or 0
-            total_fisicos = zona.capacidad_total or 0
-            libres = max(0, total_fisicos - ocupados)
-            reservados = 0
+        if tiene_puestos_fisicos:
+            # ── Zona con puestos identificados: conteo real ──────────────────
+            ocupados   = conteos.get(EstadoPuesto.ocupado, 0)
+            reservados = (
+                conteos.get(EstadoPuesto.reservado, 0)
+                + conteos.get(EstadoPuesto.reservado_base, 0)
+                # Sumar puestos "libres" que tienen flag de reserva (base o entidad)
+                # porque pueden tener estado=libre pero igualmente estar apartados
+                + max(0, n_reservados_base + n_reservados_entidad - conteos.get(EstadoPuesto.reservado_base, 0) - conteos.get(EstadoPuesto.reservado, 0))
+            )
+            mantenimiento = conteos.get(EstadoPuesto.mantenimiento, 0)
+            libres  = max(0, total_fisicos_bd - ocupados - reservados - mantenimiento)
+            total   = total_fisicos_bd
+        else:
+            # ── Zona virtual (sin puestos físicos generados) ─────────────────
+            # Usar los contadores de la zona pero descontar reservados si existen
+            # puestos parciales de base/entidad en la BD
+            ocupados      = zona.ocupacion_actual or 0
+            total         = zona.capacidad_total or 0
+            reservados    = n_reservados_base + n_reservados_entidad
+            mantenimiento = 0
+            libres        = max(0, total - ocupados - reservados)
 
         return {
             "id": str(zona.id),
@@ -72,14 +105,17 @@ class ParqueroService:
             "longitud": zona.longitud,
             "activo": zona.activo,
             "kpis": {
-                "libres": libres,
-                "ocupados": ocupados,
-                "reservados": reservados,
-                "mantenimiento": conteos.get(EstadoPuesto.mantenimiento, 0),
-                "total": total_fisicos,
+                "libres":              libres,
+                "ocupados":            ocupados,
+                "reservados":          reservados,
+                "reservados_base":     n_reservados_base,
+                "reservados_entidad":  n_reservados_entidad,
+                "mantenimiento":       mantenimiento,
+                "total":               total,
                 "tiene_puestos_fisicos": tiene_puestos_fisicos,
             }
         }
+
 
     # ──────────────────────────────────────────────────────────────────────────
     # VEHÍCULOS EN ZONA
@@ -132,12 +168,16 @@ class ParqueroService:
         self, db: AsyncSession, placa: str, zona_id: UUID, parquero_id: UUID
     ) -> Dict[str, Any]:
         """
-        Busca un vehículo por placa. Si existe, lo registra en la zona.
-        Si no existe, retorna sin_datos=True para que el parquero registre los datos.
+        Busca un vehículo por placa siguiendo esta cadena de búsqueda:
+          1. VehiculoPase activo en zona → ya registrado (error)
+          2. VehiculoPase inactivo en zona → marcar como llegado
+          3. Tabla `vehiculos` (socios registrados) → crear VehiculoPase con sus datos
+          4. Tabla `codigos_qr` por vehiculo_placa → pases temporales/masivos con datos en el QR
+          5. No encontrado → sin_datos=True (registrar datos manualmente)
         """
         placa_norm = placa.strip().upper()
 
-        # Buscar vehiculo_pase existente ya activo en esta zona
+        # ── 1. Verificar si ya hay un VehiculoPase activo con esa placa en la zona ──
         res_vp = await db.execute(
             select(VehiculoPase).where(
                 VehiculoPase.placa == placa_norm,
@@ -149,7 +189,7 @@ class ParqueroService:
         if vp_activo:
             raise ValueError(f"El vehículo {placa_norm} ya está registrado en la zona.")
 
-        # Buscar en vehiculos_pase por placa (puede tener un pase pero no haber llegado)
+        # ── 2. VehiculoPase inactivo para esta zona (tiene pase pero no ha llegado) ──
         res_vp2 = await db.execute(
             select(VehiculoPase).where(
                 VehiculoPase.placa == placa_norm,
@@ -160,7 +200,6 @@ class ParqueroService:
         vehiculo_pase = res_vp2.scalars().first()
 
         if vehiculo_pase:
-            # Tiene pase, registrar llegada
             vehiculo_pase.ingresado = True
             vehiculo_pase.hora_ingreso = datetime.now(timezone.utc)
             await db.commit()
@@ -175,15 +214,13 @@ class ParqueroService:
                 "puesto_asignado_id": str(vehiculo_pase.puesto_asignado_id) if vehiculo_pase.puesto_asignado_id else None,
             }
 
-        # Buscar en tabla vehiculos (registro histórico)
+        # ── 3. Tabla `vehiculos` (socios con registro permanente) ──
         res_veh = await db.execute(
             select(Vehiculo).where(Vehiculo.placa == placa_norm)
         )
         vehiculo_db = res_veh.scalars().first()
 
         if vehiculo_db:
-            # Crear VehiculoPase con datos existentes — sin QR (registro manual)
-            # El modelo VehiculoPase requiere qr_id; usamos la FK sin enforce en runtime
             nuevo_vp = VehiculoPase(
                 placa=placa_norm,
                 marca=vehiculo_db.marca,
@@ -206,12 +243,97 @@ class ParqueroService:
                 "puesto_asignado_id": None,
             }
 
-        # No existe en BD — retornar flag para que el parquero registre datos
+        # ── 4. CodigoQR con datos de vehículo (pases temporales / pases masivos) ──
+        # Buscar QR activo con esa placa de vehículo, sin filtrar por zona
+        # ya que el QR puede estar asignado a esta zona o no tener zona aún
+        res_qr = await db.execute(
+            select(CodigoQR).where(
+                CodigoQR.vehiculo_placa == placa_norm,
+                CodigoQR.activo == True
+            ).order_by(CodigoQR.created_at.desc())
+        )
+        qr_encontrado = res_qr.scalars().first()
+
+        if qr_encontrado:
+            # Tiene un QR con datos del vehículo. Crear VehiculoPase vinculado al QR.
+            nuevo_vp = VehiculoPase(
+                qr_id=qr_encontrado.id,
+                placa=placa_norm,
+                marca=qr_encontrado.vehiculo_marca,
+                modelo=qr_encontrado.vehiculo_modelo,
+                color=qr_encontrado.vehiculo_color,
+                zona_asignada_id=zona_id,
+                ingresado=True,
+                hora_ingreso=datetime.now(timezone.utc)
+            )
+            db.add(nuevo_vp)
+            await db.commit()
+            await db.refresh(nuevo_vp)
+
+            # Si el QR no tiene datos de la persona (nombre, cédula), pedir al parquero
+            # pero pasando los datos del vehículo ya conocidos para no repetirlos
+            datos_persona_incompletos = not qr_encontrado.datos_completos or not qr_encontrado.nombre_portador
+
+            if datos_persona_incompletos:
+                return {
+                    "sin_datos": True,
+                    "solo_persona": True,  # El vehículo ya tiene datos, solo falta persona
+                    "vehiculo_pase_id": str(nuevo_vp.id),
+                    "qr_id": str(qr_encontrado.id),
+                    "placa": placa_norm,
+                    "marca": qr_encontrado.vehiculo_marca,
+                    "modelo": qr_encontrado.vehiculo_modelo,
+                    "color": qr_encontrado.vehiculo_color,
+                    "nombre_portador": qr_encontrado.nombre_portador,
+                    "cedula_portador": qr_encontrado.cedula_portador,
+                    "telefono_portador": qr_encontrado.telefono_portador,
+                    "mensaje": "Complete los datos del portador para finalizar el registro.",
+                }
+
+            # QR tiene datos completos → registrar directamente sin formulario
+            return {
+                "sin_datos": False,
+                "vehiculo_pase_id": str(nuevo_vp.id),
+                "placa": placa_norm,
+                "marca": qr_encontrado.vehiculo_marca,
+                "modelo": qr_encontrado.vehiculo_modelo,
+                "color": qr_encontrado.vehiculo_color,
+                "nombre_portador": qr_encontrado.nombre_portador,
+                "puesto_asignado_id": None,
+            }
+
+        # ── 5. Sin datos en ninguna fuente ──
         return {
             "sin_datos": True,
+            "solo_persona": False,
             "placa": placa_norm,
-            "mensaje": "Vehículo no encontrado. Complete los datos para registrarlo."
+            "mensaje": "Vehículo no encontrado. Complete los datos para registrarlo.",
         }
+
+    async def completar_datos_portador(
+        self, db: AsyncSession, qr_id: UUID, vehiculo_pase_id: UUID,
+        nombre: str | None, cedula: str | None, telefono: str | None
+    ) -> Dict[str, Any]:
+        """
+        Completa los datos del portador en el CodigoQR (accesos temporales/masivos).
+        No toca la tabla de usuarios.
+        """
+        res_qr = await db.execute(select(CodigoQR).where(CodigoQR.id == qr_id))
+        qr = res_qr.scalars().first()
+        if not qr:
+            raise ValueError("QR no encontrado")
+
+        if nombre:
+            qr.nombre_portador = nombre.strip().upper()
+        if cedula:
+            qr.cedula_portador = cedula.strip().upper()
+        if telefono:
+            qr.telefono_portador = telefono.strip()
+        qr.datos_completos = True
+
+        await db.commit()
+        return {"ok": True, "qr_id": str(qr_id), "vehiculo_pase_id": str(vehiculo_pase_id)}
+
 
 
     # ──────────────────────────────────────────────────────────────────────────

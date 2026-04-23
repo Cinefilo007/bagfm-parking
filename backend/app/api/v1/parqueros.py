@@ -140,10 +140,29 @@ async def asignar_puesto_vehiculo(
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
 
+@router.post("/completar-datos-portador")
+async def completar_datos_portador(
+    qr_id: UUID = Body(..., embed=True),
+    vehiculo_pase_id: UUID = Body(..., embed=True),
+    nombre: Optional[str] = Body(None, embed=True),
+    cedula: Optional[str] = Body(None, embed=True),
+    telefono: Optional[str] = Body(None, embed=True),
+    db: AsyncSession = Depends(obtener_db),
+    current_user: Usuario = Depends(require_rol(["SUPERVISOR_PARQUEROS", "PARQUERO", "ADMIN_BASE", "COMANDANTE"]))
+):
+    """
+    Guarda los datos del portador (nombre, cédula, teléfono) directamente en el
+    CodigoQR correspondiente. NO toca la tabla de usuarios.
+    Se usa cuando el vehículo tiene un pase activo pero sin datos de la persona.
+    """
+    try:
+        return await parquero_service.completar_datos_portador(
+            db, qr_id, vehiculo_pase_id, nombre, cedula, telefono
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
 
-# ──────────────────────────────────────────────────────────────────────────────
-# TRAZABILIDAD
-# ──────────────────────────────────────────────────────────────────────────────
+
 
 @router.get("/zona/{zona_id}/trazabilidad")
 async def obtener_trazabilidad_zona(
