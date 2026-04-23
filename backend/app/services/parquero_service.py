@@ -10,6 +10,7 @@ from app.models.codigo_qr import CodigoQR
 from app.models.vehiculo_pase import VehiculoPase
 from app.models.vehiculo import Vehiculo
 from app.models.puesto_estacionamiento import PuestoEstacionamiento
+from app.models.asignacion_zona import AsignacionZona
 from app.models.zona_estacionamiento import ZonaEstacionamiento
 from app.models.usuario import Usuario
 from app.models.enums import EstadoPuesto, AccesoTipo
@@ -23,11 +24,9 @@ class ParqueroService:
 
     async def get_mi_zona(self, db: AsyncSession, usuario_id: UUID) -> Dict[str, Any]:
         """
-        Retorna la zona asignada al parquero con KPIs reales de puestos.
-        - Para zonas con puestos físicos: cuenta por estado (libre, ocupado, reservado, reservado_base)
-          y también por flags (reservado_base=True, reservado_entidad_id).
-        - Para zonas virtuales: usa ocupacion_actual de la zona y buscas puestos
-          físicos parciales (reservados) que puedan coexistir.
+        Retorna la zona asignada al parquero con KPIs reales.
+        - Los Reservados se obtienen de la tabla asignaciones_zona (Cupos asignados).
+        - Los Ocupados y Libres dependen de si hay puestos físicos o es virtual.
         """
         res_usr = await db.execute(
             select(Usuario)
@@ -41,57 +40,48 @@ class ParqueroService:
 
         zona = usuario.zona_asignada
 
-        # ── Contar TODOS los puestos físicos por estado ──────────────────────
+        # ── 1. Obtener Reservados Reales desde Asignaciones (Cupos) ──────────
+        res_asig = await db.execute(
+            select(
+                sql_func.sum(AsignacionZona.cupo_asignado),
+                sql_func.sum(AsignacionZona.cupo_reservado_base)
+            ).where(
+                AsignacionZona.zona_id == zona.id,
+                AsignacionZona.activa == True
+            )
+        )
+        # n_entidad es la suma de cupo_asignado de todas las entidades en esa zona
+        # n_base es la suma de cupo_reservado_base
+        row_asig = res_asig.first()
+        n_reservados_entidad = int(row_asig[0] or 0)
+        n_reservados_base = int(row_asig[1] or 0)
+        
+        # ── 2. Contar Puestos Físicos si existen ─────────────────────────────
         res_puestos = await db.execute(
             select(PuestoEstacionamiento.estado, sql_func.count(PuestoEstacionamiento.id))
             .where(PuestoEstacionamiento.zona_id == zona.id)
             .group_by(PuestoEstacionamiento.estado)
         )
         conteos = {row[0]: row[1] for row in res_puestos.all()}
-        total_fisicos_bd = sum(conteos.values())
-        tiene_puestos_fisicos = total_fisicos_bd > 0
+        total_puestos_bd = sum(conteos.values())
+        tiene_puestos_fisicos = total_puestos_bd > 0
 
-        # ── Contar por flags de reserva (independiente del estado) ──────────
-        res_base = await db.execute(
-            select(sql_func.count(PuestoEstacionamiento.id))
-            .where(
-                PuestoEstacionamiento.zona_id == zona.id,
-                PuestoEstacionamiento.reservado_base == True
-            )
-        )
-        n_reservados_base = res_base.scalar() or 0
-
-        res_entidad = await db.execute(
-            select(sql_func.count(PuestoEstacionamiento.id))
-            .where(
-                PuestoEstacionamiento.zona_id == zona.id,
-                PuestoEstacionamiento.reservado_entidad_id != None
-            )
-        )
-        n_reservados_entidad = res_entidad.scalar() or 0
-
+        # ── 3. Calcular Ocupación y Disponibilidad ────────────────────────────
         if tiene_puestos_fisicos:
-            # ── Zona con puestos identificados: conteo real ──────────────────
-            ocupados   = conteos.get(EstadoPuesto.ocupado, 0)
-            reservados = (
-                conteos.get(EstadoPuesto.reservado, 0)
-                + conteos.get(EstadoPuesto.reservado_base, 0)
-                # Sumar puestos "libres" que tienen flag de reserva (base o entidad)
-                # porque pueden tener estado=libre pero igualmente estar apartados
-                + max(0, n_reservados_base + n_reservados_entidad - conteos.get(EstadoPuesto.reservado_base, 0) - conteos.get(EstadoPuesto.reservado, 0))
-            )
+            ocupados = conteos.get(EstadoPuesto.ocupado, 0)
             mantenimiento = conteos.get(EstadoPuesto.mantenimiento, 0)
-            libres  = max(0, total_fisicos_bd - ocupados - reservados - mantenimiento)
-            total   = total_fisicos_bd
+            # Para físicos, el total es lo que hay en la tabla
+            total = total_puestos_bd
+            # Reservados: suma de cupos (prioridad sobre el estado del puesto)
+            reservados = n_reservados_base + n_reservados_entidad
+            libres = max(0, total - ocupados - reservados - mantenimiento)
         else:
-            # ── Zona virtual (sin puestos físicos generados) ─────────────────
-            # Usar los contadores de la zona pero descontar reservados si existen
-            # puestos parciales de base/entidad en la BD
-            ocupados      = zona.ocupacion_actual or 0
-            total         = zona.capacidad_total or 0
-            reservados    = n_reservados_base + n_reservados_entidad
+            # Modo Virtual
+            ocupados = zona.ocupacion_actual or 0
+            total = zona.capacidad_total or 0
+            reservados = n_reservados_base + n_reservados_entidad
             mantenimiento = 0
-            libres        = max(0, total - ocupados - reservados)
+            libres = max(0, total - ocupados - reservados)
 
         return {
             "id": str(zona.id),
@@ -101,8 +91,6 @@ class ParqueroService:
             "usa_puestos_identificados": zona.usa_puestos_identificados,
             "tipo": getattr(zona, "tipo", None),
             "descripcion_ubicacion": zona.descripcion_ubicacion,
-            "latitud": zona.latitud,
-            "longitud": zona.longitud,
             "activo": zona.activo,
             "kpis": {
                 "libres":              libres,
@@ -115,6 +103,7 @@ class ParqueroService:
                 "tiene_puestos_fisicos": tiene_puestos_fisicos,
             }
         }
+
 
 
     # ──────────────────────────────────────────────────────────────────────────
