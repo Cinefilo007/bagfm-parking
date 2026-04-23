@@ -24,9 +24,10 @@ class ParqueroService:
 
     async def get_mi_zona(self, db: AsyncSession, usuario_id: UUID) -> Dict[str, Any]:
         """
-        Retorna la zona asignada al parquero con KPIs reales.
-        - Los Reservados se obtienen de la tabla asignaciones_zona (Cupos asignados).
-        - Los Ocupados y Libres dependen de si hay puestos físicos o es virtual.
+        Retorna la zona asignada al parquero con KPIs corregidos.
+        - Reservados: Se cuentan los registros físicos reales en puestos_estacionamiento.
+        - Ocupados: Ocupación actual de la zona (incluye virtuales).
+        - Total: Capacidad máxima de la zona.
         """
         res_usr = await db.execute(
             select(Usuario)
@@ -40,48 +41,41 @@ class ParqueroService:
 
         zona = usuario.zona_asignada
 
-        # ── 1. Obtener Reservados Reales desde Asignaciones (Cupos) ──────────
-        res_asig = await db.execute(
-            select(
-                sql_func.sum(AsignacionZona.cupo_asignado),
-                sql_func.sum(AsignacionZona.cupo_reservado_base)
-            ).where(
-                AsignacionZona.zona_id == zona.id,
-                AsignacionZona.activa == True
-            )
-        )
-        # n_entidad es la suma de cupo_asignado de todas las entidades en esa zona
-        # n_base es la suma de cupo_reservado_base
-        row_asig = res_asig.first()
-        n_reservados_entidad = int(row_asig[0] or 0)
-        n_reservados_base = int(row_asig[1] or 0)
-        
-        # ── 2. Contar Puestos Físicos si existen ─────────────────────────────
+        # ── 1. Contar Puestos Físicos Reales (para detectar los "Apartados") ──
         res_puestos = await db.execute(
-            select(PuestoEstacionamiento.estado, sql_func.count(PuestoEstacionamiento.id))
+            select(PuestoEstacionamiento)
             .where(PuestoEstacionamiento.zona_id == zona.id)
-            .group_by(PuestoEstacionamiento.estado)
         )
-        conteos = {row[0]: row[1] for row in res_puestos.all()}
-        total_puestos_bd = sum(conteos.values())
-        tiene_puestos_fisicos = total_puestos_bd > 0
+        puestos_bd = res_puestos.scalars().all()
+        
+        # Clasificar los puestos que SÍ están en la base de datos
+        n_reservados_base = 0
+        n_reservados_entidad = 0
+        n_mantenimiento = 0
+        fisicos_ocupados = 0
+        
+        for p in puestos_bd:
+            if p.estado == EstadoPuesto.mantenimiento:
+                n_mantenimiento += 1
+            elif p.reservado_base or p.estado == EstadoPuesto.reservado_base:
+                n_reservados_base += 1
+            elif p.reservado_entidad_id is not None:
+                n_reservados_entidad += 1
+            elif p.estado == EstadoPuesto.ocupado:
+                fisicos_ocupados += 1
 
-        # ── 3. Calcular Ocupación y Disponibilidad ────────────────────────────
-        if tiene_puestos_fisicos:
-            ocupados = conteos.get(EstadoPuesto.ocupado, 0)
-            mantenimiento = conteos.get(EstadoPuesto.mantenimiento, 0)
-            # Para físicos, el total es lo que hay en la tabla
-            total = total_puestos_bd
-            # Reservados: suma de cupos (prioridad sobre el estado del puesto)
-            reservados = n_reservados_base + n_reservados_entidad
-            libres = max(0, total - ocupados - reservados - mantenimiento)
-        else:
-            # Modo Virtual
-            ocupados = zona.ocupacion_actual or 0
-            total = zona.capacidad_total or 0
-            reservados = n_reservados_base + n_reservados_entidad
-            mantenimiento = 0
-            libres = max(0, total - ocupados - reservados)
+        # ── 2. Calcular KPIs ─────────────────────────────────────────────────
+        total = zona.capacidad_total or 0
+        # Ocupados: Usamos el contador de la zona (que es la fuente de verdad)
+        ocupados = zona.ocupacion_actual or 0
+        
+        # Reservados Totales (los apartados VIP y Base)
+        reservados = n_reservados_base + n_reservados_entidad
+        
+        # Libres = Total - (Ocupados + Reservados + Mantenimiento)
+        # Nota: Si los reservados están ocupados, el contador de zona ya los incluye.
+        # Pero normalmente los apartados se cuentan fuera de la ocupación general si están libres.
+        libres = max(0, total - ocupados - reservados - n_mantenimiento)
 
         return {
             "id": str(zona.id),
@@ -98,11 +92,12 @@ class ParqueroService:
                 "reservados":          reservados,
                 "reservados_base":     n_reservados_base,
                 "reservados_entidad":  n_reservados_entidad,
-                "mantenimiento":       mantenimiento,
+                "mantenimiento":       n_mantenimiento,
                 "total":               total,
-                "tiene_puestos_fisicos": tiene_puestos_fisicos,
+                "tiene_puestos_fisicos": len(puestos_bd) > 0,
             }
         }
+
 
 
 
