@@ -163,25 +163,40 @@ Admin ve lista de lotes:
 ### Acciones por Pase Individual
 | Acción | Descripción |
 |--------|-------------|
-| **Ver** | Datos completos del pase y su portador |
+| **Ver QR** | Click en el ícono QR de la fila → abre ModalVerQR con QR grande |
 | **Editar** | Modificar nombre, cédula, vehículo, zona/puesto asignado |
-| **Descargar QR** | Descarga imagen PNG del QR (acción principal) |
+| **Descargar QR** | Desde ModalVerQR → descarga imagen PNG (generada en frontend con Canvas) |
+| **Compartir WhatsApp** | Ícono verde en la fila o botón en ModalVerQR: en móvil comparte imagen PNG; en desktop abre WhatsApp Web con mensaje formateado |
+| **Enviar Email** | Envía pase por email con QR adjunto (en desarrollo) |
 | **Generar Carnet** | PLUS: Genera carnet con plantilla seleccionada |
-| **Compartir** | Genera link para WhatsApp/email/copiar |
-| **Enviar Email** | Envía pase por email con QR adjunto (si tiene email) |
 | **Revocar** | Desactiva el pase (activo=false) |
 
-### Compartir Pase
+### ModalVerQR — Implementado v2.1
 ```
-1. Admin presiona "Compartir" en un pase
-2. Sistema genera URL con el QR embebido
-3. Opciones:
-   - WhatsApp: Abre WhatsApp con mensaje pre-formateado + imagen QR
-   - Email: Envía email con QR adjunto (fastapi-mail + SMTP)
-   - Copiar Link: Copia URL al clipboard
-Portadores (Datos capturados):
+1. Admin hace click en el ícono QR (cuadrado verde a la izquierda de la fila)
+2. Se abre ModalVerQR con:
+   - QR grande generado en el frontend a partir del campo `token` JWT del pase
+   - Nombre del portador, serial legible, placa del vehículo, estado (activo/inactivo)
+   - Botón DESCARGAR → convierte SVG a PNG vía Canvas (400x400px) y descarga
+   - Botón WHATSAPP → lógica dual:
+       · Móvil (Android/iOS): Web Share API → comparte imagen PNG directamente
+       · Desktop/Fallback: Abre wa.me/ con mensaje de texto formateado (emojis + serial)
+       · Si el pase tiene `telefono_portador`, el enlace incluye el número destino
+
+Librería QR: `react-qr-code` (QRCodeSVG) — ya instalada en el proyecto.
+Conversión SVG→PNG: XMLSerializer + Canvas API → Blob → URL.createObjectURL
+Componentes afectados:
+  - `ModalVerQR` (nuevo componente)
+  - `PaseRow`: ícono QR ahora es un <button> con onClick={onVerQR}
+  - `ModalListaPases`: gestiona estado `paseQR`, renderiza ModalVerQR fuera del Modal modal
+    para evitar conflictos de z-index
+```
+
+### Compartir Pase (legacy referencia)
+```
 → Cada pase individual almacena: `nombre_portador`, `cedula_portador`, `email_portador` (v2.1), `telefono_portador` (v2.1).
-→ Esta información es vital para la trazabilidad y contacto directo.
+→ El `token` JWT del pase es el dato que se codifica en el QR (campo `CodigoQRSalida.token`).
+→ El teléfono del portador se usa para pre-rellenar el número de WhatsApp destino.
 
 ### Envío Masivo de Email
 ```

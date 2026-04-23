@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { Card, CardContent } from '../../components/ui/Card';
 import { Boton } from '../../components/ui/Boton';
 import { Modal } from '../../components/ui/Modal';
@@ -7,6 +7,7 @@ import { useAuthStore } from '../../store/auth.store';
 import { toast } from 'react-hot-toast';
 import { cn } from '../../lib/utils';
 import SelectTactivo from '../../components/ui/SelectTactivo';
+import { QRCodeSVG } from 'react-qr-code';
 import {
     Calendar, Plus, Download, Clock, PackageOpen,
     LayoutGrid, Ticket, UserCheck, ExternalLink,
@@ -14,7 +15,8 @@ import {
     ParkingSquare, Car, Tag, Edit3, RefreshCw,
     Upload, CheckCircle2, MapPin, MoreVertical, Copy,
     Shield, Camera, Star, AlertTriangle, FileSpreadsheet, PlusCircle, Trash2,
-    ShieldAlert, XCircle, Zap, ArrowRight, Info, Loader2
+    ShieldAlert, XCircle, Zap, ArrowRight, Info, Loader2,
+    MessageCircle, Eye, X
 } from 'lucide-react';
 import { eventosService } from '../../services/eventos.service';
 import { pasesService } from '../../services/pasesService';
@@ -48,14 +50,209 @@ const badgeTipo = (tipo, labelCustom) => {
     );
 };
 
+// ──── ModalVerQR: Visualización grande del código QR individual ───────────────
+
+const ModalVerQR = ({ pase, lote, isOpen, onClose }) => {
+    const svgRef = useRef(null);
+    
+    if (!pase || !isOpen) return null;
+
+    // Genera el QR a partir del token JWT del pase
+    const qrValue = pase.token || pase.serial_legible || '';
+    const tituloPortador = pase.nombre_portador || 'SIN ASIGNAR';
+    const serialDisplay = pase.serial_legible || '';
+
+    // ── Convierte el SVG del QR a un Blob PNG usando Canvas ──
+    const generarImagenQR = () => {
+        return new Promise((resolve, reject) => {
+            const svgEl = svgRef.current?.querySelector('svg');
+            if (!svgEl) { reject(new Error('SVG no encontrado')); return; }
+
+            const svgData = new XMLSerializer().serializeToString(svgEl);
+            const canvas = document.createElement('canvas');
+            const size = 400;
+            canvas.width = size;
+            canvas.height = size;
+            const ctx = canvas.getContext('2d');
+
+            // Fondo blanco para el QR
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(0, 0, size, size);
+
+            const img = new Image();
+            img.onload = () => {
+                ctx.drawImage(img, 20, 20, size - 40, size - 40);
+                canvas.toBlob(blob => resolve(blob), 'image/png', 1.0);
+            };
+            img.onerror = reject;
+            img.src = `data:image/svg+xml;base64,${btoa(unescape(encodeURIComponent(svgData)))}`;            
+        });
+    };
+
+    // ── Descargar imagen PNG del QR ──
+    const handleDescargar = async () => {
+        try {
+            const blob = await generarImagenQR();
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `QR_${serialDisplay}.png`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            toast.success('QR descargado como PNG');
+        } catch (err) {
+            toast.error('Error al generar imagen');
+        }
+    };
+
+    // ── Compartir por WhatsApp ──
+    const handleWhatsApp = async () => {
+        const eventoNombre = lote?.nombre_evento || 'Evento';
+        const mensaje = [
+            `🎫 *PASE DE ACCESO — ${eventoNombre.toUpperCase()}*`,
+            `📋 Serial: \`${serialDisplay}\``,
+            pase.nombre_portador ? `👤 Portador: ${pase.nombre_portador}` : '',
+            pase.vehiculo_placa ? `🚗 Vehículo: ${pase.vehiculo_placa}` : '',
+            ``,
+            `_Sistema BAGFM Access_`,
+        ].filter(Boolean).join('\n');
+
+        // Intentar primero Web Share API con imagen (funciona en móvil)
+        const isMobile = /mobile|android|iphone|ipad/i.test(navigator.userAgent);
+        
+        if (isMobile && navigator.share && navigator.canShare) {
+            try {
+                const blob = await generarImagenQR();
+                const file = new File([blob], `QR_${serialDisplay}.png`, { type: 'image/png' });
+                if (navigator.canShare({ files: [file] })) {
+                    await navigator.share({ files: [file], title: `Pase BAGFM: ${serialDisplay}`, text: mensaje });
+                    return;
+                }
+            } catch (shareErr) {
+                if (shareErr.name === 'AbortError') return; // Usuario canceló
+                // Si falla compartir imagen, caer al fallback de texto
+            }
+        }
+
+        // Fallback: abrir WhatsApp Web / App con mensaje de texto
+        const urlWhatsApp = pase.telefono_portador
+            ? `https://wa.me/${pase.telefono_portador.replace(/[^0-9]/g, '')}?text=${encodeURIComponent(mensaje)}`
+            : `https://wa.me/?text=${encodeURIComponent(mensaje)}`;
+        
+        window.open(urlWhatsApp, '_blank');
+    };
+
+    return (
+        <div
+            className="fixed inset-0 z-[9999] flex items-center justify-center p-4"
+            style={{ backgroundColor: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(8px)' }}
+            onClick={onClose}
+        >
+            <div
+                className="relative bg-bg-card border border-white/10 rounded-3xl p-6 flex flex-col items-center gap-5 w-full max-w-sm shadow-2xl"
+                onClick={e => e.stopPropagation()}
+                style={{ animation: 'modalQrIn 0.2s ease-out' }}
+            >
+                {/* Botón cerrar */}
+                <button
+                    onClick={onClose}
+                    className="absolute top-4 right-4 p-2 rounded-xl hover:bg-white/10 text-text-muted hover:text-white transition-all"
+                >
+                    <X size={16} />
+                </button>
+
+                {/* Header */}
+                <div className="text-center w-full">
+                    <p className="text-[9px] font-black text-text-muted uppercase tracking-widest mb-1">Código QR del Pase</p>
+                    <h3 className="text-sm font-black text-text-main uppercase">{tituloPortador}</h3>
+                    <span className="text-[9px] font-mono text-primary/70">{serialDisplay}</span>
+                </div>
+
+                {/* QR grande */}
+                <div
+                    ref={svgRef}
+                    className="bg-white rounded-2xl p-4 shadow-xl shadow-black/40"
+                    style={{ width: 220, height: 220, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                >
+                    <QRCodeSVG
+                        value={qrValue}
+                        size={188}
+                        bgColor="#ffffff"
+                        fgColor="#0d1117"
+                        level="M"
+                    />
+                </div>
+
+                {/* Metadata del pase */}
+                <div className="w-full grid grid-cols-2 gap-2">
+                    {pase.vehiculo_placa && (
+                        <div className="col-span-1 flex items-center gap-2 p-2 bg-white/5 rounded-xl border border-white/5">
+                            <Car size={12} className="text-primary shrink-0" />
+                            <span className="text-[9px] font-black text-text-main">{pase.vehiculo_placa}</span>
+                        </div>
+                    )}
+                    <div className={cn(
+                        "flex items-center gap-2 p-2 bg-white/5 rounded-xl border border-white/5",
+                        pase.vehiculo_placa ? 'col-span-1' : 'col-span-2'
+                    )}>
+                        <div className={cn(
+                            "w-2 h-2 rounded-full shrink-0",
+                            pase.activo ? 'bg-success' : 'bg-text-muted/30'
+                        )} />
+                        <span className="text-[9px] font-black text-text-muted uppercase">
+                            {pase.activo ? 'ACTIVO' : 'INACTIVO'}
+                        </span>
+                    </div>
+                </div>
+
+                {/* Botones de acción */}
+                <div className="w-full flex gap-3">
+                    <button
+                        onClick={handleDescargar}
+                        className="flex-1 flex items-center justify-center gap-2 h-10 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl text-[10px] font-black text-text-muted hover:text-text-main transition-all"
+                    >
+                        <Download size={14} />
+                        DESCARGAR
+                    </button>
+                    <button
+                        onClick={handleWhatsApp}
+                        className="flex-1 flex items-center justify-center gap-2 h-10 bg-[#25D366]/10 hover:bg-[#25D366]/20 border border-[#25D366]/25 rounded-xl text-[10px] font-black text-[#25D366] transition-all"
+                    >
+                        <MessageCircle size={14} />
+                        WHATSAPP
+                    </button>
+                </div>
+
+                <p className="text-[7px] text-text-muted/40 text-center">
+                    En móvil se comparte la imagen · En desktop se abre WhatsApp Web
+                </p>
+            </div>
+
+            <style>{`
+                @keyframes modalQrIn {
+                    from { opacity: 0; transform: scale(0.92) translateY(10px); }
+                    to { opacity: 1; transform: scale(1) translateY(0); }
+                }
+            `}</style>
+        </div>
+    );
+};
+
 // ──── PaseRow: fila individual de un pase dentro del drill-down ───────────────
 
-const PaseRow = ({ pase, zonas, onCompartir, onEmail, onEditar }) => {
+const PaseRow = ({ pase, zonas, onCompartir, onEmail, onEditar, onVerQR }) => {
     return (
         <div className="flex items-center gap-3 p-3 bg-white/3 rounded-xl border border-white/5 hover:bg-white/5 transition-all group">
-            <div className="w-8 h-8 bg-primary/10 rounded-lg flex items-center justify-center border border-primary/15 shrink-0">
+            {/* Ícono QR — clicable para ver el QR */}
+            <button
+                onClick={() => onVerQR(pase)}
+                className="w-8 h-8 bg-primary/10 hover:bg-primary/25 rounded-lg flex items-center justify-center border border-primary/15 hover:border-primary/40 shrink-0 transition-all"
+                title="Ver código QR"
+            >
                 <QrCode size={15} className="text-primary" />
-            </div>
+            </button>
             <div className="flex-1 min-w-0 flex items-center gap-3">
                 {/* Info Principal: Portador y Serial */}
                 <div className="flex items-center gap-2 min-w-0">
@@ -101,8 +298,8 @@ const PaseRow = ({ pase, zonas, onCompartir, onEmail, onEditar }) => {
                     <Edit3 size={13} />
                 </button>
                 <button onClick={() => onCompartir(pase)}
-                    className="p-2 rounded-lg hover:bg-primary/10 text-text-muted hover:text-primary transition-all" title="Compartir QR">
-                    <Share2 size={13} />
+                    className="p-2 rounded-lg hover:bg-[#25D366]/10 text-text-muted hover:text-[#25D366] transition-all" title="Compartir por WhatsApp">
+                    <MessageCircle size={13} />
                 </button>
                 <button onClick={() => onEmail(pase)}
                     className="p-2 rounded-lg hover:bg-sky-500/10 text-text-muted hover:text-sky-400 transition-all" title="Enviar Email">
@@ -192,6 +389,7 @@ const ModalListaPases = ({ isOpen, onClose, lote, zonas }) => {
     const [loading, setLoading] = useState(true);
     const [busqueda, setBusqueda] = useState('');
     const [paseEdicion, setPaseEdicion] = useState(null);
+    const [paseQR, setPaseQR] = useState(null); // Pase seleccionado para ver QR
 
     const fetchPases = useCallback(async () => {
         if (!lote?.id) return;
@@ -208,6 +406,9 @@ const ModalListaPases = ({ isOpen, onClose, lote, zonas }) => {
 
     useEffect(() => { if (isOpen) fetchPases(); }, [isOpen, fetchPases]);
 
+    // Resetear estado QR al cerrar el modal principal
+    const handleClose = () => { setPaseQR(null); onClose(); };
+
     const filtrados = useMemo(() => {
         if (!busqueda) return pases;
         const q = busqueda.toLowerCase();
@@ -219,70 +420,68 @@ const ModalListaPases = ({ isOpen, onClose, lote, zonas }) => {
         );
     }, [pases, busqueda]);
 
-    const handleCompartir = async (pase) => {
-        try {
-            const url = pase.qr_url || `${window.location.origin}/portal-evento/${lote.codigo_serial}`;
-            if (navigator.share && navigator.canShare && navigator.canShare({ url })) {
-                await navigator.share({ title: `PASE BAGFM: ${lote.nombre_evento}`, url });
-            } else {
-                await navigator.clipboard.writeText(url);
-                toast.success('Enlace copiado al portapapeles');
-            }
-        } catch (err) {
-            if (err.name !== 'AbortError') {
-                const url = pase.qr_url || `${window.location.origin}/portal-evento/${lote.codigo_serial}`;
-                await navigator.clipboard.writeText(url);
-                toast.success('Copiado al portapapeles (Share bloqueado)');
-            }
-        }
+    // Compartir QR por WhatsApp (abre el modal QR para usar su lógica)
+    const handleCompartirWhatsApp = (pase) => {
+        setPaseQR(pase); // Abre el modal QR donde está el botón de WhatsApp
     };
 
     return (
-        <Modal isOpen={isOpen} onClose={onClose} title={`GESTIÓN DE PASES: ${lote?.nombre_evento}`} className="max-w-3xl">
-            <div className="space-y-4">
-                <div className="flex items-center gap-3">
-                    <div className="relative flex-1">
-                        <Input 
-                            placeholder="BUSCAR POR NOMBRE, CÉDULA O PLACA..." 
-                            value={busqueda}
-                            onChange={e => setBusqueda(e.target.value)}
-                            className="pl-10"
-                        />
-                        <LayoutGrid size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted opacity-40" />
+        <>
+            <Modal isOpen={isOpen} onClose={handleClose} title={`GESTIÓN DE PASES: ${lote?.nombre_evento}`} className="max-w-3xl">
+                <div className="space-y-4">
+                    <div className="flex items-center gap-3">
+                        <div className="relative flex-1">
+                            <Input 
+                                placeholder="BUSCAR POR NOMBRE, CÉDULA O PLACA..." 
+                                value={busqueda}
+                                onChange={e => setBusqueda(e.target.value)}
+                                className="pl-10"
+                            />
+                            <LayoutGrid size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted opacity-40" />
+                        </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-[60vh] overflow-y-auto pr-2 scrollbar-thin">
+                        {loading ? (
+                            Array(5).fill(0).map((_, i) => (
+                                <div key={i} className="h-16 w-full animate-pulse bg-white/5 rounded-xl border border-white/5" />
+                            ))
+                        ) : filtrados.length > 0 ? (
+                            filtrados.map(pase => (
+                                <PaseRow 
+                                    key={pase.id} 
+                                    pase={pase} 
+                                    zonas={zonas} 
+                                    onCompartir={handleCompartirWhatsApp}
+                                    onVerQR={setPaseQR}
+                                    onEditar={setPaseEdicion}
+                                    onEmail={(p) => toast('Envío de email en desarrollo táctico...', { icon: '📧' })}
+                                />
+                            ))
+                        ) : (
+                            <div className="text-center py-10 opacity-30 italic text-sm">
+                                No se encontraron pases que coincidan...
+                            </div>
+                        )}
                     </div>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-[60vh] overflow-y-auto pr-2 scrollbar-thin">
-                    {loading ? (
-                        Array(5).fill(0).map((_, i) => (
-                            <div key={i} className="h-16 w-full animate-pulse bg-white/5 rounded-xl border border-white/5" />
-                        ))
-                    ) : filtrados.length > 0 ? (
-                        filtrados.map(pase => (
-                            <PaseRow 
-                                key={pase.id} 
-                                pase={pase} 
-                                zonas={zonas} 
-                                onCompartir={handleCompartir} 
-                                onEditar={setPaseEdicion}
-                                onEmail={(p) => toast('Envío de email en desarrollo táctico...', { icon: '📧' })}
-                            />
-                        ))
-                    ) : (
-                        <div className="text-center py-10 opacity-30 italic text-sm">
-                            No se encontraron pases que coincidan...
-                        </div>
-                    )}
-                </div>
-            </div>
+                <ModalEditarPase 
+                    isOpen={!!paseEdicion} 
+                    onClose={() => setPaseEdicion(null)} 
+                    pase={paseEdicion} 
+                    onRefresh={fetchPases}
+                />
+            </Modal>
 
-            <ModalEditarPase 
-                isOpen={!!paseEdicion} 
-                onClose={() => setPaseEdicion(null)} 
-                pase={paseEdicion} 
-                onRefresh={fetchPases}
+            {/* Modal QR — Renderizado fuera del Modal principal para evitar z-index conflictos */}
+            <ModalVerQR
+                pase={paseQR}
+                lote={lote}
+                isOpen={!!paseQR}
+                onClose={() => setPaseQR(null)}
             />
-        </Modal>
+        </>
     );
 };
 
