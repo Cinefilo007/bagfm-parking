@@ -217,7 +217,7 @@ const VistaNotificaciones = () => {
 
             {/* Header */}
             <header className="sticky top-0 z-40 bg-bg-card/90 backdrop-blur-md border-b border-white/5 px-4 py-3">
-                <div className="flex items-center gap-3 max-w-lg mx-auto">
+                <div className="flex items-center gap-4 max-w-2xl mx-auto w-full">
                     <button
                         onClick={() => navigate('/parquero/')}
                         className="w-9 h-9 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center hover:bg-white/10 transition-all"
@@ -235,18 +235,18 @@ const VistaNotificaciones = () => {
                             {eventos.length} eventos
                         </span>
                         <button
-                            onClick={cargarTrazabilidad}
-                            className="w-9 h-9 rounded-xl bg-white/5 flex items-center justify-center hover:bg-white/10 transition-all"
+                            onClick={cargarZonaYHistorial}
+                            className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center hover:bg-white/10 transition-all"
                         >
-                            <RefreshCw size={15} className={cn('text-text-muted', cargando && 'animate-spin')} />
+                            <RefreshCw size={16} className={cn('text-text-muted', cargando && 'animate-spin')} />
                         </button>
                     </div>
                 </div>
             </header>
 
             {/* Tabs vista */}
-            <div className="max-w-lg mx-auto w-full px-4 pt-4">
-                <div className="flex gap-1 bg-bg-low rounded-2xl p-1 border border-white/5">
+            <div className="max-w-2xl mx-auto w-full px-4 pt-4">
+                <div className="flex gap-2 max-w-md bg-bg-low rounded-2xl p-1 border border-white/5">
                     <button
                         onClick={() => setVistaMode('vehiculos')}
                         className={cn(
@@ -273,7 +273,7 @@ const VistaNotificaciones = () => {
             </div>
 
             {/* Contenido */}
-            <div className="flex-1 max-w-lg mx-auto w-full px-4 py-4 space-y-3 pb-10">
+            <div className="flex-1 max-w-2xl mx-auto w-full px-4 py-4 space-y-4 pb-10">
 
                 {cargando && (
                     <div className="flex flex-col items-center justify-center py-16 gap-3">
