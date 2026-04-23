@@ -44,7 +44,9 @@ class Usuario(Base):
 
     # Relaciones
     entidad_pertenece = relationship("EntidadCivil", foreign_keys=[entidad_id], back_populates="usuarios")
-    # entidades_creadas = relationship("EntidadCivil", foreign_keys="EntidadCivil.created_by")
-    # vehiculos = relationship("Vehiculo", back_populates="propietario")
-    # membresias = relationship("Membresia", back_populates="propietario")
-    # codigos_qr = relationship("CodigoQR", back_populates="propietario")
+    zona_asignada = relationship("ZonaEstacionamiento", foreign_keys=[zona_asignada_id], lazy="select")
+
+    # Atributos dinámicos (no persistidos, usados por services para enriquecer respuestas)
+    @property
+    def zona_nombre(self) -> str:
+        return self.zona_asignada.nombre if self.zona_asignada else None

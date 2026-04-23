@@ -276,5 +276,30 @@ El parquero tiene acceso al **mismo sistema de IA** que utiliza la alcabala:
 
 ---
 
-*Última actualización: 2026-04-18 | v2.0*
+*Última actualización: 2026-04-23 | v2.1*
 *Docs: SCHEMA_BD.md, ROLES_Y_PERMISOS.md, FLUJOS_DE_NEGOCIO.md*
+
+---
+
+## 11. Módulo de Personal — Gestión desde Fuerza de Tareas (v2.1)
+
+El módulo `/personal` del portal de entidad ahora centraliza toda la gestión operativa:
+
+### Nuevos Endpoints (v2.1)
+| Método | Ruta | Descripción |
+|--------|------|-------------|
+| PATCH | `/personal/{id}` | Editar datos del operativo |
+| POST | `/personal/{id}/zona` | Asignar zona de estacionamiento |
+| GET | `/personal/{id}/kpis` | KPIs del operativo |
+| GET/POST/DELETE | `/personal/{id}/incentivos` | CRUD incentivos |
+| GET/POST/PATCH/DELETE | `/personal/{id}/sanciones` | CRUD sanciones |
+
+### Nuevos Schemas (v2.1)
+- `incentivo_sancion.py`: `IncentivoCrear`, `IncentivoSalida`, `SancionCrear`, `SancionActualizar`, `SancionSalida`, `KPIsOperativo`
+- `usuario.py`: Agrega `zona_asignada_id`, `zona_nombre`, `UsuarioActualizar`
+
+### Frontend Personal.jsx (v2.1)
+Panel de detalle expandible con 5 tabs: KPIs, Zona, Incentivos, Sanciones, Editar.
+El panel se activa al hacer click en cualquier card de la lista.
+Relevo inmediato desde Sanciones desactiva la cuenta del parquero al instante.
+
