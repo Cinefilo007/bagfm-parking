@@ -5,7 +5,7 @@ from typing import List
 from uuid import UUID
 
 from app.core.database import obtener_db
-from app.api.v1.auth import get_current_user
+from app.core.dependencias import obtener_usuario_actual
 from app.models.usuario import Usuario
 from app.models.push_subscription import PushSubscription
 from app.schemas.push import PushSubscriptionCreate, PushSubscriptionSchema
@@ -16,7 +16,7 @@ router = APIRouter(prefix="/notificaciones", tags=["Notificaciones"])
 async def suscribir_push(
     datos: PushSubscriptionCreate,
     db: AsyncSession = Depends(obtener_db),
-    current_user: Usuario = Depends(get_current_user)
+    current_user: Usuario = Depends(obtener_usuario_actual)
 ):
     """Registra una suscripción push para el usuario actual"""
     # Verificar si ya existe para este dispositivo/endpoint
@@ -52,7 +52,7 @@ async def suscribir_push(
 async def desuscribir_push(
     endpoint: str,
     db: AsyncSession = Depends(obtener_db),
-    current_user: Usuario = Depends(get_current_user)
+    current_user: Usuario = Depends(obtener_usuario_actual)
 ):
     """Desactiva una suscripción push"""
     query = select(PushSubscription).where(
