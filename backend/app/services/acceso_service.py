@@ -405,6 +405,40 @@ class AccesoService:
                 from app.models.enums import AccesoTipo
                 if qr_db.lote_id and datos.tipo == AccesoTipo.entrada:
                     qr_db.accesos_usados += 1
+                    
+                    # --- SISTEMA DE NOTIFICACIONES ---
+                    try:
+                        from app.services.notificacion_service import notificacion_service
+                        from app.models.alcabala_evento import LotePaseMasivo
+                        
+                        # Resolver Zona
+                        zona_id = qr_db.zona_asignada_id
+                        if not zona_id and qr_db.lote_id:
+                            lote = await db.get(LotePaseMasivo, qr_db.lote_id)
+                            if lote:
+                                zona_id = lote.zona_estacionamiento_id
+                        
+                        if zona_id:
+                            # Datos para la notificación
+                            placa = "S/P"
+                            detalles = "Pase Masivo"
+                            nombre_visitante = qr_db.nombre_portador or "Visitante"
+                            
+                            # Intentar obtener placa real si existe
+                            if qr_db.vehiculo_placa:
+                                placa = qr_db.vehiculo_placa
+                                detalles = f"{qr_db.vehiculo_marca or ''} {qr_db.vehiculo_modelo or ''} {qr_db.vehiculo_color or ''}"
+                            
+                            await notificacion_service.notificar_entrada_vehiculo(
+                                db,
+                                zona_id=zona_id,
+                                placa=placa,
+                                detalles_vehiculo=detalles,
+                                nombre_socio=nombre_visitante
+                            )
+                    except Exception as e:
+                        print(f"ERROR enviando notificación: {str(e)}")
+                    # ---------------------------------
                 
                 # Si el QR no tenía usuario_id (evento_simple), vincularlo al creado ahora para trazabilidad futura
                 if not qr_db.usuario_id and final_usuario_id:

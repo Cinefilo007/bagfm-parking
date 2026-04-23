@@ -1,12 +1,28 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Outlet } from 'react-router-dom';
 import { Sidebar } from './Sidebar';
 import { BottomNav } from './BottomNav';
 import { ThemeToggle } from '../ui/ThemeToggle';
 import { useUIStore } from '../../store/ui.store';
 
+import { useNotifications } from '../../hooks/useNotifications';
+import { usePushNotifications } from '../../hooks/usePushNotifications';
+import { useAuthStore } from '../../store/auth.store';
+
 export const MainLayout = ({ hideNav: forceHideNav = false }) => {
   const { hideSidebar, hideBottomNav } = useUIStore();
+  const { user } = useAuthStore();
+  
+  // Inicializar sistemas de comunicación táctica
+  useNotifications(); // WebSocket
+  const { subscribeUser } = usePushNotifications();
+
+  useEffect(() => {
+    // Suscribir a Push si el rol lo amerita (Parqueros y Supervisores)
+    if (user && ['PARQUERO', 'SUPERVISOR_PARQUEROS', 'ADMIN_BASE'].includes(user.rol)) {
+      subscribeUser();
+    }
+  }, [user, subscribeUser]);
   
   const finalHideSidebar = forceHideNav || hideSidebar;
   const finalHideBottom = forceHideNav || hideBottomNav;
