@@ -401,6 +401,7 @@ class ParqueroService:
             raise ValueError(f"No se encontró el vehículo {placa_norm} activo en la zona.")
 
         vehiculo_pase.ingresado = False
+        vehiculo_pase.hora_salida = datetime.now(timezone.utc)
         
         # Restar ocupación
         await self._actualizar_ocupacion_zona(db, zona_id, -1)
@@ -484,6 +485,16 @@ class ParqueroService:
                 "puesto_asignado_id": str(vp.puesto_asignado_id) if vp.puesto_asignado_id else None,
                 "activo": vp.ingresado,
             })
+            
+            # Si ya salió, añadir evento de salida
+            if vp.hora_salida:
+                eventos.append({
+                    "tipo": "salida_zona",
+                    "placa": vp.placa,
+                    "descripcion": f"Salió de zona",
+                    "timestamp": vp.hora_salida.isoformat(),
+                    "activo": False,
+                })
 
         # Ordenar por timestamp desc
         def sort_key(e):
@@ -590,6 +601,11 @@ class ParqueroService:
             raise ValueError("Vehículo no encontrado en zona")
 
         vehiculo_pase.ingresado = False
+        vehiculo_pase.hora_salida = datetime.now(timezone.utc)
+
+        # Restar ocupación
+        if vehiculo_pase.zona_asignada_id:
+            await self._actualizar_ocupacion_zona(db, vehiculo_pase.zona_asignada_id, -1)
 
         if vehiculo_pase.puesto_asignado_id:
             resultado_p = await db.execute(select(PuestoEstacionamiento).filter(

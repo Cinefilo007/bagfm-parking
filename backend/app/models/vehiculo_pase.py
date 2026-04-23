@@ -26,6 +26,7 @@ class VehiculoPase(Base):
     
     ingresado = Column(Boolean, default=False, nullable=False)
     hora_ingreso = Column(DateTime(timezone=True), nullable=True)
+    hora_salida = Column(DateTime(timezone=True), nullable=True)
     
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
 

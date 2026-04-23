@@ -1,6 +1,6 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
-import { ShieldCheck, Users, Menu, ClipboardList, Camera, UserCog, LogOut, ParkingSquare, Radio } from 'lucide-react';
+import { ShieldCheck, Users, Menu, ClipboardList, Camera, UserCog, LogOut, ParkingSquare, Radio, Bell } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import { useAuthStore } from '../../store/auth.store';
 
@@ -35,6 +35,7 @@ export const BottomNav = () => {
   } else if (user?.rol === 'PARQUERO') {
     navItems.push(
       { to: '/parquero/dashboard', label: 'Mi Zona', icon: ParkingSquare },
+      { to: '/parquero/notificaciones', label: 'Notif.', icon: Bell },
       { to: '/ajustes', label: 'Más', icon: Menu }
     );
   } else if (user?.rol === 'SUPERVISOR_PARQUEROS') {

@@ -171,31 +171,43 @@ const GrupoVehiculo = ({ placa, eventos }) => {
 const VistaNotificaciones = () => {
     const navigate = useNavigate();
     const location = useLocation();
-    const zonaData = location.state?.zonaData || null;
-    const zonaId = zonaData?.id;
-    const zonaNombre = zonaData?.nombre || 'Mi Zona';
+    const [zonaDataInternal, setZonaDataInternal] = useState(location.state?.zonaData || null);
+    const zonaId = zonaDataInternal?.id;
+    const zonaNombre = zonaDataInternal?.nombre || 'Cargando...';
 
     const [eventos, setEventos] = useState([]);
     const [cargando, setCargando] = useState(true);
     const [vistaMode, setVistaMode] = useState('vehiculos'); // 'vehiculos' | 'timeline'
 
-    const cargarTrazabilidad = useCallback(async () => {
-        if (!zonaId) return;
+    const cargarZonaYHistorial = useCallback(async () => {
         try {
-            const data = await parqueroService.getTrazabilidadZona(zonaId);
-            setEventos(data || []);
-        } catch {
-            // Silencioso si falla
+            let targetId = zonaId;
+            let targetNombre = zonaNombre;
+
+            if (!targetId) {
+                const z = await parqueroService.getMiZona();
+                if (z) {
+                    setZonaDataInternal(z);
+                    targetId = z.id;
+                }
+            }
+
+            if (targetId) {
+                const data = await parqueroService.getTrazabilidadZona(targetId);
+                setEventos(data || []);
+            }
+        } catch (err) {
+            console.error("Error cargando trazabilidad:", err);
         } finally {
             setCargando(false);
         }
-    }, [zonaId]);
+    }, [zonaId, zonaNombre]);
 
     useEffect(() => {
-        cargarTrazabilidad();
-        const interval = setInterval(cargarTrazabilidad, 30000);
+        cargarZonaYHistorial();
+        const interval = setInterval(cargarZonaYHistorial, 15000);
         return () => clearInterval(interval);
-    }, [cargarTrazabilidad]);
+    }, [cargarZonaYHistorial]);
 
     // Agrupar eventos por placa para vista "vehiculos"
     const eventosPorPlaca = eventoAgrupadoPorPlaca(eventos);

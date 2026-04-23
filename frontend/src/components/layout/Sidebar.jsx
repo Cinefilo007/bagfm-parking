@@ -1,7 +1,7 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
 import { 
-  LogOut, Settings, ShieldCheck,
+  LogOut, Settings, ShieldCheck, Bell,
   LayoutDashboard, UserCircle, Map as MapIcon,
   Camera, Sun, Moon, UserCog, ParkingCircle, Activity, Radio, AlertTriangle, Palette,
   ClipboardList, CalendarRange, Building2, Users, ParkingSquare
@@ -45,11 +45,13 @@ export const Sidebar = () => {
   } else if (user?.rol === 'PARQUERO') {
     navItems.push(
       { to: '/parquero/dashboard', label: 'Mi Zona', icon: ParkingSquare },
+      { to: '/parquero/notificaciones', label: 'Historial / Notif.', icon: Bell },
     );
   } else if (user?.rol === 'SUPERVISOR_PARQUEROS') {
     navItems.push(
       { to: '/supervisor/dashboard', label: 'Supervisión', icon: Radio },
       { to: '/parquero/dashboard', label: 'Vista Parquero', icon: ParkingSquare },
+      { to: '/parquero/notificaciones', label: 'Historial / Notif.', icon: Bell },
     );
   }
 
