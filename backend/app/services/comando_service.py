@@ -102,7 +102,7 @@ class ComandoService:
         
         return [{
             "id": str(p.id),
-            "codigo": p.codigo,
+            "numero_puesto": p.numero_puesto,
             "zona_id": str(p.zona_id),
             "estado": p.estado.value,
             "zona_nombre": p.zona.nombre if p.zona else ""

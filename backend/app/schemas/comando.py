@@ -17,7 +17,7 @@ class PaseBaseCrear(BaseModel):
 
 class PuestoReservadoSalida(BaseModel):
     id: UUID
-    codigo: str
+    numero_puesto: str
     zona_id: UUID
     zona_nombre: str
     estado: str

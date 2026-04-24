@@ -70,4 +70,4 @@ class CodigoQR(Base):
 
     @property
     def puesto_asignado_codigo(self):
-        return self.puesto_asignado.codigo if self.puesto_asignado else None
+        return self.puesto_asignado.numero_puesto if self.puesto_asignado else None

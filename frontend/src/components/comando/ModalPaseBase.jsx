@@ -42,7 +42,9 @@ export const ModalPaseBase = ({ isOpen, onClose, zona, onGenerated }) => {
             toast.success('Pase de Comando generado con éxito');
             if (onGenerated) onGenerated();
         } catch (e) {
-            toast.error(e.response?.data?.detail || 'Error al generar pase');
+            const errorDetail = e.response?.data?.detail;
+            const message = typeof errorDetail === 'string' ? errorDetail : 'Error al generar pase';
+            toast.error(message);
         } finally {
             setLoading(false);
         }

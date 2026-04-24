@@ -604,6 +604,7 @@ export default function GestionZonas() {
     const totalOcupados = zonas.reduce((acc, z) => acc + (z.ocupacion_actual || 0), 0);
     
     const totalReservados = asignaciones.reduce((acc, a) => acc + (a.cupo_reservado_base || 0), 0);
+    const totalOcupadosBase = zonas.reduce((acc, z) => acc + (z.ocupacion_base || 0), 0);
 
 
 
@@ -644,6 +645,7 @@ export default function GestionZonas() {
                     { label: 'Cap. Total', valor: totalCapacidad || '—', color: 'text-success', icon: Hash },
                     { label: 'Ocupación Total', valor: totalOcupados, color: 'text-danger', icon: Activity },
                     { label: 'Reservados', valor: totalReservados, color: 'text-warning', icon: Shield },
+                    { label: 'Uso Base', valor: totalOcupadosBase, color: 'text-primary', icon: UserCheck },
 
                 ].map(s => (
                     <Card key={s.label} className="p-3 md:p-4 rounded-2xl border-white/5 flex items-center gap-3">
