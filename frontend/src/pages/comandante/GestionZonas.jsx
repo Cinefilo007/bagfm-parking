@@ -603,9 +603,7 @@ export default function GestionZonas() {
     const totalCapacidad = zonas.reduce((acc, z) => acc + (z.capacidad_total || 0), 0);
     const totalOcupados = zonas.reduce((acc, z) => acc + (z.ocupacion_actual || 0), 0);
     
-    // Sumamos puestos físicos reservados + reservas lógicas en asignaciones (evitando duplicar si ya existen puestos físicos)
-    const totalReservados = asignaciones.reduce((acc, a) => acc + (a.cupo_reservado_base || 0), 0) + 
-                          zonas.reduce((acc, z) => acc + (z.puestos?.filter(p => p.estado === 'reservado' && !p.reservado_para_entidad_id).length || 0), 0);
+    const totalReservados = asignaciones.reduce((acc, a) => acc + (a.cupo_reservado_base || 0), 0);
 
 
 

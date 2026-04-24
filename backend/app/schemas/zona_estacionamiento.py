@@ -37,6 +37,7 @@ class ZonaEstacionamientoActualizar(BaseModel):
 class ZonaEstacionamientoSalida(ZonaEstacionamientoBase):
     id: UUID
     ocupacion_actual: int
+    ocupacion_base: int = 0
     created_at: datetime
     
     model_config = ConfigDict(from_attributes=True)
