@@ -70,57 +70,40 @@ export const ModalPaseBase = ({ isOpen, onClose, zona, onGenerated }) => {
         return (
             <Modal isOpen={isOpen} onClose={onClose} title="PASE GENERADO" balanced>
                 <div className="space-y-6 text-center py-4">
-                    <div className="flex justify-center">
-                        <div className="w-20 h-20 bg-success/10 rounded-full flex items-center justify-center border-2 border-success/30 animate-bounce">
-                            <CheckCircle2 size={40} className="text-success" />
+                    <div className="flex justify-center flex-col items-center gap-4">
+                        <div className="bg-success/20 p-4 rounded-full">
+                            <CheckCircle2 size={48} className="text-success" />
                         </div>
-                    </div>
-                    <div>
-                        <h3 className="text-xl font-black text-text-main uppercase tracking-tight">Registro Exitoso</h3>
-                        <p className="text-[10px] text-text-muted mt-1 uppercase font-bold tracking-widest">Pase de Comando BAGFM</p>
+                        <h3 className="text-xl font-bold text-text-main">REGISTRO EXITOSO</h3>
                     </div>
 
-                    <div className="bg-white p-4 rounded-3xl mx-auto w-fit shadow-2xl ring-8 ring-indigo-500/10">
-                        <QRCode value={resultado.token} size={150} level="H" />
+                    <div className="p-6 bg-white rounded-xl mx-auto w-fit shadow-lg text-black font-mono">
+                        <p className="text-xs mb-2">QR VIRTUAL TOKEN:</p>
+                        <p className="text-[8px] break-all max-w-[200px]">{resultado.token.substring(0, 100)}...</p>
                     </div>
 
                     <div className="bg-white/5 border border-white/10 p-4 rounded-2xl space-y-3">
-                        <div className="flex justify-between items-center text-[10px]">
-                            <span className="text-text-muted font-bold">SERIAL:</span>
-                            <span className="text-text-main font-black tracking-wider">{resultado.serial_legible}</span>
+                        <div className="flex justify-between items-center text-xs">
+                            <span className="text-text-muted">SERIAL:</span>
+                            <span className="text-text-main font-bold">{resultado.serial_legible}</span>
                         </div>
-                        <div className="flex justify-between items-center text-[10px]">
-                            <span className="text-text-muted font-bold">PORTADOR:</span>
-                            <span className="text-text-main font-black uppercase">{resultado.nombre_portador}</span>
-                        </div>
-                        <div className="flex justify-between items-center text-[10px]">
-                            <span className="text-text-muted font-bold">ZONA:</span>
-                            <span className="text-text-main font-black uppercase text-primary">{zona.nombre}</span>
+                        <div className="flex justify-between items-center text-xs">
+                            <span className="text-text-muted">PORTADOR:</span>
+                            <span className="text-text-main font-bold uppercase">{resultado.nombre_portador}</span>
                         </div>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-3">
-                        <Boton className="bg-success text-bg-app uppercase text-[10px] font-black gap-2 h-11" 
+                    <div className="space-y-2">
+                        <Boton className="w-full bg-success text-white" 
                                onClick={() => {
-                                   const text = `BAGFM - PASE DE COMANDO\nZona: ${zona.nombre}\nSerial: ${resultado.serial_legible}\nLink: ${window.location.origin}/socio/portal?s=${resultado.serial_legible}`;
+                                   const text = `BAGFM - PASE\nSerial: ${resultado.serial_legible}`;
                                    window.open(`https://wa.me/?text=${encodeURIComponent(text)}`);
                                }}>
-                            <MessageCircle size={14} /> WhatsApp
+                            WhatsApp
                         </Boton>
-                        <Boton className="bg-primary text-bg-app uppercase text-[10px] font-black gap-2 h-11" 
-                               onClick={() => {
-                                   if (!navigator.share) return toast.error("Compartir no disponible");
-                                   navigator.share({
-                                       title: 'Tu Pase BAGFM',
-                                       text: `Tu pase para la zona ${zona.nombre} ha sido generado. Serial: ${resultado.serial_legible}`,
-                                       url: `${window.location.origin}/socio/portal?s=${resultado.serial_legible}`
-                                   }).catch(() => {});
-                               }}>
-                            <Share2 size={14} /> Compartir
-                        </Boton>
+                        <Boton variant="ghost" className="w-full" onClick={handleReset}>Generar Otro</Boton>
+                        <Boton variant="ghost" className="w-full" onClick={onClose}>Cerrar</Boton>
                     </div>
-                    <Boton variant="ghost" className="w-full text-text-muted/40 uppercase text-[9px]" onClick={handleReset}>Generar Otro Pase</Boton>
-                    <Boton variant="ghost" className="w-full text-text-muted/40" onClick={onClose}>Cerrar</Boton>
                 </div>
             </Modal>
         );
@@ -151,7 +134,7 @@ export const ModalPaseBase = ({ isOpen, onClose, zona, onGenerated }) => {
 
                     <div className="h-px bg-white/5 my-2" />
 
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                    <div className="grid grid-cols-2 gap-3">
                         <Input label="Placa *" icon={<Hash size={12}/>} value={form.vehiculo_placa} 
                                onChange={e => setForm({...form, vehiculo_placa: e.target.value})} />
                         <Input label="Marca" icon={<Car size={12}/>} value={form.vehiculo_marca} 

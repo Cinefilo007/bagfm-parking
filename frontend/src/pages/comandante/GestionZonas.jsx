@@ -647,8 +647,8 @@ export default function GestionZonas() {
 
                 ].map(s => (
                     <Card key={s.label} className="p-3 md:p-4 rounded-2xl border-white/5 flex items-center gap-3">
-                        <div className="w-9 h-9 bg-white/5 rounded-xl flex items-center justify-center shrink-0">
-                            <s.icon size={18} className={s.color} />
+                        <div className={cn("p-2 rounded-xl bg-opacity-10 shrink-0", s.color.replace('text-', 'bg-'))}>
+                            {s.icon && <s.icon className={s.color} size={18} />}
                         </div>
                         <div>
                             <div className={cn("text-lg font-black tracking-tight", s.color)}>{s.valor}</div>
