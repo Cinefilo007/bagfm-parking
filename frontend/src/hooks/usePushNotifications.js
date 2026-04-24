@@ -20,7 +20,9 @@ export function usePushNotifications() {
       // Obtener clave pública VAPID del env
       const vapidPublicKey = import.meta.env.VITE_VAPID_PUBLIC_KEY;
       if (!vapidPublicKey) {
-        console.warn('VITE_VAPID_PUBLIC_KEY no configurada');
+        const errorMsg = 'Error Crítico: VITE_VAPID_PUBLIC_KEY no encontrada en el entorno de ejecución.';
+        console.error(errorMsg);
+        setError(errorMsg);
         return;
       }
 
