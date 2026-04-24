@@ -50,7 +50,7 @@ class ZonaEstacionamientoService:
     async def obtener_zonas(
         self, db: AsyncSession, skip: int = 0, limit: int = 100, activa: Optional[bool] = None
     ) -> List[dict]:
-        from app.models.codigo_qr import VehiculoPase
+        from app.models.vehiculo_pase import VehiculoPase
         
         query = select(ZonaEstacionamiento)
         if activa is not None:
