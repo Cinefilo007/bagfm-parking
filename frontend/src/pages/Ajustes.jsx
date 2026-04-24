@@ -13,6 +13,7 @@ import { NavLink } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { usePushNotifications } from '../hooks/usePushNotifications';
 import { Bell, BellOff, BellRing } from 'lucide-react';
+import { cn } from '../lib/utils';
 
 export default function Ajustes() {
   const { 
