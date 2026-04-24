@@ -37,6 +37,10 @@ class AccesoRegistrar(BaseModel):
     vehiculo_modelo: Optional[str] = None
     vehiculo_color: Optional[str] = None
 
+    # Destino / Motivo (Para vehículos fantasma o excepciones)
+    observaciones: Optional[str] = None
+    es_excepcion: bool = False
+
 class AccesoSalida(AccesoBase):
     id: UUID
     usuario_id: Optional[UUID] = None  # Puede ser None en pases de visitantes sin registro previo

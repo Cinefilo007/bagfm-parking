@@ -79,4 +79,49 @@ class NotificacionService:
             # Esto es síncrono en el service base, pero aquí lo llamamos
             webpush_service.send_notification(sub_info, payload)
 
+    async def notificar_excepcion_alcabala(self, db: AsyncSession, acceso):
+        """
+        Alerta Táctica: Vehículo no identificado o ingreso bajo excepción/intimidación.
+        SOP: Aegis Tactical v2.2 - Seguridad Integral.
+        """
+        query_destinatarios = select(Usuario).where(
+            Usuario.activo == True,
+            Usuario.rol.in_([
+                RolTipo.COMANDANTE, 
+                RolTipo.ADMIN_BASE, 
+                RolTipo.SUPERVISOR_PARQUEROS
+            ])
+        )
+        
+        result = await db.execute(query_destinatarios)
+        usuarios = result.scalars().all()
+        ids_usuarios = [u.id for u in usuarios]
+        
+        if not ids_usuarios: return
+
+        query_subs = select(PushSubscription).where(
+            PushSubscription.usuario_id.in_(ids_usuarios),
+            PushSubscription.activo == True
+        )
+        result_subs = await db.execute(query_subs)
+        suscripciones = result_subs.scalars().all()
+
+        payload = {
+            "title": "⚠️ ALERTA TÁCTICA: Acceso Excepcional",
+            "body": f"Placa: {acceso.vehiculo_placa or 'SIN PLACA'} - Destino: {acceso.observaciones or 'NO DECLARADO'}",
+            "data": {
+                "url": "/admin/bitacora",
+                "acceso_id": str(acceso.id),
+                "tipo": "alerta_excepcion"
+            },
+            "icon": "/icons/ghost-vehiculo.png"
+        }
+
+        for sub in suscripciones:
+            try:
+                sub_info = {"endpoint": sub.endpoint, "keys": {"p256dh": sub.p256dh, "auth": sub.auth}}
+                webpush_service.send_notification(sub_info, payload)
+            except Exception as e:
+                logging.error(f"Error enviando push de excepción a {sub.usuario_id}: {e}")
+
 notificacion_service = NotificacionService()

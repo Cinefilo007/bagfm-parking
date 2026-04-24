@@ -8,7 +8,8 @@ import {
     CheckCircle2, XCircle, User, Car, Shield,
     RefreshCw, Power, Scan, Phone, Camera,
     UserCheck, UserPlus, ArrowRight, ParkingSquare,
-    Building2, AlertTriangle, Hash, Tag
+    Building2, AlertTriangle, Hash, Tag, Search,
+    Eye, ShieldAlert, AlertOctagon
 } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import { toast } from 'react-hot-toast';
@@ -200,6 +201,10 @@ const ScannerAlcabala = () => {
     // Búsqueda por placa
     const [placaBusqueda, setPlacaBusqueda] = useState('');
 
+    // Datos de excepción / Vehículo Fantasma
+    const [observaciones, setObservaciones] = useState('');
+    const [esExcepcion, setEsExcepcion] = useState(false);
+
     // Modal de registro manual (SÓLO visible cuando el guardia lo activa)
     const [mostrarFormulario, setMostrarFormulario] = useState(false);
 
@@ -291,7 +296,12 @@ const ScannerAlcabala = () => {
             if (res.permitido) {
                 toast.success(`Vehículo ${placa} identificado`, { position: 'bottom-center' });
             } else if (res.tipo_alerta === 'error') {
-                toast.error(res.mensaje || 'Placa no encontrada');
+                // Si no se encuentra, activamos modo manual con flag de excepción
+                setResultado(res);
+                setEsExcepcion(true);
+                setPlacaManual(placa);
+                setObservaciones('INGRESO POR EXCEPCIÓN / NO REGISTRADO');
+                toast.error('VEHÍCULO NO IDENTIFICADO: Proceder con registro táctico');
             }
         } catch (error) {
             const msg = error.response?.data?.detail || 'Sistema no disponible';
@@ -390,6 +400,8 @@ const ScannerAlcabala = () => {
                 vehiculo_marca: marcaManual || null,
                 vehiculo_modelo: modeloManual || null,
                 vehiculo_color: colorManual || null,
+                observaciones: observaciones || null,
+                es_excepcion: esExcepcion
             });
             toast.success(`Acceso ${tipoAcceso} confirmado`, { position: 'bottom-center' });
             reiniciar();
@@ -403,6 +415,8 @@ const ScannerAlcabala = () => {
     const reiniciar = () => {
         setResultado(null);
         setPlacaBusqueda('');
+        setObservaciones('');
+        setEsExcepcion(false);
         setMostrarFormulario(false);
         setVehiculoSeleccionadoId(null);
         setNombreManual(''); setCedulaManual(''); setTelefonoManual('');
@@ -479,23 +493,29 @@ const ScannerAlcabala = () => {
                         
                         {/* BÚSQUEDA MANUAL POR PLACA */}
                         {!resultado && (
-                            <div className="w-full space-y-2 animate-in slide-in-from-top duration-500">
-                                <div className="flex items-center bg-bg-card border border-bg-high rounded-2xl overflow-hidden focus-within:border-primary/50 transition-all shadow-lg">
+                            <div className="w-full space-y-2 animate-in slide-in-from-top duration-500 px-4">
+                                <div 
+                                    className="flex items-center bg-bg-card border-2 border-bg-high rounded-2xl overflow-hidden focus-within:border-primary/50 transition-all shadow-xl group"
+                                    style={{ borderColor: 'var(--bg-high)' }}
+                                >
+                                    <div className="pl-4 text-text-muted group-focus-within:text-primary transition-colors">
+                                        <Search size={18} />
+                                    </div>
                                     <input
                                         type="text"
                                         value={placaBusqueda}
                                         onChange={(e) => setPlacaBusqueda(e.target.value.toUpperCase())}
                                         onKeyDown={(e) => e.key === 'Enter' && handleBuscarPlaca()}
-                                        placeholder="BUSCAR POR PLACA..."
+                                        placeholder="BUSCAR VEHÍCULO..."
                                         maxLength={8}
-                                        className="flex-1 bg-transparent px-4 py-3 text-xl font-black text-text-main uppercase tracking-widest outline-none placeholder:text-text-muted/20 placeholder:normal-case placeholder:font-normal placeholder:text-xs"
+                                        className="flex-1 bg-transparent px-3 py-3.5 text-xl font-black text-text-main uppercase tracking-[0.2em] outline-none placeholder:text-text-muted/20 placeholder:normal-case placeholder:font-normal placeholder:tracking-normal placeholder:text-xs"
                                     />
                                     <button
                                         onClick={handleBuscarPlaca}
                                         disabled={cargando || !placaBusqueda.trim()}
-                                        className="px-4 py-3 bg-primary/10 text-primary border-l border-bg-high hover:bg-primary/20 transition-all disabled:opacity-30"
+                                        className="px-5 py-4 bg-primary text-white hover:bg-primary-dark transition-all disabled:opacity-30 disabled:grayscale flex items-center justify-center shrink-0"
                                     >
-                                        {cargando ? <RefreshCw size={20} className="animate-spin" /> : <Scan size={20} />}
+                                        {cargando ? <RefreshCw size={22} className="animate-spin" /> : <ArrowRight size={22} />}
                                     </button>
                                 </div>
                             </div>
@@ -689,22 +709,41 @@ const ScannerAlcabala = () => {
                             </div>
                         )}
 
-                        {/* ── QR Denegado ── */}
+                        {/* ── QR Denegado / No Encontrado (Manejo de Fantasmas) ── */}
                         {!resultado.permitido && (
-                            <button
-                                onClick={reiniciar}
-                                className="w-full h-12 rounded-xl border flex items-center justify-center gap-2 active:scale-95 transition-all"
-                                style={{
-                                    borderColor: 'var(--bg-high)',
-                                    background: 'var(--bg-low)',
-                                    color: 'var(--text-muted)'
-                                }}
-                            >
-                                <Scan size={14} />
-                                <span className="text-[9px] font-black uppercase tracking-[0.3em]">
-                                    Intentar de nuevo
-                                </span>
-                            </button>
+                            <div className="flex flex-col gap-2">
+                                {/* Botón de Alerta: Registro Excepcional */}
+                                <Boton
+                                    onClick={() => {
+                                        setEsExcepcion(true);
+                                        handleAbrirFormulario();
+                                    }}
+                                    className="h-14 rounded-xl w-full gap-2 text-xs font-black uppercase italic tracking-wider shadow-lg animate-pulse"
+                                    style={{ 
+                                        background: 'linear-gradient(135deg, var(--danger) 0%, #b91c1c 100%)',
+                                        color: 'white',
+                                        boxShadow: '0 0 20px rgba(220, 38, 38, 0.4)'
+                                    }}
+                                >
+                                    <ShieldAlert size={18} />
+                                    Registro Excepcional (Fantasma)
+                                </Boton>
+
+                                <button
+                                    onClick={reiniciar}
+                                    className="w-full h-11 rounded-xl border flex items-center justify-center gap-2 active:scale-95 transition-all"
+                                    style={{
+                                        borderColor: 'var(--bg-high)',
+                                        background: 'var(--bg-low)',
+                                        color: 'var(--text-muted)'
+                                    }}
+                                >
+                                    <Scan size={14} />
+                                    <span className="text-[9px] font-black uppercase tracking-[0.3em]">
+                                        Volver al Escáner
+                                    </span>
+                                </button>
+                            </div>
                         )}
 
                         {/* ══ FORMULARIO DE DATOS OPCIONALES ══
@@ -794,6 +833,42 @@ const ScannerAlcabala = () => {
                                         <InputManual label="Color" value={colorManual} onChange={setColorManual} placeholder="BLANCO" />
                                         <InputManual label="Marca" value={marcaManual} onChange={setMarcaManual} placeholder="TOYOTA" />
                                         <InputManual label="Modelo" value={modeloManual} onChange={setModeloManual} placeholder="HILUX" />
+                                    </div>
+                                </div>
+
+                                {/* Destino y Excepción */}
+                                <div className="space-y-3 p-3 rounded-2xl border-2 border-dashed border-bg-high bg-bg-low/50">
+                                    <div className="flex items-center gap-2 text-warning">
+                                        <Eye size={12} />
+                                        <span className="text-[8px] font-black uppercase tracking-widest">Inteligencia y Trazabilidad</span>
+                                    </div>
+                                    
+                                    <div className="flex flex-col gap-1 w-full">
+                                        <label className="text-[8px] font-black text-text-muted uppercase tracking-widest">
+                                            Destino Declarado / Observación Táctica
+                                        </label>
+                                        <textarea
+                                            value={observaciones}
+                                            onChange={(e) => setObservaciones(e.target.value.toUpperCase())}
+                                            placeholder="EJ: VISITANTE DE CASA 45 - DICE SER FAMILIAR"
+                                            rows={2}
+                                            className="bg-bg-low border border-bg-high rounded-xl px-3 py-2 text-[10px] font-bold text-text-main focus:border-warning/60 outline-none uppercase placeholder:text-text-muted/40 transition-all w-full resize-none"
+                                        />
+                                    </div>
+
+                                    <div className="flex items-center gap-3">
+                                        <button
+                                            onClick={() => setEsExcepcion(!esExcepcion)}
+                                            className={cn(
+                                                "flex-1 h-9 rounded-xl border flex items-center justify-center gap-2 transition-all font-black text-[9px] uppercase tracking-wider",
+                                                esExcepcion 
+                                                    ? "bg-danger/20 border-danger text-danger italic" 
+                                                    : "bg-bg-low border-bg-high text-text-muted"
+                                            )}
+                                        >
+                                            {esExcepcion ? <AlertOctagon size={14} /> : <Shield size={14} />}
+                                            {esExcepcion ? 'Alerta Excepcional Activa' : 'Solicitar Excepción'}
+                                        </button>
                                     </div>
                                 </div>
 

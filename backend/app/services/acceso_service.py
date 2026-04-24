@@ -386,7 +386,17 @@ class AccesoService:
             tipo = datos.tipo,
             punto_acceso = datos.punto_acceso,
             registrado_por = registrado_por_id,
-            es_manual = datos.es_manual
+            es_manual = datos.es_manual,
+            # Nuevos campos de Aegis Tactical v2.2 (Vehículos Fantasma)
+            nombre_manual = datos.nombre_manual,
+            cedula_manual = datos.cedula_manual,
+            telefono_manual = datos.telefono_manual,
+            vehiculo_placa = datos.vehiculo_placa,
+            vehiculo_marca = datos.vehiculo_marca,
+            vehiculo_modelo = datos.vehiculo_modelo,
+            vehiculo_color = datos.vehiculo_color,
+            observaciones = datos.observaciones,
+            es_excepcion = datos.es_excepcion
         )
         db.add(nuevo_acceso)
 
@@ -407,7 +417,16 @@ class AccesoService:
         await db.refresh(nuevo_acceso)
 
         # 5. Sistema de Notificaciones (Post-Commit)
-        # Se ejecuta después del commit para que fallos en notificaciones no afecten el registro de acceso
+        # 5.1 Alerta de Vehículo Excepcional / Fantasma / Intimidación
+        if datos.es_excepcion:
+            try:
+                from app.services.notificacion_service import notificacion_service
+                # Esta alerta va para supervisores y administradores
+                await notificacion_service.notificar_excepcion_alcabala(nuevo_acceso)
+            except Exception as e:
+                print(f"[TACTICAL] Error notificar excepción: {e}")
+
+        # 5.2 Notificaciones de flujo normal
         if datos.qr_id and datos.tipo == AccesoTipo.entrada:
             try:
                 # Recargar QR para asegurar que tenemos los datos frescos post-commit

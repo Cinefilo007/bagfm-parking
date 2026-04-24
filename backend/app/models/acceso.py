@@ -29,6 +29,22 @@ class Acceso(Base):
     es_manual = Column(Boolean, default=False, nullable=False)
     
     timestamp = Column(DateTime(timezone=True), server_default=func.now(), nullable=False, index=True)
+    
+    # Datos de contingencia / Registro manual (Vehículos Fantasma)
+    # SOP: Aegis Tactical v2.2 - Trazabilidad de Contingencia
+    nombre_manual = Column(String(200), nullable=True)
+    cedula_manual = Column(String(50), nullable=True)
+    telefono_manual = Column(String(50), nullable=True)
+    
+    vehiculo_placa = Column(String(20), nullable=True, index=True)
+    vehiculo_marca = Column(String(50), nullable=True)
+    vehiculo_modelo = Column(String(50), nullable=True)
+    vehiculo_color = Column(String(50), nullable=True)
+
+    observaciones = Column(String(500), nullable=True) # Destino declarado / Motivo excepción
+    es_excepcion = Column(Boolean, default=False, nullable=False) # Flag para alertas tácticas
+
+    # Relaciones
 
     # Relaciones
     # qr = relationship("CodigoQR", back_populates="accesos")
