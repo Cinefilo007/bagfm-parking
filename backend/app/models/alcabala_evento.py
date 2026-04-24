@@ -67,6 +67,7 @@ class LotePaseMasivo(Base):
     # Relaciones
     zona_asignada = relationship("ZonaEstacionamiento", foreign_keys=[zona_estacionamiento_id], lazy="selectin")
     tipo_acceso_custom = relationship("TipoAccesoCustom", foreign_keys=[tipo_acceso_custom_id], lazy="selectin")
+    entidad = relationship("EntidadCivil", foreign_keys=[entidad_id], lazy="selectin")
 
     @property
     def zona_nombre(self):

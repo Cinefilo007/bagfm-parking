@@ -43,6 +43,8 @@ class LotePaseMasivoSalida(LotePaseMasivoBase):
     tipo_acceso_custom_id: Optional[UUID] = None
     zona_nombre: Optional[str] = None
     tipo_custom_label: Optional[str] = None
+    pases_usados: Optional[int] = 0
+
     
     model_config = ConfigDict(from_attributes=True)
 

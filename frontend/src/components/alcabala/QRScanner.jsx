@@ -201,7 +201,16 @@ export const QRScanner = forwardRef(({ onScanSuccess, autoStart = false, status 
             animation: scan 3s ease-in-out infinite;
             position: absolute;
           }
-          #reader-container video { border-radius: 2.5rem; object-fit: cover !important; }
+          #reader-container video { 
+            border-radius: 2.5rem; 
+            object-fit: contain !important; 
+            background: black;
+          }
+          #reader-container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+          }
         `}</style>
     </div>
   );

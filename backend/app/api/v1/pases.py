@@ -38,7 +38,19 @@ async def listar_lotes(
     from sqlalchemy.orm import selectinload
     from datetime import date as date_type
 
-    query = select(LotePaseMasivo).options(
+    from sqlalchemy import func
+    # Subconsulta para contar pases usados por lote
+    usados_sub = select(
+        CodigoQR.lote_id,
+        func.count(CodigoQR.id).label("total_usados")
+    ).where(CodigoQR.accesos_usados > 0).group_by(CodigoQR.lote_id).subquery()
+
+    query = select(
+        LotePaseMasivo,
+        func.coalesce(usados_sub.c.total_usados, 0).label("pases_usados")
+    ).outerjoin(
+        usados_sub, LotePaseMasivo.id == usados_sub.c.lote_id
+    ).options(
         selectinload(LotePaseMasivo.zona_asignada),
         selectinload(LotePaseMasivo.tipo_acceso_custom)
     )
@@ -52,7 +64,16 @@ async def listar_lotes(
 
     query = query.order_by(LotePaseMasivo.created_at.desc())
     res = await db.execute(query)
-    return res.scalars().all()
+    rows = res.all()
+    
+    # Mapear pases_usados al modelo para el schema
+    lotes = []
+    for row in rows:
+        l = row.LotePaseMasivo
+        l.pases_usados = row.pases_usados
+        lotes.append(l)
+        
+    return lotes
 
 @router.get("/lotes/disponibilidad")
 async def obtener_disponibilidad_zona(

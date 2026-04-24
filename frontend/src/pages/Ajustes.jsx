@@ -11,12 +11,16 @@ import { Boton } from '../components/ui/Boton';
 import { Modal } from '../components/ui/Modal';
 import { NavLink } from 'react-router-dom';
 import toast from 'react-hot-toast';
+import { usePushNotifications } from '../hooks/usePushNotifications';
+import { Bell, BellOff, BellRing } from 'lucide-react';
 
 export default function Ajustes() {
   const { 
     user, logout, updatePerfil, cambiarPassword, 
     getCredenciales, registrarDispositivoBiometrico, eliminarDispositivo 
   } = useAuthStore();
+
+  const { isSubscribed, subscribeUser, error: pushError } = usePushNotifications();
 
   // Estados para modales
   const [activeModal, setActiveModal] = useState(null); // 'perfil', 'password', 'biometria'
@@ -282,6 +286,56 @@ export default function Ajustes() {
                     </button>
                   </div>
                 ))
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      </section>
+
+      {/* Alertas en Tiempo Real (Push) */}
+      <section className="max-w-4xl mx-auto px-2 md:px-6 space-y-4">
+        <p className="text-[10px] text-text-muted uppercase font-black tracking-[0.3em] opacity-40 ml-2">Alertas Tácticas</p>
+        <Card className="bg-bg-low/40 border-white/5 backdrop-blur-md group hover:border-primary/20 transition-all">
+          <CardContent className="p-6">
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-6">
+              <div className="flex items-center gap-4">
+                <div className={cn(
+                  "w-14 h-14 rounded-2xl flex items-center justify-center transition-all duration-500 shadow-lg",
+                  isSubscribed 
+                    ? "bg-primary/10 text-primary shadow-primary/5" 
+                    : "bg-danger/10 text-danger shadow-danger/5"
+                )}>
+                  {isSubscribed ? <BellRing size={28} className="animate-pulse" /> : <BellOff size={28} />}
+                </div>
+                <div>
+                  <h4 className="text-sm font-black text-white uppercase tracking-tight italic">
+                    {isSubscribed ? "Notificaciones Activas" : "Notificaciones Desactivadas"}
+                  </h4>
+                  <p className="text-[10px] text-text-muted font-bold uppercase tracking-widest mt-0.5">
+                    {isSubscribed ? "Recibiendo alertas de alcabala en tiempo real" : "No recibirá alertas proactivas en este dispositivo"}
+                  </p>
+                </div>
+              </div>
+
+              {!isSubscribed && (
+                <Boton 
+                  className="h-12 px-8 bg-primary text-bg-app font-black uppercase tracking-widest text-[10px] shadow-lg shadow-primary/20 w-full sm:w-auto hover:bg-primary-dark transition-all active:scale-95"
+                  onClick={async () => {
+                    await subscribeUser();
+                    if (!pushError) toast.success('Alertas tácticas activadas');
+                    else toast.error('Error al activar alertas');
+                  }}
+                >
+                  <Bell className="mr-2" size={16} />
+                  Activar Alertas
+                </Boton>
+              )}
+              
+              {isSubscribed && (
+                <div className="flex items-center gap-2 px-4 py-2 bg-emerald-500/10 border border-emerald-500/20 rounded-full">
+                   <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                   <span className="text-[9px] font-black text-emerald-500 uppercase tracking-widest text-center">Enlace Operativo Estable</span>
+                </div>
               )}
             </div>
           </CardContent>

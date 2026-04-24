@@ -273,12 +273,12 @@ class AlcabalaService:
             inicio_utc = inicio_dia_vet.astimezone(timezone.utc).replace(tzinfo=None)
 
         q_ent = select(func.count(Acceso.id)).filter(
-            Acceso.punto_acceso == punto_nombre,
+            func.trim(Acceso.punto_acceso) == punto_nombre.strip(),
             Acceso.tipo == "entrada",
             Acceso.timestamp >= inicio_utc
         )
         q_sal = select(func.count(Acceso.id)).filter(
-            Acceso.punto_acceso == punto_nombre,
+            func.trim(Acceso.punto_acceso) == punto_nombre.strip(),
             Acceso.tipo == "salida",
             Acceso.timestamp >= inicio_utc
         )
@@ -288,7 +288,7 @@ class AlcabalaService:
         
         # Últimos 5 eventos en este rango
         query_hist = select(Acceso).filter(
-            Acceso.punto_acceso == punto_nombre,
+            func.trim(Acceso.punto_acceso) == punto_nombre.strip(),
             Acceso.timestamp >= inicio_utc
         ).order_by(Acceso.timestamp.desc()).limit(5)
         
@@ -298,18 +298,38 @@ class AlcabalaService:
         eventos_formateados = []
         for h in historial:
             # Rehidratar datos básicos para el dashboard
-            u_h = await db.get(Usuario, h.usuario_id)
-            veh_h = None
+            u_h = await db.get(Usuario, h.usuario_id) if h.usuario_id else None
+            
+            socio_nombre = "Socio Desconocido"
+            vehiculo_str = "PEATÓN"
+            
+            if u_h:
+                socio_nombre = f"{u_h.nombre} {u_h.apellido}"
+            elif h.qr_id:
+                from app.models.codigo_qr import CodigoQR
+                qr_db = await db.get(CodigoQR, h.qr_id)
+                if qr_db and qr_db.nombre_portador:
+                    socio_nombre = f"{qr_db.nombre_portador} (PASE)"
+            
             if h.vehiculo_id:
                 from app.models.vehiculo import Vehiculo
                 veh_h = await db.get(Vehiculo, h.vehiculo_id)
+                if veh_h:
+                    vehiculo_str = f"{veh_h.marca} {veh_h.modelo} [{veh_h.placa}]"
+            elif h.vehiculo_pase_id:
+                from app.models.vehiculo_pase import VehiculoPase
+                vp = await db.get(VehiculoPase, h.vehiculo_pase_id)
+                if vp:
+                    vehiculo_str = f"{vp.marca} {vp.modelo} [{vp.placa}]".strip()
+            elif h.qr_id and 'qr_db' in locals() and qr_db and qr_db.vehiculo_placa:
+                 vehiculo_str = f"{qr_db.vehiculo_marca or ''} {qr_db.vehiculo_modelo or ''} [{qr_db.vehiculo_placa}]".strip()
             
             eventos_formateados.append({
                 "id": str(h.id),
                 "tipo": h.tipo,
                 "timestamp": h.timestamp.isoformat(),
-                "socio_nombre": f"{u_h.nombre} {u_h.apellido}" if u_h else "Socio Desconocido",
-                "vehiculo": f"{veh_h.marca} {veh_h.modelo} [{veh_h.placa}]" if veh_h else "PEATÓN"
+                "socio_nombre": socio_nombre,
+                "vehiculo": vehiculo_str
             })
 
         return {

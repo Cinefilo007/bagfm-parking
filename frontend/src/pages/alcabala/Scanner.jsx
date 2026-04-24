@@ -436,21 +436,24 @@ const ScannerAlcabala = () => {
             {/* ── Contenido Principal ── */}
             <main className="flex-1 flex flex-col p-3 gap-3 max-w-lg mx-auto w-full">
 
-                {/* ══ MODO SCANNER (pantalla inicial) ══ */}
-                {!resultado && !modoEscaneoIA && (
+                {/* ══ INTERFAZ DE ESCANEO ══ */}
+                {!modoEscaneoIA && (
                     <div className="flex flex-col gap-4 items-center justify-center flex-1 w-full max-w-sm mx-auto">
-                        <Card
-                            className="w-full aspect-square border-0 rounded-[2rem] overflow-hidden shadow-2xl bg-black"
-                        >
-                            <QRScanner
-                                ref={scannerRef}
-                                onScanSuccess={handleScanSuccess}
-                                autoStart={true}
-                                status="idle"
-                            />
-                        </Card>
+                        {!resultado && (
+                            <Card
+                                className="w-full aspect-square border-0 rounded-[2rem] overflow-hidden shadow-2xl bg-black"
+                            >
+                                <QRScanner
+                                    ref={scannerRef}
+                                    onScanSuccess={handleScanSuccess}
+                                    autoStart={true}
+                                    status="idle"
+                                />
+                            </Card>
+                        )}
 
-                        <div className="grid grid-cols-2 gap-2 w-full mt-4">
+                        {/* Controles Fijos (Incluso tras escaneo) */}
+                        <div className="grid grid-cols-2 gap-2 w-full">
                             <Boton
                                 onClick={() => scannerRef.current?.switchCamera()}
                                 variant="outline"
