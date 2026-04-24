@@ -51,6 +51,8 @@ class ZonaEstacionamientoService:
         self, db: AsyncSession, skip: int = 0, limit: int = 100, activa: Optional[bool] = None
     ) -> List[dict]:
         from app.models.vehiculo_pase import VehiculoPase
+        from app.models.codigo_qr import CodigoQR
+        from app.models.enums import TipoAccesoPase
         
         query = select(ZonaEstacionamiento)
         if activa is not None:
@@ -65,7 +67,12 @@ class ZonaEstacionamientoService:
             # Contar ocupación por categoría
             res_base = await db.execute(
                 select(func.count(VehiculoPase.id))
-                .where(VehiculoPase.zona_asignada_id == zona.id, VehiculoPase.ingresado == True, VehiculoPase.tipo_acceso == 'base')
+                .join(CodigoQR, VehiculoPase.qr_id == CodigoQR.id)
+                .where(
+                    VehiculoPase.zona_asignada_id == zona.id, 
+                    VehiculoPase.ingresado == True, 
+                    CodigoQR.tipo_acceso == TipoAccesoPase.base
+                )
             )
             ocu_base = res_base.scalar() or 0
             
