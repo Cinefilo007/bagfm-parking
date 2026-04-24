@@ -3,10 +3,11 @@ import { Modal } from '../ui/Modal';
 import { Input } from '../ui/Input';
 import { Boton } from '../ui/Boton';
 import { toast } from 'react-hot-toast';
+import { cn } from '../../lib/utils';
 import { 
     Shield, User, CreditCard, Phone, Mail, 
     Car, Hash, Palette, Calendar, CheckCircle2,
-    RefreshCw, Share2
+    RefreshCw, Share2, LayoutGrid
 } from 'lucide-react';
 import api from '../../services/api';
 
