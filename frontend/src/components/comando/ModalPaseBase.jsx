@@ -109,11 +109,12 @@ export const ModalPaseBase = ({ isOpen, onClose, zona, onGenerated }) => {
                         </Boton>
                         <Boton className="bg-primary text-bg-app uppercase text-[10px] font-black gap-2 h-11" 
                                onClick={() => {
-                                   navigator.share?.({
+                                   if (!navigator.share) return toast.error("Compartir no disponible");
+                                   navigator.share({
                                        title: 'Tu Pase BAGFM',
-                                       text: `Hola ${resultado.nombre_portador}, tu pase para la zona ${zona.nombre} ha sido generado. Serial: ${resultado.serial_legible}`,
+                                       text: `Tu pase para la zona ${zona.nombre} ha sido generado. Serial: ${resultado.serial_legible}`,
                                        url: `${window.location.origin}/socio/portal?s=${resultado.serial_legible}`
-                                   }).catch(() => toast.error("Error al compartir"));
+                                   }).catch(() => {});
                                }}>
                             <Share2 size={14} /> Compartir
                         </Boton>
@@ -201,7 +202,9 @@ export const ModalPaseBase = ({ isOpen, onClose, zona, onGenerated }) => {
                     <Boton variant="ghost" className="flex-1" onClick={onClose} disabled={loading}>Cancelar</Boton>
                     <Boton className="flex-[2] bg-primary text-bg-app h-12 font-black uppercase gap-2 shadow-xl shadow-primary/20" 
                            onClick={handleSubmit} disabled={loading}>
-                        {loading ? <RefreshCw size={16} className="animate-spin" /> : <><Shield size={16} /> Generar Pase Oficial</>}
+                        {loading && <RefreshCw size={16} className="animate-spin" />}
+                        {!loading && <Shield size={16} />}
+                        {loading ? 'Procesando...' : 'Generar Pase Oficial'}
                     </Boton>
                 </div>
             </div>
