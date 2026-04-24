@@ -11,7 +11,7 @@ import {
     MapPin, Clock, Users, Shield, ChevronRight,
     ChevronDown, Settings, LayoutGrid, Building2,
     AlertTriangle, CheckCircle2, Timer, Hash,
-    Lock, Unlock, Zap, Activity, MessageCircle
+    Lock, Unlock, Zap, Activity, MessageCircle, UserCheck
 } from 'lucide-react';
 import SelectTactivo from '../../components/ui/SelectTactivo';
 import zonaService from '../../services/zona.service';
