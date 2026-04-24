@@ -92,8 +92,10 @@ export default function DashboardComando() {
           </div>
 
           {/* Columna Derecha: Monitor de Eventos (Ocupa 4/12 = 33%) */}
-          <div className="h-full lg:col-span-4">
-             <EventMonitor eventos={situacion?.eventos_recientes} />
+          <div className="lg:col-span-4 h-[720px] flex flex-col">
+             <div className="flex-1 min-h-0">
+                <EventMonitor eventos={situacion?.eventos_recientes} />
+             </div>
           </div>
 
         </div>

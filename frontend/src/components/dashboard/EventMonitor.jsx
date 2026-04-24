@@ -16,7 +16,7 @@ const EventMonitor = ({ eventos = [] }) => {
         </div>
       </div>
 
-      <div className="flex-1 overflow-hidden p-2 relative">
+      <div className="flex-1 min-h-0 relative">
         {/* Usar el nuevo manejador de scroll infinito en tiempo real */}
         <LiveEventLog />
       </div>
