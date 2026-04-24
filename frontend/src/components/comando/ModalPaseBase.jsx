@@ -7,9 +7,10 @@ import { cn } from '../../lib/utils';
 import { 
     Shield, User, CreditCard, Phone, Mail, 
     Car, Hash, Palette, Calendar, CheckCircle2,
-    RefreshCw, Share2, LayoutGrid
+    RefreshCw, Share2, LayoutGrid, MessageCircle
 } from 'lucide-react';
 import api from '../../services/api';
+import QRCode from "react-qr-code";
 
 export const ModalPaseBase = ({ isOpen, onClose, zona, onGenerated }) => {
     const [form, setForm] = useState({
@@ -77,6 +78,10 @@ export const ModalPaseBase = ({ isOpen, onClose, zona, onGenerated }) => {
                         <p className="text-[10px] text-text-muted mt-1 uppercase font-bold tracking-widest">Pase de Comando BAGFM</p>
                     </div>
 
+                    <div className="bg-white p-4 rounded-3xl mx-auto w-fit shadow-2xl ring-8 ring-indigo-500/10">
+                        <QRCode value={resultado.token} size={150} level="H" />
+                    </div>
+
                     <div className="bg-white/5 border border-white/10 p-4 rounded-2xl space-y-3">
                         <div className="flex justify-between items-center text-[10px]">
                             <span className="text-text-muted font-bold">SERIAL:</span>
@@ -92,9 +97,15 @@ export const ModalPaseBase = ({ isOpen, onClose, zona, onGenerated }) => {
                         </div>
                     </div>
 
-                    <div className="flex gap-3">
-                        <Boton variant="ghost" className="flex-1 uppercase text-[10px] font-black" onClick={handleReset}>Generar Otro</Boton>
-                        <Boton className="flex-1 bg-primary text-bg-app uppercase text-[10px] font-black gap-2" 
+                    <div className="grid grid-cols-2 gap-3">
+                        <Boton className="bg-success text-bg-app uppercase text-[10px] font-black gap-2 h-11" 
+                               onClick={() => {
+                                   const text = `BAGFM - PASE DE COMANDO\nZona: ${zona.nombre}\nSerial: ${resultado.serial_legible}\nLink: ${window.location.origin}/socio/portal?s=${resultado.serial_legible}`;
+                                   window.open(`https://wa.me/?text=${encodeURIComponent(text)}`);
+                               }}>
+                            <MessageCircle size={14} /> WhatsApp
+                        </Boton>
+                        <Boton className="bg-primary text-bg-app uppercase text-[10px] font-black gap-2 h-11" 
                                onClick={() => {
                                    navigator.share?.({
                                        title: 'Tu Pase BAGFM',
@@ -105,6 +116,7 @@ export const ModalPaseBase = ({ isOpen, onClose, zona, onGenerated }) => {
                             <Share2 size={14} /> Compartir
                         </Boton>
                     </div>
+                    <Boton variant="ghost" className="w-full text-text-muted/40 uppercase text-[9px]" onClick={handleReset}>Generar Otro Pase</Boton>
                     <Boton variant="ghost" className="w-full text-text-muted/40" onClick={onClose}>Cerrar</Boton>
                 </div>
             </Modal>

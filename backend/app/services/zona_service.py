@@ -49,13 +49,55 @@ class ZonaEstacionamientoService:
 
     async def obtener_zonas(
         self, db: AsyncSession, skip: int = 0, limit: int = 100, activa: Optional[bool] = None
-    ) -> List[ZonaEstacionamiento]:
+    ) -> List[dict]:
+        from app.models.codigo_qr import VehiculoPase
+        
         query = select(ZonaEstacionamiento)
         if activa is not None:
             query = query.filter(ZonaEstacionamiento.activo == activa)
         query = query.offset(skip).limit(limit)
+        
         resultado = await db.execute(query)
-        return resultado.scalars().all()
+        zonas = resultado.scalars().all()
+        
+        resultado_final = []
+        for zona in zonas:
+            # Contar ocupación por categoría
+            res_base = await db.execute(
+                select(func.count(VehiculoPase.id))
+                .where(VehiculoPase.zona_asignada_id == zona.id, VehiculoPase.ingresado == True, VehiculoPase.tipo_acceso == 'base')
+            )
+            ocu_base = res_base.scalar() or 0
+            
+            res_total = await db.execute(
+                select(func.count(VehiculoPase.id))
+                .where(VehiculoPase.zona_asignada_id == zona.id, VehiculoPase.ingresado == True)
+            )
+            ocu_total = res_total.scalar() or 0
+            
+            # Sincronizar ocupacion_actual por si acaso
+            if zona.ocupacion_actual != ocu_total:
+                zona.ocupacion_actual = ocu_total
+                await db.commit()
+
+            z_dict = {
+                "id": str(zona.id),
+                "nombre": zona.nombre,
+                "capacidad_total": zona.capacidad_total,
+                "ocupacion_actual": ocu_total,
+                "ocupacion_base": ocu_base,
+                "usa_puestos_identificados": zona.usa_puestos_identificados,
+                "tipo": zona.tipo,
+                "descripcion_ubicacion": zona.descripcion_ubicacion,
+                "latitud": float(zona.latitud) if zona.latitud else None,
+                "longitud": float(zona.longitud) if zona.longitud else None,
+                "tiempo_limite_llegada_min": zona.tiempo_limite_llegada_min,
+                "activo": zona.activo,
+                "created_at": zona.created_at
+            }
+            resultado_final.append(z_dict)
+            
+        return resultado_final
 
     async def obtener_puestos_zona(self, db: AsyncSession, zona_id: UUID) -> List[PuestoEstacionamiento]:
         resultado = await db.execute(

@@ -11,7 +11,7 @@ import {
     MapPin, Clock, Users, Shield, ChevronRight,
     ChevronDown, Settings, LayoutGrid, Building2,
     AlertTriangle, CheckCircle2, Timer, Hash,
-    Lock, Unlock, Zap, Activity
+    Lock, Unlock, Zap, Activity, MessageCircle
 } from 'lucide-react';
 import SelectTactivo from '../../components/ui/SelectTactivo';
 import zonaService from '../../services/zona.service';
@@ -29,6 +29,35 @@ const StatBadge = ({ valor, label, color = 'text-text-muted', subLabel }) => (
         {subLabel && <div className="text-[6px] font-bold text-text-muted/30 uppercase">{subLabel}</div>}
     </div>
 );
+
+const PuestoCuadro = ({ puesto, onClick }) => {
+    const config = puesto.reservado_base 
+        ? { border: 'border-indigo-500/30', bg: 'bg-indigo-500/8', dot: 'bg-indigo-400', icon: 'text-indigo-400' }
+        : { border: 'border-white/10', bg: 'bg-white/5', dot: 'bg-text-muted', icon: 'text-text-muted' };
+
+    return (
+        <button
+            onClick={onClick}
+            className={cn(
+                'relative flex flex-col items-center justify-center p-3 rounded-xl border-2 transition-all active:scale-95 hover:brightness-110',
+                config.border, config.bg
+            )}
+        >
+            <div className={cn('w-2 h-2 rounded-full mb-1', config.dot, puesto.estado === 'ocupado' ? 'animate-pulse bg-danger' : config.dot)} />
+            <ParkingSquare size={16} className={puesto.estado === 'ocupado' ? 'text-danger' : config.icon} />
+            <span className="text-[7px] font-black uppercase tracking-tight mt-1 text-text-main leading-none">
+                {puesto.numero_puesto || puesto.codigo || '—'}
+            </span>
+            <span className={cn(
+                'text-[5px] font-black uppercase tracking-wide leading-none mt-0.5',
+                puesto.reservado_base ? 'text-indigo-400' : 'text-text-muted'
+            )}>
+                {puesto.estado === 'ocupado' ? 'OCUPADO' : 'BASE'}
+            </span>
+            {puesto.reservado_base && <Lock size={7} className="absolute top-1 right-1 text-indigo-400/60" />}
+        </button>
+    );
+};
 
 const PuestoChip = ({ puesto, onEliminar, onEditar, onGPS }) => {
     const colorMap = {
@@ -71,18 +100,24 @@ const ZonaRow = ({
     const totalAsignado = asignacionesZona.reduce((acc, a) => acc + (a.cupo_asignado || 0), 0);
     const reservadoBase = asignacionesZona.reduce((acc, a) => acc + (a.cupo_reservado_base || 0), 0);
 
-    const puestosLibres = puestos.length > 0
-        ? puestos.filter(p => p.estado === 'libre').length
-        : (zona.capacidad_total - totalAsignado - reservadoBase);
+    const puestosOcupados = zona.ocupacion_actual || 0;
 
-    const puestosOcupados = puestos.length > 0 
-        ? puestos.filter(p => p.estado === 'ocupado').length
-        : (zona.ocupacion_actual || 0);
+    const puestosLibres = Math.max(0, zona.capacidad_total - totalAsignado - reservadoBase - puestosOcupados);
 
-    const puestosReservados = Math.max(
-        reservadoBase,
-        puestos.filter(p => p.estado === 'reservado' || p.estado === 'reservado_base').length
-    );
+    const puestosReservados = reservadoBase; 
+
+    // Generar puestos virtuales para la base si no hay físicos
+    const ocuBaseReal = zona.ocupacion_base || 0;
+    const puestosBaseVirtuales = Array.from({ length: reservadoBase }, (_, i) => {
+        const num = String(i + 1).padStart(2, '0');
+        return {
+            id: `v-base-${zona.id}-${i}`,
+            numero_puesto: `BASE-${num}`,
+            estado: i < ocuBaseReal ? 'ocupado' : 'libre',
+            reservado_base: true,
+            virtual: true
+        };
+    });
 
     return (
         <div className="bg-bg-card/40 border border-white/5 rounded-2xl overflow-hidden transition-all">
@@ -224,7 +259,25 @@ const ZonaRow = ({
                         </div>
                     )}
 
-                    {!asignacionesZona.length && !puestos.length && (
+                    {/* Puestos Reservados Base (Diseño Parquero) */}
+                    {puestosReservados > 0 && (
+                        <div className="space-y-2 p-3 bg-indigo-500/5 rounded-2xl border border-indigo-500/10">
+                            <p className="text-[8px] font-black uppercase tracking-widest text-indigo-400 flex items-center gap-1.5 px-1">
+                                <Shield size={9} /> Cupos Reservados del Comando (Click para Asignar)
+                            </p>
+                            <div className="grid grid-cols-5 sm:grid-cols-8 md:grid-cols-10 gap-2">
+                                {puestosBaseVirtuales.map(p => (
+                                    <PuestoCuadro 
+                                        key={p.id} 
+                                        puesto={p} 
+                                        onClick={() => onGenerarPaseBase(zona)} 
+                                    />
+                                ))}
+                            </div>
+                        </div>
+                    )}
+
+                    {!asignacionesZona.length && !puestos.length && !puestosReservados && (
                         <p className="text-center text-[9px] text-text-muted/30 uppercase tracking-widest py-2">
                             Zona sin configuración adicional
                         </p>
