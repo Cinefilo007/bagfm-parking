@@ -26,6 +26,24 @@ async def validar_acceso(
     """
     return await acceso_service.validar_qr(db, datos)
 
+@router.get("/buscar-placa", response_model=ResultadoValidacion)
+async def buscar_placa(
+    placa: str,
+    tipo: str,
+    db: AsyncSession = Depends(obtener_db),
+    usuario_actual: Usuario = DEPENDENCY_ALCABALA
+):
+    """
+    Busca un vehículo por placa exacta (Socios o Temporales).
+    """
+    from app.models.enums import AccesoTipo
+    try:
+        acceso_tipo = AccesoTipo(tipo)
+    except ValueError:
+        raise HTTPException(status_code=400, detail=f"Tipo de acceso inválido: {tipo}")
+        
+    return await acceso_service.buscar_por_placa(db, placa, acceso_tipo)
+
 @router.post("/registrar", response_model=AccesoSalida, status_code=status.HTTP_201_CREATED)
 async def registrar_acceso(
     datos: AccesoRegistrar,

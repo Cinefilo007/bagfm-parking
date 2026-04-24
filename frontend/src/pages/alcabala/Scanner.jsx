@@ -197,6 +197,9 @@ const ScannerAlcabala = () => {
     // Vehículo seleccionado cuando hay múltiples
     const [vehiculoSeleccionadoId, setVehiculoSeleccionadoId] = useState(null);
 
+    // Búsqueda por placa
+    const [placaBusqueda, setPlacaBusqueda] = useState('');
+
     // Modal de registro manual (SÓLO visible cuando el guardia lo activa)
     const [mostrarFormulario, setMostrarFormulario] = useState(false);
 
@@ -261,6 +264,39 @@ const ScannerAlcabala = () => {
             const msg = error.response?.data?.detail || 'Error en protocolo';
             setResultado({ permitido: false, mensaje: msg, tipo_alerta: 'error' });
             toast.error('Fallo en validación', { position: 'bottom-center' });
+        } finally {
+            setCargando(false);
+        }
+    };
+
+    /* ── Manejar búsqueda por placa ── */
+    const handleBuscarPlaca = async () => {
+        const placa = placaBusqueda.trim().toUpperCase();
+        if (!placa || cargando) return;
+
+        setCargando(true);
+        setMostrarFormulario(false);
+        setVehiculoSeleccionadoId(null);
+
+        try {
+            const res = await alcabalaService.buscarPorPlaca(placa, tipoAcceso);
+            setResultado(res);
+
+            if (res.vehiculos && res.vehiculos.length > 0) {
+                setVehiculoSeleccionadoId(res.vehiculos[0].id);
+            } else if (res.vehiculo) {
+                setVehiculoSeleccionadoId(res.vehiculo.id);
+            }
+            
+            if (res.permitido) {
+                toast.success(`Vehículo ${placa} identificado`, { position: 'bottom-center' });
+            } else if (res.tipo_alerta === 'error') {
+                toast.error(res.mensaje || 'Placa no encontrada');
+            }
+        } catch (error) {
+            const msg = error.response?.data?.detail || 'Sistema no disponible';
+            setResultado({ permitido: false, mensaje: msg, tipo_alerta: 'error' });
+            toast.error(msg);
         } finally {
             setCargando(false);
         }
@@ -366,6 +402,7 @@ const ScannerAlcabala = () => {
 
     const reiniciar = () => {
         setResultado(null);
+        setPlacaBusqueda('');
         setMostrarFormulario(false);
         setVehiculoSeleccionadoId(null);
         setNombreManual(''); setCedulaManual(''); setTelefonoManual('');
@@ -439,6 +476,31 @@ const ScannerAlcabala = () => {
                 {/* ══ INTERFAZ DE ESCANEO ══ */}
                 {!modoEscaneoIA && (
                     <div className="flex flex-col gap-4 items-center justify-center flex-1 w-full max-w-sm mx-auto">
+                        
+                        {/* BÚSQUEDA MANUAL POR PLACA */}
+                        {!resultado && (
+                            <div className="w-full space-y-2 animate-in slide-in-from-top duration-500">
+                                <div className="flex items-center bg-bg-card border border-bg-high rounded-2xl overflow-hidden focus-within:border-primary/50 transition-all shadow-lg">
+                                    <input
+                                        type="text"
+                                        value={placaBusqueda}
+                                        onChange={(e) => setPlacaBusqueda(e.target.value.toUpperCase())}
+                                        onKeyDown={(e) => e.key === 'Enter' && handleBuscarPlaca()}
+                                        placeholder="BUSCAR POR PLACA..."
+                                        maxLength={8}
+                                        className="flex-1 bg-transparent px-4 py-3 text-xl font-black text-text-main uppercase tracking-widest outline-none placeholder:text-text-muted/20 placeholder:normal-case placeholder:font-normal placeholder:text-xs"
+                                    />
+                                    <button
+                                        onClick={handleBuscarPlaca}
+                                        disabled={cargando || !placaBusqueda.trim()}
+                                        className="px-4 py-3 bg-primary/10 text-primary border-l border-bg-high hover:bg-primary/20 transition-all disabled:opacity-30"
+                                    >
+                                        {cargando ? <RefreshCw size={20} className="animate-spin" /> : <Scan size={20} />}
+                                    </button>
+                                </div>
+                            </div>
+                        )}
+
                         {!resultado && (
                             <Card
                                 className="w-full aspect-square border-0 rounded-[2rem] overflow-hidden shadow-2xl bg-black"
@@ -452,31 +514,33 @@ const ScannerAlcabala = () => {
                             </Card>
                         )}
 
-                        {/* Controles Fijos (Incluso tras escaneo) */}
-                        <div className="grid grid-cols-2 gap-2 w-full">
-                            <Boton
-                                onClick={() => scannerRef.current?.switchCamera()}
-                                variant="outline"
-                                className="h-14 rounded-2xl flex flex-col items-center justify-center gap-1 active:scale-95"
-                                style={{ background: 'var(--bg-card)', borderColor: 'var(--bg-high)' }}
-                            >
-                                <RefreshCw size={18} className="text-primary" />
-                                <span className="text-[8px] font-black text-text-muted uppercase tracking-widest">
-                                    Cambiar Lente
-                                </span>
-                            </Boton>
-                            <Boton
-                                onClick={() => scannerRef.current?.toggleScanner()}
-                                variant="outline"
-                                className="h-14 rounded-2xl flex flex-col items-center justify-center gap-1 active:scale-95"
-                                style={{ background: 'var(--bg-card)', borderColor: 'var(--bg-high)' }}
-                            >
-                                <Power size={18} className="text-primary" />
-                                <span className="text-[8px] font-black text-text-muted uppercase tracking-widest">
-                                    Energía
-                                </span>
-                            </Boton>
-                        </div>
+                        {/* Controles Fijos (Solo durante el escaneo) */}
+                        {!resultado && (
+                            <div className="grid grid-cols-2 gap-2 w-full animate-in fade-in duration-700">
+                                <Boton
+                                    onClick={() => scannerRef.current?.switchCamera()}
+                                    variant="outline"
+                                    className="h-14 rounded-2xl flex flex-col items-center justify-center gap-1 active:scale-95"
+                                    style={{ background: 'var(--bg-card)', borderColor: 'var(--bg-high)' }}
+                                >
+                                    <RefreshCw size={18} className="text-primary" />
+                                    <span className="text-[8px] font-black text-text-muted uppercase tracking-widest">
+                                        Cambiar Lente
+                                    </span>
+                                </Boton>
+                                <Boton
+                                    onClick={() => scannerRef.current?.toggleScanner()}
+                                    variant="outline"
+                                    className="h-14 rounded-2xl flex flex-col items-center justify-center gap-1 active:scale-95"
+                                    style={{ background: 'var(--bg-card)', borderColor: 'var(--bg-high)' }}
+                                >
+                                    <Power size={18} className="text-primary" />
+                                    <span className="text-[8px] font-black text-text-muted uppercase tracking-widest">
+                                        Energía
+                                    </span>
+                                </Boton>
+                            </div>
+                        )}
                     </div>
                 )}
 

@@ -12,6 +12,7 @@ from app.models.membresia import Membresia
 from app.models.infraccion import Infraccion
 from app.models.codigo_qr import CodigoQR
 from app.models.entidad_civil import EntidadCivil
+from app.models.vehiculo_pase import VehiculoPase
 from app.models.enums import AccesoTipo, MembresiaEstado, InfraccionEstado, QRTipo
 from app.schemas.acceso import AccesoValidar, AccesoRegistrar, ResultadoValidacion
 from app.services.membresia_service import membresia_service
@@ -535,5 +536,124 @@ class AccesoService:
             "page": page,
             "size": size
         }
+
+    async def buscar_por_placa(self, db: AsyncSession, placa: str, tipo: AccesoTipo) -> ResultadoValidacion:
+        """
+        Busca un vehículo por placa exacta en todos los orígenes posibles.
+        SOP: Aegis Tactical v2.2 - Verificación Manual de Contingencia.
+        """
+        placa = placa.strip().upper()
+        
+        # 1. Buscar en Vehiculo (Socio permanente)
+        query_v = select(Vehiculo).where(Vehiculo.placa == placa, Vehiculo.activo == True)
+        res_v = await db.execute(query_v)
+        vehiculo = res_v.scalar_one_or_none()
+        
+        if vehiculo:
+            # Buscar al socio
+            query_socio = select(Usuario).where(Usuario.id == vehiculo.socio_id, Usuario.activo == True)
+            res_socio = await db.execute(query_socio)
+            socio = res_socio.scalar_one_or_none()
+            
+            if socio:
+                # Validar membresía e infracciones (Lógica simplificada de validar_qr)
+                query_mem = select(Membresia).where(Membresia.socio_id == socio.id).order_by(Membresia.updated_at.desc())
+                res_mem = await db.execute(query_mem)
+                membresia = res_mem.scalars().first()
+                
+                query_inf = select(Infraccion).where(Infraccion.usuario_id == socio.id, Infraccion.estado == InfraccionEstado.activa)
+                res_inf = await db.execute(query_inf)
+                infracciones = res_inf.scalars().all()
+                
+                query_ent = select(EntidadCivil).where(EntidadCivil.id == socio.entidad_id)
+                res_ent = await db.execute(query_ent)
+                entidad = res_ent.scalar_one_or_none()
+                
+                # Buscar QR activo para este socio si existe (para trazabilidad)
+                query_qr = select(CodigoQR).where(CodigoQR.usuario_id == socio.id, CodigoQR.activo == True).order_by(CodigoQR.created_at.desc())
+                res_qr = await db.execute(query_qr)
+                qr_db = res_qr.scalar_one_or_none()
+                
+                bloqueado = False
+                msg_bloqueo = ""
+                if tipo == AccesoTipo.salida:
+                    for inf in infracciones:
+                        if inf.bloquea_salida:
+                            bloqueado = True
+                            msg_bloqueo = f"SALIDA BLOQUEADA: {inf.descripcion}"
+                            break
+                
+                if not bloqueado and membresia and membresia.estado not in [MembresiaEstado.activa, MembresiaEstado.exonerada]:
+                    bloqueado = False # El sistema de alcabala suele dejar pasar pero marcar warning? 
+                    # Re-revisando validar_qr: ahí SÍ bloquea si la membresía no es activa/exonerada.
+                    # Líneas 206-213 de validar_qr.
+                    return ResultadoValidacion(
+                        permitido=False, 
+                        mensaje=f"MEMBRESÍA {(membresia.estado.value if membresia else 'INEXISTENTE').upper()}", 
+                        tipo_alerta="error",
+                        socio=socio,
+                        vehiculo=vehiculo
+                    )
+
+                return ResultadoValidacion(
+                    permitido = not bloqueado,
+                    mensaje = msg_bloqueo or "Vehículo Permanente Identificado",
+                    tipo_alerta = "error" if bloqueado else ("warning" if infracciones else "success"),
+                    socio = socio,
+                    vehiculo = vehiculo,
+                    vehiculos = [vehiculo],
+                    entidad_nombre = entidad.nombre if entidad else "N/A",
+                    qr_id = qr_db.id if qr_db else None,
+                    usuario_id = socio.id,
+                    vehiculo_id = vehiculo.id,
+                    infracciones_activas = [{"tipo": i.tipo, "descripcion": i.descripcion, "bloquea": i.bloquea_salida} for i in infracciones],
+                    membresia_info = {
+                        "id": membresia.id,
+                        "estado": membresia.estado,
+                        "progreso": membresia_service.calcular_progreso(membresia)
+                    } if membresia else None
+                )
+
+        # 2. Buscar en VehiculoPase (Pases Masivos / Eventos)
+        query_vp = select(VehiculoPase).where(VehiculoPase.placa == placa)
+        res_vp = await db.execute(query_vp)
+        vehiculo_pase = res_vp.scalar_one_or_none()
+        
+        if vehiculo_pase:
+            # Buscar el QR
+            qr_db = await db.get(CodigoQR, vehiculo_pase.qr_id)
+            if qr_db:
+                # Validar el QR
+                datos_val = AccesoValidar(qr_token=qr_db.token, tipo=tipo)
+                res = await self.validar_qr(db, datos_val)
+                # Forzar el vehículo específico de la placa
+                res.vehiculo = {
+                    "id": vehiculo_pase.id,
+                    "placa": vehiculo_pase.placa,
+                    "marca": vehiculo_pase.marca or "GENÉRICO",
+                    "modelo": vehiculo_pase.modelo or "GENÉRICO",
+                    "color": vehiculo_pase.color or "SIN COLOR",
+                    "activo": True,
+                    "socio_id": res.usuario_id,
+                    "created_at": vehiculo_pase.created_at
+                }
+                res.vehiculo_id = vehiculo_pase.id
+                return res
+
+        # 3. Buscar en CodigoQR (Placa principal del pase)
+        query_qrp = select(CodigoQR).where(CodigoQR.vehiculo_placa == placa, CodigoQR.activo == True).order_by(CodigoQR.created_at.desc())
+        res_qrp = await db.execute(query_qrp)
+        qr_p = res_qrp.scalar_one_or_none()
+        
+        if qr_p:
+            datos_val = AccesoValidar(qr_token=qr_p.token, tipo=tipo)
+            return await self.validar_qr(db, datos_val)
+
+        # 4. No encontrado
+        return ResultadoValidacion(
+            permitido=False, 
+            mensaje=f"PLACA {placa} NO REGISTRADA", 
+            tipo_alerta="error"
+        )
 
 acceso_service = AccesoService()

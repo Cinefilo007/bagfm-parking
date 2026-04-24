@@ -261,6 +261,23 @@ const VistaDespachar = () => {
                                 </div>
                             )}
                         </div>
+
+                        {/* Controles de cámara (Solo durante el escaneo) */}
+                        <div className="grid grid-cols-2 gap-2 animate-in fade-in duration-700">
+                            <button
+                                onClick={() => scannerRef.current?.switchCamera()}
+                                className="h-10 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center gap-2 text-[10px] font-black uppercase tracking-widest text-text-muted hover:bg-white/10 transition-all active:scale-95"
+                            >
+                                <RefreshCw size={14} className="text-warning" /> Lente
+                            </button>
+                            <button
+                                onClick={() => scannerRef.current?.toggleScanner()}
+                                className="h-10 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center gap-2 text-[10px] font-black uppercase tracking-widest text-text-muted hover:bg-white/10 transition-all active:scale-95"
+                            >
+                                <Power size={14} className="text-warning" /> Energía
+                            </button>
+                        </div>
+
                         <p className="text-center text-[9px] text-text-muted/50 font-black uppercase tracking-widest">
                             Apunte la cámara al QR del pase del vehículo
                         </p>

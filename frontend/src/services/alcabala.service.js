@@ -18,6 +18,18 @@ export const alcabalaService = {
   },
 
   /**
+   * Busca un vehículo por placa exacta.
+   * @param {string} placa Placa a buscar.
+   * @param {string} tipo 'entrada' o 'salida'.
+   */
+  async buscarPorPlaca(placa, tipo) {
+    const { data } = await api.get('/accesos/buscar-placa', {
+      params: { placa, tipo }
+    });
+    return data;
+  },
+
+  /**
    * Confirma el registro del acceso tras la validación manual del guardia.
    * @param {object} datos Datos para el registro (usuario_id, vehiculo_id, tipo, etc).
    */
