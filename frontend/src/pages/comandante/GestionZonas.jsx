@@ -17,6 +17,7 @@ import SelectTactivo from '../../components/ui/SelectTactivo';
 import zonaService from '../../services/zona.service';
 import api from '../../services/api';
 import { ModalConfirmacion } from '../../components/ui/ModalConfirmacion';
+import { ModalPaseBase } from '../../components/comando/ModalPaseBase';
 
 
 // ──── Sub-componentes ─────────────────────────────────────────────────────────
@@ -58,7 +59,12 @@ const PuestoChip = ({ puesto, onEliminar, onEditar, onGPS }) => {
     );
 };
 
-const ZonaRow = ({ zona, entidades, asignaciones, onEditar, onEliminar, onGestionarPuestos, onAjustarTiempo, onAsignar, onEliminarAsignacion, onEliminarPuesto, onCapturarGPSPuesto }) => {
+const ZonaRow = ({ 
+    zona, entidades, asignaciones, onEditar, onEliminar, 
+    onGestionarPuestos, onAjustarTiempo, onAsignar, 
+    onEliminarAsignacion, onEliminarPuesto, onCapturarGPSPuesto,
+    onGenerarPaseBase
+}) => {
     const [expandida, setExpandida] = useState(false);
     const puestos = zona.puestos || [];
     const asignacionesZona = asignaciones.filter(a => a.zona_id === zona.id);
@@ -69,7 +75,9 @@ const ZonaRow = ({ zona, entidades, asignaciones, onEditar, onEliminar, onGestio
         ? puestos.filter(p => p.estado === 'libre').length
         : (zona.capacidad_total - totalAsignado - reservadoBase);
 
-    const puestosOcupados = puestos.filter(p => p.estado === 'ocupado').length;
+    const puestosOcupados = puestos.length > 0 
+        ? puestos.filter(p => p.estado === 'ocupado').length
+        : (zona.ocupacion_actual || 0);
 
     const puestosReservados = Math.max(
         reservadoBase,
@@ -129,6 +137,15 @@ const ZonaRow = ({ zona, entidades, asignaciones, onEditar, onEliminar, onGestio
                         <button onClick={() => onAjustarTiempo(zona)} title="Tiempo"
                             className="p-2 rounded-lg hover:bg-warning/10 text-text-muted hover:text-warning transition-all">
                             <Timer size={14} />
+                        </button>
+                        <button onClick={() => onGenerarPaseBase(zona)} title="Generar Pase Base"
+                            className={cn(
+                                "p-2 rounded-lg transition-all",
+                                reservadoBase > 0 ? "hover:bg-primary/10 text-primary animate-pulse" : "text-text-muted/20 cursor-not-allowed"
+                            )}
+                            disabled={reservadoBase <= 0}
+                        >
+                            <Shield size={14} />
                         </button>
                         <button onClick={() => onGestionarPuestos(zona)} title="Puestos"
                             className="p-2 rounded-lg hover:bg-sky-500/10 text-text-muted hover:text-sky-400 transition-all">
@@ -237,6 +254,7 @@ export default function GestionZonas() {
     const [modalPuestos, setModalPuestos] = useState(false);
     const [modalAsignar, setModalAsignar] = useState(false);
     const [modalTiempo, setModalTiempo] = useState(false);
+    const [modalPaseBase, setModalPaseBase] = useState(false);
     const [zonaActiva, setZonaActiva] = useState(null);
     const [confirmConfig, setConfirmConfig] = useState({ isOpen: false, title: '', message: '', onConfirm: null, loading: false });
 
@@ -530,7 +548,7 @@ export default function GestionZonas() {
 
     // ── Stats globales ───────────────────────────────────────────────────────
     const totalCapacidad = zonas.reduce((acc, z) => acc + (z.capacidad_total || 0), 0);
-    const totalOcupados = zonas.reduce((acc, z) => acc + (z.puestos?.filter(p => p.estado === 'ocupado').length || 0), 0);
+    const totalOcupados = zonas.reduce((acc, z) => acc + (z.ocupacion_actual || 0), 0);
     
     // Sumamos puestos físicos reservados + reservas lógicas en asignaciones (evitando duplicar si ya existen puestos físicos)
     const totalReservados = asignaciones.reduce((acc, a) => acc + (a.cupo_reservado_base || 0), 0) + 
@@ -625,6 +643,7 @@ export default function GestionZonas() {
                             onEliminarAsignacion={handleEliminarAsignacion}
                             onEliminarPuesto={handleEliminarPuesto}
                             onCapturarGPSPuesto={handleCapturarGPSPuesto}
+                            onGenerarPaseBase={(z) => { setZonaActiva(z); setModalPaseBase(true); }}
                         />
                     ))}
                 </div>
@@ -845,6 +864,12 @@ export default function GestionZonas() {
             <ModalConfirmacion
                 {...confirmConfig}
                 onClose={() => setConfirmConfig(prev => ({ ...prev, isOpen: false }))}
+            />
+            <ModalPaseBase 
+                isOpen={modalPaseBase} 
+                onClose={() => setModalPaseBase(false)}
+                zona={zonaActiva}
+                onGenerated={cargarDatos}
             />
         </div>
     );

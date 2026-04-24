@@ -546,6 +546,9 @@ class ParqueroService:
         if hasattr(qr, 'hora_llegada_zona'):
             qr.hora_llegada_zona = datetime.now(timezone.utc)
 
+        # Incrementar ocupación
+        await self._actualizar_ocupacion_zona(db, zona_id, 1)
+
         await db.commit()
         await db.refresh(vehiculo_pase)
         return vehiculo_pase

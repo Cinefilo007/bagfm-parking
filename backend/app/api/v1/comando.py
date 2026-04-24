@@ -2,7 +2,7 @@
 API Endpoints para el Comandante de la Unidad.
 Gestión de Alcabalas y Usuarios Temporales.
 """
-from typing import List
+from typing import List, Optional
 from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -18,6 +18,9 @@ from app.schemas.alcabala_evento import (
     PersonalActivoSalida
 )
 from app.services.alcabala_mgmt_service import alcabala_service
+from app.services.comando_service import comando_service
+from app.schemas.comando import PaseBaseCrear, PuestoReservadoSalida
+from app.schemas.codigo_qr import CodigoQRSalida
 
 router = APIRouter()
 
@@ -141,3 +144,24 @@ async def identificar_guardia(
         raise HTTPException(status_code=403, detail="Esta acción es solo para el personal en alcabala")
         
     return await alcabala_service.identificar_guardia_entrante(db, datos.punto_id, usuario.id, datos.model_dump())
+
+@router.get("/puestos-reservados", response_model=List[PuestoReservadoSalida])
+async def listar_puestos_reservados(
+    zona_id: Optional[UUID] = None,
+    db: AsyncSession = Depends(obtener_db),
+    _ = Depends(verificar_comandante)
+):
+    """Lista todos los puestos con estado 'reservado_base'."""
+    return await comando_service.obtener_puestos_reservados_base(db, zona_id)
+
+@router.post("/pases-reservados", response_model=CodigoQRSalida)
+async def generar_pase_reservado(
+    datos: PaseBaseCrear,
+    db: AsyncSession = Depends(obtener_db),
+    usuario: Usuario = Depends(verificar_comandante)
+):
+    """Genera un pase para un puesto reservado de la base."""
+    try:
+        return await comando_service.generar_pase_base(db, datos.zona_id, datos.model_dump(), usuario.id)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
