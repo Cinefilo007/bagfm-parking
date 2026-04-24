@@ -153,5 +153,16 @@ El `vehiculo_id` enviado al registrar se toma del vehículo seleccionado por el 
 
 ---
 
-*Última actualización: 2026-04-23 | v2.1 — Corrección de acceso y vista de datos*
+### BUG-02: Error relation "push_subscriptions" does not exist (2026-04-24)
+**Causa**: El modelo `PushSubscription` fue implementado pero no fue registrado en `app/models/base.py`, lo que causó que Alembic no detectara la tabla y el sistema fallara al intentar consultar suscripciones para notificaciones. Además, al fallar la consulta dentro de una transacción activa, se abortaba el registro del acceso (`InFailedSQLTransactionError`).
+
+**Corrección**:
+1. **Modelos**: Se registró `PushSubscription` en `app/models/base.py`.
+2. **Base de Datos**: Se generó y aplicó migración `a128ff455a97` para crear la tabla faltante.
+3. **Resiliencia (Post-Commit)**: Se refactorizó `acceso_service.py` para mover el bloque de notificaciones **después del commit** de la base de datos.
+   - Esto garantiza que si el sistema de notificaciones falla (ya sea por BD o por el servicio externo de WebPush), el registro de entrada del vehículo **ya esté asegurado y persistido**.
+
+---
+
+*Última actualización: 2026-04-24 | v2.2 — Estabilización de notificaciones y resiliencia post-commit*
 *Docs Relacionados: SCHEMA_BD.md, ROLES_Y_PERMISOS.md, DIRECTIVA_PARQUERO.md*

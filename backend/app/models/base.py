@@ -28,3 +28,4 @@ from app.models.incentivo_parquero import IncentivoParquero
 from app.models.sancion_parquero import SancionParquero
 from app.models.credencial_biometrica import CredencialBiometrica
 from app.models.challenge_biometrico import ChallengeBiometrico
+from app.models.push_subscription import PushSubscription
