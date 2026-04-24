@@ -17,15 +17,24 @@ export function usePushNotifications() {
 
       const registration = await navigator.serviceWorker.ready;
       
-      // Diagnóstico de combate
-      console.log("🔍 Diagnóstico de Entorno:", Object.keys(import.meta.env));
+      // Obtener clave pública VAPID (prioridad env, fallback API)
+      let vapidPublicKey = import.meta.env.VITE_VAPID_PUBLIC_KEY;
       
-      // Obtener clave pública VAPID del env
-      const vapidPublicKey = import.meta.env.VITE_VAPID_PUBLIC_KEY;
       if (!vapidPublicKey) {
-        const errorMsg = `Error Crítico: VITE_VAPID_PUBLIC_KEY no encontrada. Disponibles: ${Object.keys(import.meta.env).filter(k => k.startsWith('VITE_')).join(', ')}`;
-        console.error(errorMsg);
-        setError(errorMsg);
+        console.warn('⚠️ VITE_VAPID_PUBLIC_KEY no encontrada en build, intentando recuperar del servidor...');
+        try {
+          const resp = await api.get('/notificaciones/config');
+          vapidPublicKey = resp.data.publicKey;
+        } catch (apiErr) {
+          const errorMsg = 'Error Crítico: No se pudo obtener la clave VAPID ni del entorno ni del servidor.';
+          console.error(errorMsg);
+          setError(errorMsg);
+          return;
+        }
+      }
+
+      if (!vapidPublicKey) {
+        setError('Clave VAPID no disponible en el sistema');
         return;
       }
 

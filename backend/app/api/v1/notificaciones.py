@@ -10,7 +10,15 @@ from app.models.usuario import Usuario
 from app.models.push_subscription import PushSubscription
 from app.schemas.push import PushSubscriptionCreate, PushSubscriptionSchema
 
+from app.core.config import obtener_config
+
 router = APIRouter(prefix="/notificaciones", tags=["Notificaciones"])
+settings = obtener_config()
+
+@router.get("/config")
+async def obtener_config_push():
+    """Retorna la clave pública VAPID configurada en el servidor"""
+    return {"publicKey": settings.vapid_public_key}
 
 @router.post("/suscribir", response_model=PushSubscriptionSchema)
 async def suscribir_push(
