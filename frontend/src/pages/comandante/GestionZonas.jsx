@@ -1098,35 +1098,24 @@ export default function GestionZonas() {
                                 </div>
 
                                 <div className="md:col-span-2 flex flex-col items-center justify-center gap-4 bg-black/20 rounded-2xl p-4 border border-white/5">
-                                    {!mostrarQR ? (
-                                        <button 
-                                            onClick={() => setMostrarQR(true)}
-                                            className="flex flex-col items-center gap-2 group transition-all"
-                                        >
-                                            <div className="w-24 h-24 bg-white/5 rounded-2xl flex items-center justify-center border border-dashed border-white/20 group-hover:bg-primary/10 group-hover:border-primary/50 transition-all origin-center group-hover:scale-105">
-                                                <QrCode size={32} className="text-text-muted group-hover:text-primary transition-all" />
-                                            </div>
-                                            <p className="text-[9px] font-black text-text-muted uppercase tracking-widest group-hover:text-primary">Generar Imagen QR</p>
-                                        </button>
-                                    ) : (
-                                        <div ref={qrSectionRef} className="flex flex-col items-center gap-3 animate-in zoom-in-95 duration-200">
-                                            <div className="p-2 bg-white rounded-xl shadow-lg shadow-black/40">
-                                                <QRCode 
-                                                    value={puestoDetalle.detalle_pase.token || puestoDetalle.detalle_pase.serial_legible} 
-                                                    size={100}
-                                                    bgColor="#ffffff"
-                                                    fgColor="#0d1117"
-                                                    level="M"
-                                                />
-                                            </div>
-                                            <button 
-                                                onClick={handleWhatsAppBase}
-                                                className="w-full h-8 bg-[#25D366]/20 hover:bg-[#25D366] text-[#25D366] hover:text-white border border-[#25D366]/30 rounded-xl flex items-center justify-center gap-2 transition-all text-[9px] font-black uppercase cursor-pointer"
-                                            >
-                                                <MessageCircle size={14} /> WhatsApp
-                                            </button>
+                                    <div ref={qrSectionRef} className="flex flex-col items-center gap-3 animate-in zoom-in-95 duration-200">
+                                        <div className="p-2 bg-white rounded-xl shadow-lg shadow-black/40">
+                                            <QRCode 
+                                                value={puestoDetalle.detalle_pase.token || puestoDetalle.detalle_pase.serial_legible} 
+                                                size={100}
+                                                bgColor="#ffffff"
+                                                fgColor="#0d1117"
+                                                level="M"
+                                            />
                                         </div>
-                                    )}
+                                        <p className="text-[7px] text-text-muted italic uppercase font-bold text-center leading-tight">Token de Seguridad<br/>Firmado Digitalmente</p>
+                                        <button 
+                                            onClick={handleWhatsAppBase}
+                                            className="w-full h-8 bg-[#25D366]/20 hover:bg-[#25D366] text-[#25D366] hover:text-white border border-[#25D366]/30 rounded-xl flex items-center justify-center gap-2 transition-all text-[9px] font-black uppercase cursor-pointer"
+                                        >
+                                            <MessageCircle size={14} /> WhatsApp
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
                         )}

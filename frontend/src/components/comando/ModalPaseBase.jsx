@@ -105,26 +105,16 @@ export const ModalPaseBase = ({ isOpen, onClose, zona, onGenerated }) => {
                     </div>
 
                     <div className="bg-black/20 rounded-2xl p-6 border border-white/5 flex flex-col items-center gap-4">
-                        {!mostrarQR ? (
-                            <button 
-                                onClick={() => setMostrarQR(true)}
-                                className="flex flex-col items-center gap-3 group px-8 py-4 border border-dashed border-white/10 rounded-2xl hover:border-primary/50 hover:bg-primary/5 transition-all"
-                            >
-                                <RefreshCw size={24} className="text-text-muted group-hover:text-primary transition-all" />
-                                <span className="text-[10px] font-black text-text-muted uppercase tracking-widest group-hover:text-primary">Generar Imagen QR</span>
-                            </button>
-                        ) : (
-                            <div className="animate-in zoom-in-95 duration-200 flex flex-col items-center gap-4">
-                                <div className="p-3 bg-white rounded-xl shadow-2xl">
-                                    <QRCode 
-                                        value={resultado.token || resultado.serial_legible} 
-                                        size={160} 
-                                        level="M"
-                                    />
-                                </div>
-                                <p className="text-[8px] text-text-muted italic uppercase">Código encriptado y firmado digitalmente</p>
+                        <div className="animate-in zoom-in-95 duration-200 flex flex-col items-center gap-4">
+                            <div className="p-3 bg-white rounded-xl shadow-2xl">
+                                <QRCode 
+                                    value={resultado.token || resultado.serial_legible} 
+                                    size={160} 
+                                    level="M"
+                                />
                             </div>
-                        )}
+                            <p className="text-[8px] text-text-muted italic uppercase font-bold text-center">Token de Seguridad<br/>Firmado Digitalmente</p>
+                        </div>
                     </div>
 
                     <div className="grid grid-cols-2 gap-3">
