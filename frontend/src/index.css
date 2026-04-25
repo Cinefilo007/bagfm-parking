@@ -104,14 +104,14 @@
     color: var(--on-primary);
     font-family: 'Inter', sans-serif;
     font-weight: 600;
-    font-size: 0.875rem;
+    font-size: 0.8rem;
     letter-spacing: 0.05em;
     text-transform: uppercase;
     border-radius: 8px;
-    padding: 14px 24px;
+    padding: 10px 20px;
     border: none;
     width: 100%;
-    min-height: 48px;
+    min-height: 40px;
     cursor: pointer;
     transition: all 0.2s ease;
   }
@@ -127,12 +127,12 @@
     border: 1px solid var(--bg-high);
     border-bottom: 2px solid transparent;
     border-radius: 8px;
-    padding: 14px 16px;
+    padding: 10px 14px;
     color: var(--text-main);
     font-family: 'Inter', sans-serif;
-    font-size: 1rem;
+    font-size: 0.9rem;
     width: 100%;
-    min-height: 48px;
+    min-height: 40px;
     transition: all 0.2s ease;
   }
 
