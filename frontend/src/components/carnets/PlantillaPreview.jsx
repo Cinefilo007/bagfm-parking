@@ -1,5 +1,5 @@
 import React from 'react';
-import QRCode from 'react-qr-code';
+import { QRCode } from 'react-qr-code';
 import { cn } from '../../lib/utils';
 import { Shield, QrCode, MapPin, Calendar, User, Car, Tag, ParkingSquare } from 'lucide-react';
 
