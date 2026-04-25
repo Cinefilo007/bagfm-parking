@@ -1,4 +1,5 @@
 import React from 'react';
+import QRCode from 'react-qr-code';
 import { cn } from '../../lib/utils';
 import { Shield, QrCode, MapPin, Calendar, User, Car, Tag, ParkingSquare } from 'lucide-react';
 
@@ -112,7 +113,13 @@ const PlantillaColgante = ({ datos, config }) => {
 
                 {/* QR — Maximizado para escaneo táctico */}
                 <div className="flex flex-col items-center pb-2 pt-2">
-                    <QRPlaceholder size={140} />
+                    {datos.qr ? (
+                        <div className="bg-white rounded-lg p-1.5 flex items-center justify-center shrink-0" style={{ width: 140, height: 140 }}>
+                            <QRCode value={datos.qr} size={128} level="M" />
+                        </div>
+                    ) : (
+                        <QRPlaceholder size={140} />
+                    )}
                 </div>
 
                 {/* Footer */}
@@ -204,7 +211,13 @@ const PlantillaCartera = ({ datos, config }) => {
                                 {datos.fecha_inicio || '--/--'} — {datos.fecha_fin || '--/--'}
                             </p>
                         </div>
-                        <QRPlaceholder size={85} />
+                        {datos.qr ? (
+                            <div className="bg-white rounded-lg p-1 flex items-center justify-center shrink-0" style={{ width: 85, height: 85 }}>
+                                <QRCode value={datos.qr} size={77} level="M" />
+                            </div>
+                        ) : (
+                            <QRPlaceholder size={85} />
+                        )}
                     </div>
                 </div>
             </div>
@@ -230,7 +243,13 @@ const PlantillaTicket = ({ datos, config }) => {
                     {/* QR lado izquierdo */}
                     <div className="p-4 flex flex-col items-center justify-center border-r border-dashed shrink-0"
                         style={{ borderColor: `${c.primario}20` }}>
-                        <QRPlaceholder size={115} />
+                        {datos.qr ? (
+                            <div className="bg-white rounded-lg p-1.5 flex items-center justify-center shrink-0" style={{ width: 115, height: 115 }}>
+                                <QRCode value={datos.qr} size={103} level="M" />
+                            </div>
+                        ) : (
+                            <QRPlaceholder size={115} />
+                        )}
                     </div>
 
                     {/* Data */}
@@ -338,7 +357,13 @@ const PlantillaCredencial = ({ datos, config }) => {
 
                     {/* QR — El protagonista */}
                     <div className="flex flex-col items-center pt-4 mt-2 mb-2 border-t w-full" style={{ borderColor: `${c.primario}15` }}>
-                        <QRPlaceholder size={140} />
+                        {datos.qr ? (
+                            <div className="bg-white rounded-lg p-1.5 flex items-center justify-center shrink-0" style={{ width: 140, height: 140 }}>
+                                <QRCode value={datos.qr} size={128} level="M" />
+                            </div>
+                        ) : (
+                            <QRPlaceholder size={140} />
+                        )}
                     </div>
 
                     {/* Vigencia */}

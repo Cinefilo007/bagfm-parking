@@ -14,6 +14,11 @@ export const pasesService = {
     return res.data;
   },
 
+  async listarPasesLote(loteId) {
+    const res = await api.get(`/pases/lotes/${loteId}/pases`);
+    return res.data;
+  },
+
   async crearLote(datos) {
     /**
      * @param {Object} datos - { nombre_evento, tipo_pase, fecha_inicio, fecha_fin, cantidad_pases, max_accesos_por_pase }

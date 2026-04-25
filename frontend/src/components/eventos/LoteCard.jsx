@@ -17,10 +17,12 @@ import {
 import { cn } from '../../lib/utils';
 import { toast } from 'react-hot-toast';
 import { pasesService } from '../../services/pasesService';
+import ModalExportarLote from './ModalExportarLote';
 
 export default function LoteCard({ lote, onRefresh }) {
   const [generando, setGenerando] = useState(false);
   const [importando, setImportando] = useState(false);
+  const [modalExportOpen, setModalExportOpen] = useState(false);
 
   const handleGenerarZip = async () => {
     setGenerando(true);
@@ -53,9 +55,8 @@ export default function LoteCard({ lote, onRefresh }) {
   };
 
   const handleDescargar = () => {
-    if (lote.zip_url) {
-      window.open(lote.zip_url, '_blank');
-      toast.success('Descarga de lote de seguridad iniciada');
+    if (lote.zip_generado) {
+      setModalExportOpen(true);
     }
   };
 
@@ -158,6 +159,14 @@ export default function LoteCard({ lote, onRefresh }) {
            </button>
         </div>
       </CardContent>
+
+      {modalExportOpen && (
+         <ModalExportarLote 
+            isOpen={modalExportOpen} 
+            onClose={() => setModalExportOpen(false)} 
+            lote={lote} 
+         />
+      )}
     </Card>
   );
 }
