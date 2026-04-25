@@ -11,6 +11,8 @@ import {
     User, Car, ParkingSquare, Calendar, Shield
 } from 'lucide-react';
 import PlantillaPreview from '../../components/carnets/PlantillaPreview';
+import html2canvas from 'html2canvas';
+import { jsPDF } from 'jspdf';
 
 // ──── Constantes ──────────────────────────────────────────────────────────────
 
@@ -101,100 +103,81 @@ export default function EditorCarnets() {
         }
     }, []);
 
-    // Imprimir / exportar
-    const handleImprimir = () => {
+    // Imprimir / exportar PDF
+    const handleExportarPDF = async () => {
         setImprimiendo(true);
-        setTimeout(() => {
-            const contenido = document.getElementById('carnet-preview');
-            if (!contenido) { toast.error('No se encontró el preview'); setImprimiendo(false); return; }
+        try {
+            const previewElement = document.getElementById('carnet-preview');
+            if (!previewElement) throw new Error('No se encontró el preview');
 
-            // Recopilar TODAS las reglas de estilo de la aplicación para inyectarlas
-            let stylesRaw = '';
-            try {
-                for (const sheet of document.styleSheets) {
-                    try {
-                        for (const rule of sheet.cssRules) {
-                            stylesRaw += rule.cssText;
-                        }
-                    } catch (e) { /* Saltar hojas de estilo externas inaccesibles por CORS */ }
-                }
-            } catch (e) { console.error("Error al recopilar estilos", e); }
+            const canvas = await html2canvas(previewElement, {
+                scale: 3, // Alta resolución
+                useCORS: true,
+                backgroundColor: null,
+            });
 
-            // Determinar orientación según plantilla
+            const imgData = canvas.toDataURL('image/png');
+            
+            // Determinar dimensiones del PDF según plantilla
             const esHorizontal = ['cartera', 'ticket'].includes(plantillaActiva);
             const orientacion = esHorizontal ? 'landscape' : 'portrait';
+            
+            // Dimensiones físicas aproximadas (en mm)
+            let ancho_mm = 54;
+            let alto_mm = 86;
+            
+            if (plantillaActiva === 'colgante') { ancho_mm = 65; alto_mm = 100; }
+            if (plantillaActiva === 'cartera') { ancho_mm = 90; alto_mm = 55; }
+            if (plantillaActiva === 'ticket') { ancho_mm = 85; alto_mm = 55; }
+            if (plantillaActiva === 'credencial') { ancho_mm = 65; alto_mm = 100; }
+            
+            if (esHorizontal) {
+                // Intercambiar si la librería o la orientación lo pide, pero jspdf maneja [ancho, alto]
+            }
 
-            const ventana = window.open('', '_blank', 'width=850,height=900');
-            ventana.document.write(`
-                <!DOCTYPE html>
-                <html>
-                <head>
-                    <title>Carnet BAGFM - ${datosPreview.nombre}</title>
-                    <link rel="preconnect" href="https://fonts.googleapis.com">
-                    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-                    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
-                    <style>
-                        /* Inyección de estilos de la app */
-                        ${stylesRaw}
+            const pdf = new jsPDF({
+                orientation: orientacion,
+                unit: 'mm',
+                format: [ancho_mm, alto_mm]
+            });
 
-                        /* Reset y Configuración de Impresión */
-                        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
-                        
-                        @page { 
-                            size: ${orientacion}; 
-                            margin: 0mm; /* Elimina encabezados y pies de página del navegador */
-                        }
-
-                        body { 
-                            display: flex; 
-                            align-items: center; 
-                            justify-content: center; 
-                            width: 100vw;
-                            height: 100vh;
-                            background: white !important; 
-                            font-family: 'Inter', sans-serif;
-                            overflow: hidden;
-                        }
-
-                        .carnet-print-wrapper { 
-                            display: flex;
-                            align-items: center;
-                            justify-content: center;
-                            width: 100%;
-                            height: 100%;
-                        }
-
-                        #carnet-preview {
-                            box-shadow: none !important;
-                            border: 1px solid rgba(0,0,0,0.05) !important;
-                        }
-                        
-                        @media screen {
-                            .carnet-print-wrapper { transform: scale(1.4); }
-                        }
-
-                        @media print {
-                            body { background: white !important; }
-                            .carnet-print-wrapper { transform: scale(1); }
-                        }
-                    </style>
-                </head>
-                <body>
-                    <div class="carnet-print-wrapper">${contenido.outerHTML}</div>
-                    <script>
-                        window.onload = () => {
-                            setTimeout(() => {
-                                window.print();
-                                // window.close(); 
-                            }, 800);
-                        };
-                    </script>
-                </body>
-                </html>
-            `);
-            ventana.document.close();
+            const pdfWidth = pdf.internal.pageSize.getWidth();
+            const pdfHeight = pdf.internal.pageSize.getHeight();
+            
+            pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+            pdf.save(`Carnet_${datosPreview.nombre.replace(/ /g, '_')}.pdf`);
+            toast.success('PDF exportado correctamente');
+        } catch (error) {
+            console.error(error);
+            toast.error('Error al exportar PDF');
+        } finally {
             setImprimiendo(false);
-        }, 150);
+        }
+    };
+
+    const handleExportarImagen = async () => {
+        setImprimiendo(true);
+        try {
+            const previewElement = document.getElementById('carnet-preview');
+            if (!previewElement) throw new Error('No se encontró el preview');
+
+            const canvas = await html2canvas(previewElement, {
+                scale: 3,
+                useCORS: true,
+                backgroundColor: null,
+            });
+
+            const link = document.createElement('a');
+            link.download = `Carnet_${datosPreview.nombre.replace(/ /g, '_')}.png`;
+            link.href = canvas.toDataURL('image/png');
+            link.click();
+            toast.success('Imagen exportada correctamente');
+        } catch (error) {
+            console.error(error);
+            toast.error('Error al exportar Imagen');
+        } finally {
+            setImprimiendo(false);
+        }
     };
 
     const handleGuardarPlantilla = () => {
@@ -258,10 +241,15 @@ export default function EditorCarnets() {
                     <Boton onClick={handleGuardarPlantilla} variant="ghost" className="h-9 px-3 text-[9px] font-black uppercase gap-1.5 border-primary/30 rounded-xl">
                         <Save size={13} /> Guardar
                     </Boton>
-                    <Boton onClick={handleImprimir} disabled={imprimiendo}
+                    <Boton onClick={handleExportarImagen} disabled={imprimiendo}
+                        className="h-9 px-3 bg-white/5 hover:bg-white/10 text-[9px] font-black uppercase gap-1.5 rounded-xl border border-white/10">
+                        {imprimiendo ? <RefreshCw size={13} className="animate-spin" /> : <Download size={13} />}
+                        PNG
+                    </Boton>
+                    <Boton onClick={handleExportarPDF} disabled={imprimiendo}
                         className="h-9 px-4 bg-primary text-bg-app text-[9px] font-black uppercase gap-1.5 rounded-xl">
                         {imprimiendo ? <RefreshCw size={13} className="animate-spin" /> : <Printer size={13} />}
-                        Imprimir
+                        Exportar PDF
                     </Boton>
                 </div>
             </header>
