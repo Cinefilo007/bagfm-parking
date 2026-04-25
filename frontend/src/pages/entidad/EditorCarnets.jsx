@@ -11,7 +11,7 @@ import {
     User, Car, ParkingSquare, Calendar, Shield
 } from 'lucide-react';
 import PlantillaPreview from '../../components/carnets/PlantillaPreview';
-import html2canvas from 'html2canvas';
+import { toPng } from 'html-to-image';
 import { jsPDF } from 'jspdf';
 
 // ──── Constantes ──────────────────────────────────────────────────────────────
@@ -110,13 +110,10 @@ export default function EditorCarnets() {
             const previewElement = document.getElementById('carnet-preview');
             if (!previewElement) throw new Error('No se encontró el preview');
 
-            const canvas = await html2canvas(previewElement, {
-                scale: 3, // Alta resolución
-                useCORS: true,
-                backgroundColor: null,
+            const imgData = await toPng(previewElement, {
+                pixelRatio: 3,
+                style: { transform: 'scale(1)', transformOrigin: 'top left' } // Evitar problemas de escala
             });
-
-            const imgData = canvas.toDataURL('image/png');
             
             // Determinar dimensiones del PDF según plantilla
             const esHorizontal = ['cartera', 'ticket'].includes(plantillaActiva);
@@ -161,15 +158,14 @@ export default function EditorCarnets() {
             const previewElement = document.getElementById('carnet-preview');
             if (!previewElement) throw new Error('No se encontró el preview');
 
-            const canvas = await html2canvas(previewElement, {
-                scale: 3,
-                useCORS: true,
-                backgroundColor: null,
+            const imgData = await toPng(previewElement, {
+                pixelRatio: 3,
+                style: { transform: 'scale(1)', transformOrigin: 'top left' }
             });
 
             const link = document.createElement('a');
             link.download = `Carnet_${datosPreview.nombre.replace(/ /g, '_')}.png`;
-            link.href = canvas.toDataURL('image/png');
+            link.href = imgData;
             link.click();
             toast.success('Imagen exportada correctamente');
         } catch (error) {
@@ -234,23 +230,28 @@ export default function EditorCarnets() {
                         <p className="text-[9px] text-text-muted font-bold uppercase tracking-widest">Diseñador Visual — Pases y Credenciales</p>
                     </div>
                 </div>
-                <div className="flex gap-2 flex-wrap">
-                    <Boton onClick={handleCargarPlantilla} variant="ghost" className="h-9 px-3 text-[9px] font-black uppercase gap-1.5 rounded-xl">
-                        <RefreshCw size={13} /> Restaurar
-                    </Boton>
-                    <Boton onClick={handleGuardarPlantilla} variant="ghost" className="h-9 px-3 text-[9px] font-black uppercase gap-1.5 border-primary/30 rounded-xl">
-                        <Save size={13} /> Guardar
-                    </Boton>
-                    <Boton onClick={handleExportarImagen} disabled={imprimiendo}
-                        className="h-9 px-3 bg-white/5 hover:bg-white/10 text-[9px] font-black uppercase gap-1.5 rounded-xl border border-white/10">
-                        {imprimiendo ? <RefreshCw size={13} className="animate-spin" /> : <Download size={13} />}
-                        PNG
-                    </Boton>
-                    <Boton onClick={handleExportarPDF} disabled={imprimiendo}
-                        className="h-9 px-4 bg-primary text-bg-app text-[9px] font-black uppercase gap-1.5 rounded-xl">
-                        {imprimiendo ? <RefreshCw size={13} className="animate-spin" /> : <Printer size={13} />}
-                        Exportar PDF
-                    </Boton>
+                <div className="flex gap-2 flex-wrap items-center justify-end w-full sm:w-auto">
+                    <div className="flex gap-2 w-full sm:w-auto">
+                        <Boton onClick={handleCargarPlantilla} variant="ghost" className="flex-1 sm:flex-none h-9 px-3 text-[9px] font-black uppercase gap-1.5 rounded-xl">
+                            <RefreshCw size={13} /> Restaurar
+                        </Boton>
+                        <Boton onClick={handleGuardarPlantilla} variant="ghost" className="flex-1 sm:flex-none h-9 px-3 text-[9px] font-black uppercase gap-1.5 border-primary/30 rounded-xl">
+                            <Save size={13} /> Guardar
+                        </Boton>
+                    </div>
+                    
+                    <div className="flex gap-2 w-full sm:w-auto mt-2 sm:mt-0 pt-2 sm:pt-0 border-t sm:border-0 border-white/5">
+                        <Boton onClick={handleExportarImagen} disabled={imprimiendo}
+                            className="flex-1 sm:flex-none h-9 px-4 bg-white/5 hover:bg-white/10 text-[9px] font-black uppercase gap-1.5 rounded-xl border border-white/10">
+                            {imprimiendo ? <RefreshCw size={13} className="animate-spin" /> : <Download size={13} />}
+                            PNG
+                        </Boton>
+                        <Boton onClick={handleExportarPDF} disabled={imprimiendo}
+                            className="flex-1 sm:flex-none h-9 px-4 bg-primary text-bg-app text-[9px] font-black uppercase gap-1.5 rounded-xl">
+                            {imprimiendo ? <RefreshCw size={13} className="animate-spin" /> : <Printer size={13} />}
+                            PDF
+                        </Boton>
+                    </div>
                 </div>
             </header>
 
