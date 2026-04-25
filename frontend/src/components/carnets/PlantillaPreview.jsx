@@ -111,11 +111,8 @@ const PlantillaColgante = ({ datos, config }) => {
                 </div>
 
                 {/* QR — Maximizado para escaneo táctico */}
-                <div className="flex flex-col items-center pb-6 pt-2">
-                    <QRPlaceholder size={110} />
-                    <p className="text-[7px] font-mono tracking-widest mt-1.5" style={{ color: `${c.textoNombre}40` }}>
-                        {datos.serial || 'XXXX-XXXX-XXXX'}
-                    </p>
+                <div className="flex flex-col items-center pb-2 pt-2">
+                    <QRPlaceholder size={140} />
                 </div>
 
                 {/* Footer */}
@@ -233,10 +230,7 @@ const PlantillaTicket = ({ datos, config }) => {
                     {/* QR lado izquierdo */}
                     <div className="p-4 flex flex-col items-center justify-center border-r border-dashed shrink-0"
                         style={{ borderColor: `${c.primario}20` }}>
-                        <QRPlaceholder size={90} />
-                        <p className="text-[6px] font-mono tracking-widest mt-1" style={{ color: `${c.textoNombre}40` }}>
-                            {datos.serial || 'XXXX'}
-                        </p>
+                        <QRPlaceholder size={115} />
                     </div>
 
                     {/* Data */}
@@ -343,15 +337,12 @@ const PlantillaCredencial = ({ datos, config }) => {
                     </div>
 
                     {/* QR — El protagonista */}
-                    <div className="flex flex-col items-center pt-4 mt-2 border-t" style={{ borderColor: `${c.primario}15` }}>
-                        <QRPlaceholder size={110} />
-                        <p className="text-[6px] font-mono tracking-widest mt-1.5" style={{ color: `${c.textoNombre}35` }}>
-                            {datos.serial || 'XXXX-XXXX-XXXX'}
-                        </p>
+                    <div className="flex flex-col items-center pt-4 mt-2 mb-2 border-t w-full" style={{ borderColor: `${c.primario}15` }}>
+                        <QRPlaceholder size={140} />
                     </div>
 
                     {/* Vigencia */}
-                    <div className="text-center pt-2">
+                    <div className="text-center pt-1 mt-auto">
                         <p className="text-[7px] font-bold" style={{ color: `${c.textoNombre}50` }}>
                             Vigencia: {datos.fecha_inicio || '--/--'} — {datos.fecha_fin || '--/--'}
                         </p>
