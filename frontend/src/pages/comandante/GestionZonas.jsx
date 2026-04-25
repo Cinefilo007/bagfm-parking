@@ -106,14 +106,32 @@ const ZonaRow = ({
 
     const puestosReservados = reservadoBase; 
 
-    // Generar puestos virtuales para la base si no hay físicos
-    const ocuBaseReal = zona.ocupacion_base || 0;
-    const puestosBaseVirtuales = Array.from({ length: reservadoBase }, (_, i) => {
+    // Puestos base (físicos y virtuales) - Ahora vienen del servidor para mostrar ocupación real
+    const [puestosBaseServidor, setPuestosBaseServidor] = useState([]);
+    
+    useEffect(() => {
+        const fetchPuestosBase = async () => {
+            try {
+                const res = await api.get(`/comando/puestos-reservados?zona_id=${zona.id}`);
+                setPuestosBaseServidor(res.data);
+            } catch (e) {
+                console.error("Error al cargar puestos base", e);
+            }
+        };
+        if (expandida) fetchPuestosBase();
+    }, [expandida, zona.id, asignaciones]);
+
+    // Combinar puestos base del servidor con el cupo total reservado para asegurar que siempre se vean las cajas
+    const puestosBaseCompletos = Array.from({ length: reservadoBase }, (_, i) => {
         const num = String(i + 1).padStart(2, '0');
-        return {
+        const numRef = `BASE-${num}`;
+        // Buscar si hay un puesto físico o virtual en el servidor para este número
+        const desdeServidor = puestosBaseServidor.find(p => p.numero_puesto.includes(numRef) || p.numero_puesto === numRef);
+        
+        return desdeServidor || {
             id: `v-base-${zona.id}-${i}`,
-            numero_puesto: `BASE-${num}`,
-            estado: i < ocuBaseReal ? 'ocupado' : 'libre',
+            numero_puesto: numRef,
+            estado: 'libre',
             reservado_base: true,
             virtual: true
         };
@@ -172,15 +190,6 @@ const ZonaRow = ({
                         <button onClick={() => onAjustarTiempo(zona)} title="Tiempo"
                             className="p-2 rounded-lg hover:bg-warning/10 text-text-muted hover:text-warning transition-all">
                             <Timer size={14} />
-                        </button>
-                        <button onClick={() => onGenerarPaseBase(zona)} title="Generar Pase Base"
-                            className={cn(
-                                "p-2 rounded-lg transition-all",
-                                reservadoBase > 0 ? "hover:bg-primary/10 text-primary animate-pulse" : "text-text-muted/20 cursor-not-allowed"
-                            )}
-                            disabled={reservadoBase <= 0}
-                        >
-                            <Shield size={14} />
                         </button>
                         <button onClick={() => onGestionarPuestos(zona)} title="Puestos"
                             className="p-2 rounded-lg hover:bg-sky-500/10 text-text-muted hover:text-sky-400 transition-all">
@@ -266,11 +275,17 @@ const ZonaRow = ({
                                 <Shield size={9} /> Cupos Reservados del Comando (Click para Asignar)
                             </p>
                             <div className="grid grid-cols-5 sm:grid-cols-8 md:grid-cols-10 gap-2">
-                                {puestosBaseVirtuales.map(p => (
+                                {puestosBaseCompletos.map(p => (
                                     <PuestoCuadro 
                                         key={p.id} 
                                         puesto={p} 
-                                        onClick={() => onGenerarPaseBase(zona)} 
+                                        onClick={() => {
+                                            if (p.estado === 'ocupado') {
+                                                onVerDetalle(p);
+                                            } else {
+                                                onGenerarPaseBase(zona);
+                                            }
+                                        }} 
                                     />
                                 ))}
                             </div>
@@ -308,6 +323,9 @@ export default function GestionZonas() {
     const [modalAsignar, setModalAsignar] = useState(false);
     const [modalTiempo, setModalTiempo] = useState(false);
     const [modalPaseBase, setModalPaseBase] = useState(false);
+    const [modalDetallePuesto, setModalDetallePuesto] = useState(false);
+    const [puestoDetalle, setPuestoDetalle] = useState(null);
+    const [liberandoPuesto, setLiberandoPuesto] = useState(false);
     const [zonaActiva, setZonaActiva] = useState(null);
     const [confirmConfig, setConfirmConfig] = useState({ isOpen: false, title: '', message: '', onConfirm: null, loading: false });
 
@@ -579,6 +597,32 @@ export default function GestionZonas() {
 
     // ── Tiempo Límite ────────────────────────────────────────────────────────
 
+    const handleVerDetalle = (puesto) => {
+        setPuestoDetalle(puesto);
+        setModalDetallePuesto(true);
+    };
+
+    const handleLiberarPuestoBase = async () => {
+        if (!puestoDetalle?.detalle_pase?.id) return;
+        
+        setLiberandoPuesto(true);
+        try {
+            await api.delete(`/comando/pases-reservados/${puestoDetalle.detalle_pase.id}`);
+            toast.success('Puesto liberado y pase anulado con éxito');
+            setModalDetallePuesto(false);
+            cargarDatos(); // Recargar zonas y detalles
+        } catch (e) {
+            toast.error(e.response?.data?.detail || 'Error al liberar puesto');
+        } finally {
+            setLiberandoPuesto(false);
+        }
+    };
+
+    const abrirModalPaseBase = (zona) => {
+        setZonaActiva(zona);
+        setModalPaseBase(true);
+    };
+
     const abrirModalTiempo = (zona) => {
         setZonaActiva(zona);
         setNuevoTiempo(zona.tiempo_limite_llegada_min || 15);
@@ -647,8 +691,8 @@ export default function GestionZonas() {
 
                 ].map(s => (
                     <Card key={s.label} className="p-3 md:p-4 rounded-2xl border-white/5 flex items-center gap-3">
-                        <div className={cn("p-2 rounded-xl bg-opacity-10 shrink-0", s.color.replace('text-', 'bg-'))}>
-                            {s.icon && <s.icon className={s.color} size={18} />}
+                        <div className={cn("p-2.5 rounded-xl bg-opacity-20 shrink-0", s.color.replace('text-', 'bg-'))}>
+                            {s.icon && <s.icon className={s.color} size={20} />}
                         </div>
                         <div>
                             <div className={cn("text-lg font-black tracking-tight", s.color)}>{s.valor}</div>
@@ -924,6 +968,81 @@ export default function GestionZonas() {
                 zona={zonaActiva}
                 onGenerated={cargarDatos}
             />
+
+            {/* Modal Detalle Puesto Base */}
+            <Modal
+                isOpen={modalDetallePuesto}
+                onClose={() => setModalDetallePuesto(false)}
+                title="DETALLE DE ASIGNACIÓN — BASE"
+                className="max-w-2xl"
+            >
+                {puestoDetalle && (
+                    <div className="space-y-6">
+                        <div className="flex items-center gap-4 bg-primary/5 p-4 rounded-2xl border border-primary/20">
+                            <div className="w-12 h-12 bg-primary/20 rounded-full flex items-center justify-center">
+                                <Shield className="text-primary" size={24} />
+                            </div>
+                            <div>
+                                <h4 className="text-sm font-black text-text-main uppercase">
+                                    Puesto: {puestoDetalle.numero_puesto}
+                                </h4>
+                                <p className="text-[10px] text-text-muted uppercase font-bold">
+                                    Acceso Prioritario de Comando
+                                </p>
+                            </div>
+                        </div>
+
+                        {puestoDetalle.detalle_pase && (
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div className="space-y-4">
+                                    <h5 className="text-[10px] font-black text-primary uppercase tracking-widest flex items-center gap-2">
+                                        <Users size={12} /> Datos del Portador
+                                    </h5>
+                                    <div className="space-y-2">
+                                        <div className="flex justify-between border-b border-white/5 py-1">
+                                            <span className="text-[10px] text-text-muted uppercase">Nombre:</span>
+                                            <span className="text-[11px] font-bold text-text-main uppercase">{puestoDetalle.detalle_pase.nombre_portador}</span>
+                                        </div>
+                                        <div className="flex justify-between border-b border-white/5 py-1">
+                                            <span className="text-[10px] text-text-muted uppercase">Serial:</span>
+                                            <span className="text-[11px] font-mono text-primary font-bold uppercase">{puestoDetalle.detalle_pase.serial_legible}</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="space-y-4">
+                                    <h5 className="text-[10px] font-black text-primary uppercase tracking-widest flex items-center gap-2">
+                                        <ParkingSquare size={12} /> Vehículo Asignado
+                                    </h5>
+                                    <div className="space-y-2">
+                                        <div className="flex justify-between border-b border-white/5 py-1">
+                                            <span className="text-[10px] text-text-muted uppercase">Placa:</span>
+                                            <span className="text-[11px] font-bold text-text-main uppercase">{puestoDetalle.detalle_pase.vehiculo_placa}</span>
+                                        </div>
+                                        <div className="flex justify-between border-b border-white/5 py-1">
+                                            <span className="text-[10px] text-text-muted uppercase">Vehículo:</span>
+                                            <span className="text-[11px] font-bold text-text-main uppercase">
+                                                {puestoDetalle.detalle_pase.vehiculo_marca} {puestoDetalle.detalle_pase.vehiculo_modelo}
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        <div className="flex gap-3 pt-4">
+                            <Boton variant="ghost" className="flex-1" onClick={() => setModalDetallePuesto(false)}>Cerrar</Boton>
+                            <Boton 
+                                className="flex-1 bg-danger/10 text-danger hover:bg-danger hover:text-white transition-all font-black uppercase text-[10px]"
+                                onClick={handleLiberarPuestoBase}
+                                disabled={liberandoPuesto}
+                            >
+                                {liberandoPuesto ? 'Liberando...' : 'Liberar y Anular Pase'}
+                            </Boton>
+                        </div>
+                    </div>
+                )}
+            </Modal>
         </div>
     );
 }

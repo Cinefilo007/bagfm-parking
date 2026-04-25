@@ -165,3 +165,15 @@ async def generar_pase_reservado(
         return await comando_service.generar_pase_base(db, datos.zona_id, datos.model_dump(), usuario.id)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
+
+@router.delete("/pases-reservados/{id}")
+async def liberar_pase_reservado(
+    id: UUID,
+    db: AsyncSession = Depends(obtener_db),
+    usuario: Usuario = Depends(verificar_comandante)
+):
+    """Anula un pase de base activo y libera el cupo/puesto."""
+    exito = await comando_service.liberar_pase_base(db, id, usuario.id)
+    if not exito:
+        raise HTTPException(status_code=404, detail="Pase no encontrado o no es de tipo base")
+    return {"mensaje": "Puesto liberado y pase anulado con éxito"}

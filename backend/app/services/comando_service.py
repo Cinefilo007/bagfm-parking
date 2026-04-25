@@ -90,22 +90,95 @@ class ComandoService:
         return nuevo_qr
 
     async def obtener_puestos_reservados_base(self, db: AsyncSession, zona_id: Optional[uuid.UUID] = None) -> List[Dict[str, Any]]:
-        """SOP: Lista el estado de los puestos reservados para la base."""
-        query = select(PuestoEstacionamiento).where(
+        """SOP: Lista el estado de los puestos reservados para la base con detalles de ocupación."""
+        # 1. Obtener puestos físicos marcados como reservado_base
+        query_puestos = select(PuestoEstacionamiento).where(
             PuestoEstacionamiento.estado == EstadoPuesto.reservado_base
         )
         if zona_id:
-            query = query.where(PuestoEstacionamiento.zona_id == zona_id)
+            query_puestos = query_puestos.where(PuestoEstacionamiento.zona_id == zona_id)
             
-        res = await db.execute(query)
-        puestos = res.scalars().all()
+        res_p = await db.execute(query_puestos)
+        puestos_fisicos = res_p.scalars().all()
         
-        return [{
-            "id": str(p.id),
-            "numero_puesto": p.numero_puesto,
-            "zona_id": str(p.zona_id),
-            "estado": p.estado.value,
-            "zona_nombre": p.zona.nombre if p.zona else ""
-        } for p in puestos]
+        # 2. Obtener pases activos de tipo BASE para esta zona/unidades
+        query_pases = select(CodigoQR).where(
+            and_(
+                CodigoQR.tipo_acceso == TipoAccesoPase.base,
+                CodigoQR.activo == True,
+                CodigoQR.fecha_expiracion > datetime.now(timezone.utc)
+            )
+        )
+        if zona_id:
+            query_pases = query_pases.where(CodigoQR.zona_asignada_id == zona_id)
+            
+        res_q = await db.execute(query_pases)
+        pases_activos = res_q.scalars().all()
+        
+        resultado = []
+        
+        # Primero procesamos pases que tienen puesto físico asignado
+        puestos_con_pase = {p.puesto_asignado_id for p in pases_activos if p.puesto_asignado_id}
+        
+        for p in puestos_fisicos:
+            # Buscar si este puesto físico tiene un pase activo
+            pase = next((q for q in pases_activos if q.puesto_asignado_id == p.id), None)
+            resultado.append({
+                "id": str(p.id),
+                "numero_puesto": p.numero_puesto,
+                "zona_id": str(p.zona_id),
+                "estado": "ocupado" if pase else "libre",
+                "reservado_base": True,
+                "detalle_pase": {
+                    "id": str(pase.id),
+                    "nombre_portador": pase.nombre_portador,
+                    "vehiculo_placa": pase.vehiculo_placa,
+                    "vehiculo_marca": pase.vehiculo_marca,
+                    "vehiculo_modelo": pase.vehiculo_modelo,
+                    "serial_legible": pase.serial_legible
+                } if pase else None
+            })
+
+        # Luego procesamos pases "virtuales" (sin puesto físico asignado)
+        pases_virtuales = [q for q in pases_activos if not q.puesto_asignado_id]
+        for q in pases_virtuales:
+            resultado.append({
+                "id": f"v-{q.id}",
+                "numero_puesto": q.serial_legible,
+                "zona_id": str(q.zona_asignada_id),
+                "estado": "ocupado",
+                "reservado_base": True,
+                "virtual": True,
+                "detalle_pase": {
+                    "id": str(q.id),
+                    "nombre_portador": q.nombre_portador,
+                    "vehiculo_placa": q.vehiculo_placa,
+                    "vehiculo_marca": q.vehiculo_marca,
+                    "vehiculo_modelo": q.vehiculo_modelo,
+                    "serial_legible": q.serial_legible
+                }
+            })
+            
+        return resultado
+
+    async def liberar_pase_base(self, db: AsyncSession, pase_id: uuid.UUID, comandante_id: uuid.UUID) -> bool:
+        """SOP: Anula un pase de base activo."""
+        query = select(CodigoQR).where(
+            and_(
+                CodigoQR.id == pase_id,
+                CodigoQR.tipo_acceso == TipoAccesoPase.base
+            )
+        )
+        res = await db.execute(query)
+        pase = res.scalar_one_or_none()
+        
+        if not pase:
+            return False
+            
+        pase.activo = False
+        # Si tenía puesto físico, lo dejamos en reservado_base pero libre (ya lo está por lógica de negocio)
+        
+        await db.commit()
+        return True
 
 comando_service = ComandoService()

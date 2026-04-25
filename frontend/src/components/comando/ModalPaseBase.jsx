@@ -68,7 +68,7 @@ export const ModalPaseBase = ({ isOpen, onClose, zona, onGenerated }) => {
 
     if (resultado) {
         return (
-            <Modal isOpen={isOpen} onClose={onClose} title="PASE GENERADO" balanced>
+            <Modal isOpen={isOpen} onClose={onClose} title="PASE GENERADO" balanced className="max-w-2xl">
                 <div className="space-y-6 text-center py-4">
                     <div className="flex justify-center flex-col items-center gap-4">
                         <div className="bg-success/20 p-4 rounded-full">
@@ -77,9 +77,8 @@ export const ModalPaseBase = ({ isOpen, onClose, zona, onGenerated }) => {
                         <h3 className="text-xl font-bold text-text-main">REGISTRO EXITOSO</h3>
                     </div>
 
-                    <div className="p-6 bg-white rounded-xl mx-auto w-fit shadow-lg text-black font-mono">
-                        <p className="text-xs mb-2">QR VIRTUAL TOKEN:</p>
-                        <p className="text-[8px] break-all max-w-[200px]">{resultado.token.substring(0, 100)}...</p>
+                    <div className="bg-white p-6 rounded-3xl mx-auto w-fit shadow-2xl ring-8 ring-indigo-500/10">
+                        <QRCode value={resultado.token} size={180} level="H" />
                     </div>
 
                     <div className="bg-white/5 border border-white/10 p-4 rounded-2xl space-y-3">
@@ -110,7 +109,7 @@ export const ModalPaseBase = ({ isOpen, onClose, zona, onGenerated }) => {
     }
 
     return (
-        <Modal isOpen={isOpen} onClose={onClose} title={`PASE DE COMANDO — ${zona?.nombre}`} balanced>
+        <Modal isOpen={isOpen} onClose={onClose} title={`PASE DE COMANDO — ${zona?.nombre}`} balanced className="max-w-2xl">
             <div className="space-y-5">
                 <div className="p-3 bg-primary/5 border border-primary/20 rounded-xl flex items-start gap-3">
                     <Shield size={16} className="text-primary shrink-0 mt-0.5" />
