@@ -1097,46 +1097,52 @@ export default function GestionZonas() {
                                     </div>
                                 </div>
 
-                                <div className="md:col-span-2 flex flex-col items-center justify-center gap-4 bg-black/20 rounded-2xl p-4 border border-white/5">
-                                    <div ref={qrSectionRef} className="flex flex-col items-center gap-3 animate-in zoom-in-95 duration-200">
-                                        <div className="p-2 bg-white rounded-xl shadow-lg shadow-black/40">
+                                <div className="md:col-span-2 flex flex-col items-center justify-center p-6 bg-black/30 rounded-2xl border border-white/5 relative overflow-hidden">
+                                    <div ref={qrSectionRef} className="flex flex-col items-center gap-4 animate-in zoom-in-95 duration-200">
+                                        <div className="p-3 bg-white rounded-2xl shadow-2xl shadow-black/60">
                                             <QRCode 
                                                 value={puestoDetalle.detalle_pase.token || puestoDetalle.detalle_pase.serial_legible} 
-                                                size={100}
+                                                size={150}
                                                 bgColor="#ffffff"
                                                 fgColor="#0d1117"
                                                 level="M"
                                             />
                                         </div>
-                                        <p className="text-[7px] text-text-muted italic uppercase font-bold text-center leading-tight">Token de Seguridad<br/>Firmado Digitalmente</p>
-                                        <button 
-                                            onClick={handleWhatsAppBase}
-                                            className="w-full h-8 bg-[#25D366]/20 hover:bg-[#25D366] text-[#25D366] hover:text-white border border-[#25D366]/30 rounded-xl flex items-center justify-center gap-2 transition-all text-[9px] font-black uppercase cursor-pointer"
-                                        >
-                                            <MessageCircle size={14} /> WhatsApp
-                                        </button>
+                                        <div className="space-y-1 text-center">
+                                            <p className="text-[8px] text-primary font-black uppercase tracking-widest">Pase Oficial Firmado</p>
+                                            <p className="text-[7px] text-text-muted italic uppercase font-bold leading-tight">Token de Seguridad Criptográfico</p>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
                         )}
 
-                        <div className="flex gap-3 pt-6 border-t border-white/5">
+                        <div className="flex flex-col gap-3 pt-6 border-t border-white/5">
                             <button 
-                                className="flex-1 h-10 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-text-muted hover:text-text-main font-black uppercase text-[10px] transition-all cursor-pointer" 
-                                onClick={() => setModalDetallePuesto(false)}
+                                onClick={handleWhatsAppBase}
+                                className="w-full h-11 bg-[#25D366]/10 hover:bg-[#25D366] text-[#25D366] hover:text-white border border-[#25D366]/20 hover:border-transparent rounded-xl flex items-center justify-center gap-2 transition-all text-[10px] font-black uppercase cursor-pointer shadow-lg shadow-[#25D366]/5"
                             >
-                                Cerrar
+                                <MessageCircle size={16} /> Compartir por WhatsApp
                             </button>
-                            <button 
-                                className={cn(
-                                    "flex-1 h-10 rounded-xl font-black uppercase text-[10px] transition-all border cursor-pointer",
-                                    "bg-danger/10 text-danger border-danger/20 hover:bg-danger hover:text-white"
-                                )}
-                                onClick={handleLiberarPuestoBase}
-                                disabled={liberandoPuesto}
-                            >
-                                {liberandoPuesto ? 'Liberando...' : 'Liberar y Anular Pase'}
-                            </button>
+                            
+                            <div className="flex gap-3">
+                                <button 
+                                    className="flex-1 h-10 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-text-muted hover:text-text-main font-black uppercase text-[10px] transition-all cursor-pointer" 
+                                    onClick={() => setModalDetallePuesto(false)}
+                                >
+                                    Cerrar
+                                </button>
+                                <button 
+                                    className={cn(
+                                        "flex-1 h-10 rounded-xl font-black uppercase text-[10px] transition-all border cursor-pointer",
+                                        "bg-danger/10 text-danger border-danger/20 hover:bg-danger hover:text-white"
+                                    )}
+                                    onClick={handleLiberarPuestoBase}
+                                    disabled={liberandoPuesto}
+                                >
+                                    {liberandoPuesto ? 'Liberando...' : 'Liberar y Anular Pase'}
+                                </button>
+                            </div>
                         </div>
                     </div>
                 )}
