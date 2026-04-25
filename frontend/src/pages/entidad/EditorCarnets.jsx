@@ -111,20 +111,12 @@ export default function EditorCarnets() {
             const previewElement = document.getElementById('carnet-preview');
             if (!previewElement) throw new Error('No se encontró el preview');
 
-            const rect = previewElement.getBoundingClientRect();
             const imgData = await toPng(previewElement, {
                 pixelRatio: 3,
-                width: rect.width,
-                height: rect.height,
-                skipFonts: true, // Evita SecurityError con Google Fonts
-                style: { transform: 'scale(1)', transformOrigin: 'top left' } // Evitar problemas de escala
+                style: { transform: 'scale(1)', transformOrigin: 'top left' }
             });
             
-            // Determinar dimensiones del PDF según plantilla
-            const esHorizontal = ['cartera', 'ticket'].includes(plantillaActiva);
-            const orientacion = esHorizontal ? 'landscape' : 'portrait';
-            
-            // Dimensiones físicas aproximadas (en mm)
+            // Dimensiones físicas aproximadas del carnet impreso (en mm)
             let ancho_mm = 54;
             let alto_mm = 86;
             
@@ -133,22 +125,17 @@ export default function EditorCarnets() {
             if (plantillaActiva === 'ticket') { ancho_mm = 85; alto_mm = 55; }
             if (plantillaActiva === 'credencial') { ancho_mm = 65; alto_mm = 100; }
             
-            if (esHorizontal) {
-                // Intercambiar si la librería o la orientación lo pide, pero jspdf maneja [ancho, alto]
-            }
-
+            // Creamos un documento tamaño Carta por defecto (215.9 x 279.4 mm)
             const pdf = new jsPDF({
-                orientation: orientacion,
+                orientation: 'portrait',
                 unit: 'mm',
-                format: [ancho_mm, alto_mm]
+                format: 'letter'
             });
 
-            const pdfWidth = pdf.internal.pageSize.getWidth();
-            const pdfHeight = pdf.internal.pageSize.getHeight();
-            
-            pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+            // Insertamos el carnet en la esquina superior izquierda (con un margen de 15mm para corte)
+            pdf.addImage(imgData, 'PNG', 15, 15, ancho_mm, alto_mm);
             pdf.save(`Carnet_${datosPreview.nombre.replace(/ /g, '_')}.pdf`);
-            toast.success('PDF exportado correctamente');
+            toast.success('PDF exportado en formato Carta');
         } catch (error) {
             console.error(error);
             toast.error('Error al exportar PDF');
@@ -163,12 +150,8 @@ export default function EditorCarnets() {
             const previewElement = document.getElementById('carnet-preview');
             if (!previewElement) throw new Error('No se encontró el preview');
 
-            const rect = previewElement.getBoundingClientRect();
             const imgData = await toPng(previewElement, {
                 pixelRatio: 3,
-                width: rect.width,
-                height: rect.height,
-                skipFonts: true,
                 style: { transform: 'scale(1)', transformOrigin: 'top left' }
             });
 
