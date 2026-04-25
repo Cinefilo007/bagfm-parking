@@ -118,28 +118,30 @@ const ZonaRow = ({
                 console.error("Error al cargar puestos base", e);
             }
         };
+        // Refrescar cada vez que la zona se expande o cambia el estado global de zonas
         if (expandida) fetchPuestosBase();
     }, [expandida, zona.id, asignaciones, zonas]);
 
     // Combinar puestos base del servidor con el cupo total reservado
     const puestosBaseCompletos = (() => {
-        // 1. Empezamos con lo que el servidor dice que existe (físicos y virtuales ocupados)
-        const lista = [...puestosBaseServidor];
+        // 1. Empezamos con los pases reales que el servidor dice que están activos
+        const listaFinal = [...puestosBaseServidor];
         
-        // 2. Si el número de puestos reportados es menor al cupo reservado, rellenamos con vacíos
-        const cupoReservado = reservadoBase;
-        const faltantes = Math.max(0, cupoReservado - lista.length);
+        // 2. Calculamos cuántas cajas libres faltan según el cupo reservado de la base
+        // reservadoBase viene de la asignación configurada
+        const faltantes = Math.max(0, reservadoBase - listaFinal.length);
         
+        // 3. Agregamos las cajas libres necesarias
         for (let i = 0; i < faltantes; i++) {
-            lista.push({
+            listaFinal.push({
                 id: `v-empty-${zona.id}-${i}`,
-                numero_puesto: `BASE-${String(lista.length + 1).padStart(2, '0')}`,
+                numero_puesto: `BASE-FREE`,
                 estado: 'libre',
                 reservado_base: true,
                 virtual: true
             });
         }
-        return lista;
+        return listaFinal;
     })();
 
     return (
