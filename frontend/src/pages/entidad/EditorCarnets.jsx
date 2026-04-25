@@ -78,6 +78,43 @@ const SeccionPlegable = ({ titulo, icono: Icon, children, defaultOpen = false })
     );
 };
 
+// ──── Función Auxiliar para Fuentes ───────────────────────────────────────────
+
+const preloadBase64Fonts = async () => {
+    try {
+        const cssUrl = 'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Space+Grotesk:wght@400;500;600;700&display=swap';
+        const cssRes = await fetch(cssUrl);
+        const cssText = await cssRes.text();
+        
+        const urlRegex = /url\((.*?)\)/g;
+        let match;
+        const fontPromises = [];
+        
+        while ((match = urlRegex.exec(cssText)) !== null) {
+            const fontUrl = match[1].replace(/['"]/g, '');
+            fontPromises.push(
+                fetch(fontUrl)
+                    .then(r => r.blob())
+                    .then(blob => new Promise((resolve) => {
+                        const reader = new FileReader();
+                        reader.onloadend = () => resolve({ original: match[0], data: reader.result });
+                        reader.readAsDataURL(blob);
+                    }))
+            );
+        }
+        
+        const results = await Promise.all(fontPromises);
+        let finalCss = cssText;
+        for (const res of results) {
+            finalCss = finalCss.replace(res.original, `url("${res.data}")`);
+        }
+        return finalCss;
+    } catch (e) {
+        console.warn("Fallo cargando fuentes externas en exportación:", e);
+        return ''; // si falla, continua silenciosamente
+    }
+};
+
 // ──── Página Principal ────────────────────────────────────────────────────────
 
 export default function EditorCarnets() {
@@ -111,9 +148,14 @@ export default function EditorCarnets() {
             const previewElement = document.getElementById('carnet-preview');
             if (!previewElement) throw new Error('No se encontró el preview');
 
+            const fontBase64CSS = await preloadBase64Fonts();
+            
             const imgData = await toPng(previewElement, {
                 pixelRatio: 3,
-                style: { transform: 'scale(1)', transformOrigin: 'top left' }
+                width: previewElement.offsetWidth,   // Anclaje exacto de dimensiones
+                height: previewElement.offsetHeight, // Evita corte al forzar tamaño real
+                fontEmbedCSS: fontBase64CSS,         // Uso directo de fuentes pre-cargadas
+                style: { transform: 'scale(1)', transformOrigin: 'top left', margin: '0' }
             });
             
             // Dimensiones físicas aproximadas del carnet impreso (en mm)
@@ -150,9 +192,14 @@ export default function EditorCarnets() {
             const previewElement = document.getElementById('carnet-preview');
             if (!previewElement) throw new Error('No se encontró el preview');
 
+            const fontBase64CSS = await preloadBase64Fonts();
+
             const imgData = await toPng(previewElement, {
                 pixelRatio: 3,
-                style: { transform: 'scale(1)', transformOrigin: 'top left' }
+                width: previewElement.offsetWidth,
+                height: previewElement.offsetHeight,
+                fontEmbedCSS: fontBase64CSS,
+                style: { transform: 'scale(1)', transformOrigin: 'top left', margin: '0' }
             });
 
             const link = document.createElement('a');
