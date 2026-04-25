@@ -15,10 +15,20 @@ class PaseBaseCrear(BaseModel):
     es_permanente: bool = False
     dias_vigencia: int = 1
 
+class PuestoDetallePase(BaseModel):
+    id: str
+    nombre_portador: str
+    vehiculo_placa: str
+    vehiculo_marca: str
+    vehiculo_modelo: str
+    serial_legible: str
+
 class PuestoReservadoSalida(BaseModel):
-    id: UUID
+    id: str
     numero_puesto: str
-    zona_id: UUID
-    zona_nombre: str
+    zona_id: str
+    zona_nombre: Optional[str] = ""
     estado: str
+    virtual: Optional[bool] = False
+    detalle_pase: Optional[PuestoDetallePase] = None
     model_config = ConfigDict(from_attributes=True)

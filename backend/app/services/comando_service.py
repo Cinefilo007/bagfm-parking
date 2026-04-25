@@ -91,8 +91,9 @@ class ComandoService:
 
     async def obtener_puestos_reservados_base(self, db: AsyncSession, zona_id: Optional[uuid.UUID] = None) -> List[Dict[str, Any]]:
         """SOP: Lista el estado de los puestos reservados para la base con detalles de ocupación."""
+        from sqlalchemy.orm import selectinload
         # 1. Obtener puestos físicos marcados como reservado_base
-        query_puestos = select(PuestoEstacionamiento).where(
+        query_puestos = select(PuestoEstacionamiento).options(selectinload(PuestoEstacionamiento.zona)).where(
             PuestoEstacionamiento.estado == EstadoPuesto.reservado_base
         )
         if zona_id:
@@ -101,8 +102,8 @@ class ComandoService:
         res_p = await db.execute(query_puestos)
         puestos_fisicos = res_p.scalars().all()
         
-        # 2. Obtener pases activos de tipo BASE para esta zona/unidades
-        query_pases = select(CodigoQR).where(
+        # 2. Obtener pases activos de tipo BASE para esta zona
+        query_pases = select(CodigoQR).options(selectinload(CodigoQR.zona_asignada)).where(
             and_(
                 CodigoQR.tipo_acceso == TipoAccesoPase.base,
                 CodigoQR.activo == True,
@@ -117,9 +118,6 @@ class ComandoService:
         
         resultado = []
         
-        # Primero procesamos pases que tienen puesto físico asignado
-        puestos_con_pase = {p.puesto_asignado_id for p in pases_activos if p.puesto_asignado_id}
-        
         for p in puestos_fisicos:
             # Buscar si este puesto físico tiene un pase activo
             pase = next((q for q in pases_activos if q.puesto_asignado_id == p.id), None)
@@ -127,14 +125,15 @@ class ComandoService:
                 "id": str(p.id),
                 "numero_puesto": p.numero_puesto,
                 "zona_id": str(p.zona_id),
+                "zona_nombre": p.zona.nombre if p.zona else "N/A",
                 "estado": "ocupado" if pase else "libre",
-                "reservado_base": True,
+                "virtual": False,
                 "detalle_pase": {
                     "id": str(pase.id),
                     "nombre_portador": pase.nombre_portador,
                     "vehiculo_placa": pase.vehiculo_placa,
-                    "vehiculo_marca": pase.vehiculo_marca,
-                    "vehiculo_modelo": pase.vehiculo_modelo,
+                    "vehiculo_marca": pase.vehiculo_marca or "",
+                    "vehiculo_modelo": pase.vehiculo_modelo or "",
                     "serial_legible": pase.serial_legible
                 } if pase else None
             })
@@ -146,15 +145,15 @@ class ComandoService:
                 "id": f"v-{q.id}",
                 "numero_puesto": q.serial_legible,
                 "zona_id": str(q.zona_asignada_id),
+                "zona_nombre": q.zona_asignada.nombre if q.zona_asignada else "N/A",
                 "estado": "ocupado",
-                "reservado_base": True,
                 "virtual": True,
                 "detalle_pase": {
                     "id": str(q.id),
                     "nombre_portador": q.nombre_portador,
                     "vehiculo_placa": q.vehiculo_placa,
-                    "vehiculo_marca": q.vehiculo_marca,
-                    "vehiculo_modelo": q.vehiculo_modelo,
+                    "vehiculo_marca": q.vehiculo_marca or "",
+                    "vehiculo_modelo": q.vehiculo_modelo or "",
                     "serial_legible": q.serial_legible
                 }
             })
