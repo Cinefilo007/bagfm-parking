@@ -89,7 +89,7 @@ const PuestoChip = ({ puesto, onEliminar, onEditar, onGPS }) => {
 };
 
 const ZonaRow = ({ 
-    zona, entidades, asignaciones, onEditar, onEliminar, 
+    zona, entidades, asignaciones, zonas, onEditar, onEliminar, 
     onGestionarPuestos, onAjustarTiempo, onAsignar, 
     onEliminarAsignacion, onEliminarPuesto, onCapturarGPSPuesto,
     onGenerarPaseBase
@@ -740,6 +740,7 @@ export default function GestionZonas() {
                             zona={zona}
                             entidades={entidades}
                             asignaciones={asignaciones}
+                            zonas={zonas}
                             onEditar={abrirModalZona}
                             onEliminar={handleEliminarZona}
                             onGestionarPuestos={abrirModalPuestos}
