@@ -1099,18 +1099,25 @@ export default function GestionZonas() {
 
                                 <div className="md:col-span-2 flex flex-col items-center justify-center p-6 bg-black/30 rounded-2xl border border-white/5 relative overflow-hidden">
                                     <div ref={qrSectionRef} className="flex flex-col items-center gap-4 animate-in zoom-in-95 duration-200">
-                                        <div className="p-3 bg-white rounded-2xl shadow-2xl shadow-black/60">
-                                            <QRCode 
-                                                value={puestoDetalle.detalle_pase.token || puestoDetalle.detalle_pase.serial_legible} 
-                                                size={150}
-                                                bgColor="#ffffff"
-                                                fgColor="#0d1117"
-                                                level="M"
-                                            />
+                                        <div className="p-3 bg-white rounded-2xl shadow-2xl shadow-black/60 min-w-[174px] min-h-[174px] flex items-center justify-center">
+                                            {puestoDetalle.detalle_pase.token ? (
+                                                <QRCode 
+                                                    value={puestoDetalle.detalle_pase.token} 
+                                                    size={150}
+                                                    bgColor="#ffffff"
+                                                    fgColor="#0d1117"
+                                                    level="M"
+                                                />
+                                            ) : (
+                                                <div className="flex flex-col items-center gap-2 p-4 text-center">
+                                                    <Shield size={24} className="text-danger animate-pulse" />
+                                                    <span className="text-[8px] text-danger font-black uppercase">Token Inaccesible</span>
+                                                </div>
+                                            )}
                                         </div>
                                         <div className="space-y-1 text-center">
                                             <p className="text-[8px] text-primary font-black uppercase tracking-widest">Pase Oficial Firmado</p>
-                                            <p className="text-[7px] text-text-muted italic uppercase font-bold leading-tight">Token de Seguridad Criptográfico</p>
+                                            <p className="text-[7px] text-text-muted italic uppercase font-bold leading-tight">Fuente: DATABASE_TOKEN_JWT</p>
                                         </div>
                                     </div>
                                 </div>

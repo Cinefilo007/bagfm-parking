@@ -106,16 +106,23 @@ export const ModalPaseBase = ({ isOpen, onClose, zona, onGenerated }) => {
 
                     <div className="bg-black/30 rounded-2xl p-8 border border-white/5 flex flex-col items-center gap-4 w-full">
                         <div className="animate-in zoom-in-95 duration-200 flex flex-col items-center gap-4">
-                            <div className="p-4 bg-white rounded-2xl shadow-2xl shadow-black/60">
-                                <QRCode 
-                                    value={resultado.token || resultado.serial_legible} 
-                                    size={180} 
-                                    level="M"
-                                />
+                            <div className="p-4 bg-white rounded-2xl shadow-2xl shadow-black/60 min-w-[212px] min-h-[212px] flex items-center justify-center">
+                                {resultado.token ? (
+                                    <QRCode 
+                                        value={resultado.token} 
+                                        size={180} 
+                                        level="M"
+                                    />
+                                ) : (
+                                    <div className="flex flex-col items-center gap-2 p-6 text-center">
+                                         <Shield size={32} className="text-danger animate-pulse" />
+                                         <span className="text-[10px] text-danger font-black uppercase">Token Inaccesible</span>
+                                    </div>
+                                )}
                             </div>
                             <div className="space-y-1 text-center">
                                 <p className="text-[9px] text-primary font-black uppercase tracking-widest">Pase Oficial Firmado</p>
-                                <p className="text-[7px] text-text-muted italic uppercase font-bold leading-tight">Token de Seguridad Criptográfico</p>
+                                <p className="text-[7px] text-text-muted italic uppercase font-bold leading-tight">Fuente: DATABASE_TOKEN_JWT</p>
                             </div>
                         </div>
                     </div>
