@@ -23,6 +23,7 @@ import { pasesService } from '../../services/pasesService';
 import zonaService from '../../services/zona.service';
 import api from '../../services/api';
 import * as XLSX from 'xlsx';
+import ModalExportarLote from '../../components/eventos/ModalExportarLote';
 
 // ──── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -521,6 +522,7 @@ const TacticalKPIs = ({ lotes }) => {
 const LoteCardV2 = ({ lote, zonas, tiposCustom, onRefresh, onVerPases, onEliminar }) => {
     const [generando, setGenerando] = useState(false);
     const [progreso, setProgreso] = useState(0);
+    const [modalExportOpen, setModalExportOpen] = useState(false);
 
     const info = TIPO_INFO[lote.tipo_pase] || TIPO_INFO.simple;
     const Icon = info.icon;
@@ -608,13 +610,22 @@ const LoteCardV2 = ({ lote, zonas, tiposCustom, onRefresh, onVerPases, onElimina
                 {/* Botones de Acción */}
                 <div className="flex items-center gap-1.5 shrink-0">
                     {lote.zip_generado || progreso >= 100 ? (
-                        <button 
-                            onClick={() => pasesService.descargarArchivo(lote.zip_url, `PASES_${lote.nombre_evento.replace(/\s+/g, '_')}_${lote.codigo_serial}.zip`)}
-                            className="h-8 px-3 bg-success/15 hover:bg-success/25 border border-success/20 rounded-xl flex items-center gap-2 transition-all cursor-pointer"
-                        >
-                            <Download size={13} className="text-success" />
-                            <span className="text-[9px] font-black text-success uppercase">ZIP</span>
-                        </button>
+                        <>
+                            <button 
+                                onClick={() => setModalExportOpen(true)}
+                                className="h-8 px-3 bg-success/15 hover:bg-success/25 border border-success/20 rounded-xl flex items-center gap-2 transition-all cursor-pointer"
+                            >
+                                <Download size={13} className="text-success" />
+                                <span className="text-[9px] font-black text-success uppercase">ZIP</span>
+                            </button>
+                            {modalExportOpen && (
+                                <ModalExportarLote 
+                                    isOpen={modalExportOpen} 
+                                    onClose={() => setModalExportOpen(false)} 
+                                    lote={lote} 
+                                />
+                            )}
+                        </>
                     ) : (
                         <Boton size="sm" onClick={handleGenerarZip} isLoading={generando} disabled={generando} className="h-8 px-3">
                             <QrCode size={13} /> <span className="hidden sm:inline">GENERAR</span>
