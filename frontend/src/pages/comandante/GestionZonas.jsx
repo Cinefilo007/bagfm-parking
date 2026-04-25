@@ -1105,9 +1105,9 @@ export default function GestionZonas() {
                                 <div className="md:col-span-2 flex flex-col items-center justify-center p-6 bg-black/30 rounded-2xl border border-white/5 relative overflow-hidden">
                                     <div ref={qrSectionRef} className="flex flex-col items-center gap-4 animate-in zoom-in-95 duration-200">
                                         <div className="p-3 bg-white rounded-2xl shadow-2xl shadow-black/60 min-w-[174px] min-h-[174px] flex items-center justify-center">
-                                            {puestoDetalle.detalle_pase.token ? (
+                                            {(puestoDetalle.token || puestoDetalle.detalle_pase?.token) ? (
                                                 <QRCode 
-                                                    value={puestoDetalle.detalle_pase.token} 
+                                                    value={puestoDetalle.token || puestoDetalle.detalle_pase.token} 
                                                     size={150}
                                                     bgColor="#ffffff"
                                                     fgColor="#0d1117"
