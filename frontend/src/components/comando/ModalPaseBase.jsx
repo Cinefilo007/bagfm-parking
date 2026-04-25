@@ -122,7 +122,6 @@ export const ModalPaseBase = ({ isOpen, onClose, zona, onGenerated }) => {
                             </div>
                             <div className="space-y-1 text-center">
                                 <p className="text-[9px] text-primary font-black uppercase tracking-widest">Pase Oficial Firmado</p>
-                                <p className="text-[7px] text-text-muted italic uppercase font-bold leading-tight">Fuente: DATABASE_TOKEN_JWT</p>
                             </div>
                         </div>
                     </div>

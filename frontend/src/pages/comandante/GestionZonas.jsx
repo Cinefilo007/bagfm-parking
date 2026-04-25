@@ -126,11 +126,16 @@ const ZonaRow = ({
     // Combinar puestos base del servidor con el cupo total reservado
     const puestosBaseCompletos = (() => {
         // 1. Empezamos con los pases reales que el servidor dice que están activos
-        const listaFinal = [...puestosBaseServidor];
+        const listaFinal = puestosBaseServidor.map(p => ({
+            ...p,
+            reservado_base: true,
+            estado: p.estado || 'ocupado'
+        }));
         
         // 2. Calculamos cuántas cajas libres faltan según el cupo reservado de la base
         // reservadoBase viene de la asignación configurada
-        const faltantes = Math.max(0, reservadoBase - listaFinal.length);
+        const cuposOcupadosActuales = listaFinal.length;
+        const faltantes = Math.max(0, reservadoBase - cuposOcupadosActuales);
         
         // 3. Agregamos las cajas libres necesarias
         for (let i = 0; i < faltantes; i++) {
@@ -1117,7 +1122,6 @@ export default function GestionZonas() {
                                         </div>
                                         <div className="space-y-1 text-center">
                                             <p className="text-[8px] text-primary font-black uppercase tracking-widest">Pase Oficial Firmado</p>
-                                            <p className="text-[7px] text-text-muted italic uppercase font-bold leading-tight">Fuente: DATABASE_TOKEN_JWT</p>
                                         </div>
                                     </div>
                                 </div>
