@@ -1,5 +1,6 @@
 from typing import Optional, List
 from uuid import UUID
+from datetime import datetime
 from pydantic import BaseModel, ConfigDict
 
 class PaseBaseCrear(BaseModel):
@@ -14,6 +15,8 @@ class PaseBaseCrear(BaseModel):
     vehiculo_color: Optional[str] = None
     es_permanente: bool = False
     dias_vigencia: int = 1
+    fecha_inicio: Optional[datetime] = None      # Fecha de inicio de vigencia
+    fecha_expiracion: Optional[datetime] = None  # Fecha fin personalizada (override)
 
 class PuestoDetallePase(BaseModel):
     id: str
@@ -22,7 +25,9 @@ class PuestoDetallePase(BaseModel):
     vehiculo_marca: str
     vehiculo_modelo: str
     serial_legible: str
-    token: str  # JWT firmado — requerido para generar el QR en el frontend
+    token: str              # JWT firmado — requerido para generar el QR en el frontend
+    fecha_inicio: Optional[datetime] = None      # Inicio de vigencia
+    fecha_expiracion: Optional[datetime] = None  # Fin de vigencia
 
 class PuestoReservadoSalida(BaseModel):
     id: str

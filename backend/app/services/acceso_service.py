@@ -13,7 +13,7 @@ from app.models.infraccion import Infraccion
 from app.models.codigo_qr import CodigoQR
 from app.models.entidad_civil import EntidadCivil
 from app.models.vehiculo_pase import VehiculoPase
-from app.models.enums import AccesoTipo, MembresiaEstado, InfraccionEstado, QRTipo
+from app.models.enums import AccesoTipo, MembresiaEstado, InfraccionEstado, QRTipo, TipoAccesoPase
 from app.schemas.acceso import AccesoValidar, AccesoRegistrar, ResultadoValidacion
 from app.services.membresia_service import membresia_service
 from app.core.security import decodificar_token
@@ -193,7 +193,79 @@ class AccesoService:
                     tipo_acceso=qr_db.tipo_acceso
                 )
 
-            # 5. Validación Estándar para Socios Permanentes
+            # 5. Pases de Base (tipo_acceso == base) — sin lote_id ni usuario_id
+            if qr_db.tipo_acceso == TipoAccesoPase.base:
+                # Verificar si el pase no está expirado por fecha
+                if qr_db.fecha_expiracion and qr_db.fecha_expiracion < datetime.now(timezone.utc):
+                    return ResultadoValidacion(
+                        permitido=False,
+                        mensaje=f"PASE BASE VENCIDO — Expiró el {qr_db.fecha_expiracion.strftime('%d/%m/%Y')}",
+                        tipo_alerta="error"
+                    )
+
+                socio_mock = {
+                    "id": str(qr_db.id),
+                    "nombre": qr_db.nombre_portador or "PORTADOR BASE",
+                    "apellido": "",
+                    "cedula": qr_db.cedula_portador or "",
+                    "telefono": qr_db.telefono_portador or "",
+                    "rol": "SOCIO",
+                    "activo": True,
+                    "entidad_nombre": "PERSONAL DE BASE",
+                    "updated_at": qr_db.created_at,
+                    "created_at": qr_db.created_at
+                }
+                vehiculo_mock = None
+                vehiculos_mock = []
+                if qr_db.vehiculo_placa:
+                    vehiculo_mock = {
+                        "id": str(qr_db.id),
+                        "placa": qr_db.vehiculo_placa,
+                        "marca": qr_db.vehiculo_marca or "GENÉRICO",
+                        "modelo": qr_db.vehiculo_modelo or "GENÉRICO",
+                        "color": qr_db.vehiculo_color or "SIN COLOR",
+                        "activo": True,
+                        "socio_id": str(qr_db.id),
+                        "created_at": qr_db.created_at
+                    }
+                    vehiculos_mock = [vehiculo_mock]
+
+                # Resolver zona y puesto
+                z_nombre = None
+                p_nombre = None
+                if qr_db.zona_asignada_id:
+                    from app.models.zona_estacionamiento import ZonaEstacionamiento
+                    z_db = await db.get(ZonaEstacionamiento, qr_db.zona_asignada_id)
+                    if z_db:
+                        z_nombre = z_db.nombre
+                if qr_db.puesto_asignado_id:
+                    from app.models.puesto_estacionamiento import PuestoEstacionamiento
+                    p_db = await db.get(PuestoEstacionamiento, qr_db.puesto_asignado_id)
+                    if p_db:
+                        p_nombre = str(p_db.numero_puesto)
+
+                return ResultadoValidacion(
+                    permitido=True,
+                    mensaje=f"✅ PASE BASE — {qr_db.serial_legible}",
+                    tipo_alerta="success",
+                    es_pase_masivo=False,
+                    serial_legible=qr_db.serial_legible,
+                    nombre_evento="ACCESO BASE",
+                    qr_id=qr_db.id,
+                    usuario_id=None,
+                    socio=socio_mock,
+                    vehiculo=vehiculo_mock,
+                    vehiculos=vehiculos_mock,
+                    vehiculo_id=None,
+                    requiere_datos_manuales=False,
+                    zona_asignada_id=qr_db.zona_asignada_id,
+                    zona_nombre=z_nombre,
+                    puesto_asignado_id=qr_db.puesto_asignado_id,
+                    puesto_nombre=p_nombre,
+                    tipo_acceso=qr_db.tipo_acceso
+                )
+
+            # 6. Validación Estándar para Socios Permanentes
             if not socio:
                 return ResultadoValidacion(permitido=False, mensaje="Socio no encontrado o inactivo", tipo_alerta="error")
 

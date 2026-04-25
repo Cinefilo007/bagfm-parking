@@ -52,10 +52,33 @@ class ComandoService:
         tipo_qr = QRTipo.permanente if es_permanente else QRTipo.temporal
         
         dias = datos.get('dias_vigencia', 1)
-        if es_permanente:
-            expira_at = datetime.now(timezone.utc) + timedelta(days=365 * 5) # 5 años
+        
+        # Fecha de inicio: si el usuario especifica una, usarla; si no, ahora
+        fecha_inicio_raw = datos.get('fecha_inicio')
+        if fecha_inicio_raw:
+            if isinstance(fecha_inicio_raw, str):
+                from datetime import date
+                fecha_inicio = datetime.fromisoformat(fecha_inicio_raw).replace(tzinfo=timezone.utc)
+            elif isinstance(fecha_inicio_raw, datetime):
+                fecha_inicio = fecha_inicio_raw if fecha_inicio_raw.tzinfo else fecha_inicio_raw.replace(tzinfo=timezone.utc)
+            else:
+                fecha_inicio = datetime.now(timezone.utc)
         else:
-            expira_at = datetime.now(timezone.utc) + timedelta(days=dias)
+            fecha_inicio = datetime.now(timezone.utc)
+
+        # Fecha de expiración: si viene una fecha custom (override), usarla
+        fecha_expiracion_raw = datos.get('fecha_expiracion')
+        if fecha_expiracion_raw:
+            if isinstance(fecha_expiracion_raw, str):
+                expira_at = datetime.fromisoformat(fecha_expiracion_raw).replace(tzinfo=timezone.utc)
+            elif isinstance(fecha_expiracion_raw, datetime):
+                expira_at = fecha_expiracion_raw if fecha_expiracion_raw.tzinfo else fecha_expiracion_raw.replace(tzinfo=timezone.utc)
+            else:
+                expira_at = fecha_inicio + timedelta(days=dias)
+        elif es_permanente:
+            expira_at = fecha_inicio + timedelta(days=365 * 5)  # 5 años
+        else:
+            expira_at = fecha_inicio + timedelta(days=dias)
 
         # 3. Generar Serial (BASE-XXXX)
         serial = f"BASE-{str(uuid.uuid4())[:8].upper()}"
@@ -72,9 +95,9 @@ class ComandoService:
             telefono_portador=datos.get('telefono_portador'),
             email_portador=datos.get('email_portador'),
             vehiculo_placa=datos.get('vehiculo_placa', '').upper(),
-            vehiculo_marca=datos.get('vehiculo_marca', '').upper(),
-            vehiculo_modelo=datos.get('vehiculo_modelo', '').upper(),
-            vehiculo_color=datos.get('vehiculo_color', '').upper(),
+            vehiculo_marca=datos.get('vehiculo_marca', '').upper() if datos.get('vehiculo_marca') else None,
+            vehiculo_modelo=datos.get('vehiculo_modelo', '').upper() if datos.get('vehiculo_modelo') else None,
+            vehiculo_color=datos.get('vehiculo_color', '').upper() if datos.get('vehiculo_color') else None,
             tipo_acceso=TipoAccesoPase.base,
             zona_asignada_id=zona_id,
             puesto_asignado_id=puesto_libre.id if puesto_libre else None,
@@ -135,7 +158,9 @@ class ComandoService:
                     "vehiculo_marca": pase.vehiculo_marca or "",
                     "vehiculo_modelo": pase.vehiculo_modelo or "",
                     "serial_legible": pase.serial_legible,
-                    "token": pase.token
+                    "token": pase.token,
+                    "fecha_inicio": pase.created_at,
+                    "fecha_expiracion": pase.fecha_expiracion,
                 } if pase else None
             })
 
@@ -156,7 +181,9 @@ class ComandoService:
                     "vehiculo_marca": q.vehiculo_marca or "",
                     "vehiculo_modelo": q.vehiculo_modelo or "",
                     "serial_legible": q.serial_legible,
-                    "token": q.token
+                    "token": q.token,
+                    "fecha_inicio": q.created_at,
+                    "fecha_expiracion": q.fecha_expiracion,
                 }
             })
             

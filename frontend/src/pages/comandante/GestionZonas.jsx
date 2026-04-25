@@ -1080,6 +1080,27 @@ export default function GestionZonas() {
                                                 <span className="text-[10px] text-text-muted uppercase">Serial:</span>
                                                 <span className="text-[11px] font-mono text-primary font-bold uppercase">{puestoDetalle.detalle_pase.serial_legible}</span>
                                             </div>
+                                            {/* Vigencia del pase */}
+                                            <div className="flex justify-between border-b border-white/5 py-1">
+                                                <span className="text-[10px] text-text-muted uppercase">Válido desde:</span>
+                                                <span className="text-[11px] font-bold text-text-main">
+                                                    {puestoDetalle.detalle_pase.fecha_inicio
+                                                        ? new Date(puestoDetalle.detalle_pase.fecha_inicio).toLocaleDateString('es-VE', { day: '2-digit', month: '2-digit', year: 'numeric' })
+                                                        : '—'}
+                                                </span>
+                                            </div>
+                                            <div className="flex justify-between border-b border-white/5 py-1">
+                                                <span className="text-[10px] text-text-muted uppercase">Vence:</span>
+                                                <span className={`text-[11px] font-bold ${
+                                                    puestoDetalle.detalle_pase.fecha_expiracion && new Date(puestoDetalle.detalle_pase.fecha_expiracion) < new Date()
+                                                        ? 'text-danger'
+                                                        : 'text-warning'
+                                                }`}>
+                                                    {puestoDetalle.detalle_pase.fecha_expiracion
+                                                        ? new Date(puestoDetalle.detalle_pase.fecha_expiracion).toLocaleDateString('es-VE', { day: '2-digit', month: '2-digit', year: 'numeric' })
+                                                        : 'PERMANENTE'}
+                                                </span>
+                                            </div>
                                         </div>
                                     </div>
 
