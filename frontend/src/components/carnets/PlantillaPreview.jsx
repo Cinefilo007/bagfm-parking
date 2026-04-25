@@ -40,11 +40,6 @@ const PlantillaColgante = ({ datos, config }) => {
     const c = config.colores;
     return (
         <div className="w-[260px] mx-auto select-none" id="carnet-preview">
-            {/* Agujero + cinta */}
-            <div className="flex flex-col items-center mb-2">
-                <div className="w-16 h-1.5 rounded-b-full" style={{ background: c.primario }} />
-                <div className="w-3 h-3 rounded-full border-2 mt-1" style={{ borderColor: c.primario }} />
-            </div>
 
             <div className="rounded-2xl overflow-hidden shadow-2xl border"
                 style={{ borderColor: `${c.primario}30`, background: c.fondo }}>

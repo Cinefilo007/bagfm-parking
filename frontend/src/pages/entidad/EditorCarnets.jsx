@@ -167,15 +167,21 @@ export default function EditorCarnets() {
                 style: { transform: 'scale(1)', transformOrigin: 'top left', margin: '0' }
             });
             
-            // Dimensiones físicas aproximadas del carnet impreso (en mm)
-            let ancho_mm = 54;
-            let alto_mm = 86;
+            // Calculamos la relación de aspecto exacta del DOM para evitar que se aplaste o deforme
+            const pxWidth = previewElement.offsetWidth;
+            const pxHeight = previewElement.offsetHeight;
+            const aspect_ratio = pxHeight / pxWidth;
             
-            if (plantillaActiva === 'colgante') { ancho_mm = 65; alto_mm = 100; }
-            if (plantillaActiva === 'cartera') { ancho_mm = 90; alto_mm = 55; }
-            if (plantillaActiva === 'ticket') { ancho_mm = 85; alto_mm = 55; }
-            if (plantillaActiva === 'credencial') { ancho_mm = 65; alto_mm = 100; }
+            // Definimos solo el ancho real deseado (en mm) para imprimir la tarjeta
+            let ancho_mm = 54; // estandar CR80
             
+            if (plantillaActiva === 'colgante') { ancho_mm = 65; }
+            if (plantillaActiva === 'cartera') { ancho_mm = 90; }
+            if (plantillaActiva === 'ticket') { ancho_mm = 85; }
+            if (plantillaActiva === 'credencial') { ancho_mm = 65; }
+            
+            // La altura en mm se calcula manteniendo su rigurosa relación de aspecto del editor visual
+            const alto_mm = ancho_mm * aspect_ratio;
             // Creamos un documento tamaño Carta por defecto (215.9 x 279.4 mm)
             const pdf = new jsPDF({
                 orientation: 'portrait',
