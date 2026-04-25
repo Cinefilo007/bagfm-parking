@@ -22,6 +22,7 @@ class PuestoDetallePase(BaseModel):
     vehiculo_marca: str
     vehiculo_modelo: str
     serial_legible: str
+    token: str  # JWT firmado — requerido para generar el QR en el frontend
 
 class PuestoReservadoSalida(BaseModel):
     id: str
