@@ -90,16 +90,25 @@ const preloadBase64Fonts = async () => {
         let match;
         const fontPromises = [];
         
-        while ((match = urlRegex.exec(cssText)) !== null) {
-            const fontUrl = match[1].replace(/['"]/g, '');
+        while (true) {
+            const currentMatch = urlRegex.exec(cssText);
+            if (!currentMatch) break;
+            
+            const originalString = currentMatch[0];
+            const fontUrl = currentMatch[1].replace(/['"]/g, '');
+            
             fontPromises.push(
                 fetch(fontUrl)
                     .then(r => r.blob())
                     .then(blob => new Promise((resolve) => {
                         const reader = new FileReader();
-                        reader.onloadend = () => resolve({ original: match[0], data: reader.result });
+                        reader.onloadend = () => resolve({ original: originalString, data: reader.result });
                         reader.readAsDataURL(blob);
                     }))
+                    .catch(e => {
+                        console.warn('Fallo font local', fontUrl);
+                        return { original: originalString, data: fontUrl };
+                    })
             );
         }
         
