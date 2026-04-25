@@ -134,7 +134,8 @@ class ComandoService:
                     "vehiculo_placa": pase.vehiculo_placa,
                     "vehiculo_marca": pase.vehiculo_marca or "",
                     "vehiculo_modelo": pase.vehiculo_modelo or "",
-                    "serial_legible": pase.serial_legible
+                    "serial_legible": pase.serial_legible,
+                    "token": pase.token
                 } if pase else None
             })
 
@@ -154,7 +155,8 @@ class ComandoService:
                     "vehiculo_placa": q.vehiculo_placa,
                     "vehiculo_marca": q.vehiculo_marca or "",
                     "vehiculo_modelo": q.vehiculo_modelo or "",
-                    "serial_legible": q.serial_legible
+                    "serial_legible": q.serial_legible,
+                    "token": q.token
                 }
             })
             
