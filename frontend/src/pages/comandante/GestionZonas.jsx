@@ -119,23 +119,28 @@ const ZonaRow = ({
             }
         };
         if (expandida) fetchPuestosBase();
-    }, [expandida, zona.id, asignaciones]);
+    }, [expandida, zona.id, asignaciones, zonas]);
 
-    // Combinar puestos base del servidor con el cupo total reservado para asegurar que siempre se vean las cajas
-    const puestosBaseCompletos = Array.from({ length: reservadoBase }, (_, i) => {
-        const num = String(i + 1).padStart(2, '0');
-        const numRef = `BASE-${num}`;
-        // Buscar si hay un puesto físico o virtual en el servidor para este número
-        const desdeServidor = puestosBaseServidor.find(p => p.numero_puesto.includes(numRef) || p.numero_puesto === numRef);
+    // Combinar puestos base del servidor con el cupo total reservado
+    const puestosBaseCompletos = (() => {
+        // 1. Empezamos con lo que el servidor dice que existe (físicos y virtuales ocupados)
+        const lista = [...puestosBaseServidor];
         
-        return desdeServidor || {
-            id: `v-base-${zona.id}-${i}`,
-            numero_puesto: numRef,
-            estado: 'libre',
-            reservado_base: true,
-            virtual: true
-        };
-    });
+        // 2. Si el número de puestos reportados es menor al cupo reservado, rellenamos con vacíos
+        const cupoReservado = reservadoBase;
+        const faltantes = Math.max(0, cupoReservado - lista.length);
+        
+        for (let i = 0; i < faltantes; i++) {
+            lista.push({
+                id: `v-empty-${zona.id}-${i}`,
+                numero_puesto: `BASE-${String(lista.length + 1).padStart(2, '0')}`,
+                estado: 'libre',
+                reservado_base: true,
+                virtual: true
+            });
+        }
+        return lista;
+    })();
 
     return (
         <div className="bg-bg-card/40 border border-white/5 rounded-2xl overflow-hidden transition-all">
