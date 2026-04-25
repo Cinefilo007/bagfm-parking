@@ -10,7 +10,7 @@ import {
     RefreshCw, Share2, LayoutGrid, MessageCircle
 } from 'lucide-react';
 import api from '../../services/api';
-import QRCode from "react-qr-code";
+// import QRCode removed
 
 export const ModalPaseBase = ({ isOpen, onClose, zona, onGenerated }) => {
     const [form, setForm] = useState({
@@ -77,9 +77,9 @@ export const ModalPaseBase = ({ isOpen, onClose, zona, onGenerated }) => {
                         <h3 className="text-xl font-bold text-text-main">REGISTRO EXITOSO</h3>
                     </div>
 
-                    <div className="bg-white p-6 rounded-3xl mx-auto w-fit shadow-2xl ring-8 ring-indigo-500/10">
-                        <QRCode value={resultado.token} size={180} level="H" />
-                    </div>
+                        <div className="p-8 bg-white/5 rounded-2xl border border-white/10 flex items-center justify-center">
+                            <span className="text-primary font-mono text-xl font-black">{resultado.serial_legible}</span>
+                        </div>
 
                     <div className="bg-white/5 border border-white/10 p-4 rounded-2xl space-y-3">
                         <div className="flex justify-between items-center text-xs">

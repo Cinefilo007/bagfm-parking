@@ -684,24 +684,27 @@ export default function GestionZonas() {
             {/* KPIs */}
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
                 {[
-                    { label: 'Zonas Activas', valor: zonas.length, color: 'text-primary', icon: ParkingSquare },
-                    { label: 'Cap. Total', valor: totalCapacidad || '—', color: 'text-success', icon: Hash },
-                    { label: 'Ocupación Total', valor: totalOcupados, color: 'text-danger', icon: Activity },
-                    { label: 'Reservados', valor: totalReservados, color: 'text-warning', icon: Shield },
-                ].map(s => (
-                    <Card key={s.label} className="p-3 md:p-4 rounded-2xl border-white/5 flex items-center gap-3 bg-bg-card">
-                        <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center shrink-0 border", 
-                            s.color.replace('text-', 'bg-') + "/10",
-                            s.color.replace('text-', 'border-') + "/20"
-                        )}>
-                            <s.icon className={s.color} size={18} />
-                        </div>
-                        <div>
-                            <p className="text-[9px] text-text-muted font-bold uppercase tracking-widest leading-none mb-1">{s.label}</p>
-                            <p className={cn("text-lg font-display font-black leading-none", s.color)}>{s.valor}</p>
-                        </div>
-                    </Card>
-                ))}
+                    { label: 'Zonas Activas', valor: zonas?.length || 0, color: 'text-primary', icon: ParkingSquare },
+                    { label: 'Cap. Total', valor: totalCapacidad || 0, color: 'text-success', icon: Hash },
+                    { label: 'Ocupación Total', valor: totalOcupados || 0, color: 'text-danger', icon: Activity },
+                    { label: 'Reservados', valor: totalReservados || 0, color: 'text-warning', icon: Shield },
+                ].map(s => {
+                    const Icon = s.icon;
+                    return (
+                        <Card key={s.label} className="p-3 md:p-4 rounded-2xl border-white/5 flex items-center gap-3 bg-bg-card">
+                            <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center shrink-0 border", 
+                                s.color.replace('text-', 'bg-') + "/10",
+                                s.color.replace('text-', 'border-') + "/20"
+                            )}>
+                                <Icon className={s.color} size={18} />
+                            </div>
+                            <div>
+                                <p className="text-[9px] text-text-muted font-bold uppercase tracking-widest leading-none mb-1">{s.label}</p>
+                                <p className={cn("text-lg font-display font-black leading-none", s.color)}>{String(s.valor)}</p>
+                            </div>
+                        </Card>
+                    );
+                })}
             </div>
 
             {/* Instrucciones */}
