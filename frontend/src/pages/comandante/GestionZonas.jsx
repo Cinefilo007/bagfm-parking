@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Card } from '../../components/ui/Card';
 import { Boton } from '../../components/ui/Boton';
 import { Modal } from '../../components/ui/Modal';
@@ -16,6 +16,7 @@ import {
 import SelectTactivo from '../../components/ui/SelectTactivo';
 import zonaService from '../../services/zona.service';
 import api from '../../services/api';
+import { QRCode } from 'react-qr-code';
 import { ModalConfirmacion } from '../../components/ui/ModalConfirmacion';
 import { ModalPaseBase } from '../../components/comando/ModalPaseBase';
 
@@ -336,6 +337,8 @@ export default function GestionZonas() {
     const [zonaActiva, setZonaActiva] = useState(null);
     const [confirmConfig, setConfirmConfig] = useState({ isOpen: false, title: '', message: '', onConfirm: null, loading: false });
     const [refreshKeyBase, setRefreshKeyBase] = useState(0); // Para forzar refresco local de puestos
+    const qrSectionRef = useRef(null);
+    const [mostrarQR, setMostrarQR] = useState(false);
 
 
     // Forms
@@ -607,7 +610,57 @@ export default function GestionZonas() {
 
     const handleVerDetalle = (puesto) => {
         setPuestoDetalle(puesto);
+        setMostrarQR(false); // Resetear estado QR al abrir
         setModalDetallePuesto(true);
+    };
+
+    const generarImagenQR = async () => {
+        return new Promise((resolve, reject) => {
+            const svgEl = qrSectionRef.current?.querySelector('svg');
+            if (!svgEl) { reject(new Error('SVG no encontrado')); return; }
+
+            const svgData = new XMLSerializer().serializeToString(svgEl);
+            const canvas = document.createElement('canvas');
+            const size = 400;
+            canvas.width = size;
+            canvas.height = size;
+            const ctx = canvas.getContext('2d');
+
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(0, 0, size, size);
+
+            const img = new Image();
+            img.onload = () => {
+                ctx.drawImage(img, 20, 20, size - 40, size - 40);
+                canvas.toBlob(blob => resolve(blob), 'image/png', 1.0);
+            };
+            img.onerror = reject;
+            img.src = `data:image/svg+xml;base64,${btoa(unescape(encodeURIComponent(svgData)))}`;
+        });
+    };
+
+    const handleWhatsAppBase = async () => {
+        if (!puestoDetalle?.detalle_pase) return;
+        const pase = puestoDetalle.detalle_pase;
+        const mensaje = [
+            `🎫 *PASE DE BASE — ${zonaActiva?.nombre?.toUpperCase() || 'BAGFM'}*`,
+            `📋 Serial: \`${pase.serial_legible}\``,
+            `👤 Portador: ${pase.nombre_portador}`,
+            `🚗 Vehículo: ${pase.vehiculo_placa} (${pase.vehiculo_marca})`,
+            ``,
+            `_Sistema BAGFM Access_`,
+        ].join('\n');
+
+        const isMobile = /mobile|android|iphone|ipad/i.test(navigator.userAgent);
+        if (isMobile && navigator.share) {
+            try {
+                const blob = await generarImagenQR();
+                const file = new File([blob], `PASE_BASE_${pase.serial_legible}.png`, { type: 'image/png' });
+                await navigator.share({ files: [file], title: `Pase Base: ${pase.serial_legible}`, text: mensaje });
+                return;
+            } catch (e) { console.error(e); }
+        }
+        window.open(`https://wa.me/?text=${encodeURIComponent(mensaje)}`, '_blank');
     };
 
     const handleLiberarPuestoBase = async () => {
@@ -1007,52 +1060,94 @@ export default function GestionZonas() {
                         </div>
 
                         {puestoDetalle.detalle_pase && (
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                <div className="space-y-4">
-                                    <h5 className="text-[10px] font-black text-primary uppercase tracking-widest flex items-center gap-2">
-                                        <Users size={12} /> Datos del Portador
-                                    </h5>
-                                    <div className="space-y-2">
-                                        <div className="flex justify-between border-b border-white/5 py-1">
-                                            <span className="text-[10px] text-text-muted uppercase">Nombre:</span>
-                                            <span className="text-[11px] font-bold text-text-main uppercase">{puestoDetalle.detalle_pase.nombre_portador}</span>
+                            <div className="grid grid-cols-1 md:grid-cols-5 gap-6">
+                                <div className="md:col-span-3 space-y-6">
+                                    <div className="space-y-4">
+                                        <h5 className="text-[10px] font-black text-primary uppercase tracking-widest flex items-center gap-2">
+                                            <Users size={12} /> Datos del Portador
+                                        </h5>
+                                        <div className="space-y-2">
+                                            <div className="flex justify-between border-b border-white/5 py-1">
+                                                <span className="text-[10px] text-text-muted uppercase">Nombre:</span>
+                                                <span className="text-[11px] font-bold text-text-main uppercase">{puestoDetalle.detalle_pase.nombre_portador}</span>
+                                            </div>
+                                            <div className="flex justify-between border-b border-white/5 py-1">
+                                                <span className="text-[10px] text-text-muted uppercase">Serial:</span>
+                                                <span className="text-[11px] font-mono text-primary font-bold uppercase">{puestoDetalle.detalle_pase.serial_legible}</span>
+                                            </div>
                                         </div>
-                                        <div className="flex justify-between border-b border-white/5 py-1">
-                                            <span className="text-[10px] text-text-muted uppercase">Serial:</span>
-                                            <span className="text-[11px] font-mono text-primary font-bold uppercase">{puestoDetalle.detalle_pase.serial_legible}</span>
+                                    </div>
+
+                                    <div className="space-y-4">
+                                        <h5 className="text-[10px] font-black text-primary uppercase tracking-widest flex items-center gap-2">
+                                            <ParkingSquare size={12} /> Vehículo Asignado
+                                        </h5>
+                                        <div className="space-y-2">
+                                            <div className="flex justify-between border-b border-white/5 py-1">
+                                                <span className="text-[10px] text-text-muted uppercase">Placa:</span>
+                                                <span className="text-[11px] font-bold text-text-main uppercase">{puestoDetalle.detalle_pase.vehiculo_placa}</span>
+                                            </div>
+                                            <div className="flex justify-between border-b border-white/5 py-1">
+                                                <span className="text-[10px] text-text-muted uppercase">Vehículo:</span>
+                                                <span className="text-[11px] font-bold text-text-main uppercase">
+                                                    {puestoDetalle.detalle_pase.vehiculo_marca} {puestoDetalle.detalle_pase.vehiculo_modelo}
+                                                </span>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
 
-                                <div className="space-y-4">
-                                    <h5 className="text-[10px] font-black text-primary uppercase tracking-widest flex items-center gap-2">
-                                        <ParkingSquare size={12} /> Vehículo Asignado
-                                    </h5>
-                                    <div className="space-y-2">
-                                        <div className="flex justify-between border-b border-white/5 py-1">
-                                            <span className="text-[10px] text-text-muted uppercase">Placa:</span>
-                                            <span className="text-[11px] font-bold text-text-main uppercase">{puestoDetalle.detalle_pase.vehiculo_placa}</span>
+                                <div className="md:col-span-2 flex flex-col items-center justify-center gap-4 bg-black/20 rounded-2xl p-4 border border-white/5">
+                                    {!mostrarQR ? (
+                                        <button 
+                                            onClick={() => setMostrarQR(true)}
+                                            className="flex flex-col items-center gap-2 group transition-all"
+                                        >
+                                            <div className="w-24 h-24 bg-white/5 rounded-2xl flex items-center justify-center border border-dashed border-white/20 group-hover:bg-primary/10 group-hover:border-primary/50 transition-all origin-center group-hover:scale-105">
+                                                <QrCode size={32} className="text-text-muted group-hover:text-primary transition-all" />
+                                            </div>
+                                            <p className="text-[9px] font-black text-text-muted uppercase tracking-widest group-hover:text-primary">Generar Imagen QR</p>
+                                        </button>
+                                    ) : (
+                                        <div ref={qrSectionRef} className="flex flex-col items-center gap-3 animate-in zoom-in-95 duration-200">
+                                            <div className="p-2 bg-white rounded-xl shadow-lg shadow-black/40">
+                                                <QRCode 
+                                                    value={puestoDetalle.detalle_pase.token || puestoDetalle.detalle_pase.serial_legible} 
+                                                    size={100}
+                                                    bgColor="#ffffff"
+                                                    fgColor="#0d1117"
+                                                    level="M"
+                                                />
+                                            </div>
+                                            <button 
+                                                onClick={handleWhatsAppBase}
+                                                className="w-full h-8 bg-[#25D366]/20 hover:bg-[#25D366] text-[#25D366] hover:text-white border border-[#25D366]/30 rounded-xl flex items-center justify-center gap-2 transition-all text-[9px] font-black uppercase cursor-pointer"
+                                            >
+                                                <MessageCircle size={14} /> WhatsApp
+                                            </button>
                                         </div>
-                                        <div className="flex justify-between border-b border-white/5 py-1">
-                                            <span className="text-[10px] text-text-muted uppercase">Vehículo:</span>
-                                            <span className="text-[11px] font-bold text-text-main uppercase">
-                                                {puestoDetalle.detalle_pase.vehiculo_marca} {puestoDetalle.detalle_pase.vehiculo_modelo}
-                                            </span>
-                                        </div>
-                                    </div>
+                                    )}
                                 </div>
                             </div>
                         )}
 
-                        <div className="flex gap-3 pt-4">
-                            <Boton variant="ghost" className="flex-1" onClick={() => setModalDetallePuesto(false)}>Cerrar</Boton>
-                            <Boton 
-                                className="flex-1 bg-danger/10 text-danger hover:bg-danger hover:text-white transition-all font-black uppercase text-[10px]"
+                        <div className="flex gap-3 pt-6 border-t border-white/5">
+                            <button 
+                                className="flex-1 h-10 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-text-muted hover:text-text-main font-black uppercase text-[10px] transition-all cursor-pointer" 
+                                onClick={() => setModalDetallePuesto(false)}
+                            >
+                                Cerrar
+                            </button>
+                            <button 
+                                className={cn(
+                                    "flex-1 h-10 rounded-xl font-black uppercase text-[10px] transition-all border cursor-pointer",
+                                    "bg-danger/10 text-danger border-danger/20 hover:bg-danger hover:text-white"
+                                )}
                                 onClick={handleLiberarPuestoBase}
                                 disabled={liberandoPuesto}
                             >
                                 {liberandoPuesto ? 'Liberando...' : 'Liberar y Anular Pase'}
-                            </Boton>
+                            </button>
                         </div>
                     </div>
                 )}
