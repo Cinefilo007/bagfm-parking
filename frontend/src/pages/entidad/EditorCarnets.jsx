@@ -93,6 +93,7 @@ export default function EditorCarnets() {
     });
     const [datosPreview, setDatosPreview] = useState({ ...DATOS_DEMO });
     const [imprimiendo, setImprimiendo] = useState(false);
+    const [exportOpen, setExportOpen] = useState(false);
 
     // Aplicar preset de color
     const aplicarPreset = useCallback((presetId) => {
@@ -110,8 +111,12 @@ export default function EditorCarnets() {
             const previewElement = document.getElementById('carnet-preview');
             if (!previewElement) throw new Error('No se encontró el preview');
 
+            const rect = previewElement.getBoundingClientRect();
             const imgData = await toPng(previewElement, {
                 pixelRatio: 3,
+                width: rect.width,
+                height: rect.height,
+                skipFonts: true, // Evita SecurityError con Google Fonts
                 style: { transform: 'scale(1)', transformOrigin: 'top left' } // Evitar problemas de escala
             });
             
@@ -158,8 +163,12 @@ export default function EditorCarnets() {
             const previewElement = document.getElementById('carnet-preview');
             if (!previewElement) throw new Error('No se encontró el preview');
 
+            const rect = previewElement.getBoundingClientRect();
             const imgData = await toPng(previewElement, {
                 pixelRatio: 3,
+                width: rect.width,
+                height: rect.height,
+                skipFonts: true,
                 style: { transform: 'scale(1)', transformOrigin: 'top left' }
             });
 
@@ -240,17 +249,28 @@ export default function EditorCarnets() {
                         </Boton>
                     </div>
                     
-                    <div className="flex gap-2 w-full sm:w-auto mt-2 sm:mt-0 pt-2 sm:pt-0 border-t sm:border-0 border-white/5">
-                        <Boton onClick={handleExportarImagen} disabled={imprimiendo}
-                            className="flex-1 sm:flex-none h-9 px-4 bg-white/5 hover:bg-white/10 text-[9px] font-black uppercase gap-1.5 rounded-xl border border-white/10">
-                            {imprimiendo ? <RefreshCw size={13} className="animate-spin" /> : <Download size={13} />}
-                            PNG
-                        </Boton>
-                        <Boton onClick={handleExportarPDF} disabled={imprimiendo}
+                    <div className="relative w-full sm:w-auto mt-2 sm:mt-0 pt-2 sm:pt-0 border-t sm:border-0 border-white/5 flex">
+                        <Boton onClick={() => setExportOpen(!exportOpen)} disabled={imprimiendo}
                             className="flex-1 sm:flex-none h-9 px-4 bg-primary text-bg-app text-[9px] font-black uppercase gap-1.5 rounded-xl">
                             {imprimiendo ? <RefreshCw size={13} className="animate-spin" /> : <Printer size={13} />}
-                            PDF
+                            Exportar <ChevronDown size={11} className={cn("transition-transform", exportOpen && "rotate-180")} />
                         </Boton>
+                        
+                        {exportOpen && (
+                            <>
+                                <div className="fixed inset-0 z-40" onClick={() => setExportOpen(false)} />
+                                <div className="absolute top-full right-0 mt-2 p-1.5 bg-[#141820] border border-white/5 rounded-xl shadow-2xl flex flex-col min-w-[140px] z-50 animate-in fade-in slide-in-from-top-2">
+                                    <button onClick={() => { setExportOpen(false); handleExportarImagen(); }}
+                                        className="flex items-center gap-2 w-full text-left px-3 py-2.5 text-[10px] font-bold text-text-main hover:bg-white/5 rounded-lg transition-colors">
+                                        <Download size={13} className="text-text-muted" /> Guardar PNG
+                                    </button>
+                                    <button onClick={() => { setExportOpen(false); handleExportarPDF(); }}
+                                        className="flex items-center gap-2 w-full text-left px-3 py-2.5 text-[10px] font-bold text-text-main hover:bg-white/5 rounded-lg transition-colors">
+                                        <Printer size={13} className="text-text-muted" /> Guardar PDF
+                                    </button>
+                                </div>
+                            </>
+                        )}
                     </div>
                 </div>
             </header>
