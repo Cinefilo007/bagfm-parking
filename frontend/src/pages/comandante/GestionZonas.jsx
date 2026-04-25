@@ -92,7 +92,7 @@ const ZonaRow = ({
     zona, entidades, asignaciones, zonas, onEditar, onEliminar, 
     onGestionarPuestos, onAjustarTiempo, onAsignar, 
     onEliminarAsignacion, onEliminarPuesto, onCapturarGPSPuesto,
-    onGenerarPaseBase
+    onGenerarPaseBase, onVerDetalle
 }) => {
     const [expandida, setExpandida] = useState(false);
     const puestos = zona.puestos || [];
@@ -750,6 +750,7 @@ export default function GestionZonas() {
                             onEliminarPuesto={handleEliminarPuesto}
                             onCapturarGPSPuesto={handleCapturarGPSPuesto}
                             onGenerarPaseBase={(z) => { setZonaActiva(z); setModalPaseBase(true); }}
+                            onVerDetalle={handleVerDetalle}
                         />
                     ))}
                 </div>
