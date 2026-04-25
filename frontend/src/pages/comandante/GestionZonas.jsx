@@ -89,7 +89,7 @@ const PuestoChip = ({ puesto, onEliminar, onEditar, onGPS }) => {
 };
 
 const ZonaRow = ({ 
-    zona, entidades, asignaciones, zonas, onEditar, onEliminar, 
+    zona, entidades, asignaciones, zonas, refreshKeyBase, onEditar, onEliminar, 
     onGestionarPuestos, onAjustarTiempo, onAsignar, 
     onEliminarAsignacion, onEliminarPuesto, onCapturarGPSPuesto,
     onGenerarPaseBase, onVerDetalle
@@ -118,9 +118,9 @@ const ZonaRow = ({
                 console.error("Error al cargar puestos base", e);
             }
         };
-        // Refrescar cada vez que la zona se expande o cambia el estado global de zonas
+        // Refrescar cada vez que la zona se expande, cambia el estado global o el trigger local
         if (expandida) fetchPuestosBase();
-    }, [expandida, zona.id, asignaciones, zonas]);
+    }, [expandida, zona.id, asignaciones, zonas, refreshKeyBase]);
 
     // Combinar puestos base del servidor con el cupo total reservado
     const puestosBaseCompletos = (() => {
@@ -335,6 +335,7 @@ export default function GestionZonas() {
     const [liberandoPuesto, setLiberandoPuesto] = useState(false);
     const [zonaActiva, setZonaActiva] = useState(null);
     const [confirmConfig, setConfirmConfig] = useState({ isOpen: false, title: '', message: '', onConfirm: null, loading: false });
+    const [refreshKeyBase, setRefreshKeyBase] = useState(0); // Para forzar refresco local de puestos
 
 
     // Forms
@@ -617,7 +618,7 @@ export default function GestionZonas() {
             await api.delete(`/comando/pases-reservados/${puestoDetalle.detalle_pase.id}`);
             toast.success('Puesto liberado y pase anulado con éxito');
             setModalDetallePuesto(false);
-            cargarDatos(); // Recargar zonas y detalles
+            setRefreshKeyBase(prev => prev + 1); // Forzar refresco solo de las cajas de puestos
         } catch (e) {
             toast.error(e.response?.data?.detail || 'Error al liberar puesto');
         } finally {
@@ -751,6 +752,7 @@ export default function GestionZonas() {
                             onCapturarGPSPuesto={handleCapturarGPSPuesto}
                             onGenerarPaseBase={(z) => { setZonaActiva(z); setModalPaseBase(true); }}
                             onVerDetalle={handleVerDetalle}
+                            refreshKeyBase={refreshKeyBase}
                         />
                     ))}
                 </div>
