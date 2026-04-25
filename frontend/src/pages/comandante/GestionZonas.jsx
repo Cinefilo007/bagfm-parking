@@ -688,15 +688,17 @@ export default function GestionZonas() {
                     { label: 'Cap. Total', valor: totalCapacidad || '—', color: 'text-success', icon: Hash },
                     { label: 'Ocupación Total', valor: totalOcupados, color: 'text-danger', icon: Activity },
                     { label: 'Reservados', valor: totalReservados, color: 'text-warning', icon: Shield },
-
                 ].map(s => (
-                    <Card key={s.label} className="p-3 md:p-4 rounded-2xl border-white/5 flex items-center gap-3">
-                        <div className={cn("p-2.5 rounded-xl bg-opacity-20 shrink-0", s.color.replace('text-', 'bg-'))}>
-                            {s.icon && <s.icon className={s.color} size={20} />}
+                    <Card key={s.label} className="p-3 md:p-4 rounded-2xl border-white/5 flex items-center gap-3 bg-bg-card">
+                        <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center shrink-0 border", 
+                            s.color.replace('text-', 'bg-') + "/10",
+                            s.color.replace('text-', 'border-') + "/20"
+                        )}>
+                            <s.icon className={s.color} size={18} />
                         </div>
                         <div>
-                            <div className={cn("text-lg font-black tracking-tight", s.color)}>{s.valor}</div>
-                            <div className="text-[8px] font-black uppercase tracking-widest text-text-muted/50">{s.label}</div>
+                            <p className="text-[9px] text-text-muted font-bold uppercase tracking-widest leading-none mb-1">{s.label}</p>
+                            <p className={cn("text-lg font-display font-black leading-none", s.color)}>{s.valor}</p>
                         </div>
                     </Card>
                 ))}
@@ -706,11 +708,9 @@ export default function GestionZonas() {
             <div className="flex items-start gap-3 p-3 bg-primary/5 border border-primary/15 rounded-xl">
                 <Shield size={16} className="text-primary shrink-0 mt-0.5" />
                 <p className="text-[9px] text-text-muted leading-relaxed">
-                    Crea zonas de estacionamiento y asigna puestos a las entidades alojadas. Puedes configurar el tiempo límite de llegada por zona, generar puestos por lotes habilitando georreferenciación GPS individual, y reservar puestos para el personal de la base.
+                    Gestiona la capacidad táctica de la base. Configura tiempos límite, georreferencia puestos y reserva espacios VIP para personal autorizado.
                 </p>
             </div>
-
-            {/* Lista de zonas */}
             {cargando ? (
                 <div className="space-y-3">
                     {Array(3).fill(0).map((_, i) => (
