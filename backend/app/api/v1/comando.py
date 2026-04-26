@@ -21,6 +21,8 @@ from app.services.alcabala_mgmt_service import alcabala_service
 from app.services.comando_service import comando_service
 from app.schemas.comando import PaseBaseCrear, PuestoReservadoSalida
 from app.schemas.codigo_qr import CodigoQRSalida
+from app.services.configuracion_service import configuracion_service
+from app.schemas.configuracion import ConfiguracionSalidasUpdate
 
 router = APIRouter()
 
@@ -177,3 +179,32 @@ async def liberar_pase_reservado(
     if not exito:
         raise HTTPException(status_code=404, detail="Pase no encontrado o no es de tipo base")
     return {"mensaje": "Puesto liberado y pase anulado con éxito"}
+
+@router.get("/configuracion-salidas")
+async def obtener_config_salidas(
+    db: AsyncSession = Depends(obtener_db),
+    _ = Depends(verificar_comandante)
+):
+    """Retorna los ajustes actuales de gestión de salidas."""
+    return await configuracion_service.get_config_salidas(db)
+
+@router.patch("/configuracion-salidas")
+async def actualizar_config_salidas(
+    datos: ConfiguracionSalidasUpdate,
+    db: AsyncSession = Depends(obtener_db),
+    _ = Depends(verificar_comandante)
+):
+    """Actualiza las preferencias de salida de la base."""
+    if datos.sync_parquero is not None:
+        await configuracion_service.set_valor(
+            db, "BASE_EXIT_SYNC_PARKING", "true" if datos.sync_parquero else "false",
+            "Sincronizar salida de base con reporte de parquero"
+        )
+    
+    if datos.mass_time is not None:
+        await configuracion_service.set_valor(
+            db, "BASE_EXIT_MASS_TIME", datos.mass_time,
+            "Hora programada para expulsión masiva (HH:MM)"
+        )
+        
+    return await configuracion_service.get_config_salidas(db)

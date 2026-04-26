@@ -75,7 +75,7 @@ async def registrar_salida_zona(
     Registra la salida física del vehículo de la zona de estacionamiento y su liberación de puesto.
     """
     try:
-        vp = await parquero_service.registrar_salida(db, qr_id)
+        vp = await parquero_service.registrar_salida(db, qr_id, current_user.id)
         return vp
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
@@ -115,7 +115,7 @@ async def registrar_salida_por_placa(
     Registra la salida de un vehículo buscándolo por placa en la zona activa.
     """
     try:
-        return await parquero_service.registrar_salida_placa(db, placa, zona_id)
+        return await parquero_service.registrar_salida_placa(db, placa, zona_id, current_user.id)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
 

@@ -20,9 +20,11 @@ class CronService:
         """Ejecuta todas las tareas de vigilancia."""
         ghosts = await self.procesar_vehiculos_fantasma(db)
         timeouts = await self.procesar_excesos_permanencia(db)
+        mass_exits = await self.procesar_salidas_masivas(db)
         return {
             "vehiculos_fantasma_detectados": ghosts,
             "excesos_tiempo_detectados": timeouts,
+            "salidas_masivas_procesadas": mass_exits,
             "timestamp": datetime.now(timezone.utc).isoformat()
         }
 
@@ -150,5 +152,72 @@ class CronService:
         ).order_by(Infraccion.created_at.desc()).offset(skip).limit(limit)
         result = await db.execute(stmt)
         return result.scalars().all()
+
+    async def procesar_salidas_masivas(self, db: AsyncSession) -> int:
+        """
+        SOP: Expulsión Masiva Programada (Aegis v2.3).
+        Cierra todos los ciclos de acceso abiertos a la hora configurada.
+        """
+        from app.services.configuracion_service import configuracion_service
+        from app.models.acceso import Acceso
+        from app.models.enums import AccesoTipo
+        from sqlalchemy import func
+        
+        config = await configuracion_service.get_config_salidas(db)
+        mass_time = config.get("mass_time")
+        
+        if not mass_time:
+            return 0
+            
+        ahora = datetime.now(timezone.utc)
+        # Nota: El cron puede correr con desfase, comparamos HH:MM
+        header_time = ahora.strftime("%H:%M")
+        if header_time != mass_time:
+            return 0
+
+        # Subquery para obtener el ID del último acceso por vehiculo_placa
+        subq = select(
+            Acceso.vehiculo_placa,
+            func.max(Acceso.timestamp).label("max_ts")
+        ).group_by(Acceso.vehiculo_placa).subquery()
+        
+        stmt = select(Acceso).join(
+            subq,
+            and_(
+                Acceso.vehiculo_placa == subq.c.vehiculo_placa,
+                Acceso.timestamp == subq.c.max_ts
+            )
+        ).where(Acceso.tipo == AccesoTipo.entrada)
+        
+        res = await db.execute(stmt)
+        activos = res.scalars().all()
+        
+        contador = 0
+        for acc in activos:
+            nueva_salida = Acceso(
+                qr_id = acc.qr_id,
+                usuario_id = acc.usuario_id,
+                vehiculo_id = acc.vehiculo_id,
+                vehiculo_pase_id = acc.vehiculo_pase_id,
+                tipo = AccesoTipo.salida,
+                punto_acceso = "SISTEMA (MASIVA)",
+                registrado_por = acc.registrado_por, 
+                es_manual = True,
+                vehiculo_placa = acc.vehiculo_placa,
+                observaciones = f"Expulsión masiva programada ({mass_time})"
+            )
+            db.add(nueva_salida)
+            contador += 1
+            
+        if contador > 0:
+            await db.commit()
+            await notify_manager.broadcast({
+                "evento": "SISTEMA_SALIDA_MASIVA",
+                "mensaje": f"Se procesaron {contador} salidas automáticas por horario programado.",
+                "cantidad": contador,
+                "gravedad": "MODERADA"
+            }, roles=["COMANDANTE", "ADMIN_BASE"])
+            
+        return contador
 
 cron_service = CronService()

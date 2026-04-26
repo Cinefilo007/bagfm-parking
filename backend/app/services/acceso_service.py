@@ -449,6 +449,46 @@ class AccesoService:
         # logueando la entrada exclusivamente por el medio temporal (qr_id).
         # (Se eliminó la creación del usuario VISITANTE_ANÓNIMO a petición de mantener la tabla limpia)
 
+        # 2.5 SOP Auto-Cierre por Re-entrada (Aegis v2.3 Mandatorio)
+        # Si es una entrada, verificar si existe una entrada previa sin salida para este vehículo
+        if datos.tipo == AccesoTipo.entrada:
+            placa_para_buscar = datos.vehiculo_placa
+            if not placa_para_buscar and final_vehiculo_id:
+                v_db = await db.get(Vehiculo, final_vehiculo_id)
+                if v_db: placa_para_buscar = v_db.placa
+            elif not placa_para_buscar and final_vehiculo_pase_id:
+                from app.models.vehiculo_pase import VehiculoPase
+                vp_db = await db.get(VehiculoPase, final_vehiculo_pase_id)
+                if vp_db: placa_para_buscar = vp_db.placa
+            
+            if placa_para_buscar:
+                from sqlalchemy import or_
+                q_last = select(Acceso).where(
+                    or_(
+                        Acceso.vehiculo_placa == placa_para_buscar,
+                        Acceso.vehiculo_id == final_vehiculo_id if final_vehiculo_id else False
+                    )
+                ).order_by(Acceso.timestamp.desc()).limit(1)
+                
+                res_last = await db.execute(q_last)
+                ultimo_acceso = res_last.scalar_one_or_none()
+                
+                if ultimo_acceso and ultimo_acceso.tipo == AccesoTipo.entrada:
+                    # Crear salida automática para cerrar el ciclo previo
+                    salida_auto = Acceso(
+                        qr_id = ultimo_acceso.qr_id,
+                        usuario_id = ultimo_acceso.usuario_id,
+                        vehiculo_id = ultimo_acceso.vehiculo_id,
+                        vehiculo_pase_id = ultimo_acceso.vehiculo_pase_id,
+                        tipo = AccesoTipo.salida,
+                        punto_acceso = "SISTEMA (RE-ENTRADA)",
+                        registrado_por = registrado_por_id,
+                        es_manual = True,
+                        observaciones = f"Auto-cierre por entrada detectada en {datos.punto_acceso}"
+                    )
+                    db.add(salida_auto)
+                    await db.flush() 
+
         # 3. Persistir Acceso
         nuevo_acceso = Acceso(
             qr_id = datos.qr_id,

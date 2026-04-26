@@ -7,10 +7,11 @@ Optimizar el flujo de tráfico en las alcabalas de salida permitiendo métodos a
 
 | Método | Descripción | Activación |
 | :--- | :--- | :--- |
-| **Escaneo en Alcabala** | Registro manual por el guardia escaneando el QR de salida o buscando por placa. | Siempre activo (Default) |
+| **Escaneo en Alcabala** | Registro manual por el guardia escaneando el QR de salida o buscando por placa. | **Siempre Activo (Mandatorio)** |
+| **Auto-Cierre por Re-entrada** | Si un vehículo intenta entrar y tiene una entrada previa sin salida, se cierra la anterior automáticamente. | **Siempre Activo (Integridad)** |
 | **Sincronización Parquero** | Al marcar la salida de la zona de estacionamiento, el sistema marca automáticamente la salida de la base. | Opcional (Ajustes Comandante) |
 | **Expulsión Masiva** | A una hora predefinida (ej. 23:00), todos los vehículos activos en base se marcan como egresados. | Opcional (Ajustes Comandante) |
-| **Auto-Cierre por Re-entrada** | Si un vehículo intenta entrar y tiene una entrada previa sin salida, se cierra la anterior automáticamente. | Recomendado / Opcional |
+
 
 ## 3. Lógica de Implementación (Backend)
 

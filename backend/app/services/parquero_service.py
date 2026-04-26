@@ -14,6 +14,7 @@ from app.models.asignacion_zona import AsignacionZona
 from app.models.zona_estacionamiento import ZonaEstacionamiento
 from app.models.usuario import Usuario
 from app.models.enums import EstadoPuesto, AccesoTipo
+from app.services.configuracion_service import configuracion_service
 
 
 class ParqueroService:
@@ -376,12 +377,42 @@ class ParqueroService:
 
 
 
+    async def _sincronizar_salida_base(self, db: AsyncSession, vehiculo_pase: VehiculoPase, parquero_id: UUID):
+        """
+        SOP: Sincronización Táctica de Salidas (Aegis v2.3).
+        Si la opción está activa, registra automáticamente el egreso de la base.
+        """
+        config = await configuracion_service.get_config_salidas(db)
+        
+        if config.get("sync_parquero"):
+            # Registrar acceso de salida en sistema central
+            nueva_salida = Acceso(
+                qr_id = vehiculo_pase.qr_id,
+                usuario_id = None,
+                vehiculo_id = None,
+                vehiculo_pase_id = vehiculo_pase.id,
+                tipo = AccesoTipo.salida,
+                punto_acceso = "SINCRO PARQUERO",
+                registrado_por = parquero_id,
+                es_manual = True,
+                vehiculo_placa = vehiculo_pase.placa,
+                observaciones = "Salida automática sincronizada con parquero."
+            )
+            # Intentar rellenar usuario_id si el QR lo tiene
+            if vehiculo_pase.qr_id:
+                qr_db = await db.get(CodigoQR, vehiculo_pase.qr_id)
+                if qr_db:
+                    nueva_salida.usuario_id = qr_db.usuario_id
+                    nueva_salida.vehiculo_id = qr_db.vehiculo_id
+
+            db.add(nueva_salida)
+
     # ──────────────────────────────────────────────────────────────────────────
     # SALIDA POR PLACA (MANUAL)
     # ──────────────────────────────────────────────────────────────────────────
 
     async def registrar_salida_placa(
-        self, db: AsyncSession, placa: str, zona_id: UUID
+        self, db: AsyncSession, placa: str, zona_id: UUID, parquero_id: UUID
     ) -> Dict[str, Any]:
         """
         Registra la salida de un vehículo buscándolo por placa en la zona activa.
@@ -418,6 +449,9 @@ class ParqueroService:
                 puesto.qr_actual_id = None
                 puesto.vehiculo_actual_id = None
                 puesto.ocupado_desde = None
+
+        # Sincronización Aegis v2.3
+        await self._sincronizar_salida_base(db, vehiculo_pase, parquero_id)
 
         await db.commit()
         await db.refresh(vehiculo_pase)
@@ -593,7 +627,7 @@ class ParqueroService:
         return vehiculo_pase
 
     async def registrar_salida(
-        self, db: AsyncSession, qr_id: UUID
+        self, db: AsyncSession, qr_id: UUID, parquero_id: UUID
     ) -> VehiculoPase:
         """
         Registrar la salida de la zona de estacionamiento por QR.
@@ -620,6 +654,9 @@ class ParqueroService:
                 puesto.qr_actual_id = None
                 puesto.vehiculo_actual_id = None
                 puesto.ocupado_desde = None
+
+        # Sincronización Aegis v2.3
+        await self._sincronizar_salida_base(db, vehiculo_pase, parquero_id)
 
         await db.commit()
         await db.refresh(vehiculo_pase)

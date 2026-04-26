@@ -49,6 +49,17 @@ export const comandoService = {
      */
     const res = await api.post('/comando/identificar-guardia', datos);
     return res.data;
+  },
+
+  // Gestión de Salidas (Aegis v2.3)
+  async getConfigSalidas() {
+    const res = await api.get('/comando/configuracion-salidas');
+    return res.data;
+  },
+
+  async updateConfigSalidas(datos) {
+    const res = await api.patch('/comando/configuracion-salidas', datos);
+    return res.data;
   }
 };
 

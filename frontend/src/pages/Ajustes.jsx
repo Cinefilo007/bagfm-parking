@@ -15,6 +15,8 @@ import { usePushNotifications } from '../hooks/usePushNotifications';
 import { Bell, BellOff, BellRing, Mail as MailIcon, Send } from 'lucide-react';
 import { cn } from '../lib/utils';
 import ConfiguracionCorreoService from '../services/configuracionCorreo.service';
+import comandoService from '../services/comando.service';
+import { Clock, Check, ArrowUpRight } from 'lucide-react';
 export default function Ajustes() {
   const { 
     user, logout, updatePerfil, cambiarPassword, 
@@ -32,6 +34,13 @@ export default function Ajustes() {
   // Estado para correo
   const [loadingCorreo, setLoadingCorreo] = useState(false);
   const [configCorreoData, setConfigCorreoData] = useState(null);
+
+  // Estados para gestión de salidas
+  const [configSalidas, setConfigSalidas] = useState({
+    sync_parquero: false,
+    mass_time: ''
+  });
+  const [loadingSalidas, setLoadingSalidas] = useState(false);
 
   // Estados formularios
   const [perfilData, setPerfilData] = useState({
@@ -51,7 +60,38 @@ export default function Ajustes() {
 
   useEffect(() => {
     cargarDispositivos();
-  }, []);
+    if (isComandante) {
+      cargarConfigSalidas();
+    }
+  }, [isComandante]);
+
+  const cargarConfigSalidas = async () => {
+    setLoadingSalidas(true);
+    try {
+      const data = await comandoService.getConfigSalidas();
+      setConfigSalidas({
+        sync_parquero: data.sync_parquero,
+        mass_time: data.mass_time || ''
+      });
+    } catch (error) {
+      console.error("Error al cargar config salidas", error);
+    } finally {
+      setLoadingSalidas(false);
+    }
+  };
+
+  const handleUpdateConfigSalidas = async (newData) => {
+    try {
+      const data = await comandoService.updateConfigSalidas(newData);
+      setConfigSalidas({
+        sync_parquero: data.sync_parquero,
+        mass_time: data.mass_time || ''
+      });
+      toast.success('Configuración de salidas actualizada');
+    } catch (error) {
+      toast.error('Error al guardar cambios');
+    }
+  };
 
   const cargarDispositivos = async () => {
     setLoadingDispositivos(true);
@@ -408,7 +448,108 @@ export default function Ajustes() {
         </Card>
       </section>
 
-      {/* Cerrar Sesión (Estilo Botón Eliminar) */}
+
+      
+      {isComandante && (
+        <section className="max-w-4xl mx-auto px-2 md:px-6 space-y-4">
+          <p className="text-[10px] text-text-muted uppercase font-black tracking-[0.3em] opacity-40 ml-2">Logística de Salida Automatizada</p>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Auto-Cierre por Re-entrada (Mandatorio - Solo Info) */}
+            <Card className="bg-bg-low/40 border-white/5 backdrop-blur-md relative overflow-hidden">
+               <div className="absolute top-0 right-0 p-2">
+                  <div className="flex items-center gap-1.5 px-2 py-0.5 bg-emerald-500/10 border border-emerald-500/20 rounded-full">
+                    <Check size={8} className="text-emerald-500" />
+                    <span className="text-[7px] font-black text-emerald-500 uppercase tracking-widest">Activo</span>
+                  </div>
+               </div>
+               <CardContent className="p-5">
+                  <div className="flex items-start gap-4">
+                    <div className="w-10 h-10 rounded-xl bg-emerald-500/10 text-emerald-500 flex items-center justify-center shrink-0">
+                       <ArrowUpRight size={20} />
+                    </div>
+                    <div>
+                      <h4 className="text-xs font-black text-white uppercase tracking-tight italic">Auto-Cierre Re-entrada</h4>
+                      <p className="text-[9px] text-text-muted font-bold leading-relaxed mt-1">Cierra automáticamente ciclos previos al detectar el ingreso del mismo vehículo. Mandatorio para integridad táctica.</p>
+                    </div>
+                  </div>
+               </CardContent>
+            </Card>
+
+            {/* Sincronización Parquero */}
+            <Card className={cn(
+              "bg-bg-low/40 border-white/5 backdrop-blur-md transition-all cursor-pointer hover:border-primary/30",
+              configSalidas.sync_parquero && "border-primary/20 bg-primary/5"
+            )}
+            onClick={() => handleUpdateConfigSalidas({ sync_parquero: !configSalidas.sync_parquero })}
+            >
+               <CardContent className="p-5">
+                  <div className="flex items-start justify-between">
+                    <div className="flex items-start gap-4">
+                      <div className={cn(
+                        "w-10 h-10 rounded-xl flex items-center justify-center shrink-0 transition-all",
+                        configSalidas.sync_parquero ? "bg-primary text-bg-app" : "bg-white/5 text-text-muted"
+                      )}>
+                         <MonitorSmartphone size={20} />
+                      </div>
+                      <div>
+                        <h4 className="text-xs font-black text-white uppercase tracking-tight italic">Sync Parquero</h4>
+                        <p className="text-[9px] text-text-muted font-bold leading-relaxed mt-1">Marca la salida de la base automáticamente cuando el parquero libera el vehículo de su zona.</p>
+                      </div>
+                    </div>
+                    <div className={cn(
+                      "w-10 h-6 rounded-full border border-white/10 flex items-center px-1 transition-all",
+                      configSalidas.sync_parquero ? "bg-primary/20 border-primary/30 justify-end" : "justify-start"
+                    )}>
+                      <div className={cn("w-4 h-4 rounded-full", configSalidas.sync_parquero ? "bg-primary" : "bg-white/20")} />
+                    </div>
+                  </div>
+               </CardContent>
+            </Card>
+
+            {/* Expulsión Masiva Programada */}
+            <Card className="bg-bg-low/40 border-white/5 backdrop-blur-md md:col-span-2">
+               <CardContent className="p-5">
+                  <div className="flex flex-col md:flex-row items-center justify-between gap-6">
+                    <div className="flex items-start gap-4 max-w-md">
+                      <div className="w-10 h-10 rounded-xl bg-orange-500/10 text-orange-500 flex items-center justify-center shrink-0">
+                         <Clock size={20} />
+                      </div>
+                      <div>
+                        <h4 className="text-xs font-black text-white uppercase tracking-tight italic">Expulsión Masiva Programada</h4>
+                        <p className="text-[9px] text-text-muted font-bold leading-relaxed mt-1">Cierra todos los registros de ingreso abiertos a una hora específica del día. Útil para resetear ocupación nocturna.</p>
+                      </div>
+                    </div>
+                    
+                    <div className="flex items-center gap-3 w-full md:w-auto">
+                       <input 
+                         type="time"
+                         className="flex-1 md:w-32 h-10 bg-bg-app border border-white/10 rounded-xl px-4 text-xs font-black text-white focus:border-primary transition-all"
+                         value={configSalidas.mass_time}
+                         onChange={(e) => setConfigSalidas({...configSalidas, mass_time: e.target.value})}
+                       />
+                       <Boton 
+                         className="h-10 px-6 bg-primary text-bg-app font-black uppercase text-[9px] tracking-widest disabled:opacity-50"
+                         disabled={loadingSalidas}
+                         onClick={() => handleUpdateConfigSalidas({ mass_time: configSalidas.mass_time })}
+                       >
+                         {loadingSalidas ? "..." : "Programar"}
+                       </Boton>
+                       {configSalidas.mass_time && (
+                         <button 
+                           onClick={() => handleUpdateConfigSalidas({ mass_time: '' })}
+                           className="h-10 px-4 bg-white/5 hover:bg-red-500/20 text-text-muted hover:text-red-500 rounded-xl transition-all"
+                           title="Desactivar"
+                         >
+                           <Trash2 size={14} />
+                         </button>
+                       )}
+                    </div>
+                  </div>
+               </CardContent>
+            </Card>
+          </div>
+        </section>
+      )}
       <section className="max-w-4xl mx-auto px-2 md:px-6 pt-4">
         <button 
           className="w-full h-14 bg-red-500 hover:bg-red-600 active:scale-[0.98] transition-all rounded-xl flex items-center justify-center gap-3 px-8 shadow-[0_10px_20px_-5px_rgba(239,68,68,0.4)] group border border-white/10"
