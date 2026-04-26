@@ -13,6 +13,29 @@ class IAService:
         # Usamos la versión 2.5 Flash solicitada para máxima precisión táctica
         self.model = genai.GenerativeModel('gemini-2.5-flash')
 
+    async def refinar_mensaje_correo(self, contexto: str, mensaje_actual: str) -> str:
+        """
+        Refina profesionalmente el cuerpo de un correo usando Gemini 2.0 Flash.
+        """
+        try:
+            prompt = (
+                f"Eres un experto en comunicación institucional y seguridad táctica para la base BAGFM. "
+                f"El contexto es: {contexto}. "
+                f"El mensaje actual es: '{mensaje_actual}'. "
+                f"REQUERIMIENTOS: "
+                f"1. Hazlo sonar profesional, respetuoso y ejecutivo. "
+                f"2. Mantén obligatoriamente las variables '{{{{nombre}}}}' y '{{{{qr_url}}}}' sin modificarlas. "
+                f"3. No incluyas variables internas como número de lote. "
+                f"4. El tono debe ser de servicio institucional. "
+                f"5. Responde ÚNICAMENTE con el cuerpo del mensaje refinado, sin intros ni explicaciones."
+            )
+
+            response = self.model.generate_content(prompt)
+            return response.text.strip()
+        except Exception as e:
+            print(f"Error IA Refinar: {str(e)}")
+            return mensaje_actual
+
     async def extraer_datos_documento(self, image_base64: str, tipo: str) -> Dict[str, Any]:
         """
         Extrae datos estructurados de una imagen de documento usando Gemini 2.5 Flash.

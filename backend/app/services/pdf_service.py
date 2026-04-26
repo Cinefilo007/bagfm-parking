@@ -8,8 +8,8 @@ from sqlalchemy.future import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from reportlab.pdfgen import canvas
-from reportlab.lib.pagesizes import A4
-from reportlab.lib.units import mm
+from reportlab.lib.pagesizes import A4, LETTER
+from reportlab.lib.units import mm, inch
 from reportlab.lib.colors import HexColor
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
@@ -86,6 +86,44 @@ class PDFService:
         # Agregar página de instrucciones
         c.showPage()
         self._dibujar_instrucciones(c, width, height, col_secundario, col_primario)
+
+        c.save()
+        buffer.seek(0)
+        return buffer
+
+    async def generar_pdf_individual(
+        self, 
+        pase: CodigoQR, 
+        lote: LotePaseMasivo, 
+        preset: dict
+    ) -> io.BytesIO:
+        """
+        Genera un PDF individual (tamaño carta) con un solo carnet centrado.
+        """
+        buffer = io.BytesIO()
+        c = canvas.Canvas(buffer, pagesize=LETTER)
+        width, height = LETTER # 612 x 792 points (approx 215.9 x 279.4 mm)
+
+        # Colores del preset
+        cp = HexColor(preset.get('primario', '#4EDEA3'))
+        cs = HexColor(preset.get('fondo', '#0E1322'))
+        ct = HexColor(preset.get('textoNombre', '#FFFFFF'))
+        
+        # Dimensiones del carnet (Estandarizado)
+        card_w = 100 * mm # Un poco más grande para el PDF individual
+        card_h = 70 * mm
+        
+        # Centrado
+        x = (width - card_w) / 2
+        y = (height - card_h) / 2
+
+        self._dibujar_carnet(c, x, y, card_w, card_h, lote, pase, cp, cs, ct, None)
+
+        # Instrucciones discretas abajo
+        c.setFillColor(HexColor("#64748b"))
+        c.setFont(self.font_name, 8)
+        c.drawCentredString(width/2, y - 20 * mm, "ESTE DOCUMENTO ES UN COMPROBANTE OFICIAL DE ACCESO.")
+        c.drawCentredString(width/2, y - 25 * mm, "PRESENTE EL CÓDIGO QR EN LOS PUNTOS DE CONTROL.")
 
         c.save()
         buffer.seek(0)

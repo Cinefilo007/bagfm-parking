@@ -68,3 +68,5 @@ class LotePaseMasivoEnvioCorreo(BaseModel):
     asunto: str
     cuerpo: str
     adjuntar_pdf: bool = False
+    tipo_envio: str = "solo_qr" # solo_qr, carnet_pdf
+    estilo_carnet: Optional[dict] = None

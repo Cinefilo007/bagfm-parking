@@ -21,7 +21,9 @@ class CorreoMasivoService:
         lote_id: UUID, 
         asunto: str, 
         cuerpo_plantilla: str, 
-        adjuntar_pdf: bool
+        adjuntar_pdf: bool,
+        tipo_envio: str = "solo_qr",
+        estilo_carnet: Optional[dict] = None
     ):
         """
         Método asíncrono que debe ser ejecutado por BackgroundTasks.
@@ -30,12 +32,13 @@ class CorreoMasivoService:
         # Obtenemos Lote y pases
         lote = await db.get(LotePaseMasivo, lote_id)
         if not lote:
+            print(f"Error: Lote {lote_id} no encontrado para despacho.")
             return
 
         result_pases = await db.execute(select(CodigoQR).where(CodigoQR.lote_id == lote_id))
         pases = result_pases.scalars().all()
 
-        # Obtener Configuración (de entidad, o general si no tiene o el rol es superior)
+        # Obtener Configuración
         config = None
         if lote.entidad_id:
             config = await configuracion_correo_service.obtener_por_entidad(db, lote.entidad_id)
@@ -46,69 +49,65 @@ class CorreoMasivoService:
         api_key_to_use = config.api_key_resend if (config and config.api_key_resend) else config_env.resend_api_key
 
         if not api_key_to_use:
-            print(f"Error: No hay Token de Resend global ni configurado para la entidad en el lote {lote_id}")
+            print(f"Error: No hay Token de Resend configurado.")
             return
 
         remitente = f"{config.nombre_remitente} <{config.email_remitente}>" if (config and config.nombre_remitente) else "BAGFM Access <accesos@bagfm.mil.ve>"
         if config and config.email_remitente and not config.nombre_remitente:
             remitente = config.email_remitente
 
-        # PDF Lote opcional
-        pdf_base64 = None
-        if adjuntar_pdf:
-            pdf_buffer = await pdf_service.generar_pdf_lote(db, lote_id)
-            pdf_base64 = base64.b64encode(pdf_buffer.getvalue()).decode('utf-8')
-
         # Procesar lote. Enviamos 1 a 1 mediante httpx asíncrono
         async with httpx.AsyncClient() as client:
             headers = {
-                "Authorization": f"Bearer {config.api_key_resend}",
+                "Authorization": f"Bearer {api_key_to_use}",
                 "Content-Type": "application/json"
             }
             
             for pase in pases:
-                # Solo enviar a los que tengan correo (si es pase tipo B y cargaron excel con email)
                 destinatario = None
                 nombre_dest = "Usuario Invitado"
                 
-                # Intentamos extraer email y nombre del JSON extra_datos
                 if pase.extra_datos:
                     destinatario = pase.extra_datos.get("email") or pase.extra_datos.get("correo")
                     nombre_dest = pase.extra_datos.get("nombre", nombre_dest)
 
-                # Si es pase genérico (Tipo A), tal vez no hay correo. Saltamos.
                 if not destinatario:
                     continue
 
                 # Compilar plantilla
-                # Variables: {{nombre}}, {{qr_url}}, {{lote}}
+                # La URL de QR es para ver/descargar el pase en el navegador
                 qr_link = f"{config_env.frontend_url}/pase/{pase.token}"
+                
+                # Formateo automático de saltos de línea (nl2br)
                 cuerpo_html = cuerpo_plantilla.replace("\n", "<br>")
-                cuerpo_html = cuerpo_html.replace("{{nombre}}", nombre_dest)
-                cuerpo_html = cuerpo_html.replace("{{qr_url}}", f"<a href='{qr_link}'>{qr_link}</a>")
-                cuerpo_html = cuerpo_html.replace("{{lote}}", lote.nombre)
+                cuerpo_html = cuerpo_html.replace("{{nombre}}", f"<strong>{nombre_dest}</strong>")
+                cuerpo_html = cuerpo_html.replace("{{qr_url}}", f"<a href='{qr_link}' style='color: #4ade80; font-weight: bold;'>VER MI PASE AQUÍ</a>")
 
                 payload = {
                     "from": remitente,
                     "to": [destinatario],
                     "subject": asunto,
-                    "html": cuerpo_html
+                    "html": f"<div style='font-family: sans-serif; color: #f8fafc; background-color: #0c0f17; padding: 40px; border-radius: 16px;'>{cuerpo_html}</div>"
                 }
 
-                if adjuntar_pdf:
-                    payload["attachments"] = [
-                        {
-                            "filename": f"PASE_{pase.serial_legible}.pdf",
-                            "content": pdf_base64
-                        }
-                    ]
+                # Si es tipo carnet_pdf, generamos el PDF INDIVIDUAL centrado en tamaño CARTA
+                if tipo_envio == "carnet_pdf" and estilo_carnet:
+                    try:
+                        pdf_buf = await pdf_service.generar_pdf_individual(pase, lote, estilo_carnet)
+                        pdf_b64 = base64.b64encode(pdf_buf.getvalue()).decode('utf-8')
+                        payload["attachments"] = [
+                            {
+                                "filename": f"CARNET_ACCESO_{pase.serial_legible}.pdf",
+                                "content": pdf_b64
+                            }
+                        ]
+                    except Exception as pdf_err:
+                        print(f"Error generando PDF para {destinatario}: {str(pdf_err)}")
 
                 try:
                     response = await client.post("https://api.resend.com/emails", json=payload, headers=headers)
                     if response.status_code >= 400:
                         print(f"Error Resend ({response.status_code}): {response.text}")
-                    else:
-                        print(f"Correo enviado a {destinatario} via Resend. status={response.status_code}")
                 except Exception as e:
                     print(f"Exception al enviar correo a {destinatario}: {str(e)}")
 

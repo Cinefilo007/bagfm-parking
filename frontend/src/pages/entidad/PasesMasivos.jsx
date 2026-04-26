@@ -524,14 +524,16 @@ const ModalEditarPase = ({ pase, isOpen, onClose, onRefresh }) => {
 
 const ModalEnvioCorreosMasivos = ({ isOpen, onClose, lote }) => {
     const [asunto, setAsunto] = useState('');
-    const [cuerpo, setCuerpo] = useState('Hola {{nombre}},\\n\\nAdjunto tu pase para el evento {{lote}}.\\nAccede a tu código desde aquí: {{qr_url}}\\n\\n¡Te esperamos!');
-    const [adjuntarPdf, setAdjuntarPdf] = useState(false);
+    const [cuerpo, setCuerpo] = useState('Estimado {{nombre}},\n\nNos complace informarle que su pase de acceso para el evento ya ha sido generado exitosamente.\n\nUsted puede visualizar y gestionar su pase táctico haciendo clic en el siguiente enlace:\n{{qr_url}}\n\nLe sugerimos tener su código QR a la mano al momento de llegar a la alcabala para agilizar su ingreso.\n\nSaludos cordiales,\nComando de Base');
+    const [tipoEnvio, setTipoEnvio] = useState('solo_qr'); // 'solo_qr' o 'carnet_pdf'
+    const [presetId, setPresetId] = useState('aegis');
     const [enviando, setEnviando] = useState(false);
+    const [optimizando, setOptimizando] = useState(false);
 
     // Precargar datos del lote en asunto
     useEffect(() => {
         if (lote) {
-            setAsunto(`Pases de Acceso VIP - ${lote.nombre_evento}`);
+            setAsunto(`Pases de Acceso - ${lote.nombre_evento}`);
         }
     }, [lote]);
 
@@ -539,74 +541,167 @@ const ModalEnvioCorreosMasivos = ({ isOpen, onClose, lote }) => {
         e.preventDefault();
         setEnviando(true);
         try {
+            const estilo = PRESETS_COLOR.find(p => p.id === presetId);
             await api.post(`/pases/lotes/${lote.id}/enviar-correos`, {
                 asunto,
                 cuerpo,
-                adjuntar_pdf: adjuntarPdf
+                adjuntar_pdf: tipoEnvio === 'carnet_pdf',
+                tipo_envio: tipoEnvio,
+                estilo_carnet: estilo
             });
-            toast.success('Envío masivo en cola. El Motor de Correo lo está procesando.');
+            toast.success('Protocolo de difusión iniciado en segundo plano.');
             onClose();
         } catch (e) {
-            toast.error('Ocurrió un error al despachar los correos a la cola');
+            toast.error('Error al despachar los correos.');
         } finally {
             setEnviando(false);
         }
     };
 
+    const handleIAOptimize = async () => {
+        setOptimizando(true);
+        try {
+            const res = await api.post('/ia/refinar-correo', {
+                texto: cuerpo,
+                contexto: lote?.nombre_evento || 'Evento de la Base'
+            });
+            if (res.data?.data) {
+                setCuerpo(res.data.data);
+                toast.success('Mensaje optimizado por IA Táctica');
+            }
+        } catch (e) {
+            toast.error('Motor de IA no disponible');
+        } finally {
+            setOptimizando(false);
+        }
+    };
+
     return (
-        <Modal isOpen={isOpen} onClose={onClose} title="DIFUSIÓN MASIVA POR CORREO" size="lg">
+        <Modal isOpen={isOpen} onClose={onClose} title="DIFUSIÓN MASIVA POR CORREO" className="max-w-4xl">
             <form onSubmit={handleEnviar} className="space-y-6">
                 
-                <div className="p-4 rounded-xl border border-warning/20 bg-warning/5 text-warning text-[11px] font-bold">
-                    <AlertTriangle size={16} className="inline mr-2 mb-0.5" />
-                    <strong>Aviso Táctico:</strong> Solo se enviarán correos a los pases que tengan un e-mail registrado. Los correos se envían en segundo plano utilizando tus credenciales de Resend (configuradas en Ajustes).
+                <div className="p-4 rounded-xl border border-sky-500/20 bg-sky-500/5 text-sky-400 text-[11px] font-bold flex gap-3 items-center">
+                    <Info size={18} className="shrink-0" />
+                    <div>
+                        <strong>Manual de Operaciones:</strong> Esta herramienta envía un correo electrónico individual y personalizado a cada portador. 
+                        La variable <code className="text-white bg-white/10 px-1 rounded">{'{{qr_url}}'}</code> permite al usuario descargar o ver su pase en tiempo real desde el portal.
+                    </div>
                 </div>
 
-                <div className="space-y-4">
-                    <Input 
-                        label="ASUNTO DEL CORREO" 
-                        value={asunto} 
-                        onChange={e => setAsunto(e.target.value)} 
-                        required 
-                    />
-                    
-                    <div className="space-y-1">
-                        <label className="text-[10px] font-black tracking-widest text-text-muted uppercase px-1">CUERPO DEL CORREO (PLANTILLA TEXTO)</label>
-                        <textarea 
-                            value={cuerpo} 
-                            onChange={e => setCuerpo(e.target.value)}
-                            className="w-full h-32 bg-bg-app border border-white/10 focus:border-primary rounded-xl p-4 text-sm font-medium text-white transition-all resize-none"
-                            required
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                    {/* Panel Izquierdo: Configuración del Mensaje */}
+                    <div className="space-y-4">
+                        <Input 
+                            label="ASUNTO DEL CORREO" 
+                            value={asunto} 
+                            onChange={e => setAsunto(e.target.value)} 
+                            required 
+                            className="bg-bg-app border-white/10"
                         />
-                        <p className="text-[9px] text-text-muted ml-1">
-                            Variables disponibles: <code className="text-primary font-bold">{'{{nombre}}'}</code>, <code className="text-primary font-bold">{'{{lote}}'}</code>, <code className="text-primary font-bold">{'{{qr_url}}'}</code>
-                        </p>
+                        
+                        <div className="space-y-2">
+                            <div className="flex items-center justify-between px-1">
+                                <label className="text-[10px] font-black tracking-widest text-text-muted uppercase">CUERPO DEL MENSAJE</label>
+                                <button 
+                                    type="button"
+                                    onClick={handleIAOptimize}
+                                    disabled={optimizando}
+                                    className="flex items-center gap-1.5 px-2 py-1 rounded-lg bg-primary/10 text-primary text-[8px] font-black uppercase hover:bg-primary/20 transition-all disabled:opacity-50"
+                                >
+                                    {optimizando ? <RefreshCw size={10} className="animate-spin" /> : <Zap size={10} />}
+                                    Optimizar con IA
+                                </button>
+                            </div>
+                            <textarea 
+                                value={cuerpo} 
+                                onChange={e => setCuerpo(e.target.value)}
+                                className="w-full h-48 bg-bg-app border border-white/10 focus:border-primary rounded-xl p-4 text-[13px] font-medium text-white transition-all resize-none shadow-inner"
+                                required
+                            />
+                            <div className="flex justify-between items-center px-1">
+                                <p className="text-[9px] text-text-muted font-bold">
+                                    Variables: <code className="text-primary font-bold">{'{{nombre}}'}</code>, <code className="text-secondary font-bold">{'{{qr_url}}'}</code>
+                                </p>
+                                <span className="text-[8px] text-text-muted opacity-40 uppercase font-bold text-right">Los saltos de línea se formatean automáticamente</span>
+                            </div>
+                        </div>
                     </div>
 
-                    <label className="flex items-center gap-3 p-3 bg-white/5 border border-white/5 rounded-xl cursor-pointer hover:bg-white/10 transition-all">
-                        <input 
-                            type="checkbox" 
-                            checked={adjuntarPdf} 
-                            onChange={e => setAdjuntarPdf(e.target.checked)}
-                            className="w-4 h-4 rounded-sm border-white/20 bg-black/40 text-primary focus:ring-primary/50 cursor-pointer"
-                        />
-                        <div>
-                            <span className="text-[11px] font-black uppercase text-text-main line-clamp-1 block">ADJUNTAR CARNET EN PDF</span>
-                            <span className="text-[9px] font-medium text-text-muted block">Si lo activas, el portador recibirá el archivo PDF además del enlace al pase QR.</span>
-                        </div>
-                    </label>
+                    {/* Panel Derecho: Configuración del Adjunto y Visualización */}
+                    <div className="space-y-6">
+                        <section className="space-y-3">
+                            <label className="text-[10px] font-black tracking-widest text-text-muted uppercase px-1">TIPO DE ENTREGA</label>
+                            <div className="grid grid-cols-2 gap-3">
+                                <button
+                                    type="button"
+                                    onClick={() => setTipoEnvio('solo_qr')}
+                                    className={cn(
+                                        "flex flex-col items-center gap-2 p-4 rounded-2xl border-2 transition-all",
+                                        tipoEnvio === 'solo_qr' ? 'bg-primary/10 border-primary text-primary' : 'bg-white/5 border-white/5 text-text-muted hover:border-white/10'
+                                    )}
+                                >
+                                    <QrCode size={20} />
+                                    <span className="text-[10px] font-black uppercase">Solo QR</span>
+                                    <span className="text-[8px] opacity-60 font-bold">Enlace interactivo</span>
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => setTipoEnvio('carnet_pdf')}
+                                    className={cn(
+                                        "flex flex-col items-center gap-2 p-4 rounded-2xl border-2 transition-all",
+                                        tipoEnvio === 'carnet_pdf' ? 'bg-sky-500/10 border-sky-500 text-sky-400 shadow-lg shadow-sky-500/10' : 'bg-white/5 border-white/5 text-text-muted hover:border-white/10'
+                                    )}
+                                >
+                                    <Download size={20} />
+                                    <span className="text-[10px] font-black uppercase">Carnet PDF</span>
+                                    <span className="text-[8px] opacity-60 font-bold">Adjunto Tamaño Carta</span>
+                                </button>
+                            </div>
+                        </section>
+
+                        {tipoEnvio === 'carnet_pdf' && (
+                            <section className="space-y-3 animate-in slide-in-from-top-2 duration-300">
+                                <label className="text-[10px] font-black tracking-widest text-text-muted uppercase px-1">ESTILO DEL CARNET ADJUNTO</label>
+                                <div className="grid grid-cols-3 gap-2">
+                                    {PRESETS_COLOR.map(p => (
+                                        <button
+                                            key={p.id}
+                                            type="button"
+                                            onClick={() => setPresetId(p.id)}
+                                            className={cn(
+                                                "group relative h-10 rounded-xl border flex items-center justify-center transition-all overflow-hidden",
+                                                presetId === p.id ? "border-white ring-2 ring-white/20" : "border-white/10 hover:border-white/30"
+                                            )}
+                                            style={{ backgroundColor: p.fondo }}
+                                        >
+                                            <div className="absolute inset-0 opacity-10 group-hover:opacity-20 transition-opacity" style={{ backgroundColor: p.primario }} />
+                                            <span className="relative text-[9px] font-black uppercase tracking-tighter" style={{ color: p.primario }}>{p.nombre}</span>
+                                        </button>
+                                    ))}
+                                </div>
+                                <div className="p-3 bg-white/5 rounded-xl border border-white/5">
+                                    <p className="text-[9px] text-text-muted font-bold uppercase leading-relaxed text-center italic">
+                                        "El carnet se anexará centrado en una hoja tamaño carta con dimensiones tácticas 100x70mm"
+                                    </p>
+                                </div>
+                            </section>
+                        )}
+                    </div>
                 </div>
 
-                <div className="flex justify-end gap-3 pt-4 border-t border-white/5">
-                    <Boton type="button" variant="ghost" onClick={onClose}>Cancelar</Boton>
-                    <Boton type="submit" isLoading={enviando} className="bg-sky-500 hover:bg-sky-400 text-bg-app">
-                        <Mail className="mr-2" size={16} /> CONFIRMAR Y ENCOLAR
+                <div className="flex justify-end gap-3 pt-6 border-t border-white/5">
+                    <Boton variant="ghost" type="button" onClick={onClose} disabled={enviando}>
+                        CANCELAR
+                    </Boton>
+                    <Boton type="submit" isLoading={enviando} className="bg-primary text-bg-app px-10 h-12 shadow-tactica">
+                        CONFIRMAR Y ENVIAR AL COMANDO
                     </Boton>
                 </div>
             </form>
         </Modal>
     );
 };
+
 
 const ModalListaPases = ({ isOpen, onClose, lote, zonas }) => {
     const [pases, setPases] = useState([]);

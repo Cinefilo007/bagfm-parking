@@ -262,7 +262,9 @@ async def enviar_correos_lote_endpoint(
         lote_id,
         datos.asunto,
         datos.cuerpo,
-        datos.adjuntar_pdf
+        datos.adjuntar_pdf,
+        datos.tipo_envio,
+        datos.estilo_carnet
     )
     
     return {"status": "accepted", "message": "Proceso de despacho de correos iniciado en segundo plano."}
