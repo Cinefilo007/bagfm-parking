@@ -51,6 +51,10 @@ export default function Ajustes() {
     telefono: user?.telefono || ''
   });
 
+  const isComandante = user?.rol === RolTipo.COMANDANTE;
+  const showEventos = user?.rol === RolTipo.COMANDANTE || user?.rol === RolTipo.ADMIN_BASE || user?.rol === RolTipo.ADMIN_ENTIDAD;
+  const eventosLink = user?.rol === RolTipo.ADMIN_ENTIDAD ? '/entidad/eventos' : '/comando/eventos';
+
   const [passwordData, setPasswordData] = useState({
     nuevaPassword: '',
     confirmarPassword: ''
@@ -136,10 +140,6 @@ export default function Ajustes() {
   };
 
   if (!user) return null;
-
-  const isComandante = user.rol === RolTipo.COMANDANTE;
-  const showEventos = user.rol === RolTipo.COMANDANTE || user.rol === RolTipo.ADMIN_BASE || user.rol === RolTipo.ADMIN_ENTIDAD;
-  const eventosLink = user.rol === RolTipo.ADMIN_ENTIDAD ? '/entidad/eventos' : '/comando/eventos';
 
   const closeModals = () => {
     setActiveModal(null);
