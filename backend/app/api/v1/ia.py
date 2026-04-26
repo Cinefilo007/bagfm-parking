@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
-from typing import Dict, Any
+from typing import Dict, Any, Optional
 from app.core.database import obtener_db
 from app.core.dependencias import obtener_usuario_actual
 from app.models.usuario import Usuario
