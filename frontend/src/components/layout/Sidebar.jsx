@@ -27,6 +27,7 @@ export const Sidebar = () => {
       { to: '/comando/eventos', label: 'Eventos Masivos', icon: CalendarRange },
       { to: '/comando/infracciones', label: 'Infracciones', icon: AlertTriangle },
       { to: '/comando/personal', label: 'Gestión Personal', icon: UserCog },
+      { to: '/comando/carnets', label: 'Editor de carnets', icon: Palette },
     );
   } else if (user?.rol === 'ADMIN_ENTIDAD') {
     navItems.push(

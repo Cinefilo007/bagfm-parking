@@ -76,7 +76,8 @@ export const router = createBrowserRouter([
               { path: 'eventos', element: <EventosMando /> },
               { path: 'personal', element: <Personal /> },
               { path: 'zonas', element: <GestionZonas /> },
-              { path: 'infracciones', element: <InfraccionesComando /> }
+              { path: 'infracciones', element: <InfraccionesComando /> },
+              { path: 'carnets', element: <EditorCarnets /> }
             ],
           },
           // ENTIDAD
