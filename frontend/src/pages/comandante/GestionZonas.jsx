@@ -1179,27 +1179,29 @@ export default function GestionZonas() {
                 isOpen={modalDetallePuesto}
                 onClose={() => setModalDetallePuesto(false)}
                 title="DETALLE DE ASIGNACIÓN — BASE"
-                className="max-w-2xl"
+                className="lg:max-w-4xl max-w-2xl"
             >
                 {puestoDetalle && (
-                    <div className="space-y-6">
-                        <div className="flex items-center gap-4 bg-primary/5 p-4 rounded-2xl border border-primary/20">
-                            <div className="w-12 h-12 bg-primary/20 rounded-full flex items-center justify-center">
-                                <Shield className="text-primary" size={24} />
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        
+                        {/* ── COLUMNA IZQUIERDA: Detalles y Botones ── */}
+                        <div className="flex flex-col gap-6 h-full">
+                            <div className="flex items-center gap-4 bg-primary/5 p-4 rounded-2xl border border-primary/20">
+                                <div className="w-12 h-12 bg-primary/20 rounded-full flex items-center justify-center shrink-0">
+                                    <Shield className="text-primary" size={24} />
+                                </div>
+                                <div>
+                                    <h4 className="text-sm font-black text-text-main uppercase">
+                                        Puesto: {puestoDetalle.numero_puesto}
+                                    </h4>
+                                    <p className="text-[10px] text-text-muted uppercase font-bold">
+                                        Acceso Prioritario de Comando
+                                    </p>
+                                </div>
                             </div>
-                            <div>
-                                <h4 className="text-sm font-black text-text-main uppercase">
-                                    Puesto: {puestoDetalle.numero_puesto}
-                                </h4>
-                                <p className="text-[10px] text-text-muted uppercase font-bold">
-                                    Acceso Prioritario de Comando
-                                </p>
-                            </div>
-                        </div>
 
-                        {puestoDetalle.detalle_pase && (
-                            <div className="grid grid-cols-1 md:grid-cols-5 gap-6">
-                                <div className="md:col-span-3 space-y-6">
+                            {puestoDetalle.detalle_pase && (
+                                <div className="space-y-6 flex-1">
                                     <div className="space-y-4">
                                         <h5 className="text-[10px] font-black text-primary uppercase tracking-widest flex items-center gap-2">
                                             <Users size={12} /> Datos del Portador
@@ -1255,11 +1257,53 @@ export default function GestionZonas() {
                                         </div>
                                     </div>
                                 </div>
+                            )}
 
-                                <div className="md:col-span-2 flex flex-col items-center justify-center p-4 bg-black/30 rounded-2xl border border-white/5 relative overflow-hidden">
-                                    {/* Contenedor Visualizable */}
+                            {/* Controles de Acción Integrados al Final de Columna 1 */}
+                            <div className="flex flex-col gap-3 pt-6 border-t border-white/5 mt-auto">
+                                <div className="flex flex-col sm:flex-row gap-3 w-full">
+                                    <button
+                                        onClick={handleDescargarBase}
+                                        className="flex-1 h-11 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl flex justify-center items-center gap-2 text-[10px] font-black uppercase text-text-muted hover:text-white transition-all cursor-pointer"
+                                    >
+                                        <Download size={15} /> Descargar
+                                    </button>
+                                    <button
+                                        onClick={handleWhatsAppBase}
+                                        className="flex-[1.5] h-11 bg-[#25D366]/10 hover:bg-[#25D366] text-[#25D366] hover:text-white border border-[#25D366]/20 hover:border-transparent rounded-xl flex items-center justify-center gap-2 transition-all text-[10px] font-black uppercase cursor-pointer shadow-lg shadow-[#25D366]/5"
+                                    >
+                                        <MessageCircle size={15} /> Compartir por WhatsApp
+                                    </button>
+                                </div>
+                                <div className="flex gap-3">
+                                    <button 
+                                        className="flex-1 h-10 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-text-muted hover:text-text-main font-black uppercase text-[10px] transition-all cursor-pointer" 
+                                        onClick={() => setModalDetallePuesto(false)}
+                                    >
+                                        Cerrar
+                                    </button>
+                                    <button 
+                                        className={cn(
+                                            "flex-1 h-10 rounded-xl font-black uppercase text-[10px] transition-all border cursor-pointer",
+                                            "bg-danger/10 text-danger border-danger/20 hover:bg-danger hover:text-white"
+                                        )}
+                                        onClick={handleLiberarPuestoBase}
+                                        disabled={liberandoPuesto}
+                                    >
+                                        {liberandoPuesto ? 'Liberando...' : 'Liberar y Anular Pase'}
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* ── COLUMNA DERECHA: Visualización y Edición ── */}
+                        {puestoDetalle.detalle_pase && (
+                            <div className="flex flex-col p-5 bg-black/30 rounded-2xl border border-white/5 relative overflow-hidden h-full min-h-[420px]">
+                                
+                                {/* Contenedor Visualizable (centrado flexiblemente) */}
+                                <div className="flex-1 flex flex-col justify-center items-center w-full mb-6 relative">
                                     <div 
-                                        className="w-full relative rounded-2xl bg-black/20 border border-white/5 overflow-hidden transition-all duration-300 ease-in-out mx-auto" 
+                                        className="w-full relative rounded-2xl bg-black/20 border border-white/5 overflow-hidden transition-all duration-300 ease-in-out" 
                                         style={{ height: layout.h, maxWidth: '340px' }}
                                     >
                                         {capturando && (
@@ -1269,12 +1313,12 @@ export default function GestionZonas() {
                                         )}
                                         
                                         {modoExport === 'qr' ? (
-                                            <div className="absolute inset-0 flex items-center justify-center">
-                                                <div ref={qrSectionRef} className="bg-white rounded-2xl p-4 shadow-xl shadow-black/40" style={{ width: 188, height: 188, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                            <div className="absolute inset-0 flex items-center justify-center flex-col">
+                                                <div ref={qrSectionRef} className="bg-white rounded-2xl p-4 shadow-xl shadow-black/40" style={{ width: 188, height: 188, display: 'flex', alignItems: 'center', justifyItems: 'center' }}>
                                                     {puestoDetalle.detalle_pase?.token ? (
-                                                        <QRCode value={puestoDetalle.detalle_pase.token} size={168} bgColor="#ffffff" fgColor="#0d1117" level="M" />
+                                                        <QRCode value={puestoDetalle.detalle_pase.token} size={156} bgColor="#ffffff" fgColor="#0d1117" level="M" />
                                                     ) : (
-                                                        <div className="flex flex-col items-center gap-2 p-4 text-center">
+                                                        <div className="flex flex-col items-center gap-2 p-4 text-center m-auto">
                                                             <Shield size={24} className="text-danger animate-pulse" />
                                                             <span className="text-[8px] text-danger font-black uppercase">Falta Token</span>
                                                         </div>
@@ -1297,87 +1341,51 @@ export default function GestionZonas() {
                                         )}
                                     </div>
                                     {modoExport === 'qr' && (
-                                        <div className="space-y-1 text-center mt-3">
+                                        <div className="space-y-1 text-center mt-4">
                                             <p className="text-[8px] text-primary font-black uppercase tracking-widest">Pase Oficial Firmado</p>
                                         </div>
                                     )}
+                                </div>
 
-                                    {/* Controles de Formato y Estilo */}
-                                    <div className="w-full flex justify-center mt-4">
-                                        <div className="w-full max-w-[340px] flex gap-3 text-left">
-                                            <div className={modoExport === 'qr' ? 'w-full' : 'w-1/2'}>
-                                                <label className="block text-[9px] font-black tracking-widest text-text-muted uppercase px-1 mb-1">Formato</label>
+                                {/* Controles de Formato y Estilo ubicados siempre al fondo */}
+                                <div className="w-full flex justify-center mt-auto pt-4 border-t border-white/5">
+                                    <div className="w-full flex gap-3 text-left">
+                                        <div className={modoExport === 'qr' ? 'w-full' : 'w-1/2'}>
+                                            <label className="block text-[9px] font-black tracking-widest text-text-muted uppercase px-1 mb-1">Formato</label>
+                                            <SelectTactivo 
+                                                menuPlacement="top"
+                                                value={[
+                                                    { value: 'qr', label: 'Solo QR' },
+                                                    { value: 'colgante', label: 'Colgante' },
+                                                    { value: 'credencial', label: 'Credencial' },
+                                                    { value: 'ticket', label: 'Ticket' },
+                                                    { value: 'cartera', label: 'Cartera' }
+                                                ].find(o => o.value === modoExport)} 
+                                                onChange={option => setModoExport(option?.value || 'qr')}
+                                                options={[
+                                                    { value: 'qr', label: 'Solo QR' },
+                                                    { value: 'colgante', label: 'Colgante' },
+                                                    { value: 'credencial', label: 'Credencial' },
+                                                    { value: 'ticket', label: 'Ticket' },
+                                                    { value: 'cartera', label: 'Cartera' }
+                                                ]}
+                                            />
+                                        </div>
+                                        {modoExport !== 'qr' && (
+                                            <div className="w-1/2">
+                                                <label className="block text-[9px] font-black tracking-widest text-text-muted uppercase px-1 mb-1">Estilo</label>
                                                 <SelectTactivo 
                                                     menuPlacement="top"
-                                                    value={[
-                                                        { value: 'qr', label: 'Solo QR' },
-                                                        { value: 'colgante', label: 'Colgante' },
-                                                        { value: 'credencial', label: 'Credencial' },
-                                                        { value: 'ticket', label: 'Ticket' },
-                                                        { value: 'cartera', label: 'Cartera' }
-                                                    ].find(o => o.value === modoExport)} 
-                                                    onChange={option => setModoExport(option?.value || 'qr')}
-                                                    options={[
-                                                        { value: 'qr', label: 'Solo QR' },
-                                                        { value: 'colgante', label: 'Colgante' },
-                                                        { value: 'credencial', label: 'Credencial' },
-                                                        { value: 'ticket', label: 'Ticket' },
-                                                        { value: 'cartera', label: 'Cartera' }
-                                                    ]}
+                                                    value={PRESETS_COLOR.map(p => ({ value: p.id, label: p.nombre })).find(o => o.value === presetId)} 
+                                                    onChange={option => setPresetId(option?.value || 'militar')}
+                                                    options={PRESETS_COLOR.map(p => ({ value: p.id, label: p.nombre }))}
                                                 />
                                             </div>
-                                            {modoExport !== 'qr' && (
-                                                <div className="w-1/2">
-                                                    <label className="block text-[9px] font-black tracking-widest text-text-muted uppercase px-1 mb-1">Estilo</label>
-                                                    <SelectTactivo 
-                                                        menuPlacement="top"
-                                                        value={PRESETS_COLOR.map(p => ({ value: p.id, label: p.nombre })).find(o => o.value === presetId)} 
-                                                        onChange={option => setPresetId(option?.value || 'militar')}
-                                                        options={PRESETS_COLOR.map(p => ({ value: p.id, label: p.nombre }))}
-                                                    />
-                                                </div>
-                                            )}
-                                        </div>
+                                        )}
                                     </div>
                                 </div>
                             </div>
                         )}
-
-                        <div className="flex flex-col gap-3 pt-6 border-t border-white/5">
-                            <div className="flex flex-col sm:flex-row gap-3 w-full">
-                                <button
-                                    onClick={handleDescargarBase}
-                                    className="flex-1 h-11 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl flex justify-center items-center gap-2 text-[10px] font-black uppercase text-text-muted hover:text-white transition-all cursor-pointer"
-                                >
-                                    <Download size={15} /> Descargar
-                                </button>
-                                <button
-                                    onClick={handleWhatsAppBase}
-                                    className="flex-[1.5] h-11 bg-[#25D366]/10 hover:bg-[#25D366] text-[#25D366] hover:text-white border border-[#25D366]/20 hover:border-transparent rounded-xl flex items-center justify-center gap-2 transition-all text-[10px] font-black uppercase cursor-pointer shadow-lg shadow-[#25D366]/5"
-                                >
-                                    <MessageCircle size={15} /> Compartir vía WhatsApp
-                                </button>
-                            </div>
-                            
-                            <div className="flex gap-3">
-                                <button 
-                                    className="flex-1 h-10 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-text-muted hover:text-text-main font-black uppercase text-[10px] transition-all cursor-pointer" 
-                                    onClick={() => setModalDetallePuesto(false)}
-                                >
-                                    Cerrar
-                                </button>
-                                <button 
-                                    className={cn(
-                                        "flex-1 h-10 rounded-xl font-black uppercase text-[10px] transition-all border cursor-pointer",
-                                        "bg-danger/10 text-danger border-danger/20 hover:bg-danger hover:text-white"
-                                    )}
-                                    onClick={handleLiberarPuestoBase}
-                                    disabled={liberandoPuesto}
-                                >
-                                    {liberandoPuesto ? 'Liberando...' : 'Liberar y Anular Pase'}
-                                </button>
-                            </div>
-                        </div>
                     </div>
                 )}
             </Modal>
