@@ -283,6 +283,19 @@ async def descargar_plantilla_pases(
             "Content-Disposition": "attachment; filename=TEMPLATE_PASES_IDENTIFICADOS.xlsx"
         }
     )
+
+@router.delete("/lotes/{lote_id}")
+async def eliminar_lote(
+    lote_id: UUID,
+    db: AsyncSession = Depends(obtener_db),
+    usuario_actual: Usuario = Depends(require_rol(ADMIN_ROLES))
+):
+    """Elimina un lote completo y sus QRs asociados."""
+    exito = await pase_service.eliminar_lote(db, lote_id)
+    if not exito:
+        raise HTTPException(status_code=404, detail="Lote no encontrado")
+    return {"status": "ok", "message": "Lote eliminado correctamente"}
+
 @router.patch("/{pase_id}", response_model=CodigoQRSalida)
 async def actualizar_pase(
     pase_id: UUID,
