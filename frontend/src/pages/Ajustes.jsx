@@ -496,11 +496,27 @@ export default function Ajustes() {
                         <p className="text-[9px] text-text-muted font-bold leading-relaxed mt-1">Marca la salida de la base automáticamente cuando el parquero libera el vehículo de su zona.</p>
                       </div>
                     </div>
-                    <div className={cn(
-                      "w-10 h-6 rounded-full border border-white/10 flex items-center px-1 transition-all",
-                      configSalidas.sync_parquero ? "bg-primary/20 border-primary/30 justify-end" : "justify-start"
-                    )}>
-                      <div className={cn("w-4 h-4 rounded-full", configSalidas.sync_parquero ? "bg-primary" : "bg-white/20")} />
+                    <div className="flex flex-col items-end gap-2">
+                       <div className={cn(
+                         "w-12 h-6 rounded-full flex items-center px-1 transition-all duration-300 shadow-inner overflow-hidden",
+                         configSalidas.sync_parquero ? "bg-primary shadow-[0_0_15px_-3px_rgba(34,197,94,0.4)]" : "bg-white/10 border border-white/5"
+                       )}>
+                         <div className={cn(
+                           "w-4 h-4 rounded-full bg-white transition-all duration-300 shadow-sm flex items-center justify-center",
+                           configSalidas.sync_parquero ? "translate-x-6" : "translate-x-0"
+                         )}>
+                            <div className={cn(
+                               "w-1 h-1 rounded-full",
+                               configSalidas.sync_parquero ? "bg-primary" : "bg-black/20"
+                            )} />
+                         </div>
+                       </div>
+                       <span className={cn(
+                         "text-[7px] font-black uppercase tracking-[0.2em]",
+                         configSalidas.sync_parquero ? "text-primary" : "text-text-muted opacity-40"
+                       )}>
+                         {configSalidas.sync_parquero ? "Enlace ON" : "Enlace OFF"}
+                       </span>
                     </div>
                   </div>
                </CardContent>
