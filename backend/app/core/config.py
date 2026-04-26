@@ -46,6 +46,9 @@ class Configuracion(BaseSettings):
     webauthn_rp_name: str = "BAGFM - Sistema Táctico"
     webauthn_origin: str = "https://bagfm-frontend-production.up.railway.app"
 
+    # Correos
+    resend_api_key: str = ""
+
     @property
     def cors_lista(self) -> list[str]:
         """Retorna la lista de orígenes CORS permitidos."""

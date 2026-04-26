@@ -43,11 +43,15 @@ class CorreoMasivoService:
         if not config:
            config = await configuracion_correo_service.obtener_general(db)
            
-        if not config or not config.activo or not config.api_key_resend:
-            print(f"Error: No hay configuración de correo válida para el lote {lote_id}")
+        api_key_to_use = config.api_key_resend if (config and config.api_key_resend) else config_env.resend_api_key
+
+        if not api_key_to_use:
+            print(f"Error: No hay Token de Resend global ni configurado para la entidad en el lote {lote_id}")
             return
 
-        remitente = f"{config.nombre_remitente} <{config.email_remitente}>" if config.nombre_remitente else config.email_remitente
+        remitente = f"{config.nombre_remitente} <{config.email_remitente}>" if (config and config.nombre_remitente) else "BAGFM Access <accesos@bagfm.mil.ve>"
+        if config and config.email_remitente and not config.nombre_remitente:
+            remitente = config.email_remitente
 
         # PDF Lote opcional
         pdf_base64 = None

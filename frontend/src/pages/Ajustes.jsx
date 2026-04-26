@@ -658,20 +658,28 @@ export default function Ajustes() {
                   </div>
                </div>
 
-               <div className="space-y-2 md:col-span-2">
-                  <label className="text-[10px] font-black text-text-muted uppercase tracking-widest ml-1">Resend API Key</label>
-                  <div className="relative">
-                     <Key className="absolute left-4 top-1/2 -translate-y-1/2 text-text-muted" size={16} />
-                     <input 
-                        type="text"
-                        placeholder="re_xxxxxxxxxxxxxxxxxxx"
-                        className="w-full h-12 bg-bg-app border border-white/10 focus:border-primary rounded-xl pl-12 pr-4 text-sm font-bold text-white transition-all"
-                        value={configCorreoData.api_key_resend || ''}
-                        onChange={(e) => setConfigCorreoData({...configCorreoData, api_key_resend: e.target.value})}
-                        required
-                     />
-                  </div>
-               </div>
+               {user?.rol !== 'COMANDANTE' && user?.rol !== 'ADMIN_BASE' ? (
+                 <div className="space-y-2 md:col-span-2">
+                    <label className="text-[10px] font-black text-text-muted uppercase tracking-widest ml-1">Resend API Key</label>
+                    <div className="relative">
+                       <Key className="absolute left-4 top-1/2 -translate-y-1/2 text-text-muted" size={16} />
+                       <input 
+                          type="password"
+                          placeholder="re_xxxxxxxxxxxxxxxxxxx"
+                          className="w-full h-12 bg-bg-app border border-white/10 focus:border-primary rounded-xl pl-12 pr-4 text-sm font-bold text-white transition-all"
+                          value={configCorreoData.api_key_resend || ''}
+                          onChange={(e) => setConfigCorreoData({...configCorreoData, api_key_resend: e.target.value})}
+                          required
+                       />
+                    </div>
+                 </div>
+               ) : (
+                 <div className="md:col-span-2 p-3 bg-white/5 border border-white/10 rounded-xl">
+                   <p className="text-[10px] text-text-muted text-center font-bold">
+                     El Token de Entidad Global se consume desde las variables de entorno de conectividad del servidor (Railway/AWS). Modificar solo correos a utilizar.
+                   </p>
+                 </div>
+               )}
             </div>
 
             <Boton 
