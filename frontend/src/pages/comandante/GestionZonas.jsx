@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { Card } from '../../components/ui/Card';
 import { Boton } from '../../components/ui/Boton';
 import { Modal } from '../../components/ui/Modal';
@@ -11,8 +11,10 @@ import {
     MapPin, Clock, Users, Shield, ChevronRight,
     ChevronDown, Settings, LayoutGrid, Building2,
     AlertTriangle, CheckCircle2, Timer, Hash,
-    Lock, Unlock, Zap, Activity, MessageCircle, UserCheck, QrCode
+    Lock, Unlock, Zap, Activity, MessageCircle, UserCheck, QrCode, Download, Loader2
 } from 'lucide-react';
+import { toPng } from 'html-to-image';
+import PlantillaPreview from '../../components/carnets/PlantillaPreview';
 import SelectTactivo from '../../components/ui/SelectTactivo';
 import zonaService from '../../services/zona.service';
 import api from '../../services/api';
@@ -20,6 +22,36 @@ import { QRCode } from 'react-qr-code';
 import { ModalConfirmacion } from '../../components/ui/ModalConfirmacion';
 import { ModalPaseBase } from '../../components/comando/ModalPaseBase';
 
+
+const preloadBase64Fonts = async () => {
+    try {
+        const styleSheets = Array.from(document.styleSheets);
+        let finalCss = '';
+        for (const sheet of styleSheets) {
+            try {
+                const rules = Array.from(sheet.cssRules || []);
+                for (const rule of rules) {
+                    if (rule.type === CSSRule.FONT_FACE_RULE) {
+                        finalCss += rule.cssText + '\n';
+                    }
+                }
+            } catch (e) {
+                // Ignore cross-origin errors
+            }
+        }
+        return finalCss;
+    } catch (e) {
+        return '';
+    }
+};
+
+const PRESETS_COLOR = [
+    { id: 'aegis', nombre: 'Aegis', primario: '#4ade80', fondo: '#09090b', textoHeader: '#000000', textoNombre: '#ffffff' },
+    { id: 'militar', nombre: 'Militar', primario: '#84cc16', fondo: '#1f2937', textoHeader: '#ffffff', textoNombre: '#f1f5f9' },
+    { id: 'civil', nombre: 'Civil', primario: '#38bdf8', fondo: '#0f172a', textoHeader: '#ffffff', textoNombre: '#f8fafc' },
+    { id: 'vip', nombre: 'VIP', primario: '#facc15', fondo: '#18181b', textoHeader: '#000000', textoNombre: '#ffeeaa' },
+    { id: 'alfa', nombre: 'Alfa', primario: '#ef4444', fondo: '#450a0a', textoHeader: '#ffffff', textoNombre: '#fecaca' }
+];
 
 // ──── Sub-componentes ─────────────────────────────────────────────────────────
 
@@ -345,6 +377,12 @@ export default function GestionZonas() {
     const qrSectionRef = useRef(null);
     const [mostrarQR, setMostrarQR] = useState(false);
 
+    // Estados para Carnetización
+    const [modoExport, setModoExport] = useState('qr');
+    const [presetId, setPresetId] = useState('militar');
+    const [capturando, setCapturando] = useState(false);
+    const carnetRef = useRef(null);
+
 
     // Forms
     const [formZona, setFormZona] = useState(FORM_ZONA_INICIAL);
@@ -619,53 +657,148 @@ export default function GestionZonas() {
         setModalDetallePuesto(true);
     };
 
-    const generarImagenQR = async () => {
-        return new Promise((resolve, reject) => {
-            const svgEl = qrSectionRef.current?.querySelector('svg');
-            if (!svgEl) { reject(new Error('SVG no encontrado')); return; }
+    const datosDinamicosActuales = useMemo(() => {
+        if (!puestoDetalle?.detalle_pase) return {};
+        const pase = puestoDetalle.detalle_pase;
+        return {
+            nombre: pase.nombre_portador || 'SIN REGISTRO',
+            cedula: pase.cedula_portador || null,
+            entidad: 'COMANDO BAGFM',
+            evento: zonaActiva?.nombre || 'ZONA OFICIAL',
+            vehiculo_placa: pase.vehiculo_placa || null,
+            zona_nombre: zonaActiva?.nombre || null,
+            tipo_acceso: 'PASE TÁCTICO',
+            fecha_inicio: pase.fecha_inicio ? new Date(pase.fecha_inicio).toLocaleDateString() : new Date().toLocaleDateString(),
+            fecha_fin: pase.fecha_expiracion ? new Date(pase.fecha_expiracion).toLocaleDateString() : 'PERMANENTE',
+            qr: pase.token || pase.serial_legible || '',
+            serial: pase.serial_legible || ''
+        };
+    }, [puestoDetalle, zonaActiva]);
 
-            const svgData = new XMLSerializer().serializeToString(svgEl);
-            const canvas = document.createElement('canvas');
-            const size = 400;
-            canvas.width = size;
-            canvas.height = size;
-            const ctx = canvas.getContext('2d');
+    const presetObj = PRESETS_COLOR.find(p => p.id === presetId) || PRESETS_COLOR[0];
+    const confGenerica = {
+        titulo: 'BAGFM ACCESS',
+        subtitulo: 'BASE AÉREA GRAL. FRANCISCO DE MIRANDA',
+        colores: presetObj
+    };
 
-            ctx.fillStyle = '#ffffff';
-            ctx.fillRect(0, 0, size, size);
+    const getLayoutDims = () => {
+        switch(modoExport) {
+            case 'qr': return { h: 220, s: 1 };
+            case 'colgante': return { h: 340, s: 0.75 };
+            case 'credencial': return { h: 300, s: 0.75 };
+            case 'ticket': return { h: 210, s: 0.75 };
+            case 'cartera': return { h: 160, s: 0.65 };
+            default: return { h: 300, s: 0.75 };
+        }
+    };
+    const layout = getLayoutDims();
 
-            const img = new Image();
-            img.onload = () => {
-                ctx.drawImage(img, 20, 20, size - 40, size - 40);
-                canvas.toBlob(blob => resolve(blob), 'image/png', 1.0);
-            };
-            img.onerror = reject;
-            img.src = `data:image/svg+xml;base64,${btoa(unescape(encodeURIComponent(svgData)))}`;
-        });
+    const generarImagenCarnetOQR = async () => {
+        setCapturando(true);
+        try {
+            if (modoExport === 'qr') {
+                const svgEl = qrSectionRef.current?.querySelector('svg');
+                if (!svgEl) throw new Error('SVG no encontrado');
+                const svgData = new XMLSerializer().serializeToString(svgEl);
+                const canvas = document.createElement('canvas');
+                const size = 400;
+                canvas.width = size;
+                canvas.height = size;
+                const ctx = canvas.getContext('2d');
+                ctx.fillStyle = '#ffffff';
+                ctx.fillRect(0, 0, size, size);
+                
+                const img = new Image();
+                const blob = await new Promise((resolve, reject) => {
+                    img.onload = () => {
+                        ctx.drawImage(img, 20, 20, size - 40, size - 40);
+                        canvas.toBlob(blob => resolve(blob), 'image/png', 1.0);
+                    };
+                    img.onerror = reject;
+                    img.src = `data:image/svg+xml;base64,${btoa(unescape(encodeURIComponent(svgData)))}`;
+                });
+                return blob;
+            } else {
+                if (!carnetRef.current) throw new Error('DOM Node no encontrado');
+                const fontCSSData = await preloadBase64Fonts();
+                const dataUrl = await toPng(carnetRef.current, {
+                    pixelRatio: 3,
+                    width: carnetRef.current.offsetWidth,
+                    height: carnetRef.current.offsetHeight,
+                    fontEmbedCSS: fontCSSData,
+                    style: { transform: 'none', margin: '0' }
+                });
+                const res = await fetch(dataUrl);
+                return await res.blob();
+            }
+        } finally {
+            setCapturando(false);
+        }
+    };
+
+    const handleDescargarBase = async () => {
+        if (!puestoDetalle?.detalle_pase) return;
+        try {
+            const pase = puestoDetalle.detalle_pase;
+            const blob = await generarImagenCarnetOQR();
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `${modoExport === 'qr' ? 'QR' : 'CARNET'}_${pase.serial_legible}.png`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            toast.success('Imagen descargada exitosamente');
+        } catch (err) {
+            console.error(err);
+            toast.error('Error al generar la imagen. Intente de nuevo.');
+        }
     };
 
     const handleWhatsAppBase = async () => {
         if (!puestoDetalle?.detalle_pase) return;
         const pase = puestoDetalle.detalle_pase;
-        const mensaje = [
-            `🎫 *PASE DE BASE — ${zonaActiva?.nombre?.toUpperCase() || 'BAGFM'}*`,
-            `📋 Serial: \`${pase.serial_legible}\``,
-            `👤 Portador: ${pase.nombre_portador}`,
-            `🚗 Vehículo: ${pase.vehiculo_placa} (${pase.vehiculo_marca})`,
-            ``,
-            `_Sistema BAGFM Access_`,
-        ].join('\n');
+        try {
+            toast.loading('Preparando imagen...', { id: 'wa-share' });
+            const mensaje = [
+                `🎫 *PASE DE BASE — ${zonaActiva?.nombre?.toUpperCase() || 'BAGFM'}*`,
+                `📋 Serial: \`${pase.serial_legible}\``,
+                `👤 Portador: ${pase.nombre_portador}`,
+                `🚗 Vehículo: ${pase.vehiculo_placa} (${pase.vehiculo_marca})`,
+                ``,
+                `_Sistema BAGFM Access_`,
+            ].join('\n');
 
-        const isMobile = /mobile|android|iphone|ipad/i.test(navigator.userAgent);
-        if (isMobile && navigator.share) {
-            try {
-                const blob = await generarImagenQR();
-                const file = new File([blob], `PASE_BASE_${pase.serial_legible}.png`, { type: 'image/png' });
-                await navigator.share({ files: [file], title: `Pase Base: ${pase.serial_legible}`, text: mensaje });
-                return;
-            } catch (e) { console.error(e); }
+            const isMobile = /mobile|android|iphone|ipad/i.test(navigator.userAgent);
+            
+            if (isMobile && navigator.share && navigator.canShare) {
+                try {
+                    const blob = await generarImagenCarnetOQR();
+                    const file = new File([blob], `${pase.serial_legible}.png`, { type: 'image/png' });
+                    if (navigator.canShare({ files: [file] })) {
+                        await navigator.share({ files: [file], title: `Pase Oficial Base`, text: mensaje });
+                        toast.dismiss('wa-share');
+                        return;
+                    }
+                } catch (shareErr) {
+                    if (shareErr.name === 'AbortError') {
+                        toast.dismiss('wa-share');
+                        return; 
+                    }
+                }
+            }
+
+            // Fallback a web
+            const urlWhatsApp = `https://wa.me/?text=${encodeURIComponent(mensaje)}`;
+            window.open(urlWhatsApp, '_blank');
+            toast.dismiss('wa-share');
+            if (!isMobile) toast("En PC debes descargar el archivo y adjuntarlo", { icon: '💡' });
+        } catch (err) {
+            console.error(err);
+            toast.error('Error enviando a WhatsApp', { id: 'wa-share' });
         }
-        window.open(`https://wa.me/?text=${encodeURIComponent(mensaje)}`, '_blank');
     };
 
     const handleLiberarPuestoBase = async () => {
@@ -1123,26 +1256,87 @@ export default function GestionZonas() {
                                     </div>
                                 </div>
 
-                                <div className="md:col-span-2 flex flex-col items-center justify-center p-6 bg-black/30 rounded-2xl border border-white/5 relative overflow-hidden">
-                                    <div ref={qrSectionRef} className="flex flex-col items-center gap-4 animate-in zoom-in-95 duration-200">
-                                        <div className="p-3 bg-white rounded-2xl shadow-2xl shadow-black/60 min-w-[174px] min-h-[174px] flex items-center justify-center">
-                                            {puestoDetalle.detalle_pase?.token ? (
-                                                <QRCode 
-                                                    value={puestoDetalle.detalle_pase.token} 
-                                                    size={150}
-                                                    bgColor="#ffffff"
-                                                    fgColor="#0d1117"
-                                                    level="M"
+                                <div className="md:col-span-2 flex flex-col items-center justify-center p-4 bg-black/30 rounded-2xl border border-white/5 relative overflow-hidden">
+                                    {/* Contenedor Visualizable */}
+                                    <div 
+                                        className="w-full relative rounded-2xl bg-black/20 border border-white/5 overflow-hidden transition-all duration-300 ease-in-out mx-auto" 
+                                        style={{ height: layout.h, maxWidth: '340px' }}
+                                    >
+                                        {capturando && (
+                                             <div className="absolute inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm rounded-2xl">
+                                                 <Loader2 size={32} className="text-primary animate-spin" />
+                                             </div>
+                                        )}
+                                        
+                                        {modoExport === 'qr' ? (
+                                            <div className="absolute inset-0 flex items-center justify-center">
+                                                <div ref={qrSectionRef} className="bg-white rounded-2xl p-4 shadow-xl shadow-black/40" style={{ width: 188, height: 188, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                                    {puestoDetalle.detalle_pase?.token ? (
+                                                        <QRCode value={puestoDetalle.detalle_pase.token} size={168} bgColor="#ffffff" fgColor="#0d1117" level="M" />
+                                                    ) : (
+                                                        <div className="flex flex-col items-center gap-2 p-4 text-center">
+                                                            <Shield size={24} className="text-danger animate-pulse" />
+                                                            <span className="text-[8px] text-danger font-black uppercase">Falta Token</span>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        ) : (
+                                            <div 
+                                                className="absolute left-1/2 top-1/2 origin-center flex justify-center items-center transition-transform duration-300 ease-in-out"
+                                                style={{ transform: `translate(-50%, -50%) scale(${layout.s})` }}
+                                            >
+                                                <div ref={carnetRef} className="shrink-0 w-max h-max bg-transparent inline-block p-1">
+                                                    <PlantillaPreview 
+                                                        plantilla={modoExport} 
+                                                        config={confGenerica} 
+                                                        datos={datosDinamicosActuales} 
+                                                    />
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+                                    {modoExport === 'qr' && (
+                                        <div className="space-y-1 text-center mt-3">
+                                            <p className="text-[8px] text-primary font-black uppercase tracking-widest">Pase Oficial Firmado</p>
+                                        </div>
+                                    )}
+
+                                    {/* Controles de Formato y Estilo */}
+                                    <div className="w-full flex justify-center mt-4">
+                                        <div className="w-full max-w-[340px] flex gap-3 text-left">
+                                            <div className={modoExport === 'qr' ? 'w-full' : 'w-1/2'}>
+                                                <label className="block text-[9px] font-black tracking-widest text-text-muted uppercase px-1 mb-1">Formato</label>
+                                                <SelectTactivo 
+                                                    menuPlacement="top"
+                                                    value={[
+                                                        { value: 'qr', label: 'Solo QR' },
+                                                        { value: 'colgante', label: 'Colgante' },
+                                                        { value: 'credencial', label: 'Credencial' },
+                                                        { value: 'ticket', label: 'Ticket' },
+                                                        { value: 'cartera', label: 'Cartera' }
+                                                    ].find(o => o.value === modoExport)} 
+                                                    onChange={option => setModoExport(option?.value || 'qr')}
+                                                    options={[
+                                                        { value: 'qr', label: 'Solo QR' },
+                                                        { value: 'colgante', label: 'Colgante' },
+                                                        { value: 'credencial', label: 'Credencial' },
+                                                        { value: 'ticket', label: 'Ticket' },
+                                                        { value: 'cartera', label: 'Cartera' }
+                                                    ]}
                                                 />
-                                            ) : (
-                                                <div className="flex flex-col items-center gap-2 p-4 text-center">
-                                                    <Shield size={24} className="text-danger animate-pulse" />
-                                                    <span className="text-[8px] text-danger font-black uppercase">Token Inaccesible</span>
+                                            </div>
+                                            {modoExport !== 'qr' && (
+                                                <div className="w-1/2">
+                                                    <label className="block text-[9px] font-black tracking-widest text-text-muted uppercase px-1 mb-1">Estilo</label>
+                                                    <SelectTactivo 
+                                                        menuPlacement="top"
+                                                        value={PRESETS_COLOR.map(p => ({ value: p.id, label: p.nombre })).find(o => o.value === presetId)} 
+                                                        onChange={option => setPresetId(option?.value || 'militar')}
+                                                        options={PRESETS_COLOR.map(p => ({ value: p.id, label: p.nombre }))}
+                                                    />
                                                 </div>
                                             )}
-                                        </div>
-                                        <div className="space-y-1 text-center">
-                                            <p className="text-[8px] text-primary font-black uppercase tracking-widest">Pase Oficial Firmado</p>
                                         </div>
                                     </div>
                                 </div>
@@ -1150,12 +1344,20 @@ export default function GestionZonas() {
                         )}
 
                         <div className="flex flex-col gap-3 pt-6 border-t border-white/5">
-                            <button 
-                                onClick={handleWhatsAppBase}
-                                className="w-full h-11 bg-[#25D366]/10 hover:bg-[#25D366] text-[#25D366] hover:text-white border border-[#25D366]/20 hover:border-transparent rounded-xl flex items-center justify-center gap-2 transition-all text-[10px] font-black uppercase cursor-pointer shadow-lg shadow-[#25D366]/5"
-                            >
-                                <MessageCircle size={16} /> Compartir por WhatsApp
-                            </button>
+                            <div className="flex flex-col sm:flex-row gap-3 w-full">
+                                <button
+                                    onClick={handleDescargarBase}
+                                    className="flex-1 h-11 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl flex justify-center items-center gap-2 text-[10px] font-black uppercase text-text-muted hover:text-white transition-all cursor-pointer"
+                                >
+                                    <Download size={15} /> Descargar
+                                </button>
+                                <button
+                                    onClick={handleWhatsAppBase}
+                                    className="flex-[1.5] h-11 bg-[#25D366]/10 hover:bg-[#25D366] text-[#25D366] hover:text-white border border-[#25D366]/20 hover:border-transparent rounded-xl flex items-center justify-center gap-2 transition-all text-[10px] font-black uppercase cursor-pointer shadow-lg shadow-[#25D366]/5"
+                                >
+                                    <MessageCircle size={15} /> Compartir vía WhatsApp
+                                </button>
+                            </div>
                             
                             <div className="flex gap-3">
                                 <button 
