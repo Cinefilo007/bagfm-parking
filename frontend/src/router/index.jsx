@@ -21,6 +21,7 @@ import Ajustes from '../pages/Ajustes';
 import Personal from '../pages/Personal';
 import PortalSocio from '../pages/socio/Portal';
 import PortalEvento from '../pages/PortalEvento';
+import PortalPase from '../pages/PortalPase';
 import DashboardParquero from '../pages/parquero/Dashboard';
 import VistaRecibir from '../pages/parquero/VistaRecibir';
 import VistaDespachar from '../pages/parquero/VistaDespachar';
@@ -136,7 +137,9 @@ export const router = createBrowserRouter([
             element: <Ajustes />
           }
         ]
-      },
+      }
+    ]
+  },
   {
     path: '/portal-evento/:serial',
     element: <PortalEvento />
