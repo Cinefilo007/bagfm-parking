@@ -8,3 +8,4 @@ from . import comando
 from . import eventos
 from . import mapa
 from . import personal
+from . import configuracion_correo

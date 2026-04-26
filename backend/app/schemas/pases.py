@@ -63,3 +63,8 @@ class VehiculoPaseSalida(VehiculoPaseBase):
     created_at: datetime
     
     model_config = ConfigDict(from_attributes=True)
+
+class LotePaseMasivoEnvioCorreo(BaseModel):
+    asunto: str
+    cuerpo: str
+    adjuntar_pdf: bool = False

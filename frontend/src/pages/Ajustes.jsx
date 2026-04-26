@@ -12,9 +12,9 @@ import { Modal } from '../components/ui/Modal';
 import { NavLink } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { usePushNotifications } from '../hooks/usePushNotifications';
-import { Bell, BellOff, BellRing } from 'lucide-react';
+import { Bell, BellOff, BellRing, Mail as MailIcon, Send } from 'lucide-react';
 import { cn } from '../lib/utils';
-
+import ConfiguracionCorreoService from '../services/configuracionCorreo.service';
 export default function Ajustes() {
   const { 
     user, logout, updatePerfil, cambiarPassword, 
@@ -24,10 +24,14 @@ export default function Ajustes() {
   const { isSubscribed, subscribeUser, error: pushError } = usePushNotifications();
 
   // Estados para modales
-  const [activeModal, setActiveModal] = useState(null); // 'perfil', 'password', 'biometria'
+  const [activeModal, setActiveModal] = useState(null); // 'perfil', 'password', 'biometria', 'correo'
   const [dispositivos, setDispositivos] = useState([]);
   const [loadingDispositivos, setLoadingDispositivos] = useState(false);
   const [nombreNuevoDispositivo, setNombreNuevoDispositivo] = useState('');
+  
+  // Estado para correo
+  const [loadingCorreo, setLoadingCorreo] = useState(false);
+  const [configCorreoData, setConfigCorreoData] = useState(null);
 
   // Estados formularios
   const [perfilData, setPerfilData] = useState({
@@ -101,6 +105,38 @@ export default function Ajustes() {
     setActiveModal(null);
     setIsSaving(false);
     setPasswordData({ nuevaPassword: '', confirmarPassword: '' });
+  };
+
+  const handleAbrirConfigCorreo = async () => {
+    setActiveModal('correo');
+    setLoadingCorreo(true);
+    try {
+      const data = await ConfiguracionCorreoService.obtenerMiConfiguracion();
+      if (data) {
+        setConfigCorreoData(data);
+      } else {
+        setConfigCorreoData({ proveedor: 'RESEND', api_key_resend: '', email_remitente: '', nombre_remitente: '' });
+      }
+    } catch (error) {
+      toast.error('Error cargando configuración de servidor');
+      setConfigCorreoData({ proveedor: 'RESEND', api_key_resend: '', email_remitente: '', nombre_remitente: '' });
+    } finally {
+      setLoadingCorreo(false);
+    }
+  };
+
+  const handleUpdateCorreo = async (e) => {
+    e.preventDefault();
+    setIsSaving(true);
+    try {
+      await ConfiguracionCorreoService.actualizarMiConfiguracion(configCorreoData);
+      toast.success('Configuración de correo actualizada');
+      closeModals();
+    } catch (error) {
+      toast.error('Error al actualizar servidor de correos');
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const handleUpdatePerfil = async (e) => {
@@ -344,6 +380,34 @@ export default function Ajustes() {
       </section>
 
 
+      {/* Operaciones de Correo Masivo */}
+      <section className="max-w-4xl mx-auto px-2 md:px-6 space-y-4">
+        <p className="text-[10px] text-text-muted uppercase font-black tracking-[0.3em] opacity-40 ml-2">Infraestructura Transaccional</p>
+        <Card className="bg-bg-low/40 border-white/5 backdrop-blur-md group hover:border-primary/20 transition-all">
+          <CardContent className="p-6">
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-6">
+              <div className="flex items-center gap-4">
+                <div className="w-14 h-14 rounded-2xl flex items-center justify-center transition-all bg-primary/10 text-primary shadow-lg shadow-primary/5">
+                  <MailIcon size={28} />
+                </div>
+                <div>
+                  <h4 className="text-sm font-black text-white uppercase tracking-tight italic">Servidor de Correos Lotes</h4>
+                  <p className="text-[10px] text-text-muted font-bold uppercase tracking-widest mt-0.5">Gestión de proveedor Resend/SMTP para distribución masiva</p>
+                </div>
+              </div>
+
+              <Boton 
+                className="h-12 px-8 bg-bg-app border border-white/10 text-white hover:text-primary hover:border-primary/50 font-black uppercase tracking-[0.1em] text-[10px] shadow-lg w-full sm:w-auto transition-all"
+                onClick={handleAbrirConfigCorreo}
+              >
+                <Settings className="mr-2" size={16} />
+                Configurar Motor
+              </Boton>
+            </div>
+          </CardContent>
+        </Card>
+      </section>
+
       {/* Cerrar Sesión (Estilo Botón Eliminar) */}
       <section className="max-w-4xl mx-auto px-2 md:px-6 pt-4">
         <button 
@@ -539,6 +603,87 @@ export default function Ajustes() {
             {isSaving ? 'Vinculando Hardware...' : 'Activar Seguridad Invisible'}
           </Boton>
         </form>
+      </Modal>
+
+      {/* Modal de Correo Masivo */}
+      <Modal 
+        isOpen={activeModal === 'correo'} 
+        onClose={closeModals} 
+        title="Motor de Envíos Masivos"
+        className="max-w-xl"
+      >
+        {loadingCorreo || !configCorreoData ? (
+          <div className="py-8 flex justify-center">
+            <div className="w-6 h-6 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
+          </div>
+        ) : (
+          <form onSubmit={handleUpdateCorreo} className="space-y-6">
+            <div className="p-4 rounded-2xl bg-primary/5 border border-primary/20 mb-6">
+               <div className="flex gap-3">
+                  <Send size={20} className="text-primary shrink-0" />
+                  <div>
+                     <p className="text-xs font-bold text-white uppercase mb-1">Capa de Entrega Garantizada (Resend)</p>
+                     <p className="text-[10px] text-text-muted leading-relaxed font-medium">Recomendamos utilizar <b>Resend</b> para garantizar que los correos con QR lleguen a la bandeja de entrada y no sean marcados como SPAM. Debes registrar el dominio oficial adquirido antes de iniciar envíos masivos.</p>
+                  </div>
+               </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+               <div className="space-y-2">
+                  <label className="text-[10px] font-black text-text-muted uppercase tracking-widest ml-1">E-mail del Remitente Oficial</label>
+                  <div className="relative">
+                     <AtSign className="absolute left-4 top-1/2 -translate-y-1/2 text-text-muted" size={16} />
+                     <input 
+                        type="email"
+                        placeholder="accesos@miparque.com"
+                        className="w-full h-12 bg-bg-app border border-white/10 focus:border-primary rounded-xl pl-12 pr-4 text-sm font-bold text-white transition-all"
+                        value={configCorreoData.email_remitente || ''}
+                        onChange={(e) => setConfigCorreoData({...configCorreoData, email_remitente: e.target.value})}
+                        required
+                     />
+                  </div>
+               </div>
+               
+               <div className="space-y-2">
+                  <label className="text-[10px] font-black text-text-muted uppercase tracking-widest ml-1">Nombre Visual</label>
+                  <div className="relative">
+                     <User className="absolute left-4 top-1/2 -translate-y-1/2 text-text-muted" size={16} />
+                     <input 
+                        type="text"
+                        placeholder="Ventas Parque"
+                        className="w-full h-12 bg-bg-app border border-white/10 focus:border-primary rounded-xl pl-12 pr-4 text-sm font-bold text-white transition-all"
+                        value={configCorreoData.nombre_remitente || ''}
+                        onChange={(e) => setConfigCorreoData({...configCorreoData, nombre_remitente: e.target.value})}
+                     />
+                  </div>
+               </div>
+
+               <div className="space-y-2 md:col-span-2">
+                  <label className="text-[10px] font-black text-text-muted uppercase tracking-widest ml-1">Resend API Key</label>
+                  <div className="relative">
+                     <Key className="absolute left-4 top-1/2 -translate-y-1/2 text-text-muted" size={16} />
+                     <input 
+                        type="text"
+                        placeholder="re_xxxxxxxxxxxxxxxxxxx"
+                        className="w-full h-12 bg-bg-app border border-white/10 focus:border-primary rounded-xl pl-12 pr-4 text-sm font-bold text-white transition-all"
+                        value={configCorreoData.api_key_resend || ''}
+                        onChange={(e) => setConfigCorreoData({...configCorreoData, api_key_resend: e.target.value})}
+                        required
+                     />
+                  </div>
+               </div>
+            </div>
+
+            <Boton 
+              type="submit" 
+              className="w-full h-14 bg-primary text-bg-app font-black uppercase tracking-[0.1em] text-[11px] flex justify-center items-center gap-3 transition-all mt-4"
+              disabled={isSaving}
+            >
+              <Save size={18} />
+              {isSaving ? 'Guardando Infraestructura...' : 'Fijar Servidor en Base Datos'}
+            </Boton>
+          </form>
+        )}
       </Modal>
 
     </div>

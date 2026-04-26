@@ -239,6 +239,34 @@ async def importar_json_lote(
     await pase_service.procesar_json_identificado(db, lote, filas, usuario_actual.id)
     return {"status": "ok", "pases_generados": lote.cantidad_pases}
 
+from fastapi import BackgroundTasks
+from app.schemas.pases import LotePaseMasivoEnvioCorreo
+from app.services.correo_service import correo_masivo_service
+
+@router.post("/lotes/{lote_id}/enviar-correos", status_code=status.HTTP_202_ACCEPTED)
+async def enviar_correos_lote_endpoint(
+    lote_id: UUID,
+    datos: LotePaseMasivoEnvioCorreo,
+    background_tasks: BackgroundTasks,
+    db: AsyncSession = Depends(obtener_db),
+    usuario_actual: Usuario = Depends(require_rol(ADMIN_ROLES))
+):
+    """Encola el envío masivo de correos usando Resend en segundo plano."""
+    lote = await db.get(LotePaseMasivo, lote_id)
+    if not lote:
+        raise HTTPException(status_code=404, detail="Lote no encontrado")
+        
+    background_tasks.add_task(
+        correo_masivo_service.despachar_correos_lote,
+        db,
+        lote_id,
+        datos.asunto,
+        datos.cuerpo,
+        datos.adjuntar_pdf
+    )
+    
+    return {"status": "accepted", "message": "Proceso de despacho de correos iniciado en segundo plano."}
+
 @router.get("/template", status_code=status.HTTP_200_OK)
 async def descargar_plantilla_pases(
     usuario_actual: Usuario = Depends(require_rol(ADMIN_ROLES))

@@ -522,12 +522,99 @@ const ModalEditarPase = ({ pase, isOpen, onClose, onRefresh }) => {
     );
 };
 
+const ModalEnvioCorreosMasivos = ({ isOpen, onClose, lote }) => {
+    const [asunto, setAsunto] = useState('');
+    const [cuerpo, setCuerpo] = useState('Hola {{nombre}},\\n\\nAdjunto tu pase para el evento {{lote}}.\\nAccede a tu código desde aquí: {{qr_url}}\\n\\n¡Te esperamos!');
+    const [adjuntarPdf, setAdjuntarPdf] = useState(false);
+    const [enviando, setEnviando] = useState(false);
+
+    // Precargar datos del lote en asunto
+    useEffect(() => {
+        if (lote) {
+            setAsunto(`Pases de Acceso VIP - ${lote.nombre_evento}`);
+        }
+    }, [lote]);
+
+    const handleEnviar = async (e) => {
+        e.preventDefault();
+        setEnviando(true);
+        try {
+            await api.post(`/pases/lotes/${lote.id}/enviar-correos`, {
+                asunto,
+                cuerpo,
+                adjuntar_pdf: adjuntarPdf
+            });
+            toast.success('Envío masivo en cola. El Motor de Correo lo está procesando.');
+            onClose();
+        } catch (e) {
+            toast.error('Ocurrió un error al despachar los correos a la cola');
+        } finally {
+            setEnviando(false);
+        }
+    };
+
+    return (
+        <Modal isOpen={isOpen} onClose={onClose} title="DIFUSIÓN MASIVA POR CORREO" size="lg">
+            <form onSubmit={handleEnviar} className="space-y-6">
+                
+                <div className="p-4 rounded-xl border border-warning/20 bg-warning/5 text-warning text-[11px] font-bold">
+                    <AlertTriangle size={16} className="inline mr-2 mb-0.5" />
+                    <strong>Aviso Táctico:</strong> Solo se enviarán correos a los pases que tengan un e-mail registrado. Los correos se envían en segundo plano utilizando tus credenciales de Resend (configuradas en Ajustes).
+                </div>
+
+                <div className="space-y-4">
+                    <Input 
+                        label="ASUNTO DEL CORREO" 
+                        value={asunto} 
+                        onChange={e => setAsunto(e.target.value)} 
+                        required 
+                    />
+                    
+                    <div className="space-y-1">
+                        <label className="text-[10px] font-black tracking-widest text-text-muted uppercase px-1">CUERPO DEL CORREO (PLANTILLA TEXTO)</label>
+                        <textarea 
+                            value={cuerpo} 
+                            onChange={e => setCuerpo(e.target.value)}
+                            className="w-full h-32 bg-bg-app border border-white/10 focus:border-primary rounded-xl p-4 text-sm font-medium text-white transition-all resize-none"
+                            required
+                        />
+                        <p className="text-[9px] text-text-muted ml-1">
+                            Variables disponibles: <code className="text-primary font-bold">{'{{nombre}}'}</code>, <code className="text-primary font-bold">{'{{lote}}'}</code>, <code className="text-primary font-bold">{'{{qr_url}}'}</code>
+                        </p>
+                    </div>
+
+                    <label className="flex items-center gap-3 p-3 bg-white/5 border border-white/5 rounded-xl cursor-pointer hover:bg-white/10 transition-all">
+                        <input 
+                            type="checkbox" 
+                            checked={adjuntarPdf} 
+                            onChange={e => setAdjuntarPdf(e.target.checked)}
+                            className="w-4 h-4 rounded-sm border-white/20 bg-black/40 text-primary focus:ring-primary/50 cursor-pointer"
+                        />
+                        <div>
+                            <span className="text-[11px] font-black uppercase text-text-main line-clamp-1 block">ADJUNTAR CARNET EN PDF</span>
+                            <span className="text-[9px] font-medium text-text-muted block">Si lo activas, el portador recibirá el archivo PDF además del enlace al pase QR.</span>
+                        </div>
+                    </label>
+                </div>
+
+                <div className="flex justify-end gap-3 pt-4 border-t border-white/5">
+                    <Boton type="button" variant="ghost" onClick={onClose}>Cancelar</Boton>
+                    <Boton type="submit" isLoading={enviando} className="bg-sky-500 hover:bg-sky-400 text-bg-app">
+                        <Mail className="mr-2" size={16} /> CONFIRMAR Y ENCOLAR
+                    </Boton>
+                </div>
+            </form>
+        </Modal>
+    );
+};
+
 const ModalListaPases = ({ isOpen, onClose, lote, zonas }) => {
     const [pases, setPases] = useState([]);
     const [loading, setLoading] = useState(true);
     const [busqueda, setBusqueda] = useState('');
     const [paseEdicion, setPaseEdicion] = useState(null);
     const [paseQR, setPaseQR] = useState(null); // Pase seleccionado para ver QR
+    const [isEmailModalOpen, setIsEmailModalOpen] = useState(false);
 
     const fetchPases = useCallback(async () => {
         if (!lote?.id) return;
@@ -577,6 +664,13 @@ const ModalListaPases = ({ isOpen, onClose, lote, zonas }) => {
                             />
                             <LayoutGrid size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted opacity-40" />
                         </div>
+                        <Boton 
+                            onClick={() => setIsEmailModalOpen(true)}
+                            className="h-12 bg-sky-500/10 hover:bg-sky-500/20 text-sky-400 border border-sky-500/20 px-4"
+                        >
+                            <Mail size={16} className="mr-2" />
+                            DIFUNDIR LOTE
+                        </Boton>
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-[60vh] overflow-y-auto pr-2 scrollbar-thin">
@@ -609,6 +703,12 @@ const ModalListaPases = ({ isOpen, onClose, lote, zonas }) => {
                     onClose={() => setPaseEdicion(null)} 
                     pase={paseEdicion} 
                     onRefresh={fetchPases}
+                />
+
+                <ModalEnvioCorreosMasivos
+                    isOpen={isEmailModalOpen}
+                    onClose={() => setIsEmailModalOpen(false)}
+                    lote={lote}
                 />
             </Modal>
 
