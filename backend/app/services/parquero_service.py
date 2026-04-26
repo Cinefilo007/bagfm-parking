@@ -15,7 +15,6 @@ from app.models.zona_estacionamiento import ZonaEstacionamiento
 from app.models.usuario import Usuario
 from app.models.enums import EstadoPuesto, AccesoTipo
 from app.services.configuracion_service import configuracion_service
-from app.core.security import decodificar_token
 
 
 class ParqueroService:
@@ -553,30 +552,31 @@ class ParqueroService:
     ) -> VehiculoPase:
         """
         El parquero escanea un QR para recibir un vehículo en su zona.
-        Soporta tanto UUID directo como Token JWT.
+        Utiliza el token directamente para garantizar compatibilidad con IDs no-UUID (Base pases).
         """
-        qr_id = None
-        # Intentar decodificar si parece un JWT
-        if "." in qr_token:
-            try:
-                payload = decodificar_token(qr_token)
-                qr_id = payload.get("sub")
-            except:
-                raise ValueError("Token QR inválido o expirado")
-        else:
-            qr_id = qr_token
-
-        resultado = await db.execute(select(CodigoQR).filter(CodigoQR.id == qr_id))
+        # Buscar el QR por su token JWT (es único e indexado)
+        resultado = await db.execute(select(CodigoQR).filter(CodigoQR.token == qr_token))
         qr = resultado.scalars().first()
+        
+        # Si no se encuentra por token, intentamos buscar por ID directo (caso UUID puro legado)
         if not qr:
-            raise ValueError("QR no encontrado en el sistema")
+            try:
+                # Verificar si qr_token es un UUID válido antes de consultar
+                UUID(qr_token)
+                resultado = await db.execute(select(CodigoQR).filter(CodigoQR.id == qr_token))
+                qr = resultado.scalars().first()
+            except ValueError:
+                pass
 
-        resultado_vp = await db.execute(select(VehiculoPase).filter(VehiculoPase.qr_id == qr_id))
+        if not qr:
+            raise ValueError("QR no encontrado o no reconocido en el sistema")
+
+        resultado_vp = await db.execute(select(VehiculoPase).filter(VehiculoPase.qr_id == qr.id))
         vehiculo_pase = resultado_vp.scalars().first()
 
         if not vehiculo_pase:
             vehiculo_pase = VehiculoPase(
-                qr_id=qr_id,
+                qr_id=qr.id,
                 placa=qr.vehiculo_placa or "DESCONOCIDO",
                 zona_asignada_id=zona_id,
                 ingresado=True,
@@ -644,22 +644,29 @@ class ParqueroService:
     ) -> VehiculoPase:
         """
         Registrar la salida de la zona de estacionamiento por QR.
-        Soporta tanto UUID directo como Token JWT.
+        Utiliza el token directamente para garantizar compatibilidad con IDs no-UUID (Base pases).
         """
-        qr_id = None
-        if "." in qr_token:
+        # Buscar el QR por su token JWT (es único e indexado)
+        resultado = await db.execute(select(CodigoQR).filter(CodigoQR.token == qr_token))
+        qr = resultado.scalars().first()
+        
+        # Si no se encuentra por token, intentamos buscar por ID directo (caso UUID puro legado)
+        if not qr:
             try:
-                payload = decodificar_token(qr_token)
-                qr_id = payload.get("sub")
-            except:
-                raise ValueError("Token QR inválido o expirado")
-        else:
-            qr_id = qr_token
+                # Verificar si qr_token es un UUID válido antes de consultar
+                UUID(qr_token)
+                resultado = await db.execute(select(CodigoQR).filter(CodigoQR.id == qr_token))
+                qr = resultado.scalars().first()
+            except ValueError:
+                pass
 
-        resultado_vp = await db.execute(select(VehiculoPase).filter(VehiculoPase.qr_id == qr_id))
+        if not qr:
+            raise ValueError("Pase no encontrado para registrar salida")
+
+        resultado_vp = await db.execute(select(VehiculoPase).filter(VehiculoPase.qr_id == qr.id))
         vehiculo_pase = resultado_vp.scalars().first()
         if not vehiculo_pase:
-            raise ValueError("Vehículo no encontrado en zona")
+            raise ValueError("Vehículo no encontrado activo en zona")
 
         vehiculo_pase.ingresado = False
         vehiculo_pase.hora_salida = datetime.now(timezone.utc)
