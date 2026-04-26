@@ -1054,4 +1054,93 @@ class PaseService:
         await db.commit()
         return True
 
+    async def registrar_invitado_portal(self, db: AsyncSession, lote_id: uuid.UUID, datos: dict) -> dict:
+        """
+        Registra un invitado en un lote tipo PORTAL.
+        Busca un pase 'vacío' (sin nombre) o crea uno nuevo si hay cupo.
+        """
+        lote = await db.get(LotePaseMasivo, lote_id)
+        if not lote:
+            raise ValueError("Lote no encontrado")
+
+        # 1. Buscar si hay pases libres en este lote
+        query = select(CodigoQR).where(
+            CodigoQR.lote_id == lote_id,
+            CodigoQR.nombre_portador == None,
+            CodigoQR.activo == True
+        ).limit(1)
+        res = await db.execute(query)
+        pase = res.scalar_one_or_none()
+
+        if not pase:
+            # Si no hay libres, verificar si podemos crear uno nuevo (cupo dinámico)
+            # Por ahora, asumimos que el lote pre-generó todos sus QRs.
+            raise ValueError("No hay cupos disponibles para este lote")
+
+        # 2. Actualizar datos del portador
+        pase.nombre_portador = datos.get('nombre', '').upper()
+        pase.cedula_portador = datos.get('cedula')
+        pase.email_portador = datos.get('email', '').lower()
+        pase.telefono_portador = datos.get('telefono')
+        
+        # 3. Datos del Vehículo
+        pase.vehiculo_placa = datos.get('placa', '').upper()
+        pase.vehiculo_marca = datos.get('marca', '').upper()
+        pase.vehiculo_modelo = datos.get('modelo', '').upper()
+        pase.vehiculo_color = datos.get('color', '').upper()
+        
+        pase.tipo_acceso = lote.tipo_acceso
+        pase.tipo_acceso_custom_id = lote.tipo_acceso_custom_id
+        pase.datos_completos = True
+        
+        await db.commit()
+        await db.refresh(pase)
+        
+        # Generar QR base64 para mostrar al usuario inmediatamente
+        qr_base64 = self.generar_qr_base64(pase.token)
+        
+        return {
+            "id": pase.id,
+            "serial": pase.serial_legible,
+            "qr_base64": qr_base64
+        }
+
+    async def actualizar_pase_publico(self, db: AsyncSession, pase_id: uuid.UUID, datos: dict) -> dict:
+        """Permite completar datos de un pase pre-identificado (Excel parcial)."""
+        pase = await db.get(CodigoQR, pase_id)
+        if not pase:
+            raise ValueError("Pase no encontrado")
+            
+        # Solo actualizamos si campos están vacíos o si se permite sobrescribir
+        if datos.get('nombre'): pase.nombre_portador = datos['nombre'].upper()
+        if datos.get('cedula'): pase.cedula_portador = datos['cedula']
+        if datos.get('email'): pase.email_portador = datos['email'].lower()
+        if datos.get('telefono'): pase.telefono_portador = datos['telefono']
+        
+        if datos.get('placa'): pase.vehiculo_placa = datos['placa'].upper()
+        if datos.get('marca'): pase.vehiculo_marca = datos['marca'].upper()
+        if datos.get('modelo'): pase.vehiculo_modelo = datos['modelo'].upper()
+        if datos.get('color'): pase.vehiculo_color = datos['color'].upper()
+        
+        pase.datos_completos = True
+        await db.commit()
+        await db.refresh(pase)
+        
+        return {"status": "ok", "serial": pase.serial_legible}
+
+    def generar_qr_base64(self, data: str) -> str:
+        """Genera un QR en base64 para visualización directa."""
+        import qrcode
+        import base64
+        from io import BytesIO
+        
+        qr = qrcode.QRCode(version=1, box_size=10, border=5)
+        qr.add_data(data)
+        qr.make(fit=True)
+        img = qr.make_image(fill_color="black", back_color="white")
+        
+        buffered = BytesIO()
+        img.save(buffered, format="PNG")
+        return f"data:image/png;base64,{base64.b64encode(buffered.getvalue()).decode()}"
+
 pase_service = PaseService()

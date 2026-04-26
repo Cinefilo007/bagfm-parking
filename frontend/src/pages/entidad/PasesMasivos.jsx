@@ -527,6 +527,7 @@ const ModalEnvioCorreosMasivos = ({ isOpen, onClose, lote }) => {
     const [cuerpo, setCuerpo] = useState('Estimado {{nombre}},\n\nNos complace informarle que su pase de acceso para el evento ya ha sido generado exitosamente.\n\nUsted puede visualizar y gestionar su pase táctico haciendo clic en el siguiente enlace:\n{{qr_url}}\n\nLe sugerimos tener su código QR a la mano al momento de llegar a la alcabala para agilizar su ingreso.\n\nSaludos cordiales,\nComando de Base');
     const [tipoEnvio, setTipoEnvio] = useState('solo_qr'); // 'solo_qr' o 'carnet_pdf'
     const [presetId, setPresetId] = useState('aegis');
+    const [formato, setFormato] = useState('colgante');
     const [enviando, setEnviando] = useState(false);
     const [optimizando, setOptimizando] = useState(false);
 
@@ -547,7 +548,8 @@ const ModalEnvioCorreosMasivos = ({ isOpen, onClose, lote }) => {
                 cuerpo,
                 adjuntar_pdf: tipoEnvio === 'carnet_pdf',
                 tipo_envio: tipoEnvio,
-                estilo_carnet: estilo
+                estilo_carnet: estilo,
+                formato_carnet: formato
             });
             toast.success('Protocolo de difusión iniciado en segundo plano.');
             onClose();
@@ -660,29 +662,56 @@ const ModalEnvioCorreosMasivos = ({ isOpen, onClose, lote }) => {
                         </section>
 
                         {tipoEnvio === 'carnet_pdf' && (
-                            <section className="space-y-3 animate-in slide-in-from-top-2 duration-300">
-                                <label className="text-[10px] font-black tracking-widest text-text-muted uppercase px-1">ESTILO DEL CARNET ADJUNTO</label>
-                                <div className="grid grid-cols-3 gap-2">
-                                    {PRESETS_COLOR.map(p => (
-                                        <button
-                                            key={p.id}
-                                            type="button"
-                                            onClick={() => setPresetId(p.id)}
-                                            className={cn(
-                                                "group relative h-10 rounded-xl border flex items-center justify-center transition-all overflow-hidden",
-                                                presetId === p.id ? "border-white ring-2 ring-white/20" : "border-white/10 hover:border-white/30"
-                                            )}
-                                            style={{ backgroundColor: p.fondo }}
-                                        >
-                                            <div className="absolute inset-0 opacity-10 group-hover:opacity-20 transition-opacity" style={{ backgroundColor: p.primario }} />
-                                            <span className="relative text-[9px] font-black uppercase tracking-tighter" style={{ color: p.primario }}>{p.nombre}</span>
-                                        </button>
-                                    ))}
+                            <section className="space-y-5 animate-in slide-in-from-top-2 duration-300">
+                                <div className="space-y-3">
+                                    <label className="text-[10px] font-black tracking-widest text-text-muted uppercase px-1">FORMATO DEL CARNET</label>
+                                    <div className="grid grid-cols-2 gap-2">
+                                        {[
+                                            { id: 'colgante', label: 'Colgante' },
+                                            { id: 'credencial', label: 'Credencial' },
+                                            { id: 'ticket', label: 'Ticket' },
+                                            { id: 'cartera', label: 'Cartera' }
+                                        ].map(f => (
+                                            <button
+                                                key={f.id}
+                                                type="button"
+                                                onClick={() => setFormato(f.id)}
+                                                className={cn(
+                                                    "flex items-center justify-between px-4 h-10 rounded-xl border transition-all",
+                                                    formato === f.id ? "bg-primary/10 border-primary text-primary" : "bg-white/5 border-white/10 text-text-muted hover:border-white/20"
+                                                )}
+                                            >
+                                                <span className="text-[10px] font-black uppercase">{f.label}</span>
+                                                {formato === f.id && <CheckCircle2 size={12} />}
+                                            </button>
+                                        ))}
+                                    </div>
                                 </div>
-                                <div className="p-3 bg-white/5 rounded-xl border border-white/5">
-                                    <p className="text-[9px] text-text-muted font-bold uppercase leading-relaxed text-center italic">
-                                        "El carnet se anexará centrado en una hoja tamaño carta con dimensiones tácticas 100x70mm"
-                                    </p>
+
+                                <div className="space-y-3">
+                                    <label className="text-[10px] font-black tracking-widest text-text-muted uppercase px-1">ESTILO VISUAL</label>
+                                    <div className="grid grid-cols-3 gap-2">
+                                        {PRESETS_COLOR.map(p => (
+                                            <button
+                                                key={p.id}
+                                                type="button"
+                                                onClick={() => setPresetId(p.id)}
+                                                className={cn(
+                                                    "group relative h-10 rounded-xl border flex items-center justify-center transition-all overflow-hidden",
+                                                    presetId === p.id ? "border-white ring-2 ring-white/20" : "border-white/10 hover:border-white/30"
+                                                )}
+                                                style={{ backgroundColor: p.fondo }}
+                                            >
+                                                <div className="absolute inset-0 opacity-10 group-hover:opacity-20 transition-opacity" style={{ backgroundColor: p.primario }} />
+                                                <span className="relative text-[9px] font-black uppercase tracking-tighter" style={{ color: p.primario }}>{p.nombre}</span>
+                                                {presetId === p.id && (
+                                                    <div className="absolute top-1 right-1">
+                                                        <CheckCircle2 size={8} className="text-white" />
+                                                    </div>
+                                                )}
+                                            </button>
+                                        ))}
+                                    </div>
                                 </div>
                             </section>
                         )}
@@ -1008,6 +1037,7 @@ const ModalNuevoLote = ({ isOpen, onClose, zonas, tiposCustom, onCreated }) => {
         zona_asignada_id: null,
         puesto_asignado_id: null,
         max_accesos_por_pase: 1,
+        max_accesos_ilimitados: false,
     });
     const [guardando, setGuardando] = useState(false);
     const [excelPases, setExcelPases] = useState(null);
@@ -1167,7 +1197,8 @@ const ModalNuevoLote = ({ isOpen, onClose, zonas, tiposCustom, onCreated }) => {
                 
                 // Mapeo explícito
                 zona_id: cleanForm.zona_asignada_id,
-                puesto_id: cleanForm.puesto_asignado_id
+                puesto_id: cleanForm.puesto_asignado_id,
+                max_accesos_por_pase: cleanForm.max_accesos_ilimitados ? 0 : cleanForm.max_accesos_por_pase
             };
             await pasesService.crearLote(payload);
             toast.success('Lote de pases creado con éxito');
@@ -1272,15 +1303,28 @@ const ModalNuevoLote = ({ isOpen, onClose, zonas, tiposCustom, onCreated }) => {
                                 </p>
                             )}
                         </div>
-                        <Input label="Máx. accesos por pase" type="number" value={form.max_accesos_por_pase}
-                            onChange={e => {
-                                const valStr = e.target.value;
-                                if (valStr === '') {
-                                    setForm({ ...form, max_accesos_por_pase: '' });
-                                } else {
-                                    setForm({ ...form, max_accesos_por_pase: parseInt(valStr) || 0 });
-                                }
-                            }} />
+                        <div className="space-y-1">
+                            <Input 
+                                label="Máx. accesos por pase" 
+                                type="number" 
+                                value={form.max_accesos_ilimitados ? '' : form.max_accesos_por_pase}
+                                disabled={form.max_accesos_ilimitados}
+                                onChange={e => {
+                                    const valStr = e.target.value;
+                                    setForm({ ...form, max_accesos_por_pase: valStr === '' ? '' : parseInt(valStr) || 0 });
+                                }} 
+                            />
+                            <label className="flex items-center gap-2 px-1 cursor-pointer group">
+                                <input 
+                                    type="checkbox" 
+                                    checked={form.max_accesos_ilimitados}
+                                    onChange={(e) => setForm({ ...form, max_accesos_ilimitados: e.target.checked })}
+                                    className="w-3 h-3 rounded border-white/20 bg-white/5 text-primary focus:ring-offset-0 focus:ring-primary"
+                                />
+                                <span className="text-[8px] font-black uppercase text-text-muted group-hover:text-primary transition-colors">Accesos Ilimitados</span>
+                            </label>
+                        </div>
+
                     </div>
                 </div>
                 </div>
@@ -1433,8 +1477,8 @@ const ModalNuevoLote = ({ isOpen, onClose, zonas, tiposCustom, onCreated }) => {
 
                     </div>
 
-                    {/* Sección Excel para Identificados */}
-                    {form.tipo_pase === 'identificado' && (
+                    {/* Sección Excel para Identificados y Portal */}
+                    {(form.tipo_pase === 'identificado' || form.tipo_pase === 'portal') && (
                         <div className="p-4 bg-primary/5 border border-primary/20 rounded-2xl space-y-4 animate-in slide-in-from-bottom-2">
                             <div className="flex items-center justify-between">
                                 <div className="flex items-center gap-2">

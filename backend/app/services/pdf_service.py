@@ -91,12 +91,7 @@ class PDFService:
         buffer.seek(0)
         return buffer
 
-    async def generar_pdf_individual(
-        self, 
-        pase: CodigoQR, 
-        lote: LotePaseMasivo, 
-        preset: dict
-    ) -> io.BytesIO:
+    async def generar_pdf_individual(self, pase, lote, preset, formato="colgante"):
         """
         Genera un PDF individual (tamaño carta) con un solo carnet centrado.
         """
@@ -107,11 +102,18 @@ class PDFService:
         # Colores del preset
         cp = HexColor(preset.get('primario', '#4EDEA3'))
         cs = HexColor(preset.get('fondo', '#0E1322'))
+
         ct = HexColor(preset.get('textoNombre', '#FFFFFF'))
         
-        # Dimensiones del carnet (Estandarizado)
-        card_w = 100 * mm # Un poco más grande para el PDF individual
-        card_h = 70 * mm
+        # Dimensiones del carnet según formato
+        dims = {
+            "colgante": (100 * mm, 70 * mm),
+            "credencial": (85 * mm, 55 * mm),
+            "ticket": (70 * mm, 120 * mm),
+            "cartera": (55 * mm, 85 * mm)
+        }
+        card_w, card_h = dims.get(formato, (100 * mm, 70 * mm))
+
         
         # Centrado
         x = (width - card_w) / 2

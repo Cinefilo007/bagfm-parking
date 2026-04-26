@@ -23,7 +23,8 @@ class CorreoMasivoService:
         cuerpo_plantilla: str, 
         adjuntar_pdf: bool,
         tipo_envio: str = "solo_qr",
-        estilo_carnet: Optional[dict] = None
+        estilo_carnet: Optional[dict] = None,
+        formato_carnet: Optional[str] = "colgante"
     ):
         """
         Método asíncrono que debe ser ejecutado por BackgroundTasks.
@@ -90,10 +91,10 @@ class CorreoMasivoService:
                     "html": f"<div style='font-family: sans-serif; color: #f8fafc; background-color: #0c0f17; padding: 40px; border-radius: 16px;'>{cuerpo_html}</div>"
                 }
 
-                # Si es tipo carnet_pdf, generamos el PDF INDIVIDUAL centrado en tamaño CARTA
+                # Si es tipo carnet_pdf, generamos el PDF INDIVIDUAL
                 if tipo_envio == "carnet_pdf" and estilo_carnet:
                     try:
-                        pdf_buf = await pdf_service.generar_pdf_individual(pase, lote, estilo_carnet)
+                        pdf_buf = await pdf_service.generar_pdf_individual(pase, lote, estilo_carnet, formato_carnet)
                         pdf_b64 = base64.b64encode(pdf_buf.getvalue()).decode('utf-8')
                         payload["attachments"] = [
                             {

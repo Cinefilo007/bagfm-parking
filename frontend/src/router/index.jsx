@@ -137,11 +137,13 @@ export const router = createBrowserRouter([
           }
         ]
       },
-      {
-        path: 'portal-evento/:serial',
-        element: <PortalEvento />
-      }
-    ],
+  {
+    path: '/portal-evento/:serial',
+    element: <PortalEvento />
+  },
+  {
+    path: '/pase/:token',
+    element: <PortalPase />
   },
   {
     path: '*',

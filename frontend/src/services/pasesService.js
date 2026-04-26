@@ -93,6 +93,21 @@ export const pasesService = {
     return res.data;
   },
 
+  async obtenerLotePublico(serial) {
+    const res = await api.get(`/pases/portal/lote/${serial}`);
+    return res.data;
+  },
+
+  async obtenerPasePublico(token) {
+    const res = await api.get(`/pases/portal/pase/${token}`);
+    return res.data;
+  },
+
+  async completarPasePublico(token, datos) {
+    const res = await api.patch(`/pases/portal/pase/${token}`, datos);
+    return res.data;
+  },
+
   async obtenerDisponibilidad(zonaId, inicio, fin) {
     const res = await api.get('/pases/lotes/disponibilidad', {
       params: { zona_id: zonaId, inicio, fin }

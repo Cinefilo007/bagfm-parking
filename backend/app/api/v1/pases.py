@@ -264,7 +264,8 @@ async def enviar_correos_lote_endpoint(
         datos.cuerpo,
         datos.adjuntar_pdf,
         datos.tipo_envio,
-        datos.estilo_carnet
+        datos.estilo_carnet,
+        datos.formato_carnet
     )
     
     return {"status": "accepted", "message": "Proceso de despacho de correos iniciado en segundo plano."}
@@ -295,14 +296,110 @@ async def actualizar_pase(
         raise HTTPException(status_code=404, detail="Pase no encontrado")
     return pase
 
-@router.delete("/lotes/{lote_id}", status_code=status.HTTP_204_NO_CONTENT)
-async def eliminar_lote(
-    lote_id: UUID,
-    db: AsyncSession = Depends(obtener_db),
-    usuario_actual: Usuario = Depends(require_rol(ADMIN_ROLES))
+# ====== ENDPOINTS PÚBLICOS PARA PORTAL DE AUTOREGISTRO ======
+
+@router.get("/portal/lote/{serial}")
+async def obtener_lote_publico(serial: str, db: AsyncSession = Depends(obtener_db)):
+    """Obtiene información básica de un lote por su serial legible (PÚBLICO)."""
+    query = select(LotePaseMasivo).where(LotePaseMasivo.codigo_serial == serial)
+    res = await db.execute(query)
+    lote = res.scalar_one_or_none()
+    
+    if not lote:
+        raise HTTPException(status_code=404, detail="Enlace táctico no válido")
+    
+    # Solo permitimos ver si el lote es de autoregistro o identificado (para consulta)
+    # pero no el tipo simple que es de control interno puro.
+    from app.models.enums import PasseTipo
+    if lote.tipo_pase == PasseTipo.simple:
+        raise HTTPException(status_code=403, detail="Este lote no tiene portal público")
+
+    return {
+        "id": lote.id,
+        "nombre_evento": lote.nombre_evento,
+        "fecha_inicio": lote.fecha_inicio,
+        "fecha_fin": lote.fecha_fin,
+        "tipo_pase": lote.tipo_pase,
+        "serial_lote": lote.codigo_serial
+    }
+
+@router.get("/portal/pase/{token}")
+async def obtener_pase_publico(token: str, db: AsyncSession = Depends(obtener_db)):
+    """Obtiene los datos de un pase específico por su token (PÚBLICO)."""
+    query = select(CodigoQR).where(CodigoQR.token == token)
+    res = await db.execute(query)
+    pase = res.scalar_one_or_none()
+    
+    if not pase:
+        raise HTTPException(status_code=404, detail="Token de acceso inválido")
+    
+    # Cargar el lote para ver permisos
+    lote = await db.get(LotePaseMasivo, pase.lote_id)
+    
+    return {
+        "pase": {
+            "id": pase.id,
+            "serial": pase.serial_legible,
+            "nombre": pase.nombre_portador,
+            "cedula": pase.cedula_portador,
+            "email": pase.email_portador,
+            "telefono": pase.telefono_portador,
+            "vehiculo": {
+                "placa": pase.vehiculo_placa,
+                "marca": pase.vehiculo_marca,
+                "modelo": pase.vehiculo_modelo,
+                "color": pase.vehiculo_color
+            }
+        },
+        "lote": {
+            "nombre_evento": lote.nombre_evento,
+            "tipo_pase": lote.tipo_pase,
+            "fecha_inicio": lote.fecha_inicio,
+            "fecha_fin": lote.fecha_fin
+        }
+    }
+
+@router.post("/portal/{serial}/registrar")
+async def registrar_invitado_publico(
+    serial: str, 
+    datos: dict, 
+    db: AsyncSession = Depends(obtener_db)
 ):
-    """Elimina un lote y todos sus recursos asociados."""
-    exito = await pase_service.eliminar_lote(db, lote_id)
-    if not exito:
+    """Registra un nuevo invitado en un lote de Autoregistro (PÚBLICO)."""
+    # 1. Buscar el lote
+    query = select(LotePaseMasivo).where(LotePaseMasivo.codigo_serial == serial)
+    res = await db.execute(query)
+    lote = res.scalar_one_or_none()
+    
+    if not lote:
         raise HTTPException(status_code=404, detail="Lote no encontrado")
-    return Response(status_code=status.HTTP_204_NO_CONTENT)
+        
+    from app.models.enums import PasseTipo
+    if lote.tipo_pase != PasseTipo.portal:
+        raise HTTPException(status_code=403, detail="Este lote no permite autorregistro público")
+
+    # 2. Verificar si hay QRs disponibles (que no tengan nombre aún)
+    # Por ahora, simplemente crearemos uno nuevo si hay cupo o usaremos uno vacío.
+    # Pero el flujo actual de pasesService es registrar un nuevo invitado.
+    return await pase_service.registrar_invitado_portal(db, lote.id, datos)
+
+@router.patch("/portal/pase/{token}")
+async def completar_pase_publico(
+    token: str,
+    datos: dict,
+    db: AsyncSession = Depends(obtener_db)
+):
+    """Permite al usuario completar sus datos si el lote es de autoregistro."""
+    query = select(CodigoQR).where(CodigoQR.token == token)
+    res = await db.execute(query)
+    pase = res.scalar_one_or_none()
+    
+    if not pase:
+        raise HTTPException(status_code=404, detail="Pase no encontrado")
+        
+    lote = await db.get(LotePaseMasivo, pase.lote_id)
+    from app.models.enums import PasseTipo
+    if lote.tipo_pase != PasseTipo.portal:
+        raise HTTPException(status_code=403, detail="Solo se pueden completar pases de tipo autorregistro")
+        
+    return await pase_service.actualizar_pase_publico(db, pase.id, datos)

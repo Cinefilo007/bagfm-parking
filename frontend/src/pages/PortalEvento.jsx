@@ -29,20 +29,19 @@ export default function PortalEvento() {
 
   const [form, setForm] = useState({
     nombre: '',
-    apellido: '',
     cedula: '',
+    email: '',
     telefono: '',
     marca: '',
     modelo: '',
     placa: '',
-    color: '',
-    anio: ''
+    color: ''
   });
 
   useEffect(() => {
     const fetchLote = async () => {
       try {
-        const data = await pasesService.obtenerLote(serial);
+        const data = await pasesService.obtenerLotePublico(serial);
         setLote(data);
       } catch (error) {
         toast.error('Enlace de seguridad inválido o expirado');
