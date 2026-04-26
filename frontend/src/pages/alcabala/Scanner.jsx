@@ -361,7 +361,7 @@ const ScannerAlcabala = () => {
         finally { setIaLoading(null); }
     };
 
-    /* ── Confirmar acceso (botón principal, sin formulario) ── */
+    /* ── Confirmar acceso principal (Persistencia en DB) ── */
     const handleConfirmar = async () => {
         try {
             setCargando(true);
@@ -371,28 +371,7 @@ const ScannerAlcabala = () => {
                 vehiculo_id: vehiculoSeleccionadoId || resultado.vehiculo_id,
                 tipo: tipoAcceso,
                 punto_acceso: operador?.punto?.nombre || 'Alcabala Principal',
-                es_manual: false,
-            });
-            toast.success(`Acceso ${tipoAcceso} confirmado`, { position: 'bottom-center' });
-            reiniciar();
-        } catch (error) {
-            toast.error('Error al registrar acceso');
-        } finally {
-            setCargando(false);
-        }
-    };
-
-    /* ── Confirmar acceso CON datos del formulario ── */
-    const handleConfirmarConDatos = async () => {
-        try {
-            setCargando(true);
-            await alcabalaService.registrarAcceso({
-                qr_id: resultado?.qr_id,
-                usuario_id: resultado?.usuario_id,
-                vehiculo_id: vehiculoSeleccionadoId || resultado?.vehiculo_id,
-                tipo: tipoAcceso,
-                punto_acceso: operador?.punto?.nombre || 'Alcabala Principal',
-                es_manual: true,
+                es_manual: !!(nombreManual || cedulaManual || placaManual || observaciones),
                 nombre_manual: nombreManual || null,
                 cedula_manual: cedulaManual || null,
                 telefono_manual: telefonoManual ? `+58${telefonoManual}` : null,
@@ -405,11 +384,47 @@ const ScannerAlcabala = () => {
             });
             toast.success(`Acceso ${tipoAcceso} confirmado`, { position: 'bottom-center' });
             reiniciar();
-        } catch {
+        } catch (error) {
             toast.error('Error al registrar acceso');
         } finally {
             setCargando(false);
         }
+    };
+
+    /* ── Guardar datos localmente (Sin enviar a API) ── */
+    const handleGuardarDatosLocales = () => {
+        // Actualizar preview visual con los datos capturados
+        setResultado(prev => ({
+            ...prev,
+            socio: prev.socio ? {
+                ...prev.socio,
+                nombre: nombreManual || prev.socio.nombre,
+                cedula: cedulaManual || prev.socio.cedula,
+                telefono: telefonoManual ? `+58${telefonoManual}` : prev.socio.telefono
+            } : (nombreManual || cedulaManual ? {
+                nombre: nombreManual || "Visitante",
+                cedula: cedulaManual,
+                telefono: telefonoManual ? `+58${telefonoManual}` : null
+            } : null),
+            vehiculo: prev.vehiculo ? {
+                ...prev.vehiculo,
+                placa: placaManual || prev.vehiculo.placa,
+                marca: marcaManual || prev.vehiculo.marca,
+                modelo: modeloManual || prev.vehiculo.modelo,
+                color: colorManual || prev.vehiculo.color
+            } : (placaManual ? {
+                placa: placaManual,
+                marca: marcaManual,
+                modelo: modeloManual,
+                color: colorManual
+            } : null)
+        }));
+
+        setMostrarFormulario(false);
+        toast.success("Datos preparados", { 
+            icon: '📝',
+            position: 'bottom-center' 
+        });
     };
 
     const reiniciar = () => {
@@ -875,18 +890,12 @@ const ScannerAlcabala = () => {
                                 {/* Botón confirmar con datos */}
                                 <div className="pt-1 flex flex-col gap-2">
                                     <Boton
-                                        onClick={handleConfirmarConDatos}
-                                        disabled={cargando}
+                                        onClick={handleGuardarDatosLocales}
                                         className="h-14 rounded-xl w-full gap-2"
                                         style={{ background: 'var(--primary)', color: 'var(--on-primary)' }}
                                     >
-                                        {cargando
-                                            ? <RefreshCw className="animate-spin" size={20} />
-                                            : <>
-                                                <UserCheck size={18} />
-                                                <span className="text-sm font-black uppercase italic">Confirmar con Datos</span>
-                                            </>
-                                        }
+                                        <CheckCircle2 size={18} />
+                                        <span className="text-sm font-black uppercase italic">Registrar Datos</span>
                                     </Boton>
                                     <button
                                         onClick={reiniciar}

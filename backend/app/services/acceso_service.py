@@ -541,15 +541,15 @@ class AccesoService:
                             zona_id = lote.zona_estacionamiento_id
                     
                     if zona_id:
-                        # Datos para la notificación
-                        placa = "S/P"
-                        detalles = "Pase Masivo"
-                        nombre_visitante = qr_db.nombre_portador or "Visitante"
+                        # Datos para la notificación - Priorizar datos manuales de la captura actual
+                        placa = nuevo_acceso.vehiculo_placa or (qr_db.vehiculo_placa if qr_db else "PENDIENTE CON ESE PASE")
                         
-                        # Intentar obtener placa real si existe
-                        if qr_db.vehiculo_placa:
-                            placa = qr_db.vehiculo_placa
-                            detalles = f"{qr_db.vehiculo_marca or ''} {qr_db.vehiculo_modelo or ''} {qr_db.vehiculo_color or ''}"
+                        mca = nuevo_acceso.vehiculo_marca or (qr_db.vehiculo_marca if qr_db else "")
+                        mod = nuevo_acceso.vehiculo_modelo or (qr_db.vehiculo_modelo if qr_db else "")
+                        col = nuevo_acceso.vehiculo_color or (qr_db.vehiculo_color if qr_db else "")
+                        
+                        detalles = " ".join(filter(None, [mca, mod, col])) or "Pase Masivo"
+                        nombre_visitante = nuevo_acceso.nombre_manual or (qr_db.nombre_portador if qr_db else "Visitante")
                         
                         await notificacion_service.notificar_entrada_vehiculo(
                             db,
