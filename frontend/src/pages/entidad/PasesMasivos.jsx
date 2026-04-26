@@ -139,6 +139,19 @@ const ModalVerQR = ({ pase, lote, isOpen, onClose }) => {
         colores: presetObj
     };
 
+    // Dimesiones dinámicas para el contenedor según formato elegido
+    const getLayoutDims = () => {
+        switch(modoExport) {
+            case 'qr': return { h: 220, s: 1 };
+            case 'colgante': return { h: 340, s: 0.75 };
+            case 'credencial': return { h: 300, s: 0.75 };
+            case 'ticket': return { h: 210, s: 0.75 };
+            case 'cartera': return { h: 160, s: 0.65 };
+            default: return { h: 300, s: 0.75 };
+        }
+    };
+    const layout = getLayoutDims();
+
     // Función unificada que devuelve el Blob de imagen (SVG rasterizado o componente React rasterizado)
     const generarImagen = async () => {
         setCapturando(true);
@@ -173,7 +186,7 @@ const ModalVerQR = ({ pase, lote, isOpen, onClose }) => {
                     width: carnetRef.current.offsetWidth,
                     height: carnetRef.current.offsetHeight,
                     fontEmbedCSS: fontCSSData,
-                    style: { transform: 'scale(1)', margin: '0' }
+                    style: { transform: 'none', margin: '0' }
                 });
                 const res = await fetch(dataUrl);
                 return await res.blob();
@@ -275,7 +288,10 @@ const ModalVerQR = ({ pase, lote, isOpen, onClose }) => {
                 </div>
 
                 {/* Body Visualizable */}
-                <div className="w-full relative flex justify-center py-4 rounded-2xl bg-black/20 border border-white/5 overflow-hidden" style={{ minHeight: modoExport === 'qr' ? 220 : 340 }}>
+                <div 
+                    className="w-full relative rounded-2xl bg-black/20 border border-white/5 overflow-hidden transition-all duration-300 ease-in-out" 
+                    style={{ height: layout.h }}
+                >
                     {capturando && (
                          <div className="absolute inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm rounded-2xl">
                              <Loader2 size={32} className="text-primary animate-spin" />
@@ -283,12 +299,18 @@ const ModalVerQR = ({ pase, lote, isOpen, onClose }) => {
                     )}
                     
                     {modoExport === 'qr' ? (
-                        <div ref={svgRef} className="bg-white rounded-2xl p-4 shadow-xl shadow-black/40" style={{ width: 188, height: 188, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                            <QRCode value={qrValue || ' '} size={168} bgColor="#ffffff" fgColor="#0d1117" level="M" />
+                        <div className="absolute inset-0 flex items-center justify-center">
+                            <div ref={svgRef} className="bg-white rounded-2xl p-4 shadow-xl shadow-black/40" style={{ width: 188, height: 188, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                <QRCode value={qrValue || ' '} size={168} bgColor="#ffffff" fgColor="#0d1117" level="M" />
+                            </div>
                         </div>
                     ) : (
-                        <div className="transform-gpu scale-[0.7] origin-top flex justify-center">
-                            <div ref={carnetRef} className="shrink-0 w-max h-max bg-transparent p-1 inline-block">
+                        <div 
+                            className="absolute left-1/2 top-1/2 origin-center flex justify-center items-center transition-transform duration-300 ease-in-out"
+                            style={{ transform: `translate(-50%, -50%) scale(${layout.s})` }}
+                        >
+                            {/* Inner wrapper strictly for the generator node */}
+                            <div ref={carnetRef} className="shrink-0 w-max h-max bg-transparent inline-block p-1">
                                 <PlantillaPreview 
                                     plantilla={modoExport} 
                                     config={confGenerica} 
@@ -304,6 +326,7 @@ const ModalVerQR = ({ pase, lote, isOpen, onClose }) => {
                     <div className={modoExport === 'qr' ? 'w-full' : 'w-1/2'}>
                         <label className="block text-[9px] font-black tracking-widest text-text-muted uppercase px-1 mb-1">Formato</label>
                         <SelectTactivo 
+                            menuPlacement="top"
                             value={[
                                 { value: 'qr', label: 'Solo QR' },
                                 { value: 'colgante', label: 'Colgante' },
@@ -325,6 +348,7 @@ const ModalVerQR = ({ pase, lote, isOpen, onClose }) => {
                         <div className="w-1/2">
                             <label className="block text-[9px] font-black tracking-widest text-text-muted uppercase px-1 mb-1">Estilo</label>
                             <SelectTactivo 
+                                menuPlacement="top"
                                 value={PRESETS_COLOR.map(p => ({ value: p.id, label: p.nombre })).find(o => o.value === presetId)} 
                                 onChange={option => setPresetId(option?.value || 'aegis')}
                                 options={PRESETS_COLOR.map(p => ({ value: p.id, label: p.nombre }))}
