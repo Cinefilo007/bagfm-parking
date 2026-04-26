@@ -1,7 +1,8 @@
 from uuid import UUID
 from datetime import datetime, timezone
+from sqlalchemy import func, or_
 from sqlalchemy.future import select
-from sqlalchemy import func
+from sqlalchemy.orm import selectinload
 from sqlalchemy.ext.asyncio import AsyncSession
 from jose import JWTError
 
@@ -13,9 +14,13 @@ from app.models.infraccion import Infraccion
 from app.models.codigo_qr import CodigoQR
 from app.models.entidad_civil import EntidadCivil
 from app.models.vehiculo_pase import VehiculoPase
-from app.models.enums import AccesoTipo, MembresiaEstado, InfraccionEstado, QRTipo, TipoAccesoPase
-from app.schemas.acceso import AccesoValidar, AccesoRegistrar, ResultadoValidacion
+from app.models.alcabala_evento import LotePaseMasivo
+from app.models.zona_estacionamiento import ZonaEstacionamiento
+from app.models.puesto_estacionamiento import PuestoEstacionamiento
+from app.models.enums import AccesoTipo, MembresiaEstado, InfraccionEstado, QRTipo, TipoAccesoPase, RolTipo
+from app.schemas.acceso import AccesoValidar, AccesoRegistrar, ResultadoValidacion, EventoTactico
 from app.services.membresia_service import membresia_service
+from app.services.notificacion_service import notificacion_service
 from app.core.security import decodificar_token
 
 class AccesoService:
@@ -59,7 +64,6 @@ class AccesoService:
             # 4. Lógica de Pases Masivos
             if qr_db.lote_id:
                 # Validar Límites de Acceso - Solo bloquea en ENTRADA
-                from app.models.enums import AccesoTipo
                 if datos.tipo == AccesoTipo.entrada:
                     if qr_db.max_accesos is not None and qr_db.accesos_usados >= qr_db.max_accesos:
                         return ResultadoValidacion(
@@ -69,8 +73,6 @@ class AccesoService:
                         )
                 
                 # Buscar nombre del evento
-                from app.models.alcabala_evento import LotePaseMasivo
-                from sqlalchemy.orm import selectinload
                 query_lote = select(LotePaseMasivo).where(LotePaseMasivo.id == qr_db.lote_id).options(selectinload(LotePaseMasivo.entidad))
                 res_lote = await db.execute(query_lote)
                 lote = res_lote.scalar_one_or_none()
@@ -82,13 +84,11 @@ class AccesoService:
                 p_nombre = None
 
                 if z_id:
-                    from app.models.zona_estacionamiento import ZonaEstacionamiento
                     z_db = await db.get(ZonaEstacionamiento, z_id)
                     if z_db:
                         z_nombre = z_db.nombre
                         
                 if p_id:
-                    from app.models.puesto_estacionamiento import PuestoEstacionamiento
                     p_db = await db.get(PuestoEstacionamiento, p_id)
                     if p_db:
                         p_nombre = str(p_db.numero_puesto)
@@ -146,7 +146,6 @@ class AccesoService:
                         vehiculos_socio.append(v_mock)
                     
                     # Adicionales (Tabla VehiculoPase)
-                    from app.models.vehiculo_pase import VehiculoPase
                     query_veh_adi = select(VehiculoPase).where(VehiculoPase.qr_id == qr_db.id)
                     res_veh_adi = await db.execute(query_veh_adi)
                     vehiculos_adicionales = res_veh_adi.scalars().all()
@@ -374,8 +373,6 @@ class AccesoService:
         final_vehiculo_pase_id = datos.vehiculo_pase_id
 
         # 0. Validar integridad de IDs provenientes del Frontend (Filtrar IDs mockeados de pases masivos excel)
-        from app.models.usuario import Usuario
-        from app.models.vehiculo import Vehiculo
         
         if final_usuario_id:
             q_exists_u = select(Usuario.id).where(Usuario.id == final_usuario_id)
@@ -386,7 +383,6 @@ class AccesoService:
             q_exists_v = select(Vehiculo.id).where(Vehiculo.id == final_vehiculo_id)
             if not (await db.execute(q_exists_v)).scalar_one_or_none():
                 # Evaluar si el ID es en realidad un VehiculoPase (Vehículos Múltiples Mock)
-                from app.models.vehiculo_pase import VehiculoPase
                 q_exists_vp = select(VehiculoPase.id).where(VehiculoPase.id == final_vehiculo_id)
                 if (await db.execute(q_exists_vp)).scalar_one_or_none():
                     final_vehiculo_pase_id = final_vehiculo_id
@@ -396,7 +392,6 @@ class AccesoService:
 
         # 1. Registro Ligero de Usuario/Vehículo si se proveen datos manuales
         if datos.cedula_manual:
-            from app.models.enums import RolTipo
 
             # Buscar si ya existe por cédula
             q_u = select(Usuario).where(Usuario.cedula == datos.cedula_manual)
@@ -457,12 +452,10 @@ class AccesoService:
                 v_db = await db.get(Vehiculo, final_vehiculo_id)
                 if v_db: placa_para_buscar = v_db.placa
             elif not placa_para_buscar and final_vehiculo_pase_id:
-                from app.models.vehiculo_pase import VehiculoPase
                 vp_db = await db.get(VehiculoPase, final_vehiculo_pase_id)
                 if vp_db: placa_para_buscar = vp_db.placa
             
             if placa_para_buscar:
-                from sqlalchemy import or_
                 q_last = select(Acceso).where(
                     or_(
                         Acceso.vehiculo_placa == placa_para_buscar,
@@ -516,7 +509,6 @@ class AccesoService:
         if datos.qr_id:
             qr_db = await db.get(CodigoQR, datos.qr_id)
             if qr_db:
-                from app.models.enums import AccesoTipo
                 if qr_db.lote_id and datos.tipo == AccesoTipo.entrada:
                     qr_db.accesos_usados += 1
                     
@@ -532,7 +524,6 @@ class AccesoService:
         # 5.1 Alerta de Vehículo Excepcional / Fantasma / Intimidación
         if datos.es_excepcion:
             try:
-                from app.services.notificacion_service import notificacion_service
                 # Esta alerta va para supervisores y administradores
                 await notificacion_service.notificar_excepcion_alcabala(nuevo_acceso)
             except Exception as e:
@@ -544,9 +535,6 @@ class AccesoService:
                 # Recargar QR para asegurar que tenemos los datos frescos post-commit
                 qr_db = await db.get(CodigoQR, datos.qr_id)
                 if qr_db and qr_db.lote_id:
-                    from app.services.notificacion_service import notificacion_service
-                    from app.models.alcabala_evento import LotePaseMasivo
-                    
                     # Resolver Zona
                     zona_id = qr_db.zona_asignada_id
                     if not zona_id:
@@ -580,8 +568,6 @@ class AccesoService:
 
     async def obtener_historial_tactico(self, db: AsyncSession, page: int, size: int, punto_nombre: str = None) -> dict:
         """Obtiene la bitácora de eventos paginada"""
-        from sqlalchemy import select, func
-        from app.schemas.acceso import PaginatedEventos, EventoTactico
 
         query = select(Acceso)
         if punto_nombre:
@@ -611,20 +597,17 @@ class AccesoService:
                 usuario_nombre = f"{u.nombre} {u.apellido}"
             elif acc.qr_id:
                 es_pase_temporal = True
-                from app.models.codigo_qr import CodigoQR
                 qr_db = await db.get(CodigoQR, acc.qr_id)
                 if qr_db and qr_db.nombre_portador:
                     usuario_nombre = f"{qr_db.nombre_portador} (PASE)"
             
             # 2. Resolver Vehículo
             if acc.vehiculo_id:
-                from app.models.vehiculo import Vehiculo
                 v = await db.get(Vehiculo, acc.vehiculo_id)
                 if v:
                     vehiculo_str = f"{v.marca} {v.modelo} [{v.placa}]"
             elif acc.vehiculo_pase_id:
                 # El usuario entró con un vehículo secundario del pase masivo
-                from app.models.vehiculo_pase import VehiculoPase
                 vp = await db.get(VehiculoPase, acc.vehiculo_pase_id)
                 if vp:
                     mca = vp.marca or ""
@@ -638,7 +621,6 @@ class AccesoService:
             elif acc.qr_id:
                 # Reutilizar qr_db si ya se cargó, sino cargarlo
                 if 'qr_db' not in locals() or not qr_db:
-                    from app.models.codigo_qr import CodigoQR
                     qr_db = await db.get(CodigoQR, acc.qr_id)
                 if qr_db and qr_db.vehiculo_placa:
                     mca = qr_db.vehiculo_marca or ""
