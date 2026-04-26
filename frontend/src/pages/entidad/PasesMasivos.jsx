@@ -100,20 +100,17 @@ const ModalVerQR = ({ pase, lote, isOpen, onClose }) => {
     const { user } = useAuthStore();
     const [modoExport, setModoExport] = useState('qr');
     const [capturando, setCapturando] = useState(false);
-    
-    if (!pase || !isOpen) return null;
 
-    const qrValue = pase.token || pase.serial_legible || '';
-    const tituloPortador = pase.nombre_portador || 'SIN ASIGNAR';
-    const serialDisplay = pase.serial_legible || '';
+    const qrValue = pase?.token || pase?.serial_legible || '';
+    const serialDisplay = pase?.serial_legible || '';
 
     // Extracción de datos lista para inyectar en la Plantilla
     const datosDinamicosActuales = useMemo(() => ({
-        nombre: pase.nombre_portador || 'SIN REGISTRO',
-        cedula: pase.cedula_portador || null,
+        nombre: pase?.nombre_portador || 'SIN REGISTRO',
+        cedula: pase?.cedula_portador || null,
         entidad: lote?.entidad?.nombre || user?.entidad_nombre || 'SIN ENTIDAD',
         evento: lote?.nombre_evento,
-        vehiculo_placa: pase.vehiculo_placa || null,
+        vehiculo_placa: pase?.vehiculo_placa || null,
         zona_nombre: lote?.zona_asignada?.nombre || null,
         tipo_acceso: lote?.tipo_acceso_custom ? lote.tipo_acceso_custom.nombre : lote?.tipo_pase,
         fecha_inicio: lote?.fecha_inicio ? new Date(lote.fecha_inicio).toLocaleDateString() : '--',
@@ -121,6 +118,10 @@ const ModalVerQR = ({ pase, lote, isOpen, onClose }) => {
         qr: qrValue,
         serial: serialDisplay
     }), [pase, lote, user, qrValue, serialDisplay]);
+    
+    if (!pase || !isOpen) return null;
+
+    const tituloPortador = pase.nombre_portador || 'SIN ASIGNAR';
 
     const confGenerica = {
         titulo: 'BAGFM ACCESS',
