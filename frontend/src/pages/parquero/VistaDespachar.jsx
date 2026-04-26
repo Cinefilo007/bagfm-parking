@@ -2,7 +2,7 @@ import React, { useState, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import {
     ArrowLeft, Scan, Keyboard, LogOut, CheckCircle2,
-    RefreshCw, Car, Clock, ParkingSquare, AlertTriangle, X
+    RefreshCw, Car, Clock, ParkingSquare, AlertTriangle, X, Power
 } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import { toast } from 'react-hot-toast';

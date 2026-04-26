@@ -542,14 +542,20 @@ class AccesoService:
                     
                     if zona_id:
                         # Datos para la notificación - Priorizar datos manuales de la captura actual
-                        placa = nuevo_acceso.vehiculo_placa or (qr_db.vehiculo_placa if qr_db else "PENDIENTE CON ESE PASE")
+                        tiene_placa = nuevo_acceso.vehiculo_placa or (qr_db.vehiculo_placa if qr_db else None)
+                        tiene_nombre = nuevo_acceso.nombre_manual or (qr_db.nombre_portador if qr_db else None)
                         
-                        mca = nuevo_acceso.vehiculo_marca or (qr_db.vehiculo_marca if qr_db else "")
-                        mod = nuevo_acceso.vehiculo_modelo or (qr_db.vehiculo_modelo if qr_db else "")
-                        col = nuevo_acceso.vehiculo_color or (qr_db.vehiculo_color if qr_db else "")
-                        
-                        detalles = " ".join(filter(None, [mca, mod, col])) or "Pase Masivo"
-                        nombre_visitante = nuevo_acceso.nombre_manual or (qr_db.nombre_portador if qr_db else "Visitante")
+                        if not tiene_placa and not tiene_nombre:
+                            placa = "PASE SIN REGISTROS"
+                            detalles = "ESTÉ PENDIENTE PARA RECIBIR Y REGISTRAR VEHÍCULO"
+                            nombre_visitante = "NUEVO VISITANTE"
+                        else:
+                            placa = tiene_placa or "SIN PLACA REGISTRADA"
+                            mca = nuevo_acceso.vehiculo_marca or (qr_db.vehiculo_marca if qr_db else "")
+                            mod = nuevo_acceso.vehiculo_modelo or (qr_db.vehiculo_modelo if qr_db else "")
+                            col = nuevo_acceso.vehiculo_color or (qr_db.vehiculo_color if qr_db else "")
+                            detalles = " ".join(filter(None, [mca, mod, col])) or "Pase Masivo"
+                            nombre_visitante = tiene_nombre or "Visitante"
                         
                         await notificacion_service.notificar_entrada_vehiculo(
                             db,

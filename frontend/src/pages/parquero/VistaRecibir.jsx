@@ -3,7 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import {
     ArrowLeft, Scan, Keyboard, LogIn, CheckCircle2,
     RefreshCw, Car, XCircle, Camera, User, UserCheck,
-    ParkingSquare, AlertTriangle
+    ParkingSquare, AlertTriangle, Power
 } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import { toast } from 'react-hot-toast';
