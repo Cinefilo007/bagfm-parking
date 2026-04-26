@@ -233,12 +233,10 @@ class AccesoService:
                 z_nombre = None
                 p_nombre = None
                 if qr_db.zona_asignada_id:
-                    from app.models.zona_estacionamiento import ZonaEstacionamiento
                     z_db = await db.get(ZonaEstacionamiento, qr_db.zona_asignada_id)
                     if z_db:
                         z_nombre = z_db.nombre
                 if qr_db.puesto_asignado_id:
-                    from app.models.puesto_estacionamiento import PuestoEstacionamiento
                     p_db = await db.get(PuestoEstacionamiento, qr_db.puesto_asignado_id)
                     if p_db:
                         p_nombre = str(p_db.numero_puesto)
