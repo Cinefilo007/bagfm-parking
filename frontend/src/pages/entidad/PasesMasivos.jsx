@@ -24,6 +24,8 @@ import zonaService from '../../services/zona.service';
 import api from '../../services/api';
 import * as XLSX from 'xlsx';
 import ModalExportarLote from '../../components/eventos/ModalExportarLote';
+import { toPng } from 'html-to-image';
+import PlantillaPreview from '../../components/carnets/PlantillaPreview';
 
 // ──── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -53,96 +55,191 @@ const badgeTipo = (tipo, labelCustom) => {
 
 // ──── ModalVerQR: Visualización grande del código QR individual ───────────────
 
+// Helper de fuentes en base64 para evitar errores CORS en html-to-image
+const preloadBase64Fonts = async () => {
+    try {
+        const cssUrl = 'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&family=Space+Grotesk:wght@400;500;600;700;900&display=swap';
+        const cssText = await fetch(cssUrl).then(r => r.text());
+        const urlRegex = /url\((.*?)\)/g;
+        const fontPromises = [];
+        
+        while (true) {
+            const currentMatch = urlRegex.exec(cssText);
+            if (!currentMatch) break;
+            const originalString = currentMatch[0];
+            const fontUrl = currentMatch[1].replace(/['"]/g, '');
+            
+            fontPromises.push(
+                fetch(fontUrl)
+                    .then(r => r.blob())
+                    .then(blob => new Promise((resolve) => {
+                        const reader = new FileReader();
+                        reader.onloadend = () => resolve({ original: originalString, data: reader.result });
+                        reader.readAsDataURL(blob);
+                    }))
+                    .catch(e => {
+                        return { original: originalString, data: fontUrl };
+                    })
+            );
+        }
+        
+        const results = await Promise.all(fontPromises);
+        let finalCss = cssText;
+        for (const res of results) {
+            finalCss = finalCss.replace(res.original, `url("${res.data}")`);
+        }
+        return finalCss;
+    } catch (e) {
+        return '';
+    }
+};
+
 const ModalVerQR = ({ pase, lote, isOpen, onClose }) => {
     const svgRef = useRef(null);
+    const carnetRef = useRef(null);
+    const { user } = useAuthStore();
+    const [modoExport, setModoExport] = useState('qr');
+    const [capturando, setCapturando] = useState(false);
     
     if (!pase || !isOpen) return null;
 
-    // Genera el QR a partir del token JWT del pase
     const qrValue = pase.token || pase.serial_legible || '';
     const tituloPortador = pase.nombre_portador || 'SIN ASIGNAR';
     const serialDisplay = pase.serial_legible || '';
 
-    // ── Convierte el SVG del QR a un Blob PNG usando Canvas ──
-    const generarImagenQR = () => {
-        return new Promise((resolve, reject) => {
-            const svgEl = svgRef.current?.querySelector('svg');
-            if (!svgEl) { reject(new Error('SVG no encontrado')); return; }
+    // Extracción de datos lista para inyectar en la Plantilla
+    const datosDinamicosActuales = useMemo(() => ({
+        nombre: pase.nombre_portador || 'SIN REGISTRO',
+        cedula: pase.cedula_portador || null,
+        entidad: lote?.entidad?.nombre || user?.entidad_nombre || 'SIN ENTIDAD',
+        evento: lote?.nombre_evento,
+        vehiculo_placa: pase.vehiculo_placa || null,
+        zona_nombre: lote?.zona_asignada?.nombre || null,
+        tipo_acceso: lote?.tipo_acceso_custom ? lote.tipo_acceso_custom.nombre : lote?.tipo_pase,
+        fecha_inicio: lote?.fecha_inicio ? new Date(lote.fecha_inicio).toLocaleDateString() : '--',
+        fecha_fin: lote?.fecha_fin ? new Date(lote.fecha_fin).toLocaleDateString() : '--',
+        qr: qrValue,
+        serial: serialDisplay
+    }), [pase, lote, user, qrValue, serialDisplay]);
 
-            const svgData = new XMLSerializer().serializeToString(svgEl);
-            const canvas = document.createElement('canvas');
-            const size = 400;
-            canvas.width = size;
-            canvas.height = size;
-            const ctx = canvas.getContext('2d');
-
-            // Fondo blanco para el QR
-            ctx.fillStyle = '#ffffff';
-            ctx.fillRect(0, 0, size, size);
-
-            const img = new Image();
-            img.onload = () => {
-                ctx.drawImage(img, 20, 20, size - 40, size - 40);
-                canvas.toBlob(blob => resolve(blob), 'image/png', 1.0);
-            };
-            img.onerror = reject;
-            img.src = `data:image/svg+xml;base64,${btoa(unescape(encodeURIComponent(svgData)))}`;            
-        });
+    const confGenerica = {
+        titulo: 'BAGFM ACCESS',
+        subtitulo: 'BASE AÉREA GRAL. FRANCISCO DE MIRANDA',
+        colores: { id: 'aegis', primario: '#4ade80', fondo: '#09090b', textoHeader: '#000000', textoNombre: '#ffffff' }
     };
 
-    // ── Descargar imagen PNG del QR ──
+    // Función unificada que devuelve el Blob de imagen (SVG rasterizado o componente React rasterizado)
+    const generarImagen = async () => {
+        setCapturando(true);
+        try {
+            if (modoExport === 'qr') {
+                const svgEl = svgRef.current?.querySelector('svg');
+                if (!svgEl) throw new Error('SVG no encontrado');
+                const svgData = new XMLSerializer().serializeToString(svgEl);
+                const canvas = document.createElement('canvas');
+                const size = 400;
+                canvas.width = size;
+                canvas.height = size;
+                const ctx = canvas.getContext('2d');
+                ctx.fillStyle = '#ffffff';
+                ctx.fillRect(0, 0, size, size);
+                
+                const img = new Image();
+                const blob = await new Promise((resolve, reject) => {
+                    img.onload = () => {
+                        ctx.drawImage(img, 20, 20, size - 40, size - 40);
+                        canvas.toBlob(blob => resolve(blob), 'image/png', 1.0);
+                    };
+                    img.onerror = reject;
+                    img.src = `data:image/svg+xml;base64,${btoa(unescape(encodeURIComponent(svgData)))}`;
+                });
+                return blob;
+            } else {
+                if (!carnetRef.current) throw new Error('DOM Node no encontrado');
+                const fontCSSData = await preloadBase64Fonts();
+                const dataUrl = await toPng(carnetRef.current, {
+                    pixelRatio: 3,
+                    width: carnetRef.current.offsetWidth,
+                    height: carnetRef.current.offsetHeight,
+                    fontEmbedCSS: fontCSSData,
+                    style: { transform: 'scale(1)', margin: '0' }
+                });
+                const res = await fetch(dataUrl);
+                return await res.blob();
+            }
+        } finally {
+            setCapturando(false);
+        }
+    };
+
     const handleDescargar = async () => {
         try {
-            const blob = await generarImagenQR();
+            const blob = await generarImagen();
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
-            a.download = `QR_${serialDisplay}.png`;
+            a.download = `${modoExport === 'qr' ? 'QR' : 'CARNET'}_${serialDisplay}.png`;
             document.body.appendChild(a);
             a.click();
             document.body.removeChild(a);
             URL.revokeObjectURL(url);
-            toast.success('QR descargado como PNG');
+            toast.success('Imagen descargada exitosamente');
         } catch (err) {
-            toast.error('Error al generar imagen');
+            console.error(err);
+            toast.error('Error al generar la imagen. Intente de nuevo.');
         }
     };
 
-    // ── Compartir por WhatsApp ──
     const handleWhatsApp = async () => {
-        const eventoNombre = lote?.nombre_evento || 'Evento';
-        const mensaje = [
-            `🎫 *PASE DE ACCESO — ${eventoNombre.toUpperCase()}*`,
-            `📋 Serial: \`${serialDisplay}\``,
-            pase.nombre_portador ? `👤 Portador: ${pase.nombre_portador}` : '',
-            pase.vehiculo_placa ? `🚗 Vehículo: ${pase.vehiculo_placa}` : '',
-            ``,
-            `_Sistema BAGFM Access_`,
-        ].filter(Boolean).join('\n');
+        try {
+            toast.loading('Preparando imagen...', { id: 'wa-share' });
+            const eventoNombre = lote?.nombre_evento || 'Evento';
+            const mensaje = [
+                `🎫 *PASE DE ACCESO — ${eventoNombre.toUpperCase()}*`,
+                `📋 Serial: \`${serialDisplay}\``,
+                pase.nombre_portador ? `👤 Portador: ${pase.nombre_portador}` : '',
+                pase.vehiculo_placa ? `🚗 Vehículo: ${pase.vehiculo_placa}` : '',
+                ``,
+                `_Sistema BAGFM Access_`
+            ].filter(Boolean).join('\n');
 
-        // Intentar primero Web Share API con imagen (funciona en móvil)
-        const isMobile = /mobile|android|iphone|ipad/i.test(navigator.userAgent);
-        
-        if (isMobile && navigator.share && navigator.canShare) {
-            try {
-                const blob = await generarImagenQR();
-                const file = new File([blob], `QR_${serialDisplay}.png`, { type: 'image/png' });
-                if (navigator.canShare({ files: [file] })) {
-                    await navigator.share({ files: [file], title: `Pase BAGFM: ${serialDisplay}`, text: mensaje });
-                    return;
+            const isMobile = /mobile|android|iphone|ipad/i.test(navigator.userAgent);
+            
+            // Intentamos enviar directo la imagen si el OS lo soporta (móviles Android/iOS)
+            if (isMobile && navigator.share && navigator.canShare) {
+                try {
+                    const blob = await generarImagen();
+                    const file = new File([blob], `${serialDisplay}.png`, { type: 'image/png' });
+                    if (navigator.canShare({ files: [file] })) {
+                        await navigator.share({ files: [file], title: `Pase BAGFM`, text: mensaje });
+                        toast.dismiss('wa-share');
+                        return;
+                    }
+                } catch (shareErr) {
+                    if (shareErr.name === 'AbortError') {
+                        toast.dismiss('wa-share');
+                        return; 
+                    }
                 }
-            } catch (shareErr) {
-                if (shareErr.name === 'AbortError') return; // Usuario canceló
-                // Si falla compartir imagen, caer al fallback de texto
             }
-        }
 
-        // Fallback: abrir WhatsApp Web / App con mensaje de texto
-        const urlWhatsApp = pase.telefono_portador
-            ? `https://wa.me/${pase.telefono_portador.replace(/[^0-9]/g, '')}?text=${encodeURIComponent(mensaje)}`
-            : `https://wa.me/?text=${encodeURIComponent(mensaje)}`;
-        
-        window.open(urlWhatsApp, '_blank');
+            // Fallback: Si no estamos en móvil o el share API falló, no podemos meter una foto vía wa.me
+            // Podríamos descargar la imagen auto y luego mandarlo a la URL con el caption
+            const urlWhatsApp = pase.telefono_portador
+                ? `https://wa.me/${pase.telefono_portador.replace(/[^0-9]/g, '')}?text=${encodeURIComponent(mensaje)}`
+                : `https://wa.me/?text=${encodeURIComponent(mensaje)}`;
+            
+            window.open(urlWhatsApp, '_blank');
+            toast.dismiss('wa-share');
+            
+            // Sugerimos descargar si está en Desktop para adjuntarla manualmente
+            if (!isMobile) {
+                toast("En PC debes descargar el archivo y adjuntarlo", { icon: '💡' });
+            }
+        } catch (err) {
+            console.error(err);
+            toast.error('Error enviando a WhatsApp', { id: 'wa-share' });
+        }
     };
 
     return (
@@ -152,83 +249,70 @@ const ModalVerQR = ({ pase, lote, isOpen, onClose }) => {
             onClick={onClose}
         >
             <div
-                className="relative bg-bg-card border border-white/10 rounded-3xl p-6 flex flex-col items-center gap-5 w-full max-w-sm shadow-2xl"
+                className="relative bg-bg-card border border-white/10 rounded-3xl p-6 flex flex-col items-center gap-5 w-full max-w-sm shadow-2xl overflow-y-auto max-h-[95vh] no-scrollbar"
                 onClick={e => e.stopPropagation()}
                 style={{ animation: 'modalQrIn 0.2s ease-out' }}
             >
-                {/* Botón cerrar */}
-                <button
-                    onClick={onClose}
-                    className="absolute top-4 right-4 p-2 rounded-xl hover:bg-white/10 text-text-muted hover:text-white transition-all"
-                >
+                <button onClick={onClose} className="absolute top-4 right-4 p-2 rounded-xl hover:bg-white/10 text-text-muted hover:text-white transition-all z-10">
                     <X size={16} />
                 </button>
 
-                {/* Header */}
-                <div className="text-center w-full">
-                    <p className="text-[9px] font-black text-text-muted uppercase tracking-widest mb-1">Código QR del Pase</p>
+                {/* Header Compacto */}
+                <div className="text-center w-full mt-2">
                     <h3 className="text-sm font-black text-text-main uppercase">{tituloPortador}</h3>
                     <span className="text-[9px] font-mono text-primary/70">{serialDisplay}</span>
                 </div>
 
-                {/* QR grande */}
-                <div
-                    ref={svgRef}
-                    className="bg-white rounded-2xl p-4 shadow-xl shadow-black/40"
-                    style={{ width: 220, height: 220, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-                >
-                    <QRCode
-                        value={qrValue || ' '}
-                        size={188}
-                        bgColor="#ffffff"
-                        fgColor="#0d1117"
-                        level="M"
-                    />
-                </div>
-
-                {/* Metadata del pase */}
-                <div className="w-full grid grid-cols-2 gap-2">
-                    {pase.vehiculo_placa && (
-                        <div className="col-span-1 flex items-center gap-2 p-2 bg-white/5 rounded-xl border border-white/5">
-                            <Car size={12} className="text-primary shrink-0" />
-                            <span className="text-[9px] font-black text-text-main">{pase.vehiculo_placa}</span>
+                {/* Body Visualizable */}
+                <div className="w-full relative flex justify-center items-center rounded-2xl bg-black/20 p-4 border border-white/5 min-h-[220px]">
+                    {capturando && (
+                         <div className="absolute inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm rounded-2xl">
+                             <Loader2 size={32} className="text-primary animate-spin" />
+                         </div>
+                    )}
+                    
+                    {modoExport === 'qr' ? (
+                        <div ref={svgRef} className="bg-white rounded-2xl p-4 shadow-xl shadow-black/40" style={{ width: 188, height: 188, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                            <QRCode value={qrValue || ' '} size={168} bgColor="#ffffff" fgColor="#0d1117" level="M" />
+                        </div>
+                    ) : (
+                        <div className="scale-[0.8] origin-center -my-8 -mx-10 select-none">
+                            <div ref={carnetRef} className="shrink-0 w-max bg-transparent">
+                                <PlantillaPreview 
+                                    plantilla={modoExport} 
+                                    config={confGenerica} 
+                                    datos={datosDinamicosActuales} 
+                                />
+                            </div>
                         </div>
                     )}
-                    <div className={cn(
-                        "flex items-center gap-2 p-2 bg-white/5 rounded-xl border border-white/5",
-                        pase.vehiculo_placa ? 'col-span-1' : 'col-span-2'
-                    )}>
-                        <div className={cn(
-                            "w-2 h-2 rounded-full shrink-0",
-                            pase.activo ? 'bg-success' : 'bg-text-muted/30'
-                        )} />
-                        <span className="text-[9px] font-black text-text-muted uppercase">
-                            {pase.activo ? 'ACTIVO' : 'INACTIVO'}
-                        </span>
-                    </div>
+                </div>
+
+                {/* Selector de formato */}
+                <div className="w-full">
+                    <label className="text-[9px] font-black tracking-widest text-text-muted uppercase px-1">Formato</label>
+                    <select 
+                        value={modoExport} 
+                        onChange={e => setModoExport(e.target.value)}
+                        className="w-full mt-1 bg-white/5 border border-white/10 rounded-xl p-2.5 text-xs text-white uppercase font-bold focus:outline-none focus:border-primary transition-colors cursor-pointer"
+                    >
+                        <option value="qr">Solo Gráfico QR</option>
+                        <option value="colgante">Carnet Colgante</option>
+                        <option value="credencial">Carnet Credencial</option>
+                        <option value="ticket">Carnet Ticket</option>
+                        <option value="cartera">Carnet Cartera</option>
+                    </select>
                 </div>
 
                 {/* Botones de acción */}
                 <div className="w-full flex gap-3">
-                    <button
-                        onClick={handleDescargar}
-                        className="flex-1 flex items-center justify-center gap-2 h-10 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl text-[10px] font-black text-text-muted hover:text-text-main transition-all"
-                    >
-                        <Download size={14} />
-                        DESCARGAR
+                    <button onClick={handleDescargar} disabled={capturando} className="flex-1 flex items-center justify-center gap-2 h-10 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl text-[10px] font-black text-text-muted hover:text-text-main transition-all disabled:opacity-50">
+                        <Download size={14} /> DESCARGAR
                     </button>
-                    <button
-                        onClick={handleWhatsApp}
-                        className="flex-1 flex items-center justify-center gap-2 h-10 bg-[#25D366]/10 hover:bg-[#25D366]/20 border border-[#25D366]/25 rounded-xl text-[10px] font-black text-[#25D366] transition-all"
-                    >
-                        <MessageCircle size={14} />
-                        WHATSAPP
+                    <button onClick={handleWhatsApp} disabled={capturando} className="flex-1 flex items-center justify-center gap-2 h-10 bg-[#25D366]/10 hover:bg-[#25D366]/20 border border-[#25D366]/25 rounded-xl text-[10px] font-black text-[#25D366] transition-all disabled:opacity-50">
+                        <MessageCircle size={14} /> WHATSAPP
                     </button>
                 </div>
-
-                <p className="text-[7px] text-text-muted/40 text-center">
-                    En móvil se comparte la imagen · En desktop se abre WhatsApp Web
-                </p>
             </div>
 
             <style>{`
