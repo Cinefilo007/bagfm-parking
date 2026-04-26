@@ -482,7 +482,7 @@ const VistaRecibir = () => {
                 {/* ── TAB QR ── */}
                 {tab === 'qr' && !resultado && !sinDatos && (
                     <div className="space-y-3">
-                        <div className="aspect-square max-h-80 bg-black rounded-2xl overflow-hidden relative border border-white/5">
+                        <div className="aspect-square w-full max-w-[320px] mx-auto bg-black rounded-2xl overflow-hidden relative border border-white/5 shadow-2xl">
                             <QRScanner
                                 ref={scannerRef}
                                 onScanSuccess={handleScanQR}

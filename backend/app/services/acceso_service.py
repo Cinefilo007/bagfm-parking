@@ -532,10 +532,11 @@ class AccesoService:
             try:
                 # Recargar QR para asegurar que tenemos los datos frescos post-commit
                 qr_db = await db.get(CodigoQR, datos.qr_id)
-                if qr_db and qr_db.lote_id:
-                    # Resolver Zona
+                if qr_db:
+                    # Resolver Zona: Priorizar zona individual del QR, luego zona del lote
                     zona_id = qr_db.zona_asignada_id
-                    if not zona_id:
+                    
+                    if not zona_id and qr_db.lote_id:
                         lote = await db.get(LotePaseMasivo, qr_db.lote_id)
                         if lote:
                             zona_id = lote.zona_estacionamiento_id

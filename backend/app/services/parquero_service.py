@@ -15,6 +15,7 @@ from app.models.zona_estacionamiento import ZonaEstacionamiento
 from app.models.usuario import Usuario
 from app.models.enums import EstadoPuesto, AccesoTipo
 from app.services.configuracion_service import configuracion_service
+from app.core.security import decodificar_token
 
 
 class ParqueroService:
@@ -548,15 +549,27 @@ class ParqueroService:
     # ──────────────────────────────────────────────────────────────────────────
 
     async def registrar_llegada_qr(
-        self, db: AsyncSession, qr_id: UUID, zona_id: UUID, parquero_id: UUID
+        self, db: AsyncSession, qr_token: str, zona_id: UUID, parquero_id: UUID
     ) -> VehiculoPase:
         """
         El parquero escanea un QR para recibir un vehículo en su zona.
+        Soporta tanto UUID directo como Token JWT.
         """
+        qr_id = None
+        # Intentar decodificar si parece un JWT
+        if "." in qr_token:
+            try:
+                payload = decodificar_token(qr_token)
+                qr_id = payload.get("sub")
+            except:
+                raise ValueError("Token QR inválido o expirado")
+        else:
+            qr_id = qr_token
+
         resultado = await db.execute(select(CodigoQR).filter(CodigoQR.id == qr_id))
         qr = resultado.scalars().first()
         if not qr:
-            raise ValueError("QR no válido")
+            raise ValueError("QR no encontrado en el sistema")
 
         resultado_vp = await db.execute(select(VehiculoPase).filter(VehiculoPase.qr_id == qr_id))
         vehiculo_pase = resultado_vp.scalars().first()
@@ -627,11 +640,22 @@ class ParqueroService:
         return vehiculo_pase
 
     async def registrar_salida(
-        self, db: AsyncSession, qr_id: UUID, parquero_id: UUID
+        self, db: AsyncSession, qr_token: str, parquero_id: UUID
     ) -> VehiculoPase:
         """
         Registrar la salida de la zona de estacionamiento por QR.
+        Soporta tanto UUID directo como Token JWT.
         """
+        qr_id = None
+        if "." in qr_token:
+            try:
+                payload = decodificar_token(qr_token)
+                qr_id = payload.get("sub")
+            except:
+                raise ValueError("Token QR inválido o expirado")
+        else:
+            qr_id = qr_token
+
         resultado_vp = await db.execute(select(VehiculoPase).filter(VehiculoPase.qr_id == qr_id))
         vehiculo_pase = resultado_vp.scalars().first()
         if not vehiculo_pase:
