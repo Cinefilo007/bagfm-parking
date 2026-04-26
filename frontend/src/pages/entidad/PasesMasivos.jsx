@@ -304,8 +304,14 @@ const ModalVerQR = ({ pase, lote, isOpen, onClose }) => {
                     <div className={modoExport === 'qr' ? 'w-full' : 'w-1/2'}>
                         <label className="block text-[9px] font-black tracking-widest text-text-muted uppercase px-1 mb-1">Formato</label>
                         <SelectTactivo 
-                            value={modoExport} 
-                            onChange={setModoExport}
+                            value={[
+                                { value: 'qr', label: 'Solo QR' },
+                                { value: 'colgante', label: 'Colgante' },
+                                { value: 'credencial', label: 'Credencial' },
+                                { value: 'ticket', label: 'Ticket' },
+                                { value: 'cartera', label: 'Cartera' }
+                            ].find(o => o.value === modoExport)} 
+                            onChange={option => setModoExport(option?.value || 'qr')}
                             options={[
                                 { value: 'qr', label: 'Solo QR' },
                                 { value: 'colgante', label: 'Colgante' },
@@ -319,8 +325,8 @@ const ModalVerQR = ({ pase, lote, isOpen, onClose }) => {
                         <div className="w-1/2">
                             <label className="block text-[9px] font-black tracking-widest text-text-muted uppercase px-1 mb-1">Estilo</label>
                             <SelectTactivo 
-                                value={presetId} 
-                                onChange={setPresetId}
+                                value={PRESETS_COLOR.map(p => ({ value: p.id, label: p.nombre })).find(o => o.value === presetId)} 
+                                onChange={option => setPresetId(option?.value || 'aegis')}
                                 options={PRESETS_COLOR.map(p => ({ value: p.id, label: p.nombre }))}
                             />
                         </div>
