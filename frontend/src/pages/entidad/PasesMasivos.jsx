@@ -94,11 +94,20 @@ const preloadBase64Fonts = async () => {
     }
 };
 
+const PRESETS_COLOR = [
+    { id: 'aegis', nombre: 'Aegis', primario: '#4ade80', fondo: '#09090b', textoHeader: '#000000', textoNombre: '#ffffff' },
+    { id: 'militar', nombre: 'Militar', primario: '#84cc16', fondo: '#1f2937', textoHeader: '#ffffff', textoNombre: '#f1f5f9' },
+    { id: 'civil', nombre: 'Civil', primario: '#38bdf8', fondo: '#0f172a', textoHeader: '#ffffff', textoNombre: '#f8fafc' },
+    { id: 'vip', nombre: 'VIP', primario: '#facc15', fondo: '#18181b', textoHeader: '#000000', textoNombre: '#ffeeaa' },
+    { id: 'alfa', nombre: 'Alfa', primario: '#ef4444', fondo: '#450a0a', textoHeader: '#ffffff', textoNombre: '#fecaca' }
+];
+
 const ModalVerQR = ({ pase, lote, isOpen, onClose }) => {
     const svgRef = useRef(null);
     const carnetRef = useRef(null);
     const { user } = useAuthStore();
     const [modoExport, setModoExport] = useState('qr');
+    const [presetId, setPresetId] = useState('aegis');
     const [capturando, setCapturando] = useState(false);
 
     const qrValue = pase?.token || pase?.serial_legible || '';
@@ -123,10 +132,11 @@ const ModalVerQR = ({ pase, lote, isOpen, onClose }) => {
 
     const tituloPortador = pase.nombre_portador || 'SIN ASIGNAR';
 
+    const presetObj = PRESETS_COLOR.find(p => p.id === presetId) || PRESETS_COLOR[0];
     const confGenerica = {
         titulo: 'BAGFM ACCESS',
         subtitulo: 'BASE AÉREA GRAL. FRANCISCO DE MIRANDA',
-        colores: { id: 'aegis', primario: '#4ade80', fondo: '#09090b', textoHeader: '#000000', textoNombre: '#ffffff' }
+        colores: presetObj
     };
 
     // Función unificada que devuelve el Blob de imagen (SVG rasterizado o componente React rasterizado)
@@ -265,7 +275,7 @@ const ModalVerQR = ({ pase, lote, isOpen, onClose }) => {
                 </div>
 
                 {/* Body Visualizable */}
-                <div className="w-full relative flex justify-center items-center rounded-2xl bg-black/20 p-4 border border-white/5 min-h-[220px]">
+                <div className="w-full relative flex justify-center py-4 rounded-2xl bg-black/20 border border-white/5 overflow-hidden" style={{ minHeight: modoExport === 'qr' ? 220 : 340 }}>
                     {capturando && (
                          <div className="absolute inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm rounded-2xl">
                              <Loader2 size={32} className="text-primary animate-spin" />
@@ -277,8 +287,8 @@ const ModalVerQR = ({ pase, lote, isOpen, onClose }) => {
                             <QRCode value={qrValue || ' '} size={168} bgColor="#ffffff" fgColor="#0d1117" level="M" />
                         </div>
                     ) : (
-                        <div className="scale-[0.8] origin-center -my-8 -mx-10 select-none">
-                            <div ref={carnetRef} className="shrink-0 w-max bg-transparent">
+                        <div className="transform-gpu scale-[0.7] origin-top flex justify-center">
+                            <div ref={carnetRef} className="shrink-0 w-max h-max bg-transparent p-1 inline-block">
                                 <PlantillaPreview 
                                     plantilla={modoExport} 
                                     config={confGenerica} 
@@ -289,20 +299,32 @@ const ModalVerQR = ({ pase, lote, isOpen, onClose }) => {
                     )}
                 </div>
 
-                {/* Selector de formato */}
-                <div className="w-full">
-                    <label className="text-[9px] font-black tracking-widest text-text-muted uppercase px-1">Formato</label>
-                    <select 
-                        value={modoExport} 
-                        onChange={e => setModoExport(e.target.value)}
-                        className="w-full mt-1 bg-white/5 border border-white/10 rounded-xl p-2.5 text-xs text-white uppercase font-bold focus:outline-none focus:border-primary transition-colors cursor-pointer"
-                    >
-                        <option value="qr">Solo Gráfico QR</option>
-                        <option value="colgante">Carnet Colgante</option>
-                        <option value="credencial">Carnet Credencial</option>
-                        <option value="ticket">Carnet Ticket</option>
-                        <option value="cartera">Carnet Cartera</option>
-                    </select>
+                {/* Selectors */}
+                <div className="w-full flex gap-3">
+                    <div className={modoExport === 'qr' ? 'w-full' : 'w-1/2'}>
+                        <label className="block text-[9px] font-black tracking-widest text-text-muted uppercase px-1 mb-1">Formato</label>
+                        <SelectTactivo 
+                            value={modoExport} 
+                            onChange={setModoExport}
+                            options={[
+                                { value: 'qr', label: 'Solo QR' },
+                                { value: 'colgante', label: 'Colgante' },
+                                { value: 'credencial', label: 'Credencial' },
+                                { value: 'ticket', label: 'Ticket' },
+                                { value: 'cartera', label: 'Cartera' }
+                            ]}
+                        />
+                    </div>
+                    {modoExport !== 'qr' && (
+                        <div className="w-1/2">
+                            <label className="block text-[9px] font-black tracking-widest text-text-muted uppercase px-1 mb-1">Estilo</label>
+                            <SelectTactivo 
+                                value={presetId} 
+                                onChange={setPresetId}
+                                options={PRESETS_COLOR.map(p => ({ value: p.id, label: p.nombre }))}
+                            />
+                        </div>
+                    )}
                 </div>
 
                 {/* Botones de acción */}
