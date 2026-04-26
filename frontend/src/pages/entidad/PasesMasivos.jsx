@@ -664,13 +664,6 @@ const ModalListaPases = ({ isOpen, onClose, lote, zonas }) => {
                             />
                             <LayoutGrid size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted opacity-40" />
                         </div>
-                        <Boton 
-                            onClick={() => setIsEmailModalOpen(true)}
-                            className="h-12 bg-sky-500/10 hover:bg-sky-500/20 text-sky-400 border border-sky-500/20 px-4"
-                        >
-                            <Mail size={16} className="mr-2" />
-                            DIFUNDIR LOTE
-                        </Boton>
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-[60vh] overflow-y-auto pr-2 scrollbar-thin">
@@ -703,12 +696,6 @@ const ModalListaPases = ({ isOpen, onClose, lote, zonas }) => {
                     onClose={() => setPaseEdicion(null)} 
                     pase={paseEdicion} 
                     onRefresh={fetchPases}
-                />
-
-                <ModalEnvioCorreosMasivos
-                    isOpen={isEmailModalOpen}
-                    onClose={() => setIsEmailModalOpen(false)}
-                    lote={lote}
                 />
             </Modal>
 
@@ -756,7 +743,7 @@ const TacticalKPIs = ({ lotes }) => {
     );
 };
 
-const LoteCardV2 = ({ lote, zonas, tiposCustom, onRefresh, onVerPases, onEliminar }) => {
+const LoteCardV2 = ({ lote, zonas, tiposCustom, onRefresh, onVerPases, onEliminar, onDifundir }) => {
     const [generando, setGenerando] = useState(false);
     const [progreso, setProgreso] = useState(0);
     const [modalExportOpen, setModalExportOpen] = useState(false);
@@ -831,15 +818,15 @@ const LoteCardV2 = ({ lote, zonas, tiposCustom, onRefresh, onVerPases, onElimina
 
             {/* FILA 2: Estado (Progreso) + Acciones */}
             <div className="flex items-center gap-3 w-full xl:w-auto pt-2 xl:pt-0 border-t xl:border-t-0 xl:border-l border-white/5 xl:pl-4">
-                {/* Barra de Estado */}
-                <div className="flex-1 xl:w-32 shrink-0 space-y-1">
-                    <div className="flex justify-between items-center text-[8px] font-black tracking-widest uppercase mb-1">
+                {/* Barra de Estado (Correr a la izquierda/acortar) */}
+                <div className="flex-1 xl:w-24 shrink-0 space-y-1">
+                    <div className="flex justify-between items-center text-[7px] font-black tracking-widest uppercase mb-1">
                         <span className="text-text-muted">Estado</span>
                         <span className={lote.zip_generado || progreso >= 100 ? 'text-success' : generando ? 'text-primary' : 'text-warning'}>
                             {lote.zip_generado || progreso >= 100 ? 'LISTO' : generando ? `${progreso}%` : 'PENDIENTE'}
                         </span>
                     </div>
-                    <div className="h-1.5 w-full bg-white/5 rounded-full overflow-hidden">
+                    <div className="h-1 w-full bg-white/5 rounded-full overflow-hidden">
                         <div className={cn("h-full rounded-full transition-all duration-500", lote.zip_generado || progreso >= 100 ? 'bg-success' : generando ? 'bg-primary' : 'bg-white/10')} style={{ width: lote.zip_generado || progreso >= 100 ? '100%' : generando ? `${progreso}%` : '0%' }} />
                     </div>
                 </div>
@@ -868,6 +855,14 @@ const LoteCardV2 = ({ lote, zonas, tiposCustom, onRefresh, onVerPases, onElimina
                             <QrCode size={13} /> <span className="hidden sm:inline">GENERAR</span>
                         </Boton>
                     )}
+                    <button 
+                        onClick={() => onDifundir(lote)}
+                        className="h-8 px-3 bg-sky-500/10 hover:bg-sky-500/20 text-sky-400 border border-sky-500/20 rounded-xl flex items-center gap-2 transition-all"
+                        title="Difundir Lote por Correo"
+                    >
+                        <Mail size={13} />
+                        <span className="text-[9px] font-black uppercase hidden sm:inline">DIFUNDIR</span>
+                    </button>
                     <Boton variant="ghost" size="sm" onClick={() => onVerPases(lote)} className="h-8 px-3 bg-primary/10 border border-primary/20 rounded-xl flex items-center gap-2 text-primary hover:bg-primary/20">
                         <Users size={13} /> <span className="text-[9px] font-black uppercase hidden sm:inline">GESTIONAR</span>
                         <ChevronRight className="sm:hidden" size={13} />
@@ -1440,6 +1435,7 @@ export default function EventosV2() {
     const [showSolicitudModal, setShowSolicitudModal] = useState(false);
     const [loteDetalle, setLoteDetalle] = useState(null); // Nuevo estado para drill-down
     const [loteEliminar, setLoteEliminar] = useState(null);
+    const [loteParaEmail, setLoteParaEmail] = useState(null);
     const [eliminando, setEliminando] = useState(false);
     const [formSolicitud, setFormSolicitud] = useState({
         nombre_evento: '', fecha_evento: '', cantidad_solicitada: 10, motivo: '', tipo_pase: 'simple', entidad_id: user?.entidad_id
@@ -1614,6 +1610,7 @@ export default function EventosV2() {
                                 onRefresh={fetchData} 
                                 onVerPases={setLoteDetalle} 
                                 onEliminar={setLoteEliminar}
+                                onDifundir={setLoteParaEmail}
                             />
                         ))}
                     </div>
@@ -1712,6 +1709,13 @@ export default function EventosV2() {
                     </div>
                 </form>
             </Modal>
+
+            {/* Modal Difusión de Correo Masivo */}
+            <ModalEnvioCorreosMasivos
+                isOpen={!!loteParaEmail}
+                onClose={() => setLoteParaEmail(null)}
+                lote={loteParaEmail}
+            />
         </div>
     );
 }
