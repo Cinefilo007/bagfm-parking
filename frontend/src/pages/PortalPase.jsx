@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { pasesService } from '../services/pasesService';
-import { motion, AnimatePresence } from 'framer-motion';
 import { 
   QrCode, 
   User, 
@@ -127,14 +126,8 @@ const PortalPase = () => {
             </div>
 
             <main className="max-w-md mx-auto p-6 pb-12">
-                <AnimatePresence mode="wait">
-                    {mostrarForm ? (
-                        <motion.div
-                            key="form"
-                            initial={{ opacity: 0, y: 20 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            exit={{ opacity: 0, y: -20 }}
-                        >
+                {mostrarForm ? (
+                    <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
                             <div className="bg-white/5 border border-white/10 rounded-2xl p-6 mb-6">
                                 <div className="flex items-center gap-3 mb-6">
                                     <div className="w-10 h-10 rounded-xl bg-blue-500/20 flex items-center justify-center border border-blue-500/20">
@@ -232,14 +225,9 @@ const PortalPase = () => {
                                     </button>
                                 </form>
                             </div>
-                        </motion.div>
-                    ) : (
-                        <motion.div
-                            key="qr"
-                            initial={{ opacity: 0, scale: 0.95 }}
-                            animate={{ opacity: 1, scale: 1 }}
-                            className="space-y-6"
-                        >
+                    </div>
+                ) : (
+                    <div className="animate-in zoom-in-95 duration-500 space-y-6">
                             {/* Card de Pase Digital */}
                             <div className="bg-white rounded-[2rem] p-8 text-[#0a0a0b] shadow-2xl shadow-white/5 relative overflow-hidden">
                                 {/* Decoración Táctica */}
@@ -301,9 +289,8 @@ const PortalPase = () => {
                             >
                                 <Download className="w-4 h-4" /> Descargar Versión PDF
                             </button>
-                        </motion.div>
+                        </div>
                     )}
-                </AnimatePresence>
             </main>
 
             {/* Footer */}
