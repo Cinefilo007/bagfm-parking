@@ -9,6 +9,7 @@ import { toPng } from 'html-to-image';
 import { jsPDF } from 'jspdf';
 import JSZip from 'jszip';
 import { saveAs } from 'file-saver';
+import { useAuthStore } from '../../store/auth.store';
 
 // Helper de fuentes en base64 (CORS prevention)
 const preloadBase64Fonts = async () => {
@@ -185,7 +186,7 @@ export default function ModalExportarLote({ isOpen, onClose, lote }) {
                 
                 pasesList.forEach(p => {
                     const b64 = p._pngBuffer.split(',')[1];
-                    const name = `${p.invitado_nombre || 'PASE'}_${p.serial_legible}.png`.replace(/ /g, '_');
+                    const name = `${p.nombre_portador || 'PASE'}_${p.serial_legible}.png`.replace(/ /g, '_');
                     folder.file(name, b64, {base64: true});
                 });
                 
@@ -256,17 +257,19 @@ export default function ModalExportarLote({ isOpen, onClose, lote }) {
     };
 
 
+    const { user } = useAuthStore();
+
     // Extrae la data del `CodigoQR` para inyectarla en la plantilla
     const buildDatosPreview = (paseObj) => {
         if (!paseObj) return {};
-        const veh = (paseObj.vehiculos && paseObj.vehiculos.length > 0) ? paseObj.vehiculos[0].placa : null;
+        const veh = paseObj.vehiculo_placa || null;
         let zona_n = null;
         if (lote.zona_asignada) zona_n = lote.zona_asignada.nombre;
 
         return {
-            nombre: paseObj.invitado_nombre || 'SIN REGISTRO',
-            cedula: paseObj.invitado_cedula || null,
-            entidad: lote.entidad?.nombre || 'SIN ENTIDAD',
+            nombre: paseObj.nombre_portador || 'SIN REGISTRO',
+            cedula: paseObj.cedula_portador || null,
+            entidad: lote.entidad?.nombre || user?.entidad_nombre || 'SIN ENTIDAD',
             evento: lote.nombre_evento,
             vehiculo_placa: veh,
             zona_nombre: zona_n,
