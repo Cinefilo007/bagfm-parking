@@ -246,16 +246,18 @@ const PortalPase = () => {
                                 visual.layout === 'qr' && "rounded-[2rem]",
                                 visual.layout === 'colgante' && "rounded-b-[2rem] border-t-[12px]",
                                 visual.layout === 'credencial' && "rounded-lg border-l-8",
-                                visual.layout === 'colgante' && visual.color_preset === 'aegis' ? 'border-green-500' : '',
-                                visual.layout === 'colgante' && visual.color_preset === 'vip' ? 'border-yellow-500' : '',
-                                visual.layout === 'colgante' && visual.color_preset === 'militar' ? 'border-gray-800' : '',
-                                visual.layout === 'colgante' && visual.color_preset === 'alfa' ? 'border-red-600' : '',
-                                visual.layout === 'credencial' && visual.color_preset === 'aegis' ? 'border-green-500' : '',
-                                visual.layout === 'credencial' && visual.color_preset === 'vip' ? 'border-yellow-500' : '',
-                                visual.layout === 'credencial' && visual.color_preset === 'militar' ? 'border-gray-800' : '',
-                                visual.layout === 'credencial' && visual.color_preset === 'alfa' ? 'border-red-600' : '',
+                                visual.layout === 'parabrisas' && "rounded-3xl border-b-[16px] border-double",
+                                // Aplicación de colores según preset y layout
+                                visual.color_preset === 'aegis' && (visual.layout === 'colgante' || visual.layout === 'credencial' || visual.layout === 'parabrisas') ? 'border-green-500' : '',
+                                visual.color_preset === 'vip' && (visual.layout === 'colgante' || visual.layout === 'credencial' || visual.layout === 'parabrisas') ? 'border-yellow-500' : '',
+                                visual.color_preset === 'militar' && (visual.layout === 'colgante' || visual.layout === 'credencial' || visual.layout === 'parabrisas') ? 'border-gray-800' : '',
+                                visual.color_preset === 'alfa' && (visual.layout === 'colgante' || visual.layout === 'credencial' || visual.layout === 'parabrisas') ? 'border-red-600' : '',
                             )}>
-                                {/* Decoración Táctica */}
+                                {visual.layout === 'parabrisas' && (
+                                    <div className="absolute top-4 right-4 opacity-10">
+                                        <Car size={80} />
+                                    </div>
+                                )}                                {/* Decoración Táctica */}
                                 <div className={`absolute top-0 right-0 w-32 h-32 ${style.bg}/5 blur-[60px]`} />
                                 
                                 <div className="flex justify-between items-start mb-8">

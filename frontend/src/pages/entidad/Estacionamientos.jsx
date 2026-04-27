@@ -293,7 +293,7 @@ export default function EstacionamientosEntidad() {
         descripcion: '',
         requiere_vehiculo: true,
         max_vehiculos: 1,
-        color_badge: '#4EDEA3', 
+        color_hex: '#4EDEA3', 
         plantilla_layout: 'qr',
         color_preset: 'aegis',
         activo: true,
@@ -626,7 +626,7 @@ export default function EstacionamientosEntidad() {
         setTipoEditar(tipo);
         setFormTipo(tipo ? { ...tipo } : {
             nombre: '', descripcion: '', requiere_vehiculo: true,
-            max_vehiculos: 1, color_badge: '#4EDEA3', 
+            max_vehiculos: 1, color_hex: '#4EDEA3', 
             plantilla_layout: 'qr', color_preset: 'aegis',
             activo: true,
         });
@@ -1318,40 +1318,45 @@ export default function EstacionamientosEntidad() {
                         </p>
                     </div>
 
-                    {/* Selector de color circular */}
-                    <div className="space-y-2">
-                        <label className="text-[10px] font-black text-text-muted uppercase tracking-widest flex items-center gap-2">
-                            <Palette size={11} className="text-primary" /> Color del Badge
-                        </label>
-                        <div className="flex flex-wrap gap-2.5 p-3 bg-white/5 rounded-xl border border-white/5">
-                            {PRESET_COLORS.map(color => (
-                                <button
-                                    key={color}
-                                    type="button"
-                                    onClick={() => setFormTipo({ ...formTipo, color_badge: color })}
-                                    className={cn(
-                                        "w-8 h-8 rounded-full border-2 transition-all hover:scale-110",
-                                        formTipo.color_badge === color ? "border-primary scale-110 shadow-lg" : "border-transparent"
-                                    )}
-                                    style={{ backgroundColor: color }}
-                                />
-                            ))}
-                        </div>
-                    </div>
-
-                    <div className="grid grid-cols-1 gap-4">
-                        <div>
-                            <label className="text-[9px] font-black text-text-muted uppercase tracking-widest block mb-2">
-                                Máx. Vehículos Permitidos
+                    <div className="grid grid-cols-2 gap-4">
+                        {/* Selector de color circular */}
+                        <div className="space-y-2">
+                            <label className="text-[9px] font-black text-text-muted uppercase tracking-widest flex items-center gap-2">
+                                <Palette size={11} className="text-primary" /> Color del Badge
                             </label>
-                            <div className="flex gap-2">
+                            <div className="flex flex-wrap gap-1.5 p-2 bg-white/5 rounded-xl border border-white/5 h-[84px] overflow-y-auto">
+                                {[
+                                    '#4EDEA3', '#3B82F6', '#F2C94C', '#EB5757', 
+                                    '#A855F7', '#EC4899', '#06B6D4', '#64748B',
+                                    '#2D3A2D', '#F97316', '#8B5CF6', '#10B981'
+                                ].map(color => (
+                                    <button
+                                        key={color}
+                                        type="button"
+                                        onClick={() => setFormTipo({ ...formTipo, color_hex: color })}
+                                        className={cn(
+                                            "w-6 h-6 rounded-full border-2 transition-all hover:scale-110",
+                                            formTipo.color_hex === color ? "border-primary scale-110 shadow-lg" : "border-transparent"
+                                        )}
+                                        style={{ backgroundColor: color }}
+                                    />
+                                ))}
+                            </div>
+                        </div>
+
+                        {/* Máximo de vehículos */}
+                        <div className="space-y-2">
+                            <label className="text-[9px] font-black text-text-muted uppercase tracking-widest block">
+                                Máx. Vehículos
+                            </label>
+                            <div className="grid grid-cols-2 gap-2 h-[84px]">
                                 {[1, 2, 3, 4].map(n => (
                                     <button
                                         key={n}
                                         type="button"
                                         onClick={() => setFormTipo({ ...formTipo, max_vehiculos: n })}
                                         className={cn(
-                                            "flex-1 h-10 rounded-xl border-2 text-sm font-black transition-all",
+                                            "rounded-xl border-2 text-xs font-black transition-all flex items-center justify-center",
                                             formTipo.max_vehiculos === n
                                                 ? 'bg-primary/10 border-primary text-primary'
                                                 : 'bg-white/5 border-white/10 text-text-muted hover:border-white/20'
@@ -1362,17 +1367,20 @@ export default function EstacionamientosEntidad() {
                                 ))}
                             </div>
                         </div>
+                    </div>
 
+                    <div className="grid grid-cols-1 gap-4">
                         {/* Selección de Plantilla (v2.4) */}
                         <div className="space-y-2">
                             <label className="text-[9px] font-black text-text-muted uppercase tracking-widest flex items-center gap-2">
                                 <LayoutGrid size={11} className="text-primary" /> Plantilla de Carnet
                             </label>
-                            <div className="grid grid-cols-3 gap-2">
+                            <div className="grid grid-cols-4 gap-2">
                                 {[
                                     { id: 'qr', label: 'QR Simple', icon: QrCode },
                                     { id: 'colgante', label: 'Colgante', icon: BadgeEstado },
                                     { id: 'credencial', label: 'Credencial', icon: Shield },
+                                    { id: 'parabrisas', label: 'Libre', icon: Car },
                                 ].map(lay => (
                                     <button
                                         key={lay.id}
@@ -1386,7 +1394,7 @@ export default function EstacionamientosEntidad() {
                                         )}
                                     >
                                         <lay.icon size={16} />
-                                        <span className="text-[8px] font-black uppercase">{lay.label}</span>
+                                        <span className="text-[8px] font-black uppercase text-center leading-tight">{lay.label}</span>
                                     </button>
                                 ))}
                             </div>
