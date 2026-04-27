@@ -109,18 +109,14 @@ class ParqueroService:
             "kpis": {
                 "libres": max(0, total - ocupados_totales), 
                 "ocupados": ocupados_totales,
+                "ocupados_base": ocupados_base,
+                "ocupados_entidad": ocupados_entidad,
+                "ocupados_general": ocupados_general,
                 "reservados": reservados_totales,
+                "reservados_base": n_reservados_base,
+                "reservados_entidad": n_reservados_entidad,
                 "total": total,
-                "perdidos": n_perdidos,
-                "desglose_reservas": {
-                    "base": n_reservados_base,
-                    "entidad": n_reservados_entidad
-                },
-                "desglose_ocupacion": {
-                    "base": ocupados_base,
-                    "entidad": ocupados_entidad,
-                    "general": ocupados_general
-                }
+                "perdidos": n_perdidos
             }
         }
 

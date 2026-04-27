@@ -271,15 +271,16 @@ const DashboardParquero = () => {
     };
 
     // ── KPIs reales desde el backend ──────────────────────────────────────
-    const kpis = zonaInfo?.kpis || {
-        libres:             puestos.filter(p => p.estado === 'libre' && !p.reservado_base && !p.reservado_entidad_id).length,
-        ocupados:           puestos.filter(p => p.estado === 'ocupado').length,
-        reservados:         puestos.filter(p => p.reservado_base || p.reservado_entidad_id || p.estado === 'reservado').length,
-        reservados_base:    puestos.filter(p => p.reservado_base).length,
-        reservados_entidad: puestos.filter(p => p.reservado_entidad_id && !p.reservado_base).length,
-        mantenimiento:      puestos.filter(p => p.estado === 'mantenimiento').length,
-        total:              puestos.length,
-        perdidos:           0,
+    // ── KPIs inteligentes (Backend > Local) ──────────────────────────────
+    const kpis = {
+        libres:             zonaInfo?.kpis?.libres ?? puestos.filter(p => p.estado === 'libre' && !p.reservado_base && !p.reservado_entidad_id).length,
+        ocupados:           zonaInfo?.kpis?.ocupados ?? puestos.filter(p => p.estado === 'ocupado').length,
+        reservados:         zonaInfo?.kpis?.reservados ?? puestos.filter(p => p.reservado_base || p.reservado_entidad_id || p.estado === 'reservado').length,
+        reservados_base:    zonaInfo?.kpis?.reservados_base ?? puestos.filter(p => p.reservado_base).length,
+        reservados_entidad: zonaInfo?.kpis?.reservados_entidad ?? puestos.filter(p => p.reservado_entidad_id && !p.reservado_base).length,
+        mantenimiento:      zonaInfo?.kpis?.mantenimiento ?? puestos.filter(p => p.estado === 'mantenimiento').length,
+        total:              zonaInfo?.kpis?.total ?? puestos.length,
+        perdidos:           zonaInfo?.kpis?.perdidos ?? 0,
     };
 
 
