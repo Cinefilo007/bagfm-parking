@@ -4,7 +4,7 @@ import {
     Car, ParkingSquare, CheckCircle2, XCircle,
     RefreshCw, Shield, Zap, Activity, Radio, AlertTriangle, LayoutGrid, 
     Bell, Share2, Search, ArrowRight, ArrowUpRight, 
-    X, User, Phone, Fingerprint, ShieldAlert, Clock, Tag, Lock, LogOut
+    X, User, Phone, Fingerprint, ShieldAlert, Clock, Tag, Lock, LogOut, LogIn
 } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import { toast } from 'react-hot-toast';
