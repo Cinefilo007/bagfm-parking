@@ -346,8 +346,15 @@ async def obtener_pase_publico(token: str, db: AsyncSession = Depends(obtener_db
     if not pase:
         raise HTTPException(status_code=404, detail="Token de acceso inválido")
     
-    # Cargar el lote para ver permisos
-    lote = await db.get(LotePaseMasivo, pase.lote_id)
+    # Cargar el lote para ver permisos y entidad
+    from sqlalchemy.orm import joinedload
+    lote = await db.scalar(
+        select(LotePaseMasivo)
+        .where(LotePaseMasivo.id == pase.lote_id)
+        .options(joinedload(LotePaseMasivo.entidad))
+    )
+    
+    entidad_nombre = lote.entidad.nombre if lote and lote.entidad else "BAGFM ACCESS"
     
     return {
         "pase": {
@@ -357,6 +364,7 @@ async def obtener_pase_publico(token: str, db: AsyncSession = Depends(obtener_db
             "cedula": pase.cedula_portador,
             "email": pase.email_portador,
             "telefono": pase.telefono_portador,
+            "entidad_nombre": entidad_nombre,
             "vehiculo": {
                 "placa": pase.vehiculo_placa,
                 "marca": pase.vehiculo_marca,
@@ -365,14 +373,15 @@ async def obtener_pase_publico(token: str, db: AsyncSession = Depends(obtener_db
             },
             "visual": {
                 "layout": pase.tipo_acceso_custom.plantilla_layout if pase.tipo_acceso_custom else "qr",
-                "color_preset": pase.tipo_acceso_custom.color_preset if pase.tipo_acceso_custom else "aegis"
+                "color_preset": pase.tipo_acceso_custom.color_preset if pase.tipo_acceso_custom else "aegis",
+                "color_hex": pase.tipo_acceso_custom.color_hex if pase.tipo_acceso_custom else "#4EDEA3"
             }
         },
         "lote": {
             "nombre_evento": lote.nombre_evento,
-            "tipo_pase": lote.tipo_pase,
             "fecha_inicio": lote.fecha_inicio,
-            "fecha_fin": lote.fecha_fin
+            "fecha_fin": lote.fecha_fin,
+            "tipo_pase": lote.tipo_pase
         }
     }
 

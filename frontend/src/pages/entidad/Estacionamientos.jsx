@@ -1270,6 +1270,39 @@ export default function EstacionamientosEntidad() {
                         value={asignacion.socio_id}
                         onChange={e => setAsignacion({ ...asignacion, socio_id: e.target.value })}
                     />
+                    
+                    <div className="pt-2">
+                        <p className="text-[10px] font-black text-text-muted uppercase tracking-widest mb-3 flex items-center gap-2">
+                            <Car size={12} className="text-primary" /> Datos del Vehículo
+                        </p>
+                        <div className="grid grid-cols-2 gap-3">
+                            <Input
+                                label="Placa"
+                                placeholder="PLACA"
+                                value={asignacion.placa}
+                                onChange={e => setAsignacion({ ...asignacion, placa: e.target.value.toUpperCase() })}
+                            />
+                            <Input
+                                label="Color"
+                                placeholder="COLOR"
+                                value={asignacion.color}
+                                onChange={e => setAsignacion({ ...asignacion, color: e.target.value.toUpperCase() })}
+                            />
+                            <Input
+                                label="Marca"
+                                placeholder="MARCA"
+                                value={asignacion.marca}
+                                onChange={e => setAsignacion({ ...asignacion, marca: e.target.value.toUpperCase() })}
+                            />
+                            <Input
+                                label="Modelo"
+                                placeholder="MODELO"
+                                value={asignacion.modelo}
+                                onChange={e => setAsignacion({ ...asignacion, modelo: e.target.value.toUpperCase() })}
+                            />
+                        </div>
+                    </div>
+
                     <Input
                         label="Notas (Opcional)"
                         placeholder="Observaciones de la asignación..."

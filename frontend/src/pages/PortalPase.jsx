@@ -118,16 +118,26 @@ const PortalPase = () => {
         vip:     { primary: '#F2C94C', accent: 'text-yellow-500', bg: 'bg-yellow-500', shadow: 'shadow-yellow-500/20' },
         alfa:    { primary: '#EB5757', accent: 'text-red-500',    bg: 'bg-red-500',    shadow: 'shadow-red-500/20' },
     };
-    const style = PRESETS[visual.color_preset] || PRESETS.aegis;
+    
+    // Obtener estilo base y sobreescribir con color_hex si existe
+    const baseStyle = PRESETS[visual.color_preset] || PRESETS.aegis;
+    const style = {
+        ...baseStyle,
+        primary: visual.color_hex || baseStyle.primary,
+        dynamicAccent: { color: visual.color_hex || baseStyle.primary },
+        dynamicBg: { backgroundColor: visual.color_hex || baseStyle.primary },
+        dynamicShadow: { boxShadow: `0 10px 15px -3px ${(visual.color_hex || baseStyle.primary)}33` }
+    };
 
     return (
         <div className="min-h-screen bg-[#0a0a0b] text-white selection:bg-blue-500/30">
             {/* Header Táctico */}
             <div className={`max-w-md mx-auto pt-10 px-6 pb-6 border-b border-white/5 bg-gradient-to-b from-${visual.color_preset === 'aegis' ? 'blue' : 'gray'}-500/5 to-transparent`}>
                 <div className="flex items-center gap-3 mb-2">
-                    <div className={`w-2 h-2 ${style.bg} rounded-full animate-pulse`} />
-                    <span className={`text-[10px] font-bold tracking-[0.3em] ${style.accent} uppercase`}>Aegis Tactical v2.4</span>
+                    <div className="w-2 h-2 rounded-full animate-pulse" style={{ backgroundColor: visual.color_hex || style.primary }} />
+                    <span className="text-[10px] font-bold tracking-[0.3em] uppercase opacity-60">Emisión Autorizada</span>
                 </div>
+                <h2 className="text-[10px] font-black uppercase tracking-widest text-gray-500 mb-1">{pase?.entidad_nombre || 'BAGFM ACCESS'}</h2>
                 <h1 className="text-3xl font-black italic tracking-tighter uppercase leading-none mb-1">
                     {lote.nombre_evento}
                 </h1>
@@ -213,16 +223,37 @@ const PortalPase = () => {
                                                     value={form.placa}
                                                     onChange={(e) => setForm({...form, placa: e.target.value.toUpperCase()})}
                                                     className="w-full bg-[#121214] border border-white/5 rounded-xl px-4 py-3 text-sm focus:border-blue-500/50 outline-none transition-all uppercase"
-                                                    placeholder="ABC123D"
+                                                    placeholder="PLACA"
                                                 />
                                             </div>
                                             <div className="space-y-1.5">
-                                                <label className="text-[10px] font-bold text-gray-500 uppercase ml-1">Marca / Modelo</label>
+                                                <label className="text-[10px] font-bold text-gray-500 uppercase ml-1">Color</label>
+                                                <input 
+                                                    value={form.color}
+                                                    onChange={(e) => setForm({...form, color: e.target.value.toUpperCase()})}
+                                                    className="w-full bg-[#121214] border border-white/5 rounded-xl px-4 py-3 text-sm focus:border-blue-500/50 outline-none transition-all uppercase"
+                                                    placeholder="COLOR"
+                                                />
+                                            </div>
+                                        </div>
+
+                                        <div className="grid grid-cols-2 gap-4 mt-4">
+                                            <div className="space-y-1.5">
+                                                <label className="text-[10px] font-bold text-gray-500 uppercase ml-1">Marca</label>
                                                 <input 
                                                     value={form.marca}
                                                     onChange={(e) => setForm({...form, marca: e.target.value.toUpperCase()})}
                                                     className="w-full bg-[#121214] border border-white/5 rounded-xl px-4 py-3 text-sm focus:border-blue-500/50 outline-none transition-all uppercase"
-                                                    placeholder="TOYOTA YARIS"
+                                                    placeholder="TOYOTA"
+                                                />
+                                            </div>
+                                            <div className="space-y-1.5">
+                                                <label className="text-[10px] font-bold text-gray-500 uppercase ml-1">Modelo</label>
+                                                <input 
+                                                    value={form.modelo}
+                                                    onChange={(e) => setForm({...form, modelo: e.target.value.toUpperCase()})}
+                                                    className="w-full bg-[#121214] border border-white/5 rounded-xl px-4 py-3 text-sm focus:border-blue-500/50 outline-none transition-all uppercase"
+                                                    placeholder="YARIS"
                                                 />
                                             </div>
                                         </div>
@@ -231,7 +262,8 @@ const PortalPase = () => {
                                     <button 
                                         type="submit"
                                         disabled={saving}
-                                        className={`w-full mt-6 py-4 ${style.bg} hover:brightness-110 disabled:opacity-50 text-white rounded-2xl font-bold uppercase tracking-widest text-sm transition-all flex items-center justify-center gap-3 shadow-lg ${style.shadow}`}
+                                        className="w-full mt-6 py-4 hover:brightness-110 disabled:opacity-50 text-white rounded-2xl font-bold uppercase tracking-widest text-sm transition-all flex items-center justify-center gap-3 shadow-lg"
+                                        style={{ ...style.dynamicBg, ...style.dynamicShadow }}
                                     >
                                         {saving ? <Loader2 className="w-5 h-5 animate-spin" /> : <>Generar Pase Digital <ArrowRight className="w-4 h-4" /></>}
                                     </button>
@@ -269,7 +301,7 @@ const PortalPase = () => {
                                 
                                 <div className="flex justify-between items-start mb-8">
                                     <div>
-                                        <span className={`text-[10px] font-black tracking-widest ${style.accent} uppercase`}>Pase de Acceso</span>
+                                        <span className="text-[10px] font-black tracking-widest uppercase opacity-40" style={style.dynamicAccent}>Pase de Acceso</span>
                                         <h3 className="text-2xl font-black leading-none mt-1">{pase.serial}</h3>
                                     </div>
                                     <div className="p-2 bg-green-500/10 rounded-lg">
@@ -298,7 +330,12 @@ const PortalPase = () => {
                                     <div className="grid grid-cols-2 gap-4">
                                         <div>
                                             <span className="text-[9px] font-bold text-gray-400 uppercase">Vehículo</span>
-                                            <p className="text-xs font-black">{pase.vehiculo?.placa || 'PEATONAL'}</p>
+                                            <div className="flex flex-col">
+                                                <p className="text-xs font-black">{pase.vehiculo?.placa || 'PEATONAL'}</p>
+                                                {pase.vehiculo?.marca && (
+                                                    <p className="text-[8px] font-bold text-gray-500 uppercase">{pase.vehiculo.marca} {pase.vehiculo.modelo}</p>
+                                                )}
+                                            </div>
                                         </div>
                                         <div className="text-right">
                                             <span className="text-[9px] font-bold text-gray-400 uppercase">Expiración</span>
@@ -330,7 +367,7 @@ const PortalPase = () => {
             {/* Footer */}
             <div className="max-w-md mx-auto px-6 py-8 text-center border-t border-white/5">
                 <p className="text-[10px] text-gray-600 font-bold uppercase tracking-[0.2em]">
-                    Powered by Aegis Tactical & Resend
+                    Powered by BAGFM
                 </p>
             </div>
         </div>
