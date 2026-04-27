@@ -1375,12 +1375,14 @@ export default function EstacionamientosEntidad() {
                             <label className="text-[9px] font-black text-text-muted uppercase tracking-widest flex items-center gap-2">
                                 <LayoutGrid size={11} className="text-primary" /> Plantilla de Carnet
                             </label>
-                            <div className="grid grid-cols-4 gap-2">
+                            <div className="grid grid-cols-3 gap-2">
                                 {[
                                     { id: 'qr', label: 'QR Simple', icon: QrCode },
-                                    { id: 'colgante', label: 'Colgante', icon: BadgeEstado },
-                                    { id: 'credencial', label: 'Credencial', icon: Shield },
-                                    { id: 'parabrisas', label: 'Libre', icon: Car },
+                                    { id: 'colgante', label: 'Colgante', icon: UserSquare2 },
+                                    { id: 'cartera', label: 'Cartera', icon: CreditCard },
+                                    { id: 'ticket', label: 'Ticket', icon: Ticket },
+                                    { id: 'credencial', label: 'Credencial', icon: ShieldCheck },
+                                    { id: 'parabrisas', label: 'Parabrisas', icon: Car },
                                 ].map(lay => (
                                     <button
                                         key={lay.id}
@@ -1394,7 +1396,7 @@ export default function EstacionamientosEntidad() {
                                         )}
                                     >
                                         <lay.icon size={16} />
-                                        <span className="text-[8px] font-black uppercase text-center leading-tight">{lay.label}</span>
+                                        <span className="text-[7.5px] font-black uppercase text-center leading-tight">{lay.label}</span>
                                     </button>
                                 ))}
                             </div>

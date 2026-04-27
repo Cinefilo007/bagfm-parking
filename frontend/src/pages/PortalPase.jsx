@@ -247,15 +247,22 @@ const PortalPase = () => {
                                 visual.layout === 'colgante' && "rounded-b-[2rem] border-t-[12px]",
                                 visual.layout === 'credencial' && "rounded-lg border-l-8",
                                 visual.layout === 'parabrisas' && "rounded-3xl border-b-[16px] border-double",
+                                visual.layout === 'cartera' && "rounded-[2.5rem] border-x-4",
+                                visual.layout === 'ticket' && "rounded-md border-t-4 border-dashed",
                                 // Aplicación de colores según preset y layout
-                                visual.color_preset === 'aegis' && (visual.layout === 'colgante' || visual.layout === 'credencial' || visual.layout === 'parabrisas') ? 'border-green-500' : '',
-                                visual.color_preset === 'vip' && (visual.layout === 'colgante' || visual.layout === 'credencial' || visual.layout === 'parabrisas') ? 'border-yellow-500' : '',
-                                visual.color_preset === 'militar' && (visual.layout === 'colgante' || visual.layout === 'credencial' || visual.layout === 'parabrisas') ? 'border-gray-800' : '',
-                                visual.color_preset === 'alfa' && (visual.layout === 'colgante' || visual.layout === 'credencial' || visual.layout === 'parabrisas') ? 'border-red-600' : '',
+                                visual.color_preset === 'aegis' && visual.layout !== 'qr' ? 'border-green-500' : '',
+                                visual.color_preset === 'vip' && visual.layout !== 'qr' ? 'border-yellow-500' : '',
+                                visual.color_preset === 'militar' && visual.layout !== 'qr' ? 'border-gray-800' : '',
+                                visual.color_preset === 'alfa' && visual.layout !== 'qr' ? 'border-red-600' : '',
                             )}>
                                 {visual.layout === 'parabrisas' && (
                                     <div className="absolute top-4 right-4 opacity-10">
                                         <Car size={80} />
+                                    </div>
+                                )}
+                                {visual.layout === 'ticket' && (
+                                    <div className="absolute -top-1 left-0 w-full flex justify-around opacity-20">
+                                        {[...Array(10)].map((_,i) => <div key={i} className="w-2 h-2 rounded-full bg-black -mt-1" />)}
                                     </div>
                                 )}                                {/* Decoración Táctica */}
                                 <div className={`absolute top-0 right-0 w-32 h-32 ${style.bg}/5 blur-[60px]`} />
