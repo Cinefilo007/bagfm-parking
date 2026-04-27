@@ -97,27 +97,30 @@ class ParqueroService:
         reservados_totales = n_reservados_base + n_reservados_entidad
         ocupados_totales = ocupados_base + ocupados_entidad + ocupados_general
         
-        # Libres = Total - Reservados (vacíos) - Ocupados Totales
-        # Nota: Si un VIP ocupa un puesto VIP, no resta doble.
-        # Libres Tácticos = Capacidad - (Ocupados fuera de reserva) - Reservas
-        libres = max(0, total - ocupados_general - reservados_totales)
+        # ── 4. Calcular Perdidos ──
+        perdidos_lista = await self.get_vehiculos_perdidos(db, usuario_id)
+        n_perdidos = len(perdidos_lista)
 
         return {
             "id": str(zona.id),
             "nombre": zona.nombre,
             "capacidad_total": total,
-            "ocupacion_actual": ocupados_totales,
             "usa_puestos_identificados": zona.usa_puestos_identificados,
             "kpis": {
-                "libres":              libres,
-                "ocupados":            ocupados_totales,
-                "ocupados_base":       ocupados_base,
-                "ocupados_entidad":    ocupados_entidad,
-                "ocupados_general":    ocupados_general,
-                "reservados":          reservados_totales,
-                "reservados_base":     n_reservados_base,
-                "reservados_entidad":  n_reservados_entidad,
-                "total":               total,
+                "libres": max(0, total - ocupados_totales), 
+                "ocupados": ocupados_totales,
+                "reservados": reservados_totales,
+                "total": total,
+                "perdidos": n_perdidos,
+                "desglose_reservas": {
+                    "base": n_reservados_base,
+                    "entidad": n_reservados_entidad
+                },
+                "desglose_ocupacion": {
+                    "base": ocupados_base,
+                    "entidad": ocupados_entidad,
+                    "general": ocupados_general
+                }
             }
         }
 

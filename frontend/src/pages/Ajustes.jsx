@@ -52,6 +52,7 @@ export default function Ajustes() {
   });
 
   const isComandante = user?.rol === RolTipo.COMANDANTE;
+  const isAdmin = user?.rol === RolTipo.COMANDANTE || user?.rol === RolTipo.ADMIN_BASE;
   const showEventos = user?.rol === RolTipo.COMANDANTE || user?.rol === RolTipo.ADMIN_BASE || user?.rol === RolTipo.ADMIN_ENTIDAD;
   const eventosLink = user?.rol === RolTipo.ADMIN_ENTIDAD ? '/entidad/eventos' : '/comando/eventos';
 
@@ -420,33 +421,35 @@ export default function Ajustes() {
       </section>
 
 
-      {/* Operaciones de Correo Masivo */}
-      <section className="max-w-4xl mx-auto px-2 md:px-6 space-y-4">
-        <p className="text-[10px] text-text-muted uppercase font-black tracking-[0.3em] opacity-40 ml-2">Infraestructura Transaccional</p>
-        <Card className="bg-bg-low/40 border-white/5 backdrop-blur-md group hover:border-primary/20 transition-all">
-          <CardContent className="p-6">
-            <div className="flex flex-col sm:flex-row items-center justify-between gap-6">
-              <div className="flex items-center gap-4">
-                <div className="w-14 h-14 rounded-2xl flex items-center justify-center transition-all bg-primary/10 text-primary shadow-lg shadow-primary/5">
-                  <MailIcon size={28} />
+      {/* Operaciones de Correo Masivo - Solo para Administradores */}
+      {isAdmin && (
+        <section className="max-w-4xl mx-auto px-2 md:px-6 space-y-4 mt-6">
+          <p className="text-[10px] text-text-muted uppercase font-black tracking-[0.3em] opacity-40 ml-2">Infraestructura Transaccional</p>
+          <Card className="bg-bg-low/40 border-white/5 backdrop-blur-md group hover:border-primary/20 transition-all">
+            <CardContent className="p-6">
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-6">
+                <div className="flex items-center gap-4">
+                  <div className="w-14 h-14 rounded-2xl flex items-center justify-center transition-all bg-primary/10 text-primary shadow-lg shadow-primary/5">
+                    <MailIcon size={28} />
+                  </div>
+                  <div>
+                    <h4 className="text-sm font-black text-white uppercase tracking-tight italic">Servidor de Correos Lotes</h4>
+                    <p className="text-[10px] text-text-muted font-bold uppercase tracking-widest mt-0.5">Gestión de proveedor Resend/SMTP para distribución masiva</p>
+                  </div>
                 </div>
-                <div>
-                  <h4 className="text-sm font-black text-white uppercase tracking-tight italic">Servidor de Correos Lotes</h4>
-                  <p className="text-[10px] text-text-muted font-bold uppercase tracking-widest mt-0.5">Gestión de proveedor Resend/SMTP para distribución masiva</p>
-                </div>
-              </div>
 
-              <Boton 
-                className="h-12 px-8 bg-bg-app border border-white/10 text-white hover:text-primary hover:border-primary/50 font-black uppercase tracking-[0.1em] text-[10px] shadow-lg w-full sm:w-auto transition-all"
-                onClick={handleAbrirConfigCorreo}
-              >
-                <Settings className="mr-2" size={16} />
-                Configurar Motor
-              </Boton>
-            </div>
-          </CardContent>
-        </Card>
-      </section>
+                <Boton 
+                  className="h-12 px-8 bg-bg-app border border-white/10 text-white hover:text-primary hover:border-primary/50 font-black uppercase tracking-[0.1em] text-[10px] shadow-lg w-full sm:w-auto transition-all"
+                  onClick={handleAbrirConfigCorreo}
+                >
+                  <Settings className="mr-2" size={16} />
+                  Configurar Motor
+                </Boton>
+              </div>
+            </CardContent>
+          </Card>
+        </section>
+      )}
 
 
       

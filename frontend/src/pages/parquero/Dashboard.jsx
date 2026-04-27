@@ -2,9 +2,9 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
     Car, ParkingSquare, CheckCircle2, XCircle,
-    RefreshCw, Shield, Zap, Activity,
-    LogIn, LogOut, LayoutGrid, Share2,
-    Bell, Clock, Tag, Lock
+    RefreshCw, Shield, Zap, Activity, Radio, AlertTriangle, LayoutGrid, 
+    Bell, Share2, Search, ArrowRight, ArrowUpRight, 
+    X, User, Phone, Fingerprint, ShieldAlert, Clock, Tag, Lock, LogOut
 } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import { toast } from 'react-hot-toast';
@@ -279,6 +279,7 @@ const DashboardParquero = () => {
         reservados_entidad: puestos.filter(p => p.reservado_entidad_id && !p.reservado_base).length,
         mantenimiento:      puestos.filter(p => p.estado === 'mantenimiento').length,
         total:              puestos.length,
+        perdidos:           0,
     };
 
 
@@ -396,7 +397,28 @@ const DashboardParquero = () => {
                             )}
                         </Card>
 
-                        <KpiCard label="Total"     valor={kpis.total}     icon={LayoutGrid}   color="text-primary" />
+                        <Card 
+                            onClick={() => navegarConZona('/parquero/perdidos')}
+                            className={cn(
+                                "flex flex-col p-4 relative overflow-hidden group hover:bg-danger/10 transition-all border-white/5 rounded-2xl cursor-pointer",
+                                kpis.perdidos > 0 ? "border-danger/30 bg-danger/5 shadow-[0_0_20px_rgba(239,68,68,0.1)]" : ""
+                            )}
+                        >
+                            <div className="flex justify-between items-start mb-1">
+                                <ShieldAlert size={22} className={cn(kpis.perdidos > 0 ? "text-danger animate-pulse" : "text-text-muted/40")} />
+                                <div className={cn(
+                                    "w-1.5 h-1.5 rounded-full",
+                                    kpis.perdidos > 0 ? "bg-danger animate-ping" : "bg-text-muted/20"
+                                )} />
+                            </div>
+                            <div className={cn(
+                                "font-black text-2xl tracking-tighter leading-none",
+                                kpis.perdidos > 0 ? "text-danger" : "text-text-main"
+                            )}>
+                                {kpis.perdidos}
+                            </div>
+                            <div className="text-[9px] uppercase font-black tracking-widest text-text-muted opacity-60 mt-0.5">Perdidos</div>
+                        </Card>
                     </div>
 
 
