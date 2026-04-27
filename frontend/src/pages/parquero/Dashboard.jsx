@@ -30,9 +30,15 @@ const KpiCard = ({ label, valor, icon: Icon, color = 'text-primary' }) => (
 );
 
 // ── Tarjeta de puesto en el mapa ──────────────────────────────────────────
-const TarjetaPuesto = ({ puesto, onClick }) => {
+const TarjetaPuesto = ({ puesto, vehiculosEnZona = [], onClick }) => {
     const esBase = puesto.reservado_base === true;
     const esEntidad = !esBase && puesto.reservado_entidad_id;
+    const esOcupado = puesto.estado === 'ocupado';
+
+    // Buscar vehículo si está ocupado
+    const vehiculo = esOcupado 
+        ? vehiculosEnZona.find(v => v.puesto_asignado_id === puesto.id || (v.puesto_codigo === puesto.numero_puesto))
+        : null;
 
     const config = esBase
         ? { border: 'border-indigo-500/30', bg: 'bg-indigo-500/8', dot: 'bg-indigo-400', icon: 'text-indigo-400' }
@@ -40,16 +46,20 @@ const TarjetaPuesto = ({ puesto, onClick }) => {
         ? { border: 'border-warning/30', bg: 'bg-warning/8', dot: 'bg-warning', icon: 'text-warning' }
         : puesto.estado === 'libre'
         ? { border: 'border-success/30', bg: 'bg-success/5', dot: 'bg-success', icon: 'text-success' }
-        : puesto.estado === 'ocupado'
-        ? { border: 'border-danger/20', bg: 'bg-danger/5', dot: 'bg-danger', icon: 'text-danger/70' }
+        : esOcupado
+        ? { border: 'border-danger/20', bg: 'bg-danger/5', dot: 'bg-danger', icon: 'text-danger' }
         : puesto.estado === 'mantenimiento'
         ? { border: 'border-white/10', bg: 'bg-white/3', dot: 'bg-text-muted', icon: 'text-text-muted/50' }
         : { border: 'border-white/10', bg: 'bg-white/5', dot: 'bg-text-muted', icon: 'text-text-muted' };
 
+    // Regla de oro: Si está ocupado, la P es roja
+    const iconColor = esOcupado ? 'text-danger' : config.icon;
+    const dotColor = esOcupado ? 'bg-danger' : config.dot;
+
     const etiqueta = esBase ? 'BASE'
         : esEntidad ? (puesto.tipo_acceso_nombre || 'VIP')
         : puesto.estado === 'libre' ? 'Libre'
-        : puesto.estado === 'ocupado' ? 'Ocup.'
+        : esOcupado ? 'Ocup.'
         : puesto.estado === 'mantenimiento' ? 'Mant.'
         : puesto.estado || '—';
 
@@ -58,20 +68,29 @@ const TarjetaPuesto = ({ puesto, onClick }) => {
             onClick={onClick}
             className={cn(
                 'relative flex flex-col items-center justify-center p-3 rounded-xl border-2 transition-all active:scale-95 hover:brightness-110',
-                config.border, config.bg
+                config.border, config.bg,
+                esOcupado && 'border-danger/20 bg-danger/5'
             )}
         >
-            <div className={cn('w-2.5 h-2.5 rounded-full mb-1.5', config.dot)} />
-            <ParkingSquare size={18} className={config.icon} />
+            <div className={cn('w-2.5 h-2.5 rounded-full mb-1.5', dotColor)} />
+            <ParkingSquare size={18} className={cn(iconColor, esOcupado && 'animate-pulse')} />
             <span className="text-[8px] font-black uppercase tracking-tight mt-1 text-text-main leading-none">
                 {puesto.numero_puesto || puesto.codigo || '—'}
             </span>
-            <span className={cn(
-                'text-[6px] font-black uppercase tracking-wide leading-none mt-0.5',
-                esBase ? 'text-indigo-400' : esEntidad ? 'text-warning' : config.icon
-            )}>
-                {etiqueta}
-            </span>
+            
+            {esOcupado && vehiculo?.placa ? (
+                <span className="text-[7px] font-black text-danger uppercase tracking-tighter mt-1 animate-pulse">
+                    {vehiculo.placa}
+                </span>
+            ) : (
+                <span className={cn(
+                    'text-[6px] font-black uppercase tracking-wide leading-none mt-0.5',
+                    !esOcupado && esBase ? 'text-indigo-400' : !esOcupado && esEntidad ? 'text-warning' : iconColor
+                )}>
+                    {etiqueta}
+                </span>
+            )}
+            
             {esBase && <Lock size={8} className="absolute top-1 right-1 text-indigo-400/60" />}
         </button>
     );
@@ -406,6 +425,7 @@ const DashboardParquero = () => {
                                     <TarjetaPuesto
                                         key={puesto.id}
                                         puesto={puesto}
+                                        vehiculosEnZona={vehiculosEnZona}
                                         onClick={() => !puesto.virtual && setPuestoModal(puesto)}
                                     />
                                 ))}
