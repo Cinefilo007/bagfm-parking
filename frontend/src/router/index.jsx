@@ -145,7 +145,7 @@ export const router = createBrowserRouter([
     element: <PortalEvento />
   },
   {
-    path: '/pase/:token',
+    path: '/portal/pase/:token',
     element: <PortalPase />
   },
   {
