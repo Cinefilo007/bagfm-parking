@@ -294,7 +294,7 @@ export default function EstacionamientosEntidad() {
     const [cargandoPuestos, setCargandoPuestos] = useState(true);
     const [puestoSeleccionado, setPuestoSeleccionado] = useState(null);
     const [modalAsignar, setModalAsignar] = useState(false);
-    const [asignacion, setAsignacion] = useState({ socio_id: '', notas: '' });
+    const [asignacion, setAsignacion] = useState({ socio_id: '', notas: '', placa: '', marca: '', modelo: '', color: '' });
     const [asignando, setAsignando] = useState(false);
 
     // Estado de tipos de acceso
@@ -559,7 +559,7 @@ export default function EstacionamientosEntidad() {
 
     const handleAbrirAsignar = (puesto) => {
         setPuestoSeleccionado(puesto);
-        setAsignacion({ socio_id: '', notas: '' });
+        setAsignacion({ socio_id: '', notas: '', placa: '', marca: '', modelo: '', color: '' });
         setModalAsignar(true);
     };
 
@@ -711,12 +711,13 @@ export default function EstacionamientosEntidad() {
                     ...brandingEntidad,
                     [tipoEditar.id]: {
                         layout: formTipo.plantilla_layout,
-                        color_preset: formTipo.color_preset
+                        color_preset: formTipo.color_preset,
+                        color_hex: formTipo.color_hex
                     }
                 };
                 await entidadService.actualizarBranding(user.entidad_id, nuevaConfig);
                 setBrandingEntidad(nuevaConfig);
-                toast.success('Marca base actualizada');
+                toast.success(`Marca para ${tipoEditar.nombre} actualizada`);
                 setModalTipo(false);
             } else if (tipoEditar) {
                 await zonaService.actualizarTipoAcceso(tipoEditar.id, formTipo);
@@ -1320,18 +1321,33 @@ export default function EstacionamientosEntidad() {
                         </div>
                     ) : (
                         <div className="space-y-2">
-                            {/* Tipos Base Inyectados (Público General, VIP, etc) */}
+                            {/* Tipos Base Inyectados (Configurables) */}
                             {[
-                                { id: 'general', nombre: 'Público General', es_base: true, color_badge: '#3B82F6' },
-                            ].map(tipoBase => (
-                                <TarjetaTipoAcceso
-                                    key={tipoBase.id}
-                                    tipo={tipoBase}
-                                    onEditar={abrirModalTipo}
-                                    onEliminar={null} // No se pueden eliminar
-                                    onToggle={null}   // Siempre activos por ahora
-                                />
-                            ))}
+                                { id: 'general',    nombre: 'Público General', es_base: true, color_badge: '#3B82F6' },
+                                { id: 'vip',        nombre: 'VIP / Invitados', es_base: true, color_badge: '#F2C94C' },
+                                { id: 'staff',      nombre: 'Staff / Equipo',  es_base: true, color_badge: '#6B7280' },
+                                { id: 'produccion', nombre: 'Producción',      es_base: true, color_badge: '#EB5757' },
+                                { id: 'logistica',  nombre: 'Logística',       es_base: true, color_badge: '#3B82F6' },
+                                { id: 'prensa',     nombre: 'Prensa',          es_base: true, color_badge: '#10B981' },
+                                { id: 'artista',    nombre: 'Artista / Talento', es_base: true, color_badge: '#EC4899' },
+                            ].map(tipoBase => {
+                                // Aplicar override de branding si existe
+                                const cfg = brandingEntidad[tipoBase.id] || {};
+                                const tFinal = {
+                                    ...tipoBase,
+                                    color_badge: cfg.color_hex || tipoBase.color_badge,
+                                    layout: cfg.layout || 'qr'
+                                };
+                                return (
+                                    <TarjetaTipoAcceso
+                                        key={tFinal.id}
+                                        tipo={tFinal}
+                                        onEditar={abrirModalTipo}
+                                        onEliminar={null} // No se pueden eliminar los base
+                                        onToggle={null}   // Siempre activos
+                                    />
+                                );
+                            })}
 
                             {/* Tipos Custom del usuario */}
                             {tipos.map(tipo => (

@@ -375,18 +375,26 @@ async def obtener_pase_publico(token: str, db: AsyncSession = Depends(obtener_db
     
     # Determinar visual final base
     tipo_str = pase.tipo_acceso.value if hasattr(pase.tipo_acceso, 'value') else str(pase.tipo_acceso)
+    
+    # 0. Base absoluta del sistema
     visual = PRESETS_BASE.get(tipo_str, PRESETS_BASE["general"]).copy()
     
-    # Aplicar sobreescritura de branding de entidad
-    if tipo_str in branding_entidad:
-        visual.update(branding_entidad[tipo_str])
+    # 1. Aplicar primero la base 'general' de la entidad si existe (herencia)
+    if "general" in branding_entidad:
+        visual.update({k: v for k, v in branding_entidad["general"].items() if v})
     
+    # 2. Aplicar sobreescritura específica del tipo base si existe en el JSON de la entidad
+    if tipo_str in branding_entidad and tipo_str != "general":
+        visual.update({k: v for k, v in branding_entidad[tipo_str].items() if v})
+    
+    # 3. Si tiene tipo custom, este tiene la máxima prioridad
     if pase.tipo_acceso_custom:
-        visual = {
-            "layout": pase.tipo_acceso_custom.plantilla_layout or "qr",
-            "color_preset": pase.tipo_acceso_custom.color_preset or "aegis",
-            "color_hex": pase.tipo_acceso_custom.color_hex or "#4EDEA3"
-        }
+        custom = pase.tipo_acceso_custom
+        visual.update({
+            "layout": custom.plantilla_layout or visual.get("layout", "qr"),
+            "color_preset": custom.color_preset or visual.get("color_preset", "aegis"),
+            "color_hex": custom.color_hex or visual.get("color_hex", "#4EDEA3")
+        })
     
     return {
         "pase": {

@@ -108,12 +108,12 @@ const PortalPase = () => {
     // De lo contrario -> Mostrar QR
     const mostrarForm = lote.tipo_pase === 'portal' && !pase.nombre;
 
-    // Configuración de visualización dinámica (v2.4)
+    // Configuración de visualización dinámica (v2.4.1)
     const visual = pase?.visual || { layout: 'qr', color_preset: 'aegis' };
     
     const PRESETS = {
         aegis:   { primary: '#4EDEA3', accent: 'text-[#4EDEA3]', bg: 'bg-[#4EDEA3]', shadow: 'shadow-[#4EDEA3]/20' },
-        militar: { primary: '#6B7280', accent: 'text-gray-400',   bg: 'bg-gray-600',   shadow: 'shadow-gray-600/20' },
+        militar: { primary: '#2D3A2D', accent: 'text-gray-400',   bg: 'bg-gray-800',   shadow: 'shadow-gray-800/20' },
         civil:   { primary: '#3B82F6', accent: 'text-blue-400',   bg: 'bg-blue-500',   shadow: 'shadow-blue-500/20' },
         vip:     { primary: '#F2C94C', accent: 'text-yellow-500', bg: 'bg-yellow-500', shadow: 'shadow-yellow-500/20' },
         alfa:    { primary: '#EB5757', accent: 'text-red-500',    bg: 'bg-red-500',    shadow: 'shadow-red-500/20' },
@@ -121,28 +121,34 @@ const PortalPase = () => {
     
     // Obtener estilo base y sobreescribir con color_hex si existe
     const baseStyle = PRESETS[visual.color_preset] || PRESETS.aegis;
+    const accentColor = visual.color_hex || baseStyle.primary;
+
     const style = {
         ...baseStyle,
-        primary: visual.color_hex || baseStyle.primary,
-        dynamicAccent: { color: visual.color_hex || baseStyle.primary },
-        dynamicBg: { backgroundColor: visual.color_hex || baseStyle.primary },
-        dynamicShadow: { boxShadow: `0 10px 15px -3px ${(visual.color_hex || baseStyle.primary)}33` }
+        primary: accentColor,
+        dynamicAccent: { color: accentColor },
+        dynamicBg: { backgroundColor: accentColor },
+        dynamicBorder: { borderColor: accentColor },
+        dynamicShadow: { boxShadow: `0 10px 25px -5px ${accentColor}44` }
     };
 
     return (
-        <div className="min-h-screen bg-[#0a0a0b] text-white selection:bg-blue-500/30">
+        <div className="min-h-screen bg-[#0a0a0b] text-white selection:bg-blue-500/30 font-sans">
             {/* Header Táctico */}
-            <div className={`max-w-md mx-auto pt-10 px-6 pb-6 border-b border-white/5 bg-gradient-to-b from-${visual.color_preset === 'aegis' ? 'blue' : 'gray'}-500/5 to-transparent`}>
+            <div className="max-w-md mx-auto pt-10 px-6 pb-6 border-b border-white/5 relative overflow-hidden">
+                <div className="absolute top-0 left-0 w-full h-1" style={style.dynamicBg} />
                 <div className="flex items-center gap-3 mb-2">
-                    <div className="w-2 h-2 rounded-full animate-pulse" style={{ backgroundColor: visual.color_hex || style.primary }} />
-                    <span className="text-[10px] font-bold tracking-[0.3em] uppercase opacity-60">Emisión Autorizada</span>
+                    <div className="w-2 h-2 rounded-full animate-pulse" style={style.dynamicBg} />
+                    <span className="text-[10px] font-black tracking-[0.3em] uppercase opacity-40">Identidad Digital Verificada</span>
                 </div>
-                <h2 className="text-[10px] font-black uppercase tracking-widest text-gray-500 mb-1">{pase?.entidad_nombre || 'BAGFM ACCESS'}</h2>
-                <h1 className="text-3xl font-black italic tracking-tighter uppercase leading-none mb-1">
+                <h2 className="text-[9px] font-black uppercase tracking-[0.2em] mb-1 opacity-70" style={style.dynamicAccent}>
+                    EMITIDO POR: {pase?.entidad_nombre || 'BAGFM ACCESS'}
+                </h2>
+                <h1 className="text-4xl font-black tracking-tighter uppercase leading-none mb-2 break-words">
                     {lote.nombre_evento}
                 </h1>
-                <div className="flex items-center gap-2 text-xs text-gray-500 font-medium">
-                    <Calendar className="w-3 h-3" />
+                <div className="flex items-center gap-2 text-[10px] font-bold text-gray-400 uppercase tracking-widest">
+                    <Calendar className="w-3 h-3" style={style.dynamicAccent} />
                     <span>{new Date(lote.fecha_inicio).toLocaleDateString()} — {new Date(lote.fecha_fin).toLocaleDateString()}</span>
                 </div>
             </div>
@@ -152,107 +158,107 @@ const PortalPase = () => {
                     <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
                             <div className="bg-white/5 border border-white/10 rounded-2xl p-6 mb-6">
                                 <div className="flex items-center gap-3 mb-6">
-                                    <div className={`w-10 h-10 rounded-xl ${style.bg}/20 flex items-center justify-center border border-${style.primary}/20`}>
-                                        <User className={`w-5 h-5 ${style.accent}`} />
+                                    <div className="w-12 h-12 rounded-2xl flex items-center justify-center border transition-all" style={{ ...style.dynamicBorder, backgroundColor: `${accentColor}15` }}>
+                                        <User className="w-6 h-6" style={style.dynamicAccent} />
                                     </div>
                                     <div>
-                                        <h2 className="text-lg font-bold">Completar Registro</h2>
-                                        <p className="text-xs text-gray-500">Sus datos son necesarios para el acceso</p>
+                                        <h2 className="text-xl font-bold tracking-tight">Completar Registro</h2>
+                                        <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest">Credencial para el evento</p>
                                     </div>
                                 </div>
 
                                 <form onSubmit={handleSave} className="space-y-4">
                                     <div className="grid grid-cols-1 gap-4">
-                                        <div className="space-y-1.5">
-                                            <label className="text-[10px] font-bold text-gray-500 uppercase ml-1">Nombre Completo</label>
+                                        <div className="space-y-2">
+                                            <label className="text-[10px] font-black text-gray-500 uppercase ml-1 tracking-[0.15em]">Nombre Completo</label>
                                             <input 
                                                 required
                                                 value={form.nombre}
                                                 onChange={(e) => setForm({...form, nombre: e.target.value.toUpperCase()})}
-                                                className="w-full bg-[#121214] border border-white/5 rounded-xl px-4 py-3 text-sm focus:border-blue-500/50 outline-none transition-all"
+                                                className="w-full bg-[#121214] border border-white/5 rounded-xl px-4 py-4 text-sm font-bold focus:border-white/20 outline-none transition-all uppercase"
                                                 placeholder="EJ. JUAN PÉREZ"
                                             />
                                         </div>
 
                                         <div className="grid grid-cols-2 gap-4">
-                                            <div className="space-y-1.5">
-                                                <label className="text-[10px] font-bold text-gray-500 uppercase ml-1">Cédula / ID</label>
+                                            <div className="space-y-2">
+                                                <label className="text-[10px] font-black text-gray-500 uppercase ml-1 tracking-[0.15em]">Cédula / ID</label>
                                                 <input 
                                                     required
                                                     value={form.cedula}
                                                     onChange={(e) => setForm({...form, cedula: e.target.value.toUpperCase()})}
-                                                    className="w-full bg-[#121214] border border-white/5 rounded-xl px-4 py-3 text-sm focus:border-blue-500/50 outline-none transition-all"
+                                                    className="w-full bg-[#121214] border border-white/5 rounded-xl px-4 py-4 text-sm font-bold focus:border-white/20 outline-none transition-all uppercase"
                                                     placeholder="V-000..."
                                                 />
                                             </div>
-                                            <div className="space-y-1.5">
-                                                <label className="text-[10px] font-bold text-gray-500 uppercase ml-1">Teléfono</label>
+                                            <div className="space-y-2">
+                                                <label className="text-[10px] font-black text-gray-500 uppercase ml-1 tracking-[0.15em]">Teléfono</label>
                                                 <input 
                                                     required
                                                     value={form.telefono}
                                                     onChange={(e) => setForm({...form, telefono: e.target.value})}
-                                                    className="w-full bg-[#121214] border border-white/5 rounded-xl px-4 py-3 text-sm focus:border-blue-500/50 outline-none transition-all"
+                                                    className="w-full bg-[#121214] border border-white/5 rounded-xl px-4 py-4 text-sm font-bold focus:border-white/20 outline-none transition-all"
                                                     placeholder="0414..."
                                                 />
                                             </div>
                                         </div>
 
-                                        <div className="space-y-1.5">
-                                            <label className="text-[10px] font-bold text-gray-500 uppercase ml-1">Correo Electrónico</label>
+                                        <div className="space-y-2">
+                                            <label className="text-[10px] font-black text-gray-500 uppercase ml-1 tracking-[0.15em]">Correo de Contacto</label>
                                             <input 
                                                 required
                                                 type="email"
                                                 value={form.email}
                                                 onChange={(e) => setForm({...form, email: e.target.value})}
-                                                className="w-full bg-[#121214] border border-white/5 rounded-xl px-4 py-3 text-sm focus:border-blue-500/50 outline-none transition-all"
+                                                className="w-full bg-[#121214] border border-white/5 rounded-xl px-4 py-4 text-sm font-bold focus:border-white/20 outline-none transition-all"
                                                 placeholder="correo@ejemplo.com"
                                             />
                                         </div>
                                     </div>
 
-                                    <div className="pt-4 pb-2 border-t border-white/5 mt-6">
+                                    <div className="pt-6 pb-2 border-t border-white/5 mt-6">
                                         <div className="flex items-center gap-2 mb-4">
-                                            <Car className={`w-4 h-4 ${style.accent}`} />
-                                            <span className="text-xs font-bold uppercase tracking-wider">Vehículo Autorizado</span>
+                                            <Car className="w-4 h-4" style={style.dynamicAccent} />
+                                            <span className="text-[10px] font-black uppercase tracking-[0.2em]">Registro de Vehículo</span>
                                         </div>
                                         
                                         <div className="grid grid-cols-2 gap-4">
-                                            <div className="space-y-1.5">
-                                                <label className="text-[10px] font-bold text-gray-500 uppercase ml-1">Placa</label>
+                                            <div className="space-y-2">
+                                                <label className="text-[10px] font-black text-gray-500 uppercase ml-1 tracking-[0.15em]">Placa</label>
                                                 <input 
                                                     value={form.placa}
                                                     onChange={(e) => setForm({...form, placa: e.target.value.toUpperCase()})}
-                                                    className="w-full bg-[#121214] border border-white/5 rounded-xl px-4 py-3 text-sm focus:border-blue-500/50 outline-none transition-all uppercase"
+                                                    className="w-full bg-[#121214] border border-white/5 rounded-xl px-4 py-3 text-sm font-bold focus:border-white/20 outline-none transition-all uppercase"
                                                     placeholder="PLACA"
                                                 />
                                             </div>
-                                            <div className="space-y-1.5">
-                                                <label className="text-[10px] font-bold text-gray-500 uppercase ml-1">Color</label>
+                                            <div className="space-y-2">
+                                                <label className="text-[10px] font-black text-gray-500 uppercase ml-1 tracking-[0.15em]">Color</label>
                                                 <input 
                                                     value={form.color}
                                                     onChange={(e) => setForm({...form, color: e.target.value.toUpperCase()})}
-                                                    className="w-full bg-[#121214] border border-white/5 rounded-xl px-4 py-3 text-sm focus:border-blue-500/50 outline-none transition-all uppercase"
+                                                    className="w-full bg-[#121214] border border-white/5 rounded-xl px-4 py-3 text-sm font-bold focus:border-white/20 outline-none transition-all uppercase"
                                                     placeholder="COLOR"
                                                 />
                                             </div>
                                         </div>
 
                                         <div className="grid grid-cols-2 gap-4 mt-4">
-                                            <div className="space-y-1.5">
-                                                <label className="text-[10px] font-bold text-gray-500 uppercase ml-1">Marca</label>
+                                            <div className="space-y-2">
+                                                <label className="text-[10px] font-black text-gray-500 uppercase ml-1 tracking-[0.15em]">Marca</label>
                                                 <input 
                                                     value={form.marca}
                                                     onChange={(e) => setForm({...form, marca: e.target.value.toUpperCase()})}
-                                                    className="w-full bg-[#121214] border border-white/5 rounded-xl px-4 py-3 text-sm focus:border-blue-500/50 outline-none transition-all uppercase"
+                                                    className="w-full bg-[#121214] border border-white/5 rounded-xl px-4 py-3 text-sm font-bold focus:border-white/20 outline-none transition-all uppercase"
                                                     placeholder="TOYOTA"
                                                 />
                                             </div>
-                                            <div className="space-y-1.5">
-                                                <label className="text-[10px] font-bold text-gray-500 uppercase ml-1">Modelo</label>
+                                            <div className="space-y-2">
+                                                <label className="text-[10px] font-black text-gray-500 uppercase ml-1 tracking-[0.15em]">Modelo</label>
                                                 <input 
                                                     value={form.modelo}
                                                     onChange={(e) => setForm({...form, modelo: e.target.value.toUpperCase()})}
-                                                    className="w-full bg-[#121214] border border-white/5 rounded-xl px-4 py-3 text-sm focus:border-blue-500/50 outline-none transition-all uppercase"
+                                                    className="w-full bg-[#121214] border border-white/5 rounded-xl px-4 py-3 text-sm font-bold focus:border-white/20 outline-none transition-all uppercase"
                                                     placeholder="YARIS"
                                                 />
                                             </div>
@@ -262,10 +268,10 @@ const PortalPase = () => {
                                     <button 
                                         type="submit"
                                         disabled={saving}
-                                        className="w-full mt-6 py-4 hover:brightness-110 disabled:opacity-50 text-white rounded-2xl font-bold uppercase tracking-widest text-sm transition-all flex items-center justify-center gap-3 shadow-lg"
+                                        className="w-full mt-6 py-4 hover:brightness-110 disabled:opacity-50 text-bg-app rounded-2xl font-black uppercase tracking-[0.2em] text-xs transition-all flex items-center justify-center gap-3 shadow-lg"
                                         style={{ ...style.dynamicBg, ...style.dynamicShadow }}
                                     >
-                                        {saving ? <Loader2 className="w-5 h-5 animate-spin" /> : <>Generar Pase Digital <ArrowRight className="w-4 h-4" /></>}
+                                        {saving ? <Loader2 className="w-5 h-5 animate-spin" /> : <>Obtener Pase Digital <ArrowRight className="w-4 h-4" /></>}
                                     </button>
                                 </form>
                             </div>
@@ -275,71 +281,76 @@ const PortalPase = () => {
                             {/* Card de Pase Digital Dinámico */}
                             <div className={cn(
                                 "bg-white p-8 text-[#0a0a0b] shadow-2xl relative overflow-hidden transition-all",
-                                visual.layout === 'qr' && "rounded-[2rem]",
-                                visual.layout === 'colgante' && "rounded-b-[2rem] border-t-[12px]",
-                                visual.layout === 'credencial' && "rounded-lg border-l-8",
-                                visual.layout === 'parabrisas' && "rounded-3xl border-b-[16px] border-double",
-                                visual.layout === 'cartera' && "rounded-[2.5rem] border-x-4",
-                                visual.layout === 'ticket' && "rounded-md border-t-4 border-dashed",
-                                // Aplicación de colores según preset y layout
-                                visual.color_preset === 'aegis' && visual.layout !== 'qr' ? 'border-green-500' : '',
-                                visual.color_preset === 'vip' && visual.layout !== 'qr' ? 'border-yellow-500' : '',
-                                visual.color_preset === 'militar' && visual.layout !== 'qr' ? 'border-gray-800' : '',
-                                visual.color_preset === 'alfa' && visual.layout !== 'qr' ? 'border-red-600' : '',
-                            )}>
+                                visual.layout === 'qr' && "rounded-[2.5rem]",
+                                visual.layout === 'colgante' && "rounded-b-[2.5rem] border-t-[14px]",
+                                visual.layout === 'credencial' && "rounded-2xl border-l-[12px]",
+                                visual.layout === 'parabrisas' && "rounded-[3rem] border-b-[20px] border-double",
+                                visual.layout === 'cartera' && "rounded-[3rem] border-x-[8px]",
+                                visual.layout === 'ticket' && "rounded-xl border-t-[6px] border-dashed",
+                            )} style={visual.layout !== 'qr' ? style.dynamicBorder : {}}>
+                                
                                 {visual.layout === 'parabrisas' && (
-                                    <div className="absolute top-4 right-4 opacity-10">
-                                        <Car size={80} />
+                                    <div className="absolute top-6 right-6 opacity-[0.03]">
+                                        <Car size={100} />
                                     </div>
                                 )}
-                                {visual.layout === 'ticket' && (
-                                    <div className="absolute -top-1 left-0 w-full flex justify-around opacity-20">
-                                        {[...Array(10)].map((_,i) => <div key={i} className="w-2 h-2 rounded-full bg-black -mt-1" />)}
-                                    </div>
-                                )}                                {/* Decoración Táctica */}
-                                <div className={`absolute top-0 right-0 w-32 h-32 ${style.bg}/5 blur-[60px]`} />
                                 
-                                <div className="flex justify-between items-start mb-8">
-                                    <div>
-                                        <span className="text-[10px] font-black tracking-widest uppercase opacity-40" style={style.dynamicAccent}>Pase de Acceso</span>
-                                        <h3 className="text-2xl font-black leading-none mt-1">{pase.serial}</h3>
+                                {visual.layout === 'ticket' && (
+                                    <div className="absolute -top-1.5 left-0 w-full flex justify-around opacity-10">
+                                        {[...Array(12)].map((_,i) => <div key={i} className="w-2.5 h-2.5 rounded-full bg-black -mt-1" />)}
                                     </div>
-                                    <div className="p-2 bg-green-500/10 rounded-lg">
-                                        <CheckCircle2 className="w-5 h-5 text-green-600" />
+                                )}
+
+                                {/* Decoración Táctica de Fondo */}
+                                <div className="absolute top-0 right-0 w-40 h-40 blur-[80px] opacity-10 pointer-events-none" style={style.dynamicBg} />
+                                
+                                <div className="flex justify-between items-start mb-10">
+                                    <div className="space-y-1">
+                                        <span className="text-[10px] font-black tracking-[0.3em] uppercase opacity-40 ml-0.5" style={style.dynamicAccent}>Access Voucher</span>
+                                        <h3 className="text-3xl font-black leading-none tracking-tighter">{pase.serial}</h3>
+                                    </div>
+                                    <div className="p-3 bg-emerald-500/5 rounded-2xl border border-emerald-500/10">
+                                        <CheckCircle2 className="w-6 h-6 text-emerald-500" />
                                     </div>
                                 </div>
 
-                                <div className="flex flex-col items-center mb-8">
-                                    <div className="p-4 bg-white border-2 border-[#f0f0f0] rounded-3xl mb-4">
-                                        <QrCode value={token} size={200} className="w-48 h-48" />
+                                <div className="flex flex-col items-center mb-10">
+                                    <div className="p-5 bg-white border-2 border-slate-100 rounded-[2.5rem] mb-5 shadow-inner">
+                                        <QrCode value={token} size={220} className="w-52 h-52" />
                                     </div>
-                                    <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">Escanee en el Punto de Control</p>
+                                    <div className="flex items-center gap-2 px-4 py-1.5 bg-slate-50 rounded-full border border-slate-100">
+                                        <QrCode size={10} className="opacity-40" />
+                                        <p className="text-[9px] text-slate-400 font-black uppercase tracking-[0.15em]">Control Táctico v2.4.1</p>
+                                    </div>
                                 </div>
 
-                                <div className="space-y-4 border-t-2 border-dashed border-gray-100 pt-6">
-                                    <div className="grid grid-cols-2 gap-4">
-                                        <div>
-                                            <span className="text-[9px] font-bold text-gray-400 uppercase">Titular</span>
-                                            <p className="text-xs font-black truncate">{pase.nombre || 'INVITADO'}</p>
+                                <div className="space-y-6 border-t-2 border-dashed border-slate-100 pt-8">
+                                    <div className="grid grid-cols-2 gap-6">
+                                        <div className="space-y-0.5">
+                                            <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Titular Autorizado</span>
+                                            <p className="text-sm font-black truncate">{pase.nombre || 'INVITADO DE HONOR'}</p>
                                         </div>
-                                        <div className="text-right">
-                                            <span className="text-[9px] font-bold text-gray-400 uppercase">Identificación</span>
-                                            <p className="text-xs font-black">{pase.cedula || 'SIN ID'}</p>
+                                        <div className="text-right space-y-0.5">
+                                            <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Documento ID</span>
+                                            <p className="text-sm font-black truncate">{pase.cedula || 'NO REGISTRADO'}</p>
                                         </div>
                                     </div>
-                                    <div className="grid grid-cols-2 gap-4">
-                                        <div>
-                                            <span className="text-[9px] font-bold text-gray-400 uppercase">Vehículo</span>
+                                    
+                                    <div className="grid grid-cols-2 gap-6">
+                                        <div className="space-y-0.5">
+                                            <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Vehículo / Placa</span>
                                             <div className="flex flex-col">
-                                                <p className="text-xs font-black">{pase.vehiculo?.placa || 'PEATONAL'}</p>
+                                                <p className="text-sm font-black">{pase.vehiculo?.placa || 'PEATONAL'}</p>
                                                 {pase.vehiculo?.marca && (
-                                                    <p className="text-[8px] font-bold text-gray-500 uppercase">{pase.vehiculo.marca} {pase.vehiculo.modelo}</p>
+                                                    <p className="text-[8px] font-black text-slate-400 uppercase tracking-tighter mt-0.5">
+                                                        {pase.vehiculo.marca} {pase.vehiculo.modelo} · {pase.vehiculo.color}
+                                                    </p>
                                                 )}
                                             </div>
                                         </div>
-                                        <div className="text-right">
-                                            <span className="text-[9px] font-bold text-gray-400 uppercase">Expiración</span>
-                                            <p className="text-xs font-black">{new Date(lote.fecha_fin).toLocaleDateString()}</p>
+                                        <div className="text-right space-y-0.5">
+                                            <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Validez Hasta</span>
+                                            <p className="text-sm font-black text-rose-600">{new Date(lote.fecha_fin).toLocaleDateString()}</p>
                                         </div>
                                     </div>
                                 </div>
@@ -364,12 +375,16 @@ const PortalPase = () => {
                     )}
             </main>
 
-            {/* Footer */}
-            <div className="max-w-md mx-auto px-6 py-8 text-center border-t border-white/5">
-                <p className="text-[10px] text-gray-600 font-bold uppercase tracking-[0.2em]">
-                    Powered by BAGFM
-                </p>
-            </div>
+            <footer className="max-w-md mx-auto px-6 py-12 text-center border-t border-white/5 opacity-40">
+                <div className="flex flex-col items-center gap-2">
+                    <p className="text-[9px] font-black uppercase tracking-[0.4em]">
+                        Powered by <span style={style.dynamicAccent}>BAGFM</span>
+                    </p>
+                    <p className="text-[7px] font-bold uppercase tracking-[0.2em] opacity-30 mt-1">
+                        Electronic Access Management System · © 2024
+                    </p>
+                </div>
+            </footer>
         </div>
     );
 };

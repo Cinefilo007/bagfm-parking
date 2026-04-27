@@ -20,6 +20,8 @@ class TipoAccesoCustomActualizar(BaseModel):
     nombre: Optional[str] = None
     color_hex: Optional[str] = None
     nivel_prioridad: Optional[int] = None
+    plantilla_layout: Optional[str] = None
+    color_preset: Optional[str] = None
     activo: Optional[bool] = None
 
 class TipoAccesoCustomSalida(TipoAccesoCustomBase):
