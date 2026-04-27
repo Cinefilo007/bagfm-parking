@@ -308,7 +308,6 @@ const PortalPase = () => {
                             {/* Card de Pase Digital Dinámico */}
                             <div 
                                 id="carnet-digital"
-                                ref={qrRef}
                                 className={cn(
                                     "bg-white p-8 text-[#0a0a0b] shadow-2xl relative overflow-hidden transition-all",
                                     "rounded-[2.5rem]"
@@ -328,11 +327,11 @@ const PortalPase = () => {
                                 </div>
 
                                 <div className="flex flex-col items-center mb-6">
-                                    <div className="p-6 bg-white border-2 border-slate-100 rounded-[2.5rem] mb-4 shadow-inner">
+                                    <div ref={qrRef} className="p-4 bg-white border-2 border-slate-100 rounded-[2rem] mb-4 shadow-sm w-full max-w-[280px]">
                                         <QRCode 
                                             value={token} 
                                             size={256} 
-                                            style={{ height: "auto", maxWidth: "100%", width: "100%" }}
+                                            style={{ height: "auto", maxWidth: "100%", width: "100%", background: "white" }}
                                             viewBox={`0 0 256 256`}
                                         />
                                     </div>
@@ -349,27 +348,6 @@ const PortalPase = () => {
                                             <p className="text-lg font-black">{pase.nombre || 'INVITADO'}</p>
                                         </div>
                                     </div>
-                                    
-                                    <div className="flex justify-center gap-8 py-2">
-                                        <div className="text-center">
-                                            <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest block">Acceso</span>
-                                            <p className="text-xs font-black uppercase tracking-tighter" style={style.dynamicAccent}>
-                                                {pase.visual?.color_preset || 'GENERAL'}
-                                            </p>
-                                        </div>
-                                        <div className="text-center">
-                                            <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest block">Válido para</span>
-                                            <p className="text-xs font-black uppercase tracking-tighter">
-                                                {pase.vehiculo?.placa || 'PEATONAL'}
-                                            </p>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                {/* Footer de la Imagen */}
-                                <div className="mt-4 pt-4 border-t border-slate-50 flex justify-between items-center opacity-30">
-                                    <span className="text-[7px] font-black uppercase tracking-widest">BAGFM SECURITY v2.4</span>
-                                    <span className="text-[7px] font-black uppercase tracking-widest">{new Date().toLocaleDateString()}</span>
                                 </div>
                             </div>
 
