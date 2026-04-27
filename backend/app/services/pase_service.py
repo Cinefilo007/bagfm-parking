@@ -665,35 +665,9 @@ class PaseService:
                     puestos_en_zona_actual = 0
 
             serial_qr = f"{lote.codigo_serial}{str(i).zfill(4)}"
-            
-            # Verificar si el usuario ya existe (por si es un huérfano de intento fallido o colisión)
-            query_exist = select(Usuario).where(Usuario.cedula == serial_qr)
-            res_exist = await db.execute(query_exist)
-            nuevo_usuario = res_exist.scalar()
-            
-            if not nuevo_usuario:
-                # Crear usuario temporal (SOCIO con contraseña = serial)
-                nuevo_usuario = Usuario(
-                    cedula=serial_qr,
-                    nombre=f"INVITADO {i}",
-                    apellido=lote.nombre_evento,
-                    rol=RolTipo.SOCIO,
-                    password_hash=hashear_password(serial_qr),
-                    debe_cambiar_password=False,
-                    activo=True
-                )
-                db.add(nuevo_usuario)
-            else:
-                # Si existe, lo reactivamos
-                nuevo_usuario.activo = True
-                nuevo_usuario.nombre = f"INVITADO {i}"
-                nuevo_usuario.apellido = lote.nombre_evento
-            
-            await db.flush()
-            
             token = crear_token_evento(serial_qr, expira_at)
+            
             nuevo_qr = CodigoQR(
-                usuario_id=nuevo_usuario.id,
                 token=token,
                 tipo=QRTipo.evento_portal,
                 lote_id=lote.id,
@@ -702,7 +676,6 @@ class PaseService:
                 fecha_expiracion=expira_at,
                 created_by=creado_por_id,
                 activo=True,
-                # v2.0 campos
                 tipo_acceso=extras.get('tipo_acceso', 'general'),
                 tipo_acceso_custom_id=extras.get('tipo_acceso_custom_id'),
                 zona_asignada_id=zona_final_id,
@@ -1035,14 +1008,14 @@ class PaseService:
         # Sincronizamos para que los QRs desaparezcan y se liberen las FKs de los Usuarios
         await db.flush()
         
-        # 4. Eliminar Usuarios temporales asociados (Cleanup opcional)
+        # 4. Eliminar Usuarios temporales asociados (Legacy Cleanup)
         # Solo borramos si el usuario NO tiene más registros en CodigoQR (usuarios huérfanos de este lote)
         if user_ids:
             from app.models.usuario import Usuario
             from sqlalchemy import delete
             
             # Subconsulta para usuarios que aún tienen pases en otros lotes
-            usuarios_con_pases = select(CodigoQR.usuario_id)
+            usuarios_con_pases = select(CodigoQR.usuario_id).where(CodigoQR.usuario_id != None)
             
             query_del_users = delete(Usuario).where(
                 Usuario.id.in_(user_ids),

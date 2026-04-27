@@ -1,8 +1,15 @@
-# 🛡️ Aegis Tactical: Directiva de Gestión de Pases Masivos (v2.3)
+# 🛡️ Aegis Tactical: Directiva de Gestión de Pases Masivos (v2.4)
 
 Esta directiva establece los estándares técnicos y operativos para la generación, importación y validación de pases masivos en el sistema BAGFM.
 
-## 1. Estructura de Datos (Multi-Vehículo)
+## 1. Almacenamiento y Autenticación (Actualización v2.4)
+Para optimizar el rendimiento y evitar la saturación de la tabla `usuarios`:
+
+- **Exclusividad en `codigos_qr`**: Todos los pases masivos (Simples, Identificados y de Portal) se almacenan **únicamente** en la tabla `codigos_qr`.
+- **Eliminación de Pre-Usuarios**: Se ha eliminado la creación de registros en la tabla `usuarios` para invitados de eventos.
+- **Acceso por Token**: El portal público utiliza el `token` (JWT) contenido en el QR para autenticar al invitado. No se requiere inicio de sesión con cédula/contraseña para invitados temporales.
+
+## 2. Estructura de Datos (Multi-Vehículo)
 El sistema soporta hasta **4 vehículos** por pase masivo. La plantilla Excel (`TEMPLATE_PASES_IDENTIFICADOS.xlsx`) consta de **20 columnas**:
 
 | Columna | Campo | Descripción |
@@ -18,7 +25,7 @@ El sistema soporta hasta **4 vehículos** por pase masivo. La plantilla Excel (`
 - Si se ingresan datos adicionales (marca/modelo) sin placa, el registro del vehículo se omitirá.
 - El sistema procesa lotes de hasta 5,000 registros mediante `PaseService.procesar_json_identificado`.
 
-## 2. Lógica Táctica de Estacionamiento
+## 3. Lógica Táctica de Estacionamiento
 El sistema implementa una validación diferenciada según el `TipoAccesoPase`:
 
 ### Validaciones:
@@ -30,18 +37,12 @@ El sistema implementa una validación diferenciada según el `TipoAccesoPase`:
 > [!IMPORTANT]
 > Si el flag `distribucion_automatica` está activo (bypass de advertencia), el sistema permitirá superar el cupo de la categoría pero NUNCA el cupo total de la entidad.
 
-## 3. Robustez de Interfaz y API (v2.3)
-Para prevenir errores `422 Unprocessable Entity` y fallos de renderizado en React (#31):
+## 4. Robustez de Interfaz y API (v2.4)
+Para prevenir errores `422 Unprocessable Entity` y fallos de renderizado en React:
 
 - **Sanitización de UUIDs**: El backend implementa un `field_validator` global que normaliza automáticamente cualquier cadena vacía `""` a `null`.
-- **Mapeo de Campos**: El backend soporta alias para los campos de relación:
-  - `zona_id` / `zona_asignada_id`
-  - `puesto_id` / `puesto_asignado_id`
-- **Manejo de Errores**: El frontend procesa las listas de errores de validación de Pydantic para mostrar mensajes específicos en lugar de objetos, evitando el desplome de la UI (#31).
-
-## 4. Notas de Implementación (Backend)
-- Se utiliza `lazy="selectin"` en todos los modelos de estacionamiento y pases para evitar errores de `MissingGreenlet`.
-- La serialización de esquemas incluye `zona_nombre` precargado mediante relaciones eager loading.
+- **Mapeo de Campos**: El backend soporta alias para los campos de relación (`zona_id`, `puesto_id`).
+- **Manejo de Errores**: El frontend procesa las listas de errores de validación de Pydantic para mostrar mensajes específicos.
 
 ---
-*BAGFM v2.3 - Estabilización de Operaciones Masivas.*
+*BAGFM v2.4 - Optimización de Base de Datos y Gestión de Invitados.*
