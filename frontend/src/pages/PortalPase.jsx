@@ -348,7 +348,7 @@ const PortalPase = () => {
                                 
                                 <div className="flex justify-between items-center mb-8">
                                     <div className="space-y-1">
-                                        <span className="text-[10px] font-black tracking-[0.3em] uppercase opacity-40 ml-0.5" style={style.dynamicAccent}>Credencial de Acceso</span>
+                                        <span className="text-[10px] font-black tracking-[0.3em] uppercase text-slate-500 ml-0.5">Credencial de Acceso</span>
                                         <h3 className="text-2xl font-black leading-none tracking-tighter">{pase.serial}</h3>
                                     </div>
                                     <div className="p-3 bg-emerald-500/5 rounded-2xl border border-emerald-500/10">
@@ -365,16 +365,16 @@ const PortalPase = () => {
                                             viewBox={`0 0 256 256`}
                                         />
                                     </div>
-                                    <div className="flex items-center gap-2 px-4 py-1.5 bg-slate-50 rounded-full border border-slate-100">
-                                        <QrIcon size={10} className="opacity-40" />
-                                        <p className="text-[9px] text-slate-400 font-black uppercase tracking-[0.15em]">Token JWT Verificado</p>
+                                    <div className="flex items-center gap-2 px-4 py-1.5 bg-slate-50 rounded-full border border-slate-200">
+                                        <QrIcon size={12} className="text-slate-500" />
+                                        <p className="text-[9px] text-slate-500 font-extrabold uppercase tracking-[0.15em]">Token JWT Verificado</p>
                                     </div>
                                 </div>
 
-                                <div className="space-y-3 border-t-2 border-dashed border-slate-100 pt-6">
+                                <div className="space-y-3 border-t-2 border-dashed border-slate-200 pt-6 mt-2">
                                     <div className="flex justify-between items-center text-center">
                                         <div className="w-full">
-                                            <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-1">Titular Autorizado</span>
+                                            <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest block mb-1.5">Titular Autorizado</span>
                                             <p className="text-lg font-black">{pase.nombre || 'INVITADO'}</p>
                                         </div>
                                     </div>
