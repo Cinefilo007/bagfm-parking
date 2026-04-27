@@ -14,7 +14,8 @@ import {
     Shield, MapPin, Users, Tag, CheckCircle2, QrCode, Search,
     Circle, Edit3, ToggleLeft, ToggleRight, Zap, AlertTriangle,
     ChevronDown, ChevronLeft, ChevronRight, LayoutGrid, Settings, Activity,
-    Hash, PackagePlus, Palette, Filter, ZapOff, Calendar, Pencil, User, Eye
+    Hash, PackagePlus, Palette, Filter, ZapOff, Calendar, Pencil, User, Eye,
+    UserSquare2, CreditCard, Ticket, ShieldCheck
 } from 'lucide-react';
 import { zonaService } from '../../services/zona.service';
 
