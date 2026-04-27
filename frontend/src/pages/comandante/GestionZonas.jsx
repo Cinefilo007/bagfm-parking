@@ -200,11 +200,6 @@ const ZonaRow = ({
                     <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2">
                             <h3 className="text-sm font-black text-text-main uppercase tracking-tight truncate">{zona.nombre}</h3>
-                            {zona.es_perimetral && (
-                                <span className="text-[7px] font-black bg-sky-500/15 text-sky-400 px-1.5 py-0.5 rounded-full border border-sky-500/20 uppercase">
-                                    Perim.
-                                </span>
-                            )}
                         </div>
                         <div className="flex items-center gap-3 mt-0.5 opacity-60">
                             <span className="text-[8px] text-text-muted flex items-center gap-1">
@@ -424,14 +419,14 @@ export default function GestionZonas() {
             // Demo fallback
             setZonas([
                 {
-                    id: 'z1', nombre: 'Zona VIP Norte', capacidad_total: 20, tiempo_limite_llegada_min: 15, es_perimetral: false, latitud: '10.1234', longitud: '-66.9876', puestos: [
+                    id: 'z1', nombre: 'Zona VIP Norte', capacidad_total: 20, tiempo_limite_llegada_min: 15, latitud: '10.1234', longitud: '-66.9876', puestos: [
                         { id: 'p1', codigo: 'A-01', estado: 'libre' },
                         { id: 'p2', codigo: 'A-02', estado: 'ocupado' },
                         { id: 'p3', codigo: 'A-03', estado: 'libre' },
                     ]
                 },
-                { id: 'z2', nombre: 'Parqueo Logístico', capacidad_total: 50, tiempo_limite_llegada_min: 25, es_perimetral: true, puestos: [] },
-                { id: 'z3', nombre: 'Zona Staff', capacidad_total: 30, tiempo_limite_llegada_min: 15, es_perimetral: false, puestos: [] },
+                { id: 'z2', nombre: 'Parqueo Logístico', capacidad_total: 50, tiempo_limite_llegada_min: 25, puestos: [] },
+                { id: 'z3', nombre: 'Zona Staff', capacidad_total: 30, tiempo_limite_llegada_min: 15, puestos: [] },
             ]);
             setEntidades([
                 { id: 'e1', nombre: 'CÍRCULO MILITAR VEN' },
@@ -453,9 +448,11 @@ export default function GestionZonas() {
     const abrirModalZona = (zona = null) => {
         setEditandoZona(zona);
         setFormZona(zona ? {
-            nombre: zona.nombre, descripcion_ubicacion: zona.descripcion_ubicacion || '',
-            capacidad_total: zona.capacidad_total || '', es_perimetral: zona.es_perimetral,
-            latitud: zona.latitud || '', longitud: zona.longitud || '',
+            nombre: zona.nombre || '', 
+            descripcion_ubicacion: zona.descripcion_ubicacion || '',
+            capacidad_total: zona.capacidad_total || '',
+            latitud: zona.latitud || '', 
+            longitud: zona.longitud || '',
             tiempo_limite_llegada_min: zona.tiempo_limite_llegada_min || 15,
         } : FORM_ZONA_INICIAL);
         setModalZona(true);
@@ -465,12 +462,17 @@ export default function GestionZonas() {
         if (!formZona.nombre.trim()) { toast.error('Nombre requerido'); return; }
         setGuardando(true);
         try {
+            const latStr = formZona.latitud?.toString().trim();
+            const lonStr = formZona.longitud?.toString().trim();
+            const descStr = formZona.descripcion_ubicacion?.trim();
+
             const datos = {
-                ...formZona,
-                capacidad_total: formZona.capacidad_total ? parseInt(formZona.capacidad_total) : 0,
-                latitud: formZona.latitud ? parseFloat(formZona.latitud) : null,
-                longitud: formZona.longitud ? parseFloat(formZona.longitud) : null,
-                tiempo_limite_llegada_min: parseInt(formZona.tiempo_limite_llegada_min),
+                nombre: formZona.nombre.trim(),
+                capacidad_total: formZona.capacidad_total ? parseInt(formZona.capacidad_total, 10) : 0,
+                descripcion_ubicacion: descStr || null,
+                latitud: (latStr && !isNaN(parseFloat(latStr))) ? parseFloat(latStr) : null,
+                longitud: (lonStr && !isNaN(parseFloat(lonStr))) ? parseFloat(lonStr) : null,
+                tiempo_limite_llegada_min: parseInt(formZona.tiempo_limite_llegada_min, 10) || 15,
             };
             if (editandoZona) {
                 await zonaService.actualizarZona(editandoZona.id, datos);
@@ -482,7 +484,17 @@ export default function GestionZonas() {
             setModalZona(false);
             cargarDatos();
         } catch (e) {
-            toast.error(e.response?.data?.detail || 'Error al guardar zona');
+            console.error("Error al guardar zona:", e.response?.data);
+            const detail = e.response?.data?.detail;
+            
+            if (Array.isArray(detail)) {
+                const mensaje = detail.map(d => `${d.loc?.[d.loc.length - 1] || 'Campo'}: ${d.msg}`).join(', ');
+                toast.error(`Error de validación: ${mensaje}`);
+            } else if (typeof detail === 'object' && detail !== null) {
+                toast.error(`Error de validación: Revisar la consola para más detalles.`);
+            } else {
+                toast.error(detail || 'Error al guardar zona');
+            }
         } finally {
             setGuardando(false);
         }

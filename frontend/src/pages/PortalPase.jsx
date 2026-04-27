@@ -12,8 +12,12 @@ import {
   Loader2,
   AlertTriangle,
   Download,
-  Info
+  Info,
+  QrCode as QrIcon
 } from 'lucide-react';
+import QRCode from 'react-qr-code';
+import { toPng } from 'html-to-image';
+import { useRef } from 'react';
 
 const PortalPase = () => {
     const { token } = useParams();
@@ -23,6 +27,7 @@ const PortalPase = () => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [saving, setSaving] = useState(false);
+    const qrRef = useRef(null);
     const [form, setForm] = useState({
         nombre: '',
         cedula: '',
@@ -74,6 +79,27 @@ const PortalPase = () => {
             alert(err.response?.data?.detail || 'Fallo en la sincronización de datos');
         } finally {
             setSaving(false);
+        }
+    };
+
+    const handleDownloadImage = async () => {
+        if (!qrRef.current) return;
+        
+        try {
+            const dataUrl = await toPng(qrRef.current, {
+                backgroundColor: '#ffffff',
+                cacheBust: true,
+                style: {
+                    borderRadius: '0px'
+                }
+            });
+            const link = document.createElement('a');
+            link.download = `PASE_BAGFM_${pase.serial}.png`;
+            link.href = dataUrl;
+            link.click();
+        } catch (err) {
+            console.error('Error al generar la imagen:', err);
+            alert('No se pudo generar la imagen del QR');
         }
     };
 
@@ -279,81 +305,87 @@ const PortalPase = () => {
                 ) : (
                     <div className="animate-in zoom-in-95 duration-500 space-y-6">
                             {/* Card de Pase Digital Dinámico */}
-                            <div className={cn(
-                                "bg-white p-8 text-[#0a0a0b] shadow-2xl relative overflow-hidden transition-all",
-                                visual.layout === 'qr' && "rounded-[2.5rem]",
-                                visual.layout === 'colgante' && "rounded-b-[2.5rem] border-t-[14px]",
-                                visual.layout === 'credencial' && "rounded-2xl border-l-[12px]",
-                                visual.layout === 'parabrisas' && "rounded-[3rem] border-b-[20px] border-double",
-                                visual.layout === 'cartera' && "rounded-[3rem] border-x-[8px]",
-                                visual.layout === 'ticket' && "rounded-xl border-t-[6px] border-dashed",
-                            )} style={visual.layout !== 'qr' ? style.dynamicBorder : {}}>
-                                
-                                {visual.layout === 'parabrisas' && (
-                                    <div className="absolute top-6 right-6 opacity-[0.03]">
-                                        <Car size={100} />
-                                    </div>
+                            {/* Card de Pase Digital Dinámico */}
+                            <div 
+                                id="carnet-digital"
+                                ref={qrRef}
+                                className={cn(
+                                    "bg-white p-8 text-[#0a0a0b] shadow-2xl relative overflow-hidden transition-all",
+                                    "rounded-[2.5rem]"
                                 )}
-                                
-                                {visual.layout === 'ticket' && (
-                                    <div className="absolute -top-1.5 left-0 w-full flex justify-around opacity-10">
-                                        {[...Array(12)].map((_,i) => <div key={i} className="w-2.5 h-2.5 rounded-full bg-black -mt-1" />)}
-                                    </div>
-                                )}
-
+                            >
                                 {/* Decoración Táctica de Fondo */}
                                 <div className="absolute top-0 right-0 w-40 h-40 blur-[80px] opacity-10 pointer-events-none" style={style.dynamicBg} />
                                 
-                                <div className="flex justify-between items-start mb-10">
+                                <div className="flex justify-between items-center mb-8">
                                     <div className="space-y-1">
-                                        <span className="text-[10px] font-black tracking-[0.3em] uppercase opacity-40 ml-0.5" style={style.dynamicAccent}>Access Voucher</span>
-                                        <h3 className="text-3xl font-black leading-none tracking-tighter">{pase.serial}</h3>
+                                        <span className="text-[10px] font-black tracking-[0.3em] uppercase opacity-40 ml-0.5" style={style.dynamicAccent}>Credencial de Acceso</span>
+                                        <h3 className="text-2xl font-black leading-none tracking-tighter">{pase.serial}</h3>
                                     </div>
                                     <div className="p-3 bg-emerald-500/5 rounded-2xl border border-emerald-500/10">
                                         <CheckCircle2 className="w-6 h-6 text-emerald-500" />
                                     </div>
                                 </div>
 
-                                <div className="flex flex-col items-center mb-10">
-                                    <div className="p-5 bg-white border-2 border-slate-100 rounded-[2.5rem] mb-5 shadow-inner">
-                                        <QrCode value={token} size={220} className="w-52 h-52" />
+                                <div className="flex flex-col items-center mb-6">
+                                    <div className="p-6 bg-white border-2 border-slate-100 rounded-[2.5rem] mb-4 shadow-inner">
+                                        <QRCode 
+                                            value={token} 
+                                            size={256} 
+                                            style={{ height: "auto", maxWidth: "100%", width: "100%" }}
+                                            viewBox={`0 0 256 256`}
+                                        />
                                     </div>
                                     <div className="flex items-center gap-2 px-4 py-1.5 bg-slate-50 rounded-full border border-slate-100">
-                                        <QrCode size={10} className="opacity-40" />
-                                        <p className="text-[9px] text-slate-400 font-black uppercase tracking-[0.15em]">Control Táctico v2.4.1</p>
+                                        <QrIcon size={10} className="opacity-40" />
+                                        <p className="text-[9px] text-slate-400 font-black uppercase tracking-[0.15em]">Token JWT Verificado</p>
                                     </div>
                                 </div>
 
-                                <div className="space-y-6 border-t-2 border-dashed border-slate-100 pt-8">
-                                    <div className="grid grid-cols-2 gap-6">
-                                        <div className="space-y-0.5">
-                                            <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Titular Autorizado</span>
-                                            <p className="text-sm font-black truncate">{pase.nombre || 'INVITADO DE HONOR'}</p>
-                                        </div>
-                                        <div className="text-right space-y-0.5">
-                                            <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Documento ID</span>
-                                            <p className="text-sm font-black truncate">{pase.cedula || 'NO REGISTRADO'}</p>
+                                <div className="space-y-3 border-t-2 border-dashed border-slate-100 pt-6">
+                                    <div className="flex justify-between items-center text-center">
+                                        <div className="w-full">
+                                            <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-1">Titular Autorizado</span>
+                                            <p className="text-lg font-black">{pase.nombre || 'INVITADO'}</p>
                                         </div>
                                     </div>
                                     
-                                    <div className="grid grid-cols-2 gap-6">
-                                        <div className="space-y-0.5">
-                                            <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Vehículo / Placa</span>
-                                            <div className="flex flex-col">
-                                                <p className="text-sm font-black">{pase.vehiculo?.placa || 'PEATONAL'}</p>
-                                                {pase.vehiculo?.marca && (
-                                                    <p className="text-[8px] font-black text-slate-400 uppercase tracking-tighter mt-0.5">
-                                                        {pase.vehiculo.marca} {pase.vehiculo.modelo} · {pase.vehiculo.color}
-                                                    </p>
-                                                )}
-                                            </div>
+                                    <div className="flex justify-center gap-8 py-2">
+                                        <div className="text-center">
+                                            <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest block">Acceso</span>
+                                            <p className="text-xs font-black uppercase tracking-tighter" style={style.dynamicAccent}>
+                                                {pase.visual?.color_preset || 'GENERAL'}
+                                            </p>
                                         </div>
-                                        <div className="text-right space-y-0.5">
-                                            <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Validez Hasta</span>
-                                            <p className="text-sm font-black text-rose-600">{new Date(lote.fecha_fin).toLocaleDateString()}</p>
+                                        <div className="text-center">
+                                            <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest block">Válido para</span>
+                                            <p className="text-xs font-black uppercase tracking-tighter">
+                                                {pase.vehiculo?.placa || 'PEATONAL'}
+                                            </p>
                                         </div>
                                     </div>
                                 </div>
+
+                                {/* Footer de la Imagen */}
+                                <div className="mt-4 pt-4 border-t border-slate-50 flex justify-between items-center opacity-30">
+                                    <span className="text-[7px] font-black uppercase tracking-widest">BAGFM SECURITY v2.4</span>
+                                    <span className="text-[7px] font-black uppercase tracking-widest">{new Date().toLocaleDateString()}</span>
+                                </div>
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-4">
+                                <button 
+                                    onClick={handleDownloadImage}
+                                    className="w-full py-4 bg-white/5 border border-white/10 hover:bg-white/20 text-white rounded-2xl font-bold uppercase tracking-widest text-xs transition-all flex items-center justify-center gap-3 shadow-tactica"
+                                >
+                                    <Download className="w-4 h-4" /> Imagen PNG
+                                </button>
+                                <button 
+                                    onClick={() => window.print()}
+                                    className="w-full py-4 bg-white/5 border border-white/10 hover:bg-white/10 text-white rounded-2xl font-bold uppercase tracking-widest text-xs transition-all flex items-center justify-center gap-3 opacity-60"
+                                >
+                                    <CheckCircle2 className="w-4 h-4" /> Versión PDF
+                                </button>
                             </div>
 
                             <div className="bg-white/5 border border-white/5 rounded-2xl p-4 flex items-center gap-4">
@@ -361,16 +393,9 @@ const PortalPase = () => {
                                     <Info className={`w-4 h-4 ${style.accent}`} />
                                 </div>
                                 <p className="text-[10px] leading-relaxed text-gray-400 uppercase font-medium">
-                                    Este pase {visual.layout !== 'qr' ? 'personalizado' : ''} es intransferible. Debe presentarlo digitalmente o impreso en la Alcabala de Acceso.
+                                    Presente este código en la alcabala de acceso. Se recomienda descargar la imagen para acceso sin conexión.
                                 </p>
                             </div>
-                            
-                            <button 
-                                onClick={() => window.print()}
-                                className="w-full py-4 bg-white/5 border border-white/10 hover:bg-white/10 text-white rounded-xl font-bold uppercase tracking-widest text-xs transition-all flex items-center justify-center gap-3"
-                            >
-                                <Download className="w-4 h-4" /> Descargar Versión PDF
-                            </button>
                         </div>
                     )}
             </main>
