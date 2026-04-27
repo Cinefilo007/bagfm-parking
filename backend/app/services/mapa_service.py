@@ -144,14 +144,15 @@ async def get_situacion_actual(db: AsyncSession):
         func.cast(Acceso.timestamp, Date) == hoy,
         Acceso.tipo == "entrada"
     )
-    query_salidas = select(func.count(Acceso.id)).filter(
-        func.cast(Acceso.timestamp, Date) == hoy,
-        Acceso.tipo == "salida"
-    )
-    
     total_entradas = (await db.execute(query_entradas)).scalar() or 0
-    total_salidas = (await db.execute(query_salidas)).scalar() or 0
     
+    # Nuevo cálculo de Vehículos Dentro basado en Pases Activos (Parqueros)
+    # Esto elimina el error de conteo cuando un vehículo entra en un día y asume ocupación 
+    # constante sin límite de hoy vs ayer.
+    from app.models.vehiculo_pase import VehiculoPase
+    query_vp_activos = select(func.count(VehiculoPase.id)).filter(VehiculoPase.ingresado == True)
+    vehiculos_dentro = (await db.execute(query_vp_activos)).scalar() or 0
+
     # 6. Bloqueados reales (Socios con activo=False)
     query_bloqueados = select(func.count(Usuario.id)).filter(
         Usuario.activo == False,
@@ -166,7 +167,7 @@ async def get_situacion_actual(db: AsyncSession):
         "entidades": entidades_data,
         "alcabalas": alcabalas_data,
         "zonas_estacionamiento": zonas_data,
-        "vehiculos_dentro": max(0, total_entradas - total_salidas),
+        "vehiculos_dentro": vehiculos_dentro,
         "total_accesos_hoy": total_entradas,
         "alertas_activas": alertas_activas,
         "bloqueados_total": bloqueados_reales,

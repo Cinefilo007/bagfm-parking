@@ -776,9 +776,11 @@ export default function EstacionamientosEntidad() {
             ? resumenDisponibilidad.reduce((acc, z) => acc + z.pases_vigentes, 0)
             : asignaciones.reduce((acc, asig) =>
                 acc + Object.values(asig.distribucion_cupos || {}).reduce((sum, val) => sum + val, 0), 0),
-        ocupados: puestos.filter(p => p.estado === 'ocupado').length,
+        ocupados: resumenDisponibilidad.length > 0
+            ? resumenDisponibilidad.reduce((acc, z) => acc + (z.pases_ingresados || 0), 0)
+            : puestos.filter(p => p.estado === 'ocupado').length,
     };
-    stats.libres = Math.max(0, stats.total - (stats.reservados + stats.ocupados));
+    stats.libres = Math.max(0, stats.total - stats.reservados);
 
     // Formateador de fecha para mostrar al usuario
     const fechaLegible = (() => {
@@ -991,16 +993,17 @@ export default function EstacionamientosEntidad() {
                                             </div>
                                             <div className="px-14 pb-3 pr-4 pointer-events-none">
                                                 <div className="flex items-center gap-2 mb-1">
-                                                    {pasesVigentes > 0 && (
+                                                    {(pasesVigentes > 0 || (resumZona?.pases_ingresados > 0)) && (
                                                         <p className="text-[9px] text-text-main font-black dark:text-text-muted/60 dark:font-bold">
-                                                            {pasesVigentes} PASES VIGENTES · {cupoLibre} LIBRES
+                                                            {pasesVigentes} RESERVADOS · {resumZona?.pases_ingresados || 0} OCUPADOS · {cupoLibre} LIBRES
                                                         </p>
                                                     )}
                                                 </div>
                                                 <div className="h-1.5 w-full bg-black/40 rounded-full overflow-hidden flex border border-white/5 shadow-inner">
                                                     {asig.cupo_reservado_base > 0 && <div style={{ width: `${(asig.cupo_reservado_base / (asig.cupo_asignado + asig.cupo_reservado_base)) * 100}%` }} className="bg-danger/80 border-r border-black/50" title={`Reserva Base (${asig.cupo_reservado_base})`} />}
-                                                    {pasesVigentes > 0 && <div style={{ width: `${porcentajeOcupado}%` }} className="bg-warning/70" title={`Pases vigentes (${pasesVigentes})`} />}
-                                                    {utilizable > 0 && <div style={{ width: `${(cupoLibre / (asig.cupo_asignado + asig.cupo_reservado_base)) * 100}%` }} className="bg-primary/80" title={`Libres (${cupoLibre})`} />}
+                                                    {resumZona?.pases_ingresados > 0 && <div style={{ width: `${((resumZona.pases_ingresados) / asig.cupo_asignado) * 100}%` }} className="bg-danger/70" title={`Ocupados (${resumZona.pases_ingresados})`} />}
+                                                    {(pasesVigentes - (resumZona?.pases_ingresados || 0)) > 0 && <div style={{ width: `${((pasesVigentes - (resumZona?.pases_ingresados || 0)) / asig.cupo_asignado) * 100}%` }} className="bg-warning/70" title={`Pendientes (${pasesVigentes - (resumZona?.pases_ingresados || 0)})`} />}
+                                                    {utilizable > 0 && <div style={{ width: `${(cupoLibre / asig.cupo_asignado) * 100}%` }} className="bg-primary/80" title={`Libres (${cupoLibre})`} />}
                                                 </div>
                                             </div>
                                         </div>

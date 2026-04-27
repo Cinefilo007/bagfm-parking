@@ -241,6 +241,28 @@ class PaseService:
             "completo": restante == 0
         }
 
+    async def contar_ocupados_en_zona_por_entidad(self, db: AsyncSession, zona_id: uuid.UUID, entidad_id: uuid.UUID) -> int:
+        """
+        Cuenta los VehiculoPase (autos físicamente estacionados / ingresados) 
+        en la zona que pertenecen a esta entidad (a través de lotes de pases).
+        """
+        from sqlalchemy import and_
+        from app.models.vehiculo_pase import VehiculoPase
+        
+        query = (
+            select(func.count(VehiculoPase.id))
+            .join(CodigoQR, VehiculoPase.qr_id == CodigoQR.id)
+            .join(LotePaseMasivo, CodigoQR.lote_id == LotePaseMasivo.id)
+            .where(
+                and_(
+                    VehiculoPase.zona_asignada_id == zona_id,
+                    VehiculoPase.ingresado == True,
+                    LotePaseMasivo.entidad_id == entidad_id
+                )
+            )
+        )
+        return int((await db.execute(query)).scalar() or 0)
+
     async def contar_pases_activos_en_zona_para_fecha(
         self, db: AsyncSession, zona_id: uuid.UUID, fecha: date, limite: int = 20, offset: int = 0, busqueda: str = None
     ) -> dict:

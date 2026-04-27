@@ -155,13 +155,14 @@ class CronService:
 
     async def procesar_salidas_masivas(self, db: AsyncSession) -> int:
         """
-        SOP: Expulsión Masiva Programada (Aegis v2.3).
+        SOP: Expulsión Masiva Programada (Aegis v2.3/v2.4).
         Cierra todos los ciclos de acceso abiertos a la hora configurada.
+        También resetea la ocupación de parqueros y libera puestos físicos asignados.
         """
         from app.services.configuracion_service import configuracion_service
         from app.models.acceso import Acceso
+        from app.models.vehiculo_pase import VehiculoPase
         from app.models.enums import AccesoTipo
-        from sqlalchemy import func
         
         config = await configuracion_service.get_config_salidas(db)
         mass_time = config.get("mass_time")
@@ -170,30 +171,100 @@ class CronService:
             return 0
             
         ahora = datetime.now(timezone.utc)
-        # Nota: El cron puede correr con desfase, comparamos HH:MM
-        header_time = ahora.strftime("%H:%M")
-        if header_time != mass_time:
-            return 0
+        
+        # Validación de rango de tiempo para evitar problemas de desfase de segundos/minutos.
+        # mass_time está en HH:MM (Local, pero típicamente manejado aquí de forma simple, 
+        # asumimos que la configuración es contra la hora local manejada por el server)
+        # Es mejor usar timedelta para dar una ventana de 5 a 10 mins.
+        try:
+            mass_h, mass_m = map(int, mass_time.split(':'))
+            # Extraer hora de ahora (basado en UTC - 4 horas como suele ser en Venezuela, pero
+            # por seguridad asumimos que "ahora" aquí coincide en zona horaria con quien configuró el HH:MM)
+            # Para ser sólidos, asumiendo que el cron ejecuta en un timezone local, pero "ahora" usa utc:
+            # Dado que el servidor podría no compartir el TZ, la forma más robusta es revisar la ventana.
+            # Alternativa: el frontend lo envia como UTC o Local? Vamos a seguir la lógica anterior
+            # pero expandiendo la ventana (5 minutos).
+            import pytz
+            caracas_tz = pytz.timezone('America/Caracas')
+            ahora_local = ahora.astimezone(caracas_tz)
+            
+            # Formatear el header time para el timestamp actual
+            header_time = ahora_local.strftime("%H:%M")
+            
+            # Vamos a calcular los minutos del día para ambas variables y ver el delta.
+            minutos_actuales = ahora_local.hour * 60 + ahora_local.minute
+            minutos_configurados = mass_h * 60 + mass_m
+            
+            # Ventana de 10 minutos
+            if not (-1 <= (minutos_actuales - minutos_configurados) <= 10):
+                return 0
 
-        # Subquery para obtener el ID del último acceso por vehiculo_placa
+        except Exception as e:
+            # Fallback a match exacto en la misma hora (lógica antigua revisada)
+            header_time = ahora_local.strftime("%H:%M")
+            if header_time != mass_time:
+                return 0
+
+        # Para no ejectuarlo multiples veces, guardaremos la última vez que corrió exitosamente
+        # o confiaremos en que el scheduler correrá solo 1 o 2 veces dentro de esta ventana y encontrará 0 para operar.
+
+        contador_expulsiones = 0
+
+        # ----- FASE 1: Limpiar los Parqueros (VehiculoPase activos) -----
+        stmt_vp = select(VehiculoPase).where(VehiculoPase.ingresado == True)
+        res_vp = await db.execute(stmt_vp)
+        vehiculos_activos = res_vp.scalars().all()
+        
+        # Procesar salidas de zonas del parquero
+        for vp in vehiculos_activos:
+            vp.ingresado = False
+            vp.hora_salida = ahora
+            
+            # Restar ocupación de la ZonaEstacionamiento responsable
+            if vp.zona_asignada_id:
+                res_zona = await db.get(ZonaEstacionamiento, vp.zona_asignada_id)
+                if res_zona:
+                    res_zona.ocupacion_actual = max(0, (res_zona.ocupacion_actual or 0) - 1)
+            
+            # Liberar el puesto físico si estaba asignado
+            if vp.puesto_asignado_id:
+                res_p = await db.get(PuestoEstacionamiento, vp.puesto_asignado_id)
+                if res_p:
+                    res_p.estado = EstadoPuesto.libre
+                    res_p.qr_actual_id = None
+                    res_p.vehiculo_actual_id = None
+                    res_p.ocupado_desde = None
+
+            # Si el Vehículo ingresó pero nunca reportó entrada general por Alcabala,
+            # podríamos generar una 'SALIDA (MASIVA)' genérica, pero mantendremos
+            # la Fase 2 para las Alcabalas.
+
+        # ----- FASE 2: Cerrar Entradas Biométricas Activas (Acceso) -----
+        # Subquery para obtener el último acceso de cada vehículo (por placa o por ID de Pase/QR)
+        from sqlalchemy import func
         subq = select(
             Acceso.vehiculo_placa,
             func.max(Acceso.timestamp).label("max_ts")
         ).group_by(Acceso.vehiculo_placa).subquery()
         
-        stmt = select(Acceso).join(
+        stmt_ac = select(Acceso).join(
             subq,
             and_(
                 Acceso.vehiculo_placa == subq.c.vehiculo_placa,
                 Acceso.timestamp == subq.c.max_ts
             )
-        ).where(Acceso.tipo == AccesoTipo.entrada)
+        ).where(
+            and_(
+                Acceso.tipo == AccesoTipo.entrada,
+                Acceso.vehiculo_placa != None,
+                Acceso.vehiculo_placa != ""
+            )
+        )
         
-        res = await db.execute(stmt)
-        activos = res.scalars().all()
+        res_ac = await db.execute(stmt_ac)
+        accesos_abiertos = res_ac.scalars().all()
         
-        contador = 0
-        for acc in activos:
+        for acc in accesos_abiertos:
             nueva_salida = Acceso(
                 qr_id = acc.qr_id,
                 usuario_id = acc.usuario_id,
@@ -204,20 +275,21 @@ class CronService:
                 registrado_por = acc.registrado_por, 
                 es_manual = True,
                 vehiculo_placa = acc.vehiculo_placa,
-                observaciones = f"Expulsión masiva programada ({mass_time})"
+                observaciones = f"Expulsión automática base limpia ({mass_time})"
             )
             db.add(nueva_salida)
-            contador += 1
+            contador_expulsiones += 1
             
-        if contador > 0:
+        if len(vehiculos_activos) > 0 or contador_expulsiones > 0:
+            total_expulsados = max(len(vehiculos_activos), contador_expulsiones)
             await db.commit()
             await notify_manager.broadcast({
                 "evento": "SISTEMA_SALIDA_MASIVA",
-                "mensaje": f"Se procesaron {contador} salidas automáticas por horario programado.",
-                "cantidad": contador,
+                "mensaje": f"Se procesaron {total_expulsados} desalojos automáticos (Base limpia: {mass_time}).",
+                "cantidad": total_expulsados,
                 "gravedad": "MODERADA"
             }, roles=["COMANDANTE", "ADMIN_BASE"])
             
-        return contador
+        return max(len(vehiculos_activos), contador_expulsiones)
 
 cron_service = CronService()

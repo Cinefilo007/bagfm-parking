@@ -283,6 +283,11 @@ async def resumen_disponibilidad_entidad(
         datos_zona = await pase_service.contar_pases_activos_en_zona_para_fecha(
             db, asig.zona_id, fecha_dt, limite=10
         )
+        
+        # Conocer cuántos están realmente ocupando un espacio físico en esta zona
+        ocupados_actual = await pase_service.contar_ocupados_en_zona_por_entidad(
+            db, asig.zona_id, current_user.entidad_id
+        )
 
         # Consultar parqueros asignados a esta zona
         from app.models.enums import RolTipo
@@ -304,6 +309,7 @@ async def resumen_disponibilidad_entidad(
             "cupo_reservado_base": asig.cupo_reservado_base,
             "distribucion_cupos": asig.distribucion_cupos,
             "pases_vigentes": datos_zona["total"],
+            "pases_ingresados": ocupados_actual,
             "cupo_libre": cupo_libre,
             "pases_muestra": datos_zona["pases"],
             "asignacion_id": str(asig.id),
