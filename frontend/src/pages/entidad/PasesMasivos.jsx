@@ -395,57 +395,60 @@ const ModalVerQR = ({ pase, lote, isOpen, onClose }) => {
 
 const PaseRow = ({ pase, zonas, onCompartir, onEmail, onEditar, onVerQR }) => {
     return (
-        <div className="flex items-center gap-3 p-3 bg-white/3 rounded-xl border border-white/5 hover:bg-white/5 transition-all group">
-            {/* Ícono QR — clicable para ver el QR */}
-            <button
-                onClick={() => onVerQR(pase)}
-                className="w-8 h-8 bg-primary/10 hover:bg-primary/25 rounded-lg flex items-center justify-center border border-primary/15 hover:border-primary/40 shrink-0 transition-all"
-                title="Ver código QR"
-            >
-                <QrCode size={15} className="text-primary" />
-            </button>
-            <div className="flex-1 min-w-0 flex items-center gap-3">
-                {/* Info Principal: Portador y Serial */}
-                <div className="flex items-center gap-2 min-w-0">
-                    <span className="text-[10px] font-mono text-text-muted/60 tracking-tighter bg-white/5 px-1.5 py-0.5 rounded border border-white/5 shrink-0">
-                        {pase.serial_legible}
-                    </span>
-                    {pase.nombre_portador ? (
-                        <p className="text-[10px] font-black text-text-main uppercase truncate max-w-[120px]">{pase.nombre_portador}</p>
-                    ) : (
-                        <p className="text-[9px] text-text-muted/50 italic shrink-0">Sin asignar</p>
-                    )}
-                </div>
-
-                {/* Placa y Zona (Visible si hay espacio) */}
-                <div className="hidden sm:flex items-center gap-2 min-w-0 overflow-hidden">
-                    {pase.vehiculo_placa && (
-                        <div className="flex items-center gap-1 px-2 py-0.5 bg-white/5 rounded-lg border border-white/5 text-[8px] font-black text-primary shrink-0">
-                            <Car size={9} /> {pase.vehiculo_placa}
-                        </div>
-                    )}
-                    
-                    {(pase.puesto_asignado_codigo || pase.zona_asignada_nombre) && (
-                        <span className="text-[8px] font-bold text-success/80 flex items-center gap-1 bg-success/5 px-2 py-0.5 rounded-lg border border-success/10 truncate">
-                            <ParkingSquare size={9} /> 
-                            {pase.puesto_asignado_codigo ? `PUESTO ${pase.puesto_asignado_codigo}` : (pase.zona_asignada_nombre || 'ZONA')}
+        <div className="flex flex-col sm:flex-row sm:items-center gap-3 p-3 bg-white/3 rounded-xl border border-white/5 hover:bg-white/5 transition-all group overflow-hidden">
+            {/* Contenedor Superior/Izquierdo (QR + Info) */}
+            <div className="flex items-start sm:items-center gap-3 flex-1 min-w-0">
+                {/* Ícono QR — clicable para ver el QR */}
+                <button
+                    onClick={() => onVerQR(pase)}
+                    className="w-8 h-8 mt-1 sm:mt-0 bg-primary/10 hover:bg-primary/25 rounded-lg flex items-center justify-center border border-primary/15 hover:border-primary/40 shrink-0 transition-all"
+                    title="Ver código QR"
+                >
+                    <QrCode size={15} className="text-primary" />
+                </button>
+                
+                {/* Info Principal y Metadatos */}
+                <div className="flex-1 min-w-0 flex flex-col md:flex-row md:items-center justify-between gap-2 md:gap-4">
+                    {/* Bloque Identidad */}
+                    <div className="flex flex-wrap items-center gap-2 min-w-0 shrink-0">
+                        <span className="text-[10px] font-mono text-text-muted/60 tracking-tighter bg-white/5 px-1.5 py-0.5 rounded border border-white/5 shrink-0">
+                            {pase.serial_legible}
                         </span>
-                    )}
-                </div>
+                        {pase.nombre_portador ? (
+                            <p className="text-[10px] font-black text-text-main uppercase truncate max-w-[200px]">{pase.nombre_portador}</p>
+                        ) : (
+                            <p className="text-[9px] text-text-muted/50 italic shrink-0">Sin asignar</p>
+                        )}
+                    </div>
 
-                {/* Status (Empujado al final) */}
-                <div className="ml-auto flex items-center gap-2 shrink-0">
-                    <span className={cn(
-                        "text-[7px] font-black uppercase px-2 py-0.5 rounded-full",
-                        pase.activo ? 'bg-success/15 text-success' : 'bg-text-muted/10 text-text-muted/50'
-                    )}>
-                        {pase.activo ? 'ACTIVO' : 'INACTIVO'}
-                    </span>
+                    {/* Bloque Extra Info (Placa, Zona, Estado) */}
+                    <div className="flex flex-wrap items-center gap-2 min-w-0">
+                        {pase.vehiculo_placa && (
+                            <div className="flex items-center gap-1 px-2 py-0.5 bg-white/5 rounded-lg border border-white/5 text-[8px] font-black text-primary shrink-0">
+                                <Car size={9} /> {pase.vehiculo_placa}
+                            </div>
+                        )}
+                        
+                        {(pase.puesto_asignado_codigo || pase.zona_asignada_nombre) && (
+                            <span className="text-[8px] font-bold text-success/80 flex items-center gap-1 bg-success/5 px-2 py-0.5 rounded-lg border border-success/10 shrink-0">
+                                <ParkingSquare size={9} /> 
+                                {pase.puesto_asignado_codigo ? `PUESTO ${pase.puesto_asignado_codigo}` : (pase.zona_asignada_nombre || 'ZONA')}
+                            </span>
+                        )}
+
+                        <span className={cn(
+                            "text-[7px] font-black uppercase px-2 py-0.5 rounded-full shrink-0 ml-auto md:ml-0",
+                            pase.activo ? 'bg-success/15 text-success' : 'bg-text-muted/10 text-text-muted/50'
+                        )}>
+                            {pase.activo ? 'ACTIVO' : 'INACTIVO'}
+                        </span>
+                    </div>
                 </div>
             </div>
-            <div className="flex items-center gap-1 shrink-0 opacity-40 group-hover:opacity-100 transition-opacity">
-                <button onClick={() => onEditar(pase)}
-                    className="p-2 rounded-lg hover:bg-white/10 text-text-muted hover:text-text-main transition-all" title="Editar Pase">
+
+            {/* Acciones */}
+            <div className="flex items-center justify-end gap-1 shrink-0 opacity-100 sm:opacity-40 group-hover:opacity-100 transition-opacity border-t sm:border-t-0 border-white/5 pt-2 sm:pt-0 mt-1 sm:mt-0 w-full sm:w-auto">
+                <button onClick={() => onEditar(pase)} className="p-2 rounded-lg hover:bg-white/10 text-text-muted hover:text-text-main transition-all" title="Editar Pase">
                     <Edit3 size={13} />
                 </button>
                 <button 
@@ -457,12 +460,10 @@ const PaseRow = ({ pase, zonas, onCompartir, onEmail, onEditar, onVerQR }) => {
                     className="p-2 rounded-lg hover:bg-primary/10 text-text-muted hover:text-primary transition-all" title="Copiar Link de Acceso">
                     <Copy size={13} />
                 </button>
-                <button onClick={() => onCompartir(pase)}
-                    className="p-2 rounded-lg hover:bg-[#25D366]/10 text-text-muted hover:text-[#25D366] transition-all" title="Compartir por WhatsApp">
+                <button onClick={() => onCompartir(pase)} className="p-2 rounded-lg hover:bg-[#25D366]/10 text-text-muted hover:text-[#25D366] transition-all" title="Compartir por WhatsApp">
                     <MessageCircle size={13} />
                 </button>
-                <button onClick={() => onEmail(pase)}
-                    className="p-2 rounded-lg hover:bg-sky-500/10 text-text-muted hover:text-sky-400 transition-all" title="Enviar Email">
+                <button onClick={() => onEmail(pase)} className="p-2 rounded-lg hover:bg-sky-500/10 text-text-muted hover:text-sky-400 transition-all" title="Enviar Email">
                     <Mail size={13} />
                 </button>
             </div>
@@ -812,7 +813,7 @@ const ModalListaPases = ({ isOpen, onClose, lote, zonas }) => {
                         </div>
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-[60vh] overflow-y-auto pr-2 scrollbar-thin">
+                    <div className="grid grid-cols-1 gap-3 max-h-[60vh] overflow-y-auto pr-2 scrollbar-thin">
                         {loading ? (
                             Array(5).fill(0).map((_, i) => (
                                 <div key={i} className="h-16 w-full animate-pulse bg-white/5 rounded-xl border border-white/5" />
