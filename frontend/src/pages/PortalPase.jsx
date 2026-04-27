@@ -15,7 +15,7 @@ import {
   Info,
   QrCode as QrIcon
 } from 'lucide-react';
-import QRCode from 'react-qr-code';
+import { QRCode } from 'react-qr-code';
 import { toPng } from 'html-to-image';
 import { useRef } from 'react';
 
