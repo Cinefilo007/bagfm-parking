@@ -89,6 +89,7 @@ const PortalPase = () => {
             const dataUrl = await toPng(qrRef.current, {
                 backgroundColor: '#ffffff',
                 cacheBust: true,
+                pixelRatio: 4, // Garantiza resoluciones superiores a 800x800
                 style: {
                     borderRadius: '0px'
                 }
@@ -100,6 +101,35 @@ const PortalPase = () => {
         } catch (err) {
             console.error('Error al generar la imagen:', err);
             alert('No se pudo generar la imagen del QR');
+        }
+    };
+
+    const handleDownloadPdf = async () => {
+        if (!qrRef.current) return;
+        
+        try {
+            const dataUrl = await toPng(qrRef.current, {
+                backgroundColor: '#ffffff',
+                cacheBust: true,
+                pixelRatio: 4,
+                style: {
+                    borderRadius: '0px'
+                }
+            });
+            
+            // Creamos archivo PDF pasándole dinámicamente jsPDF importado localmente
+            const { jsPDF } = await import('jspdf');
+            const pdf = new jsPDF({
+                orientation: 'portrait',
+                unit: 'mm',
+                format: [120, 120] // Cuadrado para el QR
+            });
+            
+            pdf.addImage(dataUrl, 'PNG', 10, 10, 100, 100);
+            pdf.save(`PASE_BAGFM_${pase.serial}.pdf`);
+        } catch (err) {
+            console.error('Error al generar el PDF:', err);
+            alert('No se pudo generar el PDF');
         }
     };
 
@@ -359,7 +389,7 @@ const PortalPase = () => {
                                     <Download className="w-4 h-4" /> Imagen PNG
                                 </button>
                                 <button 
-                                    onClick={() => window.print()}
+                                    onClick={handleDownloadPdf}
                                     className="w-full py-4 bg-white/5 border border-white/10 hover:bg-white/10 text-white rounded-2xl font-bold uppercase tracking-widest text-xs transition-all flex items-center justify-center gap-3 opacity-60"
                                 >
                                     <CheckCircle2 className="w-4 h-4" /> Versión PDF
