@@ -214,15 +214,25 @@ const ModalVerQR = ({ pase, lote, isOpen, onClose }) => {
         }
     };
 
+    const handleCopyLink = () => {
+        const url = `${window.location.origin}/portal/pase/${pase.token}`;
+        navigator.clipboard.writeText(url);
+        toast.success('Enlace copiado al portapapeles', { icon: '🔗' });
+    };
+
     const handleWhatsApp = async () => {
         try {
             toast.loading('Preparando imagen...', { id: 'wa-share' });
             const eventoNombre = lote?.nombre_evento || 'Evento';
+            const urlPortal = `${window.location.origin}/portal/pase/${pase.token}`;
+            
             const mensaje = [
                 `🎫 *PASE DE ACCESO — ${eventoNombre.toUpperCase()}*`,
                 `📋 Serial: \`${serialDisplay}\``,
                 pase.nombre_portador ? `👤 Portador: ${pase.nombre_portador}` : '',
                 pase.vehiculo_placa ? `🚗 Vehículo: ${pase.vehiculo_placa}` : '',
+                ``,
+                `🔗 Accede a tu pase aquí: ${urlPortal}`,
                 ``,
                 `_Sistema BAGFM Access_`
             ].filter(Boolean).join('\n');
@@ -358,12 +368,15 @@ const ModalVerQR = ({ pase, lote, isOpen, onClose }) => {
                 </div>
 
                 {/* Botones de acción */}
-                <div className="w-full flex gap-3">
-                    <button onClick={handleDescargar} disabled={capturando} className="flex-1 flex items-center justify-center gap-2 h-10 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl text-[10px] font-black text-text-muted hover:text-text-main transition-all disabled:opacity-50">
+                <div className="w-full grid grid-cols-2 gap-3">
+                    <button onClick={handleDescargar} disabled={capturando} className="flex items-center justify-center gap-2 h-10 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl text-[10px] font-black text-text-muted hover:text-text-main transition-all disabled:opacity-50">
                         <Download size={14} /> DESCARGAR
                     </button>
-                    <button onClick={handleWhatsApp} disabled={capturando} className="flex-1 flex items-center justify-center gap-2 h-10 bg-[#25D366]/10 hover:bg-[#25D366]/20 border border-[#25D366]/25 rounded-xl text-[10px] font-black text-[#25D366] transition-all disabled:opacity-50">
-                        <MessageCircle size={14} /> WHATSAPP
+                    <button onClick={handleCopyLink} className="flex items-center justify-center gap-2 h-10 bg-primary/10 hover:bg-primary/20 border border-primary/20 rounded-xl text-[10px] font-black text-primary transition-all">
+                        <Copy size={14} /> COPIAR LINK
+                    </button>
+                    <button onClick={handleWhatsApp} disabled={capturando} className="col-span-2 flex items-center justify-center gap-2 h-10 bg-[#25D366]/10 hover:bg-[#25D366]/20 border border-[#25D366]/25 rounded-xl text-[10px] font-black text-[#25D366] transition-all disabled:opacity-50">
+                        <MessageCircle size={14} /> ENVIAR POR WHATSAPP
                     </button>
                 </div>
             </div>
@@ -434,6 +447,15 @@ const PaseRow = ({ pase, zonas, onCompartir, onEmail, onEditar, onVerQR }) => {
                 <button onClick={() => onEditar(pase)}
                     className="p-2 rounded-lg hover:bg-white/10 text-text-muted hover:text-text-main transition-all" title="Editar Pase">
                     <Edit3 size={13} />
+                </button>
+                <button 
+                    onClick={() => {
+                        const url = `${window.location.origin}/portal/pase/${pase.token}`;
+                        navigator.clipboard.writeText(url);
+                        toast.success('Link copiado');
+                    }}
+                    className="p-2 rounded-lg hover:bg-primary/10 text-text-muted hover:text-primary transition-all" title="Copiar Link de Acceso">
+                    <Copy size={13} />
                 </button>
                 <button onClick={() => onCompartir(pase)}
                     className="p-2 rounded-lg hover:bg-[#25D366]/10 text-text-muted hover:text-[#25D366] transition-all" title="Compartir por WhatsApp">
