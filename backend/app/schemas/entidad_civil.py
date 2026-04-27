@@ -26,6 +26,7 @@ class EntidadCivilSalida(EntidadCivilBase):
     codigo_slug: str # En la salida siempre vendrá el slug
     created_at: datetime
     created_by: Optional[UUID] = None
+    config_branding: Optional[str] = None
     
     # Métricas Operativas (Opcionales dependiendo del endpoint)
     total_usuarios: Optional[int] = 0

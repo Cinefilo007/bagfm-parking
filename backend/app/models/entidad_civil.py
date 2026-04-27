@@ -23,6 +23,7 @@ class EntidadCivil(Base):
     activo = Column(Boolean, default=True, nullable=False)
     latitud = Column(Numeric(10, 8), nullable=True)
     longitud = Column(Numeric(11, 8), nullable=True)
+    config_branding = Column(Text, nullable=True) # Almacenamos JSON como texto por simplicidad o usar JSONB
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     created_by = Column(UUID(as_uuid=True), ForeignKey("usuarios.id", ondelete="RESTRICT"), nullable=True)
 

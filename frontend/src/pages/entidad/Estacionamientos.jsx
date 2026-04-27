@@ -15,9 +15,10 @@ import {
     Circle, Edit3, ToggleLeft, ToggleRight, Zap, AlertTriangle,
     ChevronDown, ChevronLeft, ChevronRight, LayoutGrid, Settings, Activity,
     Hash, PackagePlus, Palette, Filter, ZapOff, Calendar, Pencil, User, Eye,
-    UserSquare2, CreditCard, Ticket, ShieldCheck
+    UserSquare2, CreditCard, Ticket, ShieldCheck, Share2
 } from 'lucide-react';
 import { zonaService } from '../../services/zona.service';
+import { entidadService } from '../../services/entidad.service';
 
 /** Mapa de etiquetas de tipo de acceso a mostrar como badge */
 const TIPO_ACCESO_LABEL = {
@@ -301,6 +302,11 @@ export default function EstacionamientosEntidad() {
     });
     const [guardandoTipo, setGuardandoTipo] = useState(false);
     
+    // Estado de Branding de Entidad
+    const [brandingEntidad, setBrandingEntidad] = useState({});
+    const [cargandoBranding, setCargandoBranding] = useState(false);
+    const [guardandoBranding, setGuardandoBranding] = useState(false);
+    
     // Modal Reasignar
     const [modalReasignar, setModalReasignar] = useState(false);
     const [puestoAReasignar, setPuestoAReasignar] = useState(null);
@@ -502,11 +508,40 @@ export default function EstacionamientosEntidad() {
         }
     };
 
+    const cargarBranding = useCallback(async () => {
+        if (!user?.entidad_id) return;
+        setCargandoBranding(true);
+        try {
+            const data = await entidadService.obtenerEntidad(user.entidad_id);
+            if (data.config_branding) {
+                setBrandingEntidad(JSON.parse(data.config_branding));
+            }
+        } catch (e) {
+            console.warn('Error cargando branding:', e);
+        } finally {
+            setCargandoBranding(false);
+        }
+    }, [user?.entidad_id]);
+
+    const handleGuardarBranding = async (configActualizada) => {
+        setGuardandoBranding(true);
+        try {
+            await entidadService.actualizarBranding(user.entidad_id, configActualizada);
+            toast.success('¡Estilos de pases base actualizados!');
+            setBrandingEntidad(configActualizada);
+        } catch (e) {
+            toast.error('Error al guardar configuración de marca');
+        } finally {
+            setGuardandoBranding(false);
+        }
+    };
+
     useEffect(() => { cargarPuestos(); }, [cargarPuestos]);
     useEffect(() => { cargarTipos(); }, [cargarTipos]);
     useEffect(() => { cargarAsignaciones(); }, [cargarAsignaciones]);
     useEffect(() => { cargarResumenDisponibilidad(fechaConsulta); }, [cargarResumenDisponibilidad]);
     useEffect(() => { cargarCalendarioLotes(); }, [cargarCalendarioLotes]);
+    useEffect(() => { cargarBranding(); }, [cargarBranding]);
 
     // ── Acciones: Puestos ─────────────────────────────────────────────────────
 
@@ -1008,7 +1043,20 @@ export default function EstacionamientosEntidad() {
                                                                             {tipoInfo.label}
                                                                         </span>
 
-                                                                        {/* Botón editar (siempre visible) */}
+                                                                        {/* Botón copiar enlace */}
+                                                                        <button
+                                                                            onClick={() => {
+                                                                                const url = `${window.location.origin}/portal/pase/${p.token}`;
+                                                                                navigator.clipboard.writeText(url);
+                                                                                toast.success('¡Enlace de portal copiado!');
+                                                                            }}
+                                                                            className="p-1 rounded-lg bg-white/40 dark:bg-white/5 hover:bg-sky-500/20 shrink-0 transition-colors border border-white/20 dark:border-transparent"
+                                                                            title="Copiar enlace del portal"
+                                                                        >
+                                                                            <Share2 size={10} className="text-sky-500" />
+                                                                        </button>
+
+                                                                        {/* Botón editar */}
                                                                         <button
                                                                             onClick={() => handleAbrirEditPase(p)}
                                                                             className="p-1 rounded-lg bg-white/40 dark:bg-white/5 hover:bg-primary/20 shrink-0 transition-colors border border-white/20 dark:border-transparent"
@@ -1246,6 +1294,59 @@ export default function EstacionamientosEntidad() {
                             ))}
                         </div>
                     )}
+                    
+                    <div className="mt-8 pt-8 border-t border-white/5 space-y-4">
+                        <div className="flex items-center gap-2">
+                            <Palette size={14} className="text-primary" />
+                            <h3 className="text-xs font-black text-text-main uppercase tracking-widest">Branding Base</h3>
+                        </div>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                            {[
+                                { id: 'general', label: 'Público', icon: Users },
+                                { id: 'vip', label: 'VIP', icon: Shield },
+                                { id: 'produccion', label: 'Producción', icon: Activity },
+                                { id: 'staff', label: 'Staff', icon: User },
+                                { id: 'logistica', label: 'Logística', icon: Hash },
+                            ].map(tipoBase => {
+                                const cfg = brandingEntidad[tipoBase.id] || { layout: 'qr', color_preset: 'aegis' };
+                                return (
+                                    <div key={tipoBase.id} className="p-3 bg-white/3 border border-white/5 rounded-2xl">
+                                        <div className="flex items-center gap-2 text-[10px] font-black uppercase text-text-main mb-3">
+                                            <tipoBase.icon size={12} className="text-primary" />
+                                            {tipoBase.label}
+                                        </div>
+                                        <div className="space-y-3">
+                                            <div className="grid grid-cols-6 gap-1">
+                                                {['qr', 'colgante', 'cartera', 'ticket', 'credencial', 'parabrisas'].map(lId => {
+                                                    const Icon = { qr: QrCode, colgante: UserSquare2, cartera: CreditCard, ticket: Ticket, credencial: ShieldCheck, parabrisas: Car }[lId];
+                                                    return (
+                                                        <button
+                                                            key={lId}
+                                                            onClick={() => handleGuardarBranding({ ...brandingEntidad, [tipoBase.id]: { ...cfg, layout: lId } })}
+                                                            className={cn("h-7 rounded-lg border transition-all flex items-center justify-center", cfg.layout === lId ? "bg-primary/20 border-primary text-primary" : "bg-white/5 border-white/5 text-text-muted/30")}
+                                                        >
+                                                            <Icon size={12} />
+                                                        </button>
+                                                    );
+                                                })}
+                                            </div>
+                                            <div className="flex gap-1">
+                                                {['aegis', 'militar', 'vip', 'alfa'].map(pId => (
+                                                    <button
+                                                        key={pId}
+                                                        onClick={() => handleGuardarBranding({ ...brandingEntidad, [tipoBase.id]: { ...cfg, color_preset: pId } })}
+                                                        className={cn("flex-1 h-6 rounded-lg border transition-all flex items-center justify-center", cfg.color_preset === pId ? "border-primary bg-primary/10" : "border-white/5 bg-white/2")}
+                                                    >
+                                                        <div className={cn("w-2 h-2 rounded-full", { aegis: 'bg-[#4EDEA3]', militar: 'bg-[#2D3A2D]', vip: 'bg-[#F2C94C]', alfa: 'bg-[#EB5757]' }[pId])} />
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    </div>
                 </div>
             )}
 

@@ -339,15 +339,15 @@ async def obtener_lote_publico(serial: str, db: AsyncSession = Depends(obtener_d
 @router.get("/portal/pase/{token}")
 async def obtener_pase_publico(token: str, db: AsyncSession = Depends(obtener_db)):
     """Obtiene los datos de un pase específico por su token (PÚBLICO)."""
-    query = select(CodigoQR).where(CodigoQR.token == token)
+    from sqlalchemy.orm import joinedload
+    query = select(CodigoQR).where(CodigoQR.token == token).options(joinedload(CodigoQR.tipo_acceso_custom))
     res = await db.execute(query)
-    pase = res.scalar_one_or_none()
+    pase = res.unique().scalar_one_or_none()
     
     if not pase:
         raise HTTPException(status_code=404, detail="Token de acceso inválido")
     
     # Cargar el lote para ver permisos y entidad
-    from sqlalchemy.orm import joinedload
     lote = await db.scalar(
         select(LotePaseMasivo)
         .where(LotePaseMasivo.id == pase.lote_id)
@@ -355,6 +355,38 @@ async def obtener_pase_publico(token: str, db: AsyncSession = Depends(obtener_db
     )
     
     entidad_nombre = lote.entidad.nombre if lote and lote.entidad else "BAGFM ACCESS"
+    
+    # Mapeo de estilos para tipos base (si no hay custom)
+    PRESETS_BASE = {
+        "general":    {"layout": "qr", "color_preset": "aegis", "color_hex": "#4EDEA3"},
+        "staff":      {"layout": "qr", "color_preset": "militar", "color_hex": "#6B7280"},
+        "produccion": {"layout": "qr", "color_preset": "alfa", "color_hex": "#EB5757"},
+        "logistica":  {"layout": "qr", "color_preset": "civil", "color_hex": "#3B82F6"},
+        "vip":        {"layout": "qr", "color_preset": "vip", "color_hex": "#F2C94C"},
+    }
+    
+    # Cargar Branding de la Entidad si existe
+    import json
+    branding_entidad = {}
+    if lote and lote.entidad and lote.entidad.config_branding:
+        try:
+            branding_entidad = json.loads(lote.entidad.config_branding)
+        except: pass
+    
+    # Determinar visual final base
+    tipo_str = pase.tipo_acceso.value if hasattr(pase.tipo_acceso, 'value') else str(pase.tipo_acceso)
+    visual = PRESETS_BASE.get(tipo_str, PRESETS_BASE["general"]).copy()
+    
+    # Aplicar sobreescritura de branding de entidad
+    if tipo_str in branding_entidad:
+        visual.update(branding_entidad[tipo_str])
+    
+    if pase.tipo_acceso_custom:
+        visual = {
+            "layout": pase.tipo_acceso_custom.plantilla_layout or "qr",
+            "color_preset": pase.tipo_acceso_custom.color_preset or "aegis",
+            "color_hex": pase.tipo_acceso_custom.color_hex or "#4EDEA3"
+        }
     
     return {
         "pase": {
@@ -371,11 +403,7 @@ async def obtener_pase_publico(token: str, db: AsyncSession = Depends(obtener_db
                 "modelo": pase.vehiculo_modelo,
                 "color": pase.vehiculo_color
             },
-            "visual": {
-                "layout": pase.tipo_acceso_custom.plantilla_layout if pase.tipo_acceso_custom else "qr",
-                "color_preset": pase.tipo_acceso_custom.color_preset if pase.tipo_acceso_custom else "aegis",
-                "color_hex": pase.tipo_acceso_custom.color_hex if pase.tipo_acceso_custom else "#4EDEA3"
-            }
+            "visual": visual
         },
         "lote": {
             "nombre_evento": lote.nombre_evento,

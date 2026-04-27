@@ -105,6 +105,20 @@ async def toggle_estado_entidad(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
 
 
+@router.patch("/{id}/branding", response_model=EntidadCivilSalida)
+async def actualizar_branding_entidad(
+    id: UUID,
+    datos: dict,
+    db: AsyncSession = Depends(obtener_db),
+    usuario_actual: Usuario = DEPENDENCY_ADMIN_BASE,
+):
+    """Actualiza la configuración de marca (JSON) de la entidad."""
+    try:
+        return await entidad_service.actualizar_branding(db, id, datos)
+    except EntidadNoEncontrada as e:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
+
+
 @router.delete("/{id}")
 async def eliminar_entidad(
     id: UUID,

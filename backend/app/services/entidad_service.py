@@ -216,6 +216,15 @@ class EntidadCivilService:
         await db.refresh(entidad)
         return entidad
 
+    async def actualizar_branding(self, db: AsyncSession, entidad_id: UUID, datos: dict) -> EntidadCivil:
+        """SOP: Guarda la configuración de marca (pases base) para la entidad."""
+        import json
+        entidad = await self.obtener_por_id(db, entidad_id)
+        entidad.config_branding = json.dumps(datos)
+        await db.commit()
+        await db.refresh(entidad)
+        return entidad
+
     async def eliminar(self, db: AsyncSession, entidad_id: UUID) -> bool:
         """
         SOP: Baja Definitiva con Eliminación en Cascada Manual.
