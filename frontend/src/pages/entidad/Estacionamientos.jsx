@@ -1323,10 +1323,6 @@ export default function EstacionamientosEntidad() {
                             {/* Tipos Base Inyectados (Público General, VIP, etc) */}
                             {[
                                 { id: 'general', nombre: 'Público General', es_base: true, color_badge: '#3B82F6' },
-                                { id: 'vip', nombre: 'VIP / Invitados Especiales', es_base: true, color_badge: '#F59E0B' },
-                                { id: 'produccion', nombre: 'Producción / Proveedores', es_base: true, color_badge: '#F97316' },
-                                { id: 'staff', nombre: 'Staff / Operativo', es_base: true, color_badge: '#8B5CF6' },
-                                { id: 'logistica', nombre: 'Logística', es_base: true, color_badge: '#64748B' },
                             ].map(tipoBase => (
                                 <TarjetaTipoAcceso
                                     key={tipoBase.id}
