@@ -5,6 +5,7 @@ import {
     RefreshCw, ChevronDown, ChevronUp, Clock, Shield,
     AlertCircle, CheckCircle2
 } from 'lucide-react';
+import { toast } from 'react-hot-toast';
 import { cn } from '../../lib/utils';
 import { parqueroService } from '../../services/parquero.service';
 
@@ -68,9 +69,23 @@ const CONFIG_TIPO = {
 };
 
 // ── Tarjeta de evento individual ──────────────────────────────────────────
-const TarjetaEvento = ({ evento }) => {
+const TarjetaEvento = ({ evento, onEntrada }) => {
+    const [cargando, setCargando] = useState(false);
     const cfg = CONFIG_TIPO[evento.tipo] || CONFIG_TIPO.alcabala;
     const { Icon } = cfg;
+
+    const handleEntrada = async (e) => {
+        e.stopPropagation();
+        if (!evento.placa) return;
+        setCargando(true);
+        try {
+            await onEntrada(evento.placa);
+        } catch (err) {
+            // Error manejado en el parent
+        } finally {
+            setCargando(false);
+        }
+    };
 
     return (
         <div className={cn(
@@ -99,6 +114,16 @@ const TarjetaEvento = ({ evento }) => {
                 {evento.descripcion && (
                     <p className="text-[10px] text-text-muted mt-0.5">{evento.descripcion}</p>
                 )}
+                {evento.tipo === 'alcabala' && evento.placa && (
+                    <button
+                        onClick={handleEntrada}
+                        disabled={cargando}
+                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-success text-white text-[9px] font-black uppercase tracking-widest mt-2 hover:bg-success/90 transition-all active:scale-95 disabled:opacity-50"
+                    >
+                        {cargando ? <RefreshCw size={10} className="animate-spin" /> : <LogIn size={11} />}
+                        Recibir
+                    </button>
+                )}
                 {evento.tipo === 'ingreso_zona' && evento.puesto_asignado_id && (
                     <div className="flex items-center gap-1 mt-1">
                         <ParkingSquare size={10} className="text-success" />
@@ -117,7 +142,7 @@ const TarjetaEvento = ({ evento }) => {
 };
 
 // ── Grupo de vehículo con trazabilidad expandible ─────────────────────────
-const GrupoVehiculo = ({ placa, eventos }) => {
+const GrupoVehiculo = ({ placa, eventos, onEntrada }) => {
     const [expandido, setExpandido] = useState(false);
     const ultimoEvento = eventos[0];
     const cfg = CONFIG_TIPO[ultimoEvento?.tipo] || CONFIG_TIPO.alcabala;
@@ -157,7 +182,7 @@ const GrupoVehiculo = ({ placa, eventos }) => {
             {expandido && (
                 <div className="px-3 pb-3 space-y-2 border-t border-white/5 pt-2">
                     {eventos.map((evento, i) => (
-                        <TarjetaEvento key={i} evento={evento} />
+                        <TarjetaEvento key={i} evento={evento} onEntrada={onEntrada} />
                     ))}
                 </div>
             )}
@@ -208,6 +233,17 @@ const VistaNotificaciones = () => {
         const interval = setInterval(cargarZonaYHistorial, 15000);
         return () => clearInterval(interval);
     }, [cargarZonaYHistorial]);
+
+    const handleEntradaRapida = async (placa) => {
+        try {
+            await parqueroService.registrarLlegadaPlaca(placa, zonaId);
+            toast.success(`Entrada rápida registrada: ${placa}`);
+            cargarZonaYHistorial();
+        } catch (err) {
+            toast.error(err.response?.data?.detail || "No se pudo registrar la entrada");
+            throw err;
+        }
+    };
 
     // Agrupar eventos por placa para vista "vehiculos"
     const eventosPorPlaca = eventoAgrupadoPorPlaca(eventos);
@@ -306,7 +342,7 @@ const VistaNotificaciones = () => {
                         </div>
 
                         {Object.entries(eventosPorPlaca).map(([placa, evts]) => (
-                            <GrupoVehiculo key={placa} placa={placa} eventos={evts} />
+                            <GrupoVehiculo key={placa} placa={placa} eventos={evts} onEntrada={handleEntradaRapida} />
                         ))}
                     </>
                 )}
@@ -328,7 +364,7 @@ const VistaNotificaciones = () => {
                                 </div>
                                 {/* Contenido */}
                                 <div className="flex-1 pb-3">
-                                    <TarjetaEvento evento={evento} />
+                                    <TarjetaEvento evento={evento} onEntrada={handleEntradaRapida} />
                                 </div>
                             </div>
                         ))}

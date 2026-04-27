@@ -35,7 +35,6 @@ const TarjetaPuesto = ({ puesto, vehiculosEnZona = [], onClick }) => {
     const esEntidad = !esBase && puesto.reservado_entidad_id;
     const esOcupado = puesto.estado === 'ocupado';
 
-    // Buscar vehículo si está ocupado
     const vehiculo = esOcupado 
         ? vehiculosEnZona.find(v => v.puesto_asignado_id === puesto.id || (v.puesto_codigo === puesto.numero_puesto))
         : null;
@@ -52,7 +51,6 @@ const TarjetaPuesto = ({ puesto, vehiculosEnZona = [], onClick }) => {
         ? { border: 'border-white/10', bg: 'bg-white/3', dot: 'bg-text-muted', icon: 'text-text-muted/50' }
         : { border: 'border-white/10', bg: 'bg-white/5', dot: 'bg-text-muted', icon: 'text-text-muted' };
 
-    // Regla de oro: Si está ocupado, la P es roja
     const iconColor = esOcupado ? 'text-danger' : config.icon;
     const dotColor = esOcupado ? 'bg-danger' : config.dot;
 
@@ -74,21 +72,29 @@ const TarjetaPuesto = ({ puesto, vehiculosEnZona = [], onClick }) => {
         >
             <div className={cn('w-2.5 h-2.5 rounded-full mb-1.5', dotColor)} />
             <ParkingSquare size={18} className={cn(iconColor, esOcupado && 'animate-pulse')} />
-            <span className="text-[8px] font-black uppercase tracking-tight mt-1 text-text-main leading-none">
-                {puesto.numero_puesto || puesto.codigo || '—'}
-            </span>
             
+            {/* Si está ocupado y tenemos placa, mostramos la placa como texto principal */}
             {esOcupado && vehiculo?.placa ? (
-                <span className="text-[7px] font-black text-danger uppercase tracking-tighter mt-1 animate-pulse">
-                    {vehiculo.placa}
-                </span>
+                <>
+                    <span className="text-[8px] font-black uppercase tracking-tight mt-1 text-danger animate-pulse">
+                        {vehiculo.placa}
+                    </span>
+                    <span className="text-[5px] font-bold text-text-muted/60 uppercase leading-none mt-0.5">
+                        {puesto.numero_puesto || '—'}
+                    </span>
+                </>
             ) : (
-                <span className={cn(
-                    'text-[6px] font-black uppercase tracking-wide leading-none mt-0.5',
-                    !esOcupado && esBase ? 'text-indigo-400' : !esOcupado && esEntidad ? 'text-warning' : iconColor
-                )}>
-                    {etiqueta}
-                </span>
+                <>
+                    <span className="text-[8px] font-black uppercase tracking-tight mt-1 text-text-main leading-none">
+                        {puesto.numero_puesto || puesto.codigo || '—'}
+                    </span>
+                    <span className={cn(
+                        'text-[6px] font-black uppercase tracking-wide leading-none mt-0.5',
+                        !esOcupado && esBase ? 'text-indigo-400' : !esOcupado && esEntidad ? 'text-warning' : iconColor
+                    )}>
+                        {etiqueta}
+                    </span>
+                </>
             )}
             
             {esBase && <Lock size={8} className="absolute top-1 right-1 text-indigo-400/60" />}
@@ -97,7 +103,22 @@ const TarjetaPuesto = ({ puesto, vehiculosEnZona = [], onClick }) => {
 };
 
 // ── Vehículo en zona ──────────────────────────────────────────────────────
-const TarjetaVehiculo = ({ vehiculo }) => {
+const TarjetaVehiculo = ({ vehiculo, onSalida }) => {
+    const [cargando, setCargando] = useState(false);
+    
+    const handleSalida = async (e) => {
+        e.stopPropagation();
+        setCargando(true);
+        try {
+            await onSalida(vehiculo.placa);
+            toast.success(`Salida registrada: ${vehiculo.placa}`);
+        } catch (err) {
+            toast.error("No se pudo registrar la salida");
+        } finally {
+            setCargando(false);
+        }
+    };
+
     const tiempoDisplay = () => {
         if (!vehiculo.tiempo_en_zona_min) return null;
         const h = Math.floor(vehiculo.tiempo_en_zona_min / 60);
@@ -106,7 +127,7 @@ const TarjetaVehiculo = ({ vehiculo }) => {
     };
 
     return (
-        <div className="flex items-center gap-3 p-3 bg-bg-card/30 rounded-xl border border-white/5">
+        <div className="flex items-center gap-3 p-3 bg-bg-card/30 rounded-xl border border-white/5 group hover:bg-bg-card/50 transition-all">
             <div className="w-10 h-10 bg-primary/10 rounded-xl flex items-center justify-center shrink-0 border border-primary/20">
                 <Car size={18} className="text-primary" />
             </div>
@@ -128,6 +149,14 @@ const TarjetaVehiculo = ({ vehiculo }) => {
                     )}
                 </div>
             </div>
+            <button
+                onClick={handleSalida}
+                disabled={cargando}
+                className="w-10 h-10 rounded-xl bg-danger/10 border border-danger/20 flex items-center justify-center text-danger hover:bg-danger/20 transition-all active:scale-90 disabled:opacity-50"
+                title="Registrar Salida Rápida"
+            >
+                {cargando ? <RefreshCw size={14} className="animate-spin" /> : <LogOut size={16} />}
+            </button>
         </div>
     );
 };
@@ -449,7 +478,13 @@ const DashboardParquero = () => {
                         </div>
                         <div className="space-y-2">
                             {vehiculosEnZona.map(v => (
-                                <TarjetaVehiculo key={v.id} vehiculo={v} />
+                                <TarjetaVehiculo 
+                                    key={v.id} 
+                                    vehiculo={v} 
+                                    onSalida={(placa) => {
+                                        return parqueroService.registrarSalidaPlaca(placa, zonaInfo.id).then(() => cargarDatos());
+                                    }}
+                                />
                             ))}
                             {vehiculosEnZona.length === 0 && (
                                 <div className="text-center py-6 text-text-muted/40">

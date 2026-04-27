@@ -17,11 +17,15 @@ Establecer las reglas de visualización táctica para el mapa de puestos de esta
 - **MANTENIMIENTO**: Color **Gris** (`text-muted`).
 
 ## 3. IDENTIFICACIÓN DE VEHÍCULOS
-- Todo puesto en estado **OCUPADO** debe mostrar la **PLACA** del vehículo vinculado.
-- La placa se ubica inmediatamente debajo del icono "P".
-- **Estilo de Placa**: Fuente condensada, color rojo (`danger`), con una micro-animación de pulsación sutil para facilitar la lectura en condiciones de alta carga de trabajo.
+- Todo puesto en estado **OCUPADO** debe mostrar la **PLACA** del vehículo vinculado como identificador principal.
+- El código del puesto se relega a un segundo plano (texto pequeño debajo de la placa).
+- **Estilo de Placa**: Fuente condensada, color rojo (`danger`), con una micro-animación de pulsación sutil.
 
-## 4. RELACIÓN DE DATOS (FRONTEND)
+## 4. OPERACIONES RÁPIDAS (ACCESIBILIDAD)
+- **Salida desde Lista**: Se implementa un acceso directo de "Salida Rápida" en la lista de vehículos en zona.
+- **Entrada desde Notificaciones**: Los eventos de "Alcabala" permiten registrar el ingreso directo a zona mediante un botón de "Recibir".
+
+## 5. RELACIÓN DE DATOS (FRONTEND)
 - La información del vehículo debe obtenerse cruzando el `id` del puesto o su `numero_puesto` con la lista de `vehiculosEnZona` enviada por el backend.
 - En caso de no existir datos del vehículo para un puesto marcado como ocupado, se mostrará el texto "S/D" (Sin Datos) o se mantendrá la etiqueta de estado por defecto "Ocup.".
 
