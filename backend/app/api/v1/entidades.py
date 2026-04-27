@@ -110,9 +110,19 @@ async def actualizar_branding_entidad(
     id: UUID,
     datos: dict,
     db: AsyncSession = Depends(obtener_db),
-    usuario_actual: Usuario = DEPENDENCY_ADMIN_BASE,
+    usuario_actual: Usuario = Depends(obtener_usuario_actual)
 ):
     """Actualiza la configuración de marca (JSON) de la entidad."""
+    # Validación de permisos: Admin Base puede todo, Admin Entidad solo su propia entidad
+    es_admin_base = usuario_actual.rol in [RolTipo.COMANDANTE, RolTipo.ADMIN_BASE]
+    es_su_entidad = usuario_actual.rol == RolTipo.ADMIN_ENTIDAD and usuario_actual.entidad_id == id
+    
+    if not (es_admin_base or es_su_entidad):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN, 
+            detail="No tiene permisos para modificar la marca de esta entidad"
+        )
+
     try:
         return await entidad_service.actualizar_branding(db, id, datos)
     except EntidadNoEncontrada as e:
