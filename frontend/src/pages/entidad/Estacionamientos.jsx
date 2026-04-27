@@ -195,13 +195,21 @@ const TarjetaPuesto = ({ puesto, onAsignar, onLiberar, onReasignar, tipos, puest
 const TarjetaTipoAcceso = ({ tipo, onEditar, onEliminar, onToggle }) => (
     <div className={cn(
         "flex items-center gap-3 p-3 rounded-xl border transition-all",
-        tipo.activo ? 'bg-bg-card/40 border-white/5' : 'bg-white/2 border-white/5 opacity-50'
+        tipo.activo !== false ? 'bg-bg-card/40 border-white/5' : 'bg-white/2 border-white/5 opacity-50'
     )}>
-        <div className="w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center border border-primary/20 shrink-0">
-            <Tag size={16} className="text-primary" />
+        <div className={cn(
+            "w-9 h-9 rounded-xl flex items-center justify-center border shrink-0",
+            tipo.es_base ? "bg-white/5 border-white/10" : "bg-primary/10 border-primary/20"
+        )}>
+            {tipo.es_base ? <Shield size={16} className="text-text-muted" /> : <Tag size={16} className="text-primary" />}
         </div>
         <div className="flex-1 min-w-0">
-            <p className="text-xs font-black text-text-main uppercase truncate">{tipo.nombre}</p>
+            <div className="flex items-center gap-2">
+                <p className="text-xs font-black text-text-main uppercase truncate">{tipo.nombre}</p>
+                {tipo.es_base && (
+                    <span className="text-[7px] font-black bg-white/5 text-text-muted/40 px-1 py-0.5 rounded uppercase tracking-tighter">Sistema</span>
+                )}
+            </div>
             {tipo.descripcion && (
                 <p className="text-[9px] text-text-muted truncate">{tipo.descripcion}</p>
             )}
@@ -217,18 +225,22 @@ const TarjetaTipoAcceso = ({ tipo, onEditar, onEliminar, onToggle }) => (
             </div>
         </div>
         <div className="flex items-center gap-1 shrink-0">
-            <button onClick={() => onToggle(tipo)} className="p-1.5 rounded-lg hover:bg-white/10 transition-all">
-                {tipo.activo
-                    ? <ToggleRight size={20} className="text-success" />
-                    : <ToggleLeft size={20} className="text-text-muted/40" />
-                }
-            </button>
+            {onToggle && (
+                <button onClick={() => onToggle(tipo)} className="p-1.5 rounded-lg hover:bg-white/10 transition-all">
+                    {tipo.activo
+                        ? <ToggleRight size={20} className="text-success" />
+                        : <ToggleLeft size={20} className="text-text-muted/40" />
+                    }
+                </button>
+            )}
             <button onClick={() => onEditar(tipo)} className="p-1.5 rounded-lg hover:bg-white/10 transition-all text-text-muted hover:text-primary transition-all">
                 <Edit3 size={14} />
             </button>
-            <button onClick={() => onEliminar(tipo)} className="p-1.5 rounded-lg hover:bg-danger/10 transition-all text-text-muted/40 hover:text-danger transition-all">
-                <Trash2 size={14} />
-            </button>
+            {onEliminar && (
+                <button onClick={() => onEliminar(tipo)} className="p-1.5 rounded-lg hover:bg-danger/10 transition-all text-text-muted/40 hover:text-danger transition-all">
+                    <Trash2 size={14} />
+                </button>
+            )}
         </div>
     </div>
 );
@@ -660,12 +672,29 @@ export default function EstacionamientosEntidad() {
 
     const abrirModalTipo = (tipo = null) => {
         setTipoEditar(tipo);
-        setFormTipo(tipo ? { ...tipo } : {
-            nombre: '', descripcion: '', requiere_vehiculo: true,
-            max_vehiculos: 1, color_hex: '#4EDEA3', 
-            plantilla_layout: 'qr', color_preset: 'aegis',
-            activo: true,
-        });
+        
+        // Si es un tipo base (general, vip, etc)
+        if (tipo && tipo.es_base) {
+            const cfg = brandingEntidad[tipo.id] || { layout: 'qr', color_preset: 'aegis' };
+            setFormTipo({
+                nombre: tipo.nombre,
+                descripcion: 'Tipo de acceso base del sistema (No eliminable)',
+                requiere_vehiculo: true,
+                max_vehiculos: 1,
+                color_hex: tipo.color_badge || '#4EDEA3',
+                plantilla_layout: cfg.layout || 'qr',
+                color_preset: cfg.color_preset || 'aegis',
+                activo: true,
+                es_base: true
+            });
+        } else {
+            setFormTipo(tipo ? { ...tipo } : {
+                nombre: '', descripcion: '', requiere_vehiculo: true,
+                max_vehiculos: 1, color_hex: '#4EDEA3', 
+                plantilla_layout: 'qr', color_preset: 'aegis',
+                activo: true,
+            });
+        }
         setModalTipo(true);
     };
 
@@ -676,15 +705,30 @@ export default function EstacionamientosEntidad() {
         }
         setGuardandoTipo(true);
         try {
-            if (tipoEditar) {
+            if (tipoEditar && tipoEditar.es_base) {
+                // Es un tipo base, guardamos en config_branding de la entidad
+                const nuevaConfig = {
+                    ...brandingEntidad,
+                    [tipoEditar.id]: {
+                        layout: formTipo.plantilla_layout,
+                        color_preset: formTipo.color_preset
+                    }
+                };
+                await entidadService.actualizarBranding(user.entidad_id, nuevaConfig);
+                setBrandingEntidad(nuevaConfig);
+                toast.success('Marca base actualizada');
+                setModalTipo(false);
+            } else if (tipoEditar) {
                 await zonaService.actualizarTipoAcceso(tipoEditar.id, formTipo);
                 toast.success('Tipo de acceso actualizado');
+                setModalTipo(false);
+                await cargarTipos();
             } else {
                 await zonaService.crearTipoAcceso({ ...formTipo, entidad_id: user.entidad_id });
                 toast.success('Tipo de acceso creado');
+                setModalTipo(false);
+                await cargarTipos();
             }
-            setModalTipo(false);
-            await cargarTipos();
         } catch (e) {
             toast.error(e.response?.data?.detail || 'Error al guardar');
         } finally {
@@ -1274,15 +1318,26 @@ export default function EstacionamientosEntidad() {
                                 <div key={i} className="h-16 rounded-xl bg-white/5 animate-pulse border border-white/5" />
                             ))}
                         </div>
-                    ) : tipos.length === 0 ? (
-                        <div className="text-center py-12 border border-dashed border-white/10 rounded-2xl">
-                            <Tag size={40} className="mx-auto text-white/10 mb-3" />
-                            <p className="text-[10px] font-black uppercase tracking-widest text-text-muted/40">
-                                Sin tipos de acceso custom definidos
-                            </p>
-                        </div>
                     ) : (
                         <div className="space-y-2">
+                            {/* Tipos Base Inyectados (Público General, VIP, etc) */}
+                            {[
+                                { id: 'general', nombre: 'Público General', es_base: true, color_badge: '#3B82F6' },
+                                { id: 'vip', nombre: 'VIP / Invitados Especiales', es_base: true, color_badge: '#F59E0B' },
+                                { id: 'produccion', nombre: 'Producción / Proveedores', es_base: true, color_badge: '#F97316' },
+                                { id: 'staff', nombre: 'Staff / Operativo', es_base: true, color_badge: '#8B5CF6' },
+                                { id: 'logistica', nombre: 'Logística', es_base: true, color_badge: '#64748B' },
+                            ].map(tipoBase => (
+                                <TarjetaTipoAcceso
+                                    key={tipoBase.id}
+                                    tipo={tipoBase}
+                                    onEditar={abrirModalTipo}
+                                    onEliminar={null} // No se pueden eliminar
+                                    onToggle={null}   // Siempre activos por ahora
+                                />
+                            ))}
+
+                            {/* Tipos Custom del usuario */}
                             {tipos.map(tipo => (
                                 <TarjetaTipoAcceso
                                     key={tipo.id}
@@ -1294,59 +1349,6 @@ export default function EstacionamientosEntidad() {
                             ))}
                         </div>
                     )}
-                    
-                    <div className="mt-8 pt-8 border-t border-white/5 space-y-4">
-                        <div className="flex items-center gap-2">
-                            <Palette size={14} className="text-primary" />
-                            <h3 className="text-xs font-black text-text-main uppercase tracking-widest">Branding Base</h3>
-                        </div>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                            {[
-                                { id: 'general', label: 'Público', icon: Users },
-                                { id: 'vip', label: 'VIP', icon: Shield },
-                                { id: 'produccion', label: 'Producción', icon: Activity },
-                                { id: 'staff', label: 'Staff', icon: User },
-                                { id: 'logistica', label: 'Logística', icon: Hash },
-                            ].map(tipoBase => {
-                                const cfg = brandingEntidad[tipoBase.id] || { layout: 'qr', color_preset: 'aegis' };
-                                return (
-                                    <div key={tipoBase.id} className="p-3 bg-white/3 border border-white/5 rounded-2xl">
-                                        <div className="flex items-center gap-2 text-[10px] font-black uppercase text-text-main mb-3">
-                                            <tipoBase.icon size={12} className="text-primary" />
-                                            {tipoBase.label}
-                                        </div>
-                                        <div className="space-y-3">
-                                            <div className="grid grid-cols-6 gap-1">
-                                                {['qr', 'colgante', 'cartera', 'ticket', 'credencial', 'parabrisas'].map(lId => {
-                                                    const Icon = { qr: QrCode, colgante: UserSquare2, cartera: CreditCard, ticket: Ticket, credencial: ShieldCheck, parabrisas: Car }[lId];
-                                                    return (
-                                                        <button
-                                                            key={lId}
-                                                            onClick={() => handleGuardarBranding({ ...brandingEntidad, [tipoBase.id]: { ...cfg, layout: lId } })}
-                                                            className={cn("h-7 rounded-lg border transition-all flex items-center justify-center", cfg.layout === lId ? "bg-primary/20 border-primary text-primary" : "bg-white/5 border-white/5 text-text-muted/30")}
-                                                        >
-                                                            <Icon size={12} />
-                                                        </button>
-                                                    );
-                                                })}
-                                            </div>
-                                            <div className="flex gap-1">
-                                                {['aegis', 'militar', 'vip', 'alfa'].map(pId => (
-                                                    <button
-                                                        key={pId}
-                                                        onClick={() => handleGuardarBranding({ ...brandingEntidad, [tipoBase.id]: { ...cfg, color_preset: pId } })}
-                                                        className={cn("flex-1 h-6 rounded-lg border transition-all flex items-center justify-center", cfg.color_preset === pId ? "border-primary bg-primary/10" : "border-white/5 bg-white/2")}
-                                                    >
-                                                        <div className={cn("w-2 h-2 rounded-full", { aegis: 'bg-[#4EDEA3]', militar: 'bg-[#2D3A2D]', vip: 'bg-[#F2C94C]', alfa: 'bg-[#EB5757]' }[pId])} />
-                                                    </button>
-                                                ))}
-                                            </div>
-                                        </div>
-                                    </div>
-                                );
-                            })}
-                        </div>
-                    </div>
                 </div>
             )}
 
