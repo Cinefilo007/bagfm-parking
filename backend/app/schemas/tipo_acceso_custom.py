@@ -7,6 +7,8 @@ class TipoAccesoCustomBase(BaseModel):
     nombre: str
     color_hex: Optional[str] = "#FFFFFF"
     nivel_prioridad: Optional[int] = 0
+    plantilla_layout: Optional[str] = "qr"
+    color_preset: Optional[str] = "aegis"
     activo: Optional[bool] = True
 
     model_config = ConfigDict(from_attributes=True)

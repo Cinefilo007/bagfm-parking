@@ -108,13 +108,25 @@ const PortalPase = () => {
     // De lo contrario -> Mostrar QR
     const mostrarForm = lote.tipo_pase === 'portal' && !pase.nombre;
 
+    // Configuración de visualización dinámica (v2.4)
+    const visual = pase?.visual || { layout: 'qr', color_preset: 'aegis' };
+    
+    const PRESETS = {
+        aegis:   { primary: '#4EDEA3', accent: 'text-[#4EDEA3]', bg: 'bg-[#4EDEA3]', shadow: 'shadow-[#4EDEA3]/20' },
+        militar: { primary: '#6B7280', accent: 'text-gray-400',   bg: 'bg-gray-600',   shadow: 'shadow-gray-600/20' },
+        civil:   { primary: '#3B82F6', accent: 'text-blue-400',   bg: 'bg-blue-500',   shadow: 'shadow-blue-500/20' },
+        vip:     { primary: '#F2C94C', accent: 'text-yellow-500', bg: 'bg-yellow-500', shadow: 'shadow-yellow-500/20' },
+        alfa:    { primary: '#EB5757', accent: 'text-red-500',    bg: 'bg-red-500',    shadow: 'shadow-red-500/20' },
+    };
+    const style = PRESETS[visual.color_preset] || PRESETS.aegis;
+
     return (
         <div className="min-h-screen bg-[#0a0a0b] text-white selection:bg-blue-500/30">
             {/* Header Táctico */}
-            <div className="max-w-md mx-auto pt-10 px-6 pb-6 border-b border-white/5 bg-gradient-to-b from-blue-500/5 to-transparent">
+            <div className={`max-w-md mx-auto pt-10 px-6 pb-6 border-b border-white/5 bg-gradient-to-b from-${visual.color_preset === 'aegis' ? 'blue' : 'gray'}-500/5 to-transparent`}>
                 <div className="flex items-center gap-3 mb-2">
-                    <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse" />
-                    <span className="text-[10px] font-bold tracking-[0.3em] text-blue-400 uppercase">Aegis Tactical v2.2</span>
+                    <div className={`w-2 h-2 ${style.bg} rounded-full animate-pulse`} />
+                    <span className={`text-[10px] font-bold tracking-[0.3em] ${style.accent} uppercase`}>Aegis Tactical v2.4</span>
                 </div>
                 <h1 className="text-3xl font-black italic tracking-tighter uppercase leading-none mb-1">
                     {lote.nombre_evento}
@@ -130,8 +142,8 @@ const PortalPase = () => {
                     <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
                             <div className="bg-white/5 border border-white/10 rounded-2xl p-6 mb-6">
                                 <div className="flex items-center gap-3 mb-6">
-                                    <div className="w-10 h-10 rounded-xl bg-blue-500/20 flex items-center justify-center border border-blue-500/20">
-                                        <User className="w-5 h-5 text-blue-400" />
+                                    <div className={`w-10 h-10 rounded-xl ${style.bg}/20 flex items-center justify-center border border-${style.primary}/20`}>
+                                        <User className={`w-5 h-5 ${style.accent}`} />
                                     </div>
                                     <div>
                                         <h2 className="text-lg font-bold">Completar Registro</h2>
@@ -146,7 +158,7 @@ const PortalPase = () => {
                                             <input 
                                                 required
                                                 value={form.nombre}
-                                                onChange={(e) => setForm({...form, nombre: e.target.value})}
+                                                onChange={(e) => setForm({...form, nombre: e.target.value.toUpperCase()})}
                                                 className="w-full bg-[#121214] border border-white/5 rounded-xl px-4 py-3 text-sm focus:border-blue-500/50 outline-none transition-all"
                                                 placeholder="EJ. JUAN PÉREZ"
                                             />
@@ -158,7 +170,7 @@ const PortalPase = () => {
                                                 <input 
                                                     required
                                                     value={form.cedula}
-                                                    onChange={(e) => setForm({...form, cedula: e.target.value})}
+                                                    onChange={(e) => setForm({...form, cedula: e.target.value.toUpperCase()})}
                                                     className="w-full bg-[#121214] border border-white/5 rounded-xl px-4 py-3 text-sm focus:border-blue-500/50 outline-none transition-all"
                                                     placeholder="V-000..."
                                                 />
@@ -190,7 +202,7 @@ const PortalPase = () => {
 
                                     <div className="pt-4 pb-2 border-t border-white/5 mt-6">
                                         <div className="flex items-center gap-2 mb-4">
-                                            <Car className="w-4 h-4 text-blue-400" />
+                                            <Car className={`w-4 h-4 ${style.accent}`} />
                                             <span className="text-xs font-bold uppercase tracking-wider">Vehículo Autorizado</span>
                                         </div>
                                         
@@ -199,7 +211,7 @@ const PortalPase = () => {
                                                 <label className="text-[10px] font-bold text-gray-500 uppercase ml-1">Placa</label>
                                                 <input 
                                                     value={form.placa}
-                                                    onChange={(e) => setForm({...form, placa: e.target.value})}
+                                                    onChange={(e) => setForm({...form, placa: e.target.value.toUpperCase()})}
                                                     className="w-full bg-[#121214] border border-white/5 rounded-xl px-4 py-3 text-sm focus:border-blue-500/50 outline-none transition-all uppercase"
                                                     placeholder="ABC123D"
                                                 />
@@ -208,7 +220,7 @@ const PortalPase = () => {
                                                 <label className="text-[10px] font-bold text-gray-500 uppercase ml-1">Marca / Modelo</label>
                                                 <input 
                                                     value={form.marca}
-                                                    onChange={(e) => setForm({...form, marca: e.target.value})}
+                                                    onChange={(e) => setForm({...form, marca: e.target.value.toUpperCase()})}
                                                     className="w-full bg-[#121214] border border-white/5 rounded-xl px-4 py-3 text-sm focus:border-blue-500/50 outline-none transition-all uppercase"
                                                     placeholder="TOYOTA YARIS"
                                                 />
@@ -219,7 +231,7 @@ const PortalPase = () => {
                                     <button 
                                         type="submit"
                                         disabled={saving}
-                                        className="w-full mt-6 py-4 bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white rounded-2xl font-bold uppercase tracking-widest text-sm transition-all flex items-center justify-center gap-3 shadow-lg shadow-blue-600/20"
+                                        className={`w-full mt-6 py-4 ${style.bg} hover:brightness-110 disabled:opacity-50 text-white rounded-2xl font-bold uppercase tracking-widest text-sm transition-all flex items-center justify-center gap-3 shadow-lg ${style.shadow}`}
                                     >
                                         {saving ? <Loader2 className="w-5 h-5 animate-spin" /> : <>Generar Pase Digital <ArrowRight className="w-4 h-4" /></>}
                                     </button>
@@ -228,14 +240,27 @@ const PortalPase = () => {
                     </div>
                 ) : (
                     <div className="animate-in zoom-in-95 duration-500 space-y-6">
-                            {/* Card de Pase Digital */}
-                            <div className="bg-white rounded-[2rem] p-8 text-[#0a0a0b] shadow-2xl shadow-white/5 relative overflow-hidden">
+                            {/* Card de Pase Digital Dinámico */}
+                            <div className={cn(
+                                "bg-white p-8 text-[#0a0a0b] shadow-2xl relative overflow-hidden transition-all",
+                                visual.layout === 'qr' && "rounded-[2rem]",
+                                visual.layout === 'colgante' && "rounded-b-[2rem] border-t-[12px]",
+                                visual.layout === 'credencial' && "rounded-lg border-l-8",
+                                visual.layout === 'colgante' && visual.color_preset === 'aegis' ? 'border-green-500' : '',
+                                visual.layout === 'colgante' && visual.color_preset === 'vip' ? 'border-yellow-500' : '',
+                                visual.layout === 'colgante' && visual.color_preset === 'militar' ? 'border-gray-800' : '',
+                                visual.layout === 'colgante' && visual.color_preset === 'alfa' ? 'border-red-600' : '',
+                                visual.layout === 'credencial' && visual.color_preset === 'aegis' ? 'border-green-500' : '',
+                                visual.layout === 'credencial' && visual.color_preset === 'vip' ? 'border-yellow-500' : '',
+                                visual.layout === 'credencial' && visual.color_preset === 'militar' ? 'border-gray-800' : '',
+                                visual.layout === 'credencial' && visual.color_preset === 'alfa' ? 'border-red-600' : '',
+                            )}>
                                 {/* Decoración Táctica */}
-                                <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/10 blur-[60px]" />
+                                <div className={`absolute top-0 right-0 w-32 h-32 ${style.bg}/5 blur-[60px]`} />
                                 
                                 <div className="flex justify-between items-start mb-8">
                                     <div>
-                                        <span className="text-[10px] font-black tracking-widest text-blue-600 uppercase">Pase de Acceso</span>
+                                        <span className={`text-[10px] font-black tracking-widest ${style.accent} uppercase`}>Pase de Acceso</span>
                                         <h3 className="text-2xl font-black leading-none mt-1">{pase.serial}</h3>
                                     </div>
                                     <div className="p-2 bg-green-500/10 rounded-lg">
@@ -275,11 +300,11 @@ const PortalPase = () => {
                             </div>
 
                             <div className="bg-white/5 border border-white/5 rounded-2xl p-4 flex items-center gap-4">
-                                <div className="p-2 bg-blue-500/10 rounded-lg">
-                                    <Info className="w-4 h-4 text-blue-400" />
+                                <div className={`p-2 ${style.bg}/10 rounded-lg`}>
+                                    <Info className={`w-4 h-4 ${style.accent}`} />
                                 </div>
                                 <p className="text-[10px] leading-relaxed text-gray-400 uppercase font-medium">
-                                    Este pase es personal e intransferible. Debe presentarlo digitalmente o impreso en la Alcabala de Acceso.
+                                    Este pase {visual.layout !== 'qr' ? 'personalizado' : ''} es intransferible. Debe presentarlo digitalmente o impreso en la Alcabala de Acceso.
                                 </p>
                             </div>
                             
@@ -302,5 +327,10 @@ const PortalPase = () => {
         </div>
     );
 };
+
+// Helper for classNames
+function cn(...classes) {
+    return classes.filter(Boolean).join(' ');
+}
 
 export default PortalPase;

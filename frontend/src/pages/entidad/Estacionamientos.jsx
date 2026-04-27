@@ -293,7 +293,9 @@ export default function EstacionamientosEntidad() {
         descripcion: '',
         requiere_vehiculo: true,
         max_vehiculos: 1,
-        color_badge: '#4EDEA3',
+        color_badge: '#4EDEA3', 
+        plantilla_layout: 'qr',
+        color_preset: 'aegis',
         activo: true,
     });
     const [guardandoTipo, setGuardandoTipo] = useState(false);
@@ -624,7 +626,9 @@ export default function EstacionamientosEntidad() {
         setTipoEditar(tipo);
         setFormTipo(tipo ? { ...tipo } : {
             nombre: '', descripcion: '', requiere_vehiculo: true,
-            max_vehiculos: 1, color_badge: '#4EDEA3', activo: true,
+            max_vehiculos: 1, color_badge: '#4EDEA3', 
+            plantilla_layout: 'qr', color_preset: 'aegis',
+            activo: true,
         });
         setModalTipo(true);
     };
@@ -1354,6 +1358,66 @@ export default function EstacionamientosEntidad() {
                                         )}
                                     >
                                         {n}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+
+                        {/* Selección de Plantilla (v2.4) */}
+                        <div className="space-y-2">
+                            <label className="text-[9px] font-black text-text-muted uppercase tracking-widest flex items-center gap-2">
+                                <LayoutGrid size={11} className="text-primary" /> Plantilla de Carnet
+                            </label>
+                            <div className="grid grid-cols-3 gap-2">
+                                {[
+                                    { id: 'qr', label: 'QR Simple', icon: QrCode },
+                                    { id: 'colgante', label: 'Colgante', icon: BadgeEstado },
+                                    { id: 'credencial', label: 'Credencial', icon: Shield },
+                                ].map(lay => (
+                                    <button
+                                        key={lay.id}
+                                        type="button"
+                                        onClick={() => setFormTipo({ ...formTipo, plantilla_layout: lay.id })}
+                                        className={cn(
+                                            "p-2 rounded-xl border-2 transition-all flex flex-col items-center gap-1",
+                                            formTipo.plantilla_layout === lay.id
+                                                ? 'bg-primary/10 border-primary text-primary'
+                                                : 'bg-white/5 border-white/10 text-text-muted hover:border-white/20'
+                                        )}
+                                    >
+                                        <lay.icon size={16} />
+                                        <span className="text-[8px] font-black uppercase">{lay.label}</span>
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+
+                        {/* Selección de Estilo de Colores (v2.4) */}
+                        <div className="space-y-2">
+                            <label className="text-[9px] font-black text-text-muted uppercase tracking-widest flex items-center gap-2">
+                                <Palette size={11} className="text-primary" /> Estilo de Colores
+                            </label>
+                            <div className="grid grid-cols-2 gap-2">
+                                {[
+                                    { id: 'aegis', label: 'Aegis Dynamic', color: 'bg-[#4EDEA3]' },
+                                    { id: 'militar', label: 'Táctico Militar', color: 'bg-[#2D3A2D]' },
+                                    { id: 'vip', label: 'VIP Gold', color: 'bg-[#F2C94C]' },
+                                    { id: 'alfa', label: 'Alfa Red', color: 'bg-[#EB5757]' },
+                                ].map(preset => (
+                                    <button
+                                        key={preset.id}
+                                        type="button"
+                                        onClick={() => setFormTipo({ ...formTipo, color_preset: preset.id })}
+                                        className={cn(
+                                            "p-2 rounded-xl border-2 transition-all flex items-center gap-2 relative overflow-hidden",
+                                            formTipo.color_preset === preset.id
+                                                ? 'bg-primary/10 border-primary text-primary'
+                                                : 'bg-white/5 border-white/10 text-text-muted hover:border-white/20'
+                                        )}
+                                    >
+                                        <div className={cn("w-3 h-3 rounded-full shrink-0 shadow-sm", preset.color)} />
+                                        <span className="text-[9px] font-black uppercase tracking-tight">{preset.label}</span>
+                                        {formTipo.color_preset === preset.id && <CheckCircle2 size={10} className="absolute top-1 right-1" />}
                                     </button>
                                 ))}
                             </div>

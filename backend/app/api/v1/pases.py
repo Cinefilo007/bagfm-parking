@@ -362,6 +362,10 @@ async def obtener_pase_publico(token: str, db: AsyncSession = Depends(obtener_db
                 "marca": pase.vehiculo_marca,
                 "modelo": pase.vehiculo_modelo,
                 "color": pase.vehiculo_color
+            },
+            "visual": {
+                "layout": pase.tipo_acceso_custom.plantilla_layout if pase.tipo_acceso_custom else "qr",
+                "color_preset": pase.tipo_acceso_custom.color_preset if pase.tipo_acceso_custom else "aegis"
             }
         },
         "lote": {

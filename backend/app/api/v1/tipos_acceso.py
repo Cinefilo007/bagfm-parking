@@ -35,10 +35,7 @@ async def crear_tipo_acceso(
     
     nuevo_tipo = TipoAccesoCustom(
         entidad_id=current_user.entidad_id,
-        nombre=datos.nombre,
-        color_hex=datos.color_hex,
-        nivel_prioridad=datos.nivel_prioridad,
-        activo=datos.activo
+        **datos.model_dump()
     )
     db.add(nuevo_tipo)
     await db.commit()

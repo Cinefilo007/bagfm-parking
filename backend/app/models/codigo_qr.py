@@ -62,6 +62,7 @@ class CodigoQR(Base):
     # Relaciones
     zona_asignada = relationship("ZonaEstacionamiento", foreign_keys=[zona_asignada_id], lazy="selectin")
     puesto_asignado = relationship("PuestoEstacionamiento", foreign_keys=[puesto_asignado_id], lazy="selectin")
+    tipo_acceso_custom = relationship("TipoAccesoCustom", foreign_keys=[tipo_acceso_custom_id], lazy="selectin")
     vehiculos_adicionales = relationship("VehiculoPase", backref="codigo_qr", cascade="all, delete-orphan", lazy="selectin")
 
     @property

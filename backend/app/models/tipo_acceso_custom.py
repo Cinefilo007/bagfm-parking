@@ -18,6 +18,11 @@ class TipoAccesoCustom(Base):
     nombre = Column(String(100), nullable=False)
     color_hex = Column(String(7), default="#FFFFFF", nullable=False)
     nivel_prioridad = Column(Integer, default=0, nullable=False)
+    
+    # Configuración de Identidad Visual para Pases (v2.4)
+    plantilla_layout = Column(String(50), default="qr", nullable=False) # qr, colgante, credencial, ticket, cartera
+    color_preset = Column(String(50), default="aegis", nullable=False) # aegis, militar, civil, vip, alfa
+    
     activo = Column(Boolean, default=True, nullable=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
 
