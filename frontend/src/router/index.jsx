@@ -26,6 +26,7 @@ import DashboardParquero from '../pages/parquero/Dashboard';
 import VistaRecibir from '../pages/parquero/VistaRecibir';
 import VistaDespachar from '../pages/parquero/VistaDespachar';
 import VistaNotificaciones from '../pages/parquero/VistaNotificaciones';
+import VistaVehiculosPerdidos from '../pages/parquero/VistaVehiculosPerdidos';
 import DashboardSupervisor from '../pages/supervisor/Dashboard';
 import { useAuthStore } from '../store/auth.store';
 
@@ -113,6 +114,7 @@ export const router = createBrowserRouter([
               { path: 'recibir', element: <VistaRecibir /> },
               { path: 'despachar', element: <VistaDespachar /> },
               { path: 'notificaciones', element: <VistaNotificaciones /> },
+              { path: 'perdidos', element: <VistaVehiculosPerdidos /> },
             ]
           },
           // SUPERVISOR DE PARQUEROS

@@ -25,9 +25,15 @@ Establecer las reglas de visualización táctica para el mapa de puestos de esta
 - **Salida desde Lista**: Se implementa un acceso directo de "Salida Rápida" en la lista de vehículos en zona.
 - **Entrada desde Notificaciones**: Los eventos de "Alcabala" permiten registrar el ingreso directo a zona mediante un botón de "Recibir".
 
-## 5. RELACIÓN DE DATOS (FRONTEND)
+## 5. VEHÍCULOS PERDIDOS (ALERTAS CRÍTICAS)
+- **Definición**: Un vehículo se marca como perdido si excede el `tiempo_limite_llegada_min` configurado en la zona tras su paso por la alcabala.
+- **Visualización**: Se utiliza el color **ROJO CRÍTICO** (`danger`) y el icono `ShieldAlert`.
+- **Procedimiento**: El parquero debe ver la lista de perdidos y decidir si notifica al centro de mando o inicia un rastreo manual.
+- **Frecuencia de Actualización**: La trazabilidad debe refrescarse cada 20 segundos automáticamente.
+
+## 6. RELACIÓN DE DATOS (FRONTEND)
 - La información del vehículo debe obtenerse cruzando el `id` del puesto o su `numero_puesto` con la lista de `vehiculosEnZona` enviada por el backend.
 - En caso de no existir datos del vehículo para un puesto marcado como ocupado, se mostrará el texto "S/D" (Sin Datos) o se mantendrá la etiqueta de estado por defecto "Ocup.".
 
 ---
-*Ultima actualización: 2026-04-27*
+*Ultima actualización: 2026-04-27 (Implementación Vehículos Perdidos)*

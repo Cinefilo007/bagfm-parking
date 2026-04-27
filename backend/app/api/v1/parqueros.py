@@ -173,6 +173,18 @@ async def obtener_trazabilidad_zona(
 ):
     """
     Retorna el historial temporal de vehículos de la zona.
-    Combina accesos de alcabala + ingresos/salidas de zona, ordenados por timestamp.
     """
     return await parquero_service.get_trazabilidad_zona(db, zona_id, limite)
+
+
+@router.get("/perdidos")
+async def obtener_vehiculos_perdidos(
+    db: AsyncSession = Depends(obtener_db),
+    current_user: Usuario = Depends(require_rol(["SUPERVISOR_PARQUEROS", "PARQUERO", "ADMIN_BASE", "COMANDANTE"]))
+):
+    """
+    SOP: Seguridad Táctica (Aegis v2.3).
+    Lista vehículos que han pasado por alcabala con destino a la zona del parquero
+    pero no han llegado en el tiempo reglamentario.
+    """
+    return await parquero_service.get_vehiculos_perdidos(db, current_user.id)

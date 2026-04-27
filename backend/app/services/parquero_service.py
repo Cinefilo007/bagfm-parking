@@ -1,6 +1,6 @@
 from typing import Optional, List, Dict, Any
 from uuid import UUID
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import and_, select, func as sql_func
 from sqlalchemy.orm import joinedload
@@ -542,6 +542,77 @@ class ParqueroService:
 
         eventos.sort(key=sort_key, reverse=True)
         return eventos[:limite]
+
+    async def get_vehiculos_perdidos(self, db: AsyncSession, usuario_id: UUID) -> List[Dict]:
+        """
+        SOP: Seguridad Táctica (Aegis v2.3).
+        Identifica vehículos que accedieron por alcabala con destino a esta zona
+        pero no han reportado ingreso tras expirar el 'tiempo_limite_llegada_min'.
+        """
+        # 1. Obtener zona del parquero
+        res_usr = await db.execute(select(Usuario).where(Usuario.id == usuario_id))
+        usuario = res_usr.scalars().first()
+        if not usuario or not usuario.zona_asignada_id:
+            return []
+        
+        zona_id = usuario.zona_asignada_id
+        res_zona = await db.execute(select(ZonaEstacionamiento).where(ZonaEstacionamiento.id == zona_id))
+        zona = res_zona.scalars().first()
+        if not zona:
+            return []
+
+        # Tiempos de referencia
+        tiempo_limite = (zona.tiempo_limite_llegada_min or 15)
+        ahora = datetime.now(timezone.utc)
+        hace_12h = ahora - timedelta(hours=12)
+
+        # 2. Buscar accesos de entrada en alcabala con destino a esta zona
+        query = (
+            select(Acceso, CodigoQR)
+            .join(CodigoQR, Acceso.qr_id == CodigoQR.id)
+            .where(
+                CodigoQR.zona_asignada_id == zona_id,
+                Acceso.tipo == AccesoTipo.entrada,
+                Acceso.timestamp >= hace_12h
+            )
+        )
+        res = await db.execute(query)
+        accesos = res.all()
+
+        perdidos = []
+        for acceso, qr in accesos:
+            # 3. Verificar si este QR ya tiene un VehiculoPase 'ingresado' para esta zona
+            res_vp = await db.execute(
+                select(VehiculoPase).where(
+                    VehiculoPase.qr_id == qr.id,
+                    VehiculoPase.zona_asignada_id == zona_id,
+                    VehiculoPase.ingresado == True
+                )
+            )
+            vp = res_vp.scalars().first()
+
+            if not vp:
+                # Validar tiempo transcurrido
+                ts_acceso = acceso.timestamp.replace(tzinfo=timezone.utc) if acceso.timestamp.tzinfo is None else acceso.timestamp
+                transcurrido_min = int((ahora - ts_acceso).total_seconds() / 60)
+                
+                if transcurrido_min > tiempo_limite:
+                    perdidos.append({
+                        "placa": qr.vehiculo_placa,
+                        "marca": qr.vehiculo_marca,
+                        "modelo": qr.vehiculo_modelo,
+                        "color": qr.vehiculo_color,
+                        "hora_alcabala": ts_acceso.isoformat(),
+                        "punto_alcabala": acceso.punto_acceso,
+                        "minutos_transcurridos": transcurrido_min,
+                        "tiempo_limite": tiempo_limite,
+                        "nombre_conductor": qr.nombre_portador,
+                        "qr_id": str(qr.id)
+                    })
+        
+        # Ordenar por el más antiguo perdido primero para atención prioritaria
+        perdidos.sort(key=lambda x: x["minutos_transcurridos"], reverse=True)
+        return perdidos
 
     # ──────────────────────────────────────────────────────────────────────────
     # MÉTODOS ORIGINALES

@@ -120,5 +120,13 @@ export const parqueroService = {
         const { data } = await api.patch(`/zonas/puestos/${puestoId}`, datos);
         return data;
     },
+
+    /**
+     * Obtiene los vehículos que pasaron por alcabala hace tiempo pero no llegaron a la zona.
+     */
+    async getVehiculosPerdidos() {
+        const { data } = await api.get('/parqueros/perdidos');
+        return data;
+    }
 };
 
