@@ -1323,13 +1323,7 @@ export default function EstacionamientosEntidad() {
                         <div className="space-y-2">
                             {/* Tipos Base Inyectados (Configurables) */}
                             {[
-                                { id: 'general',    nombre: 'Público General', es_base: true, color_badge: '#3B82F6' },
-                                { id: 'vip',        nombre: 'VIP / Invitados', es_base: true, color_badge: '#F2C94C' },
-                                { id: 'staff',      nombre: 'Staff / Equipo',  es_base: true, color_badge: '#6B7280' },
-                                { id: 'produccion', nombre: 'Producción',      es_base: true, color_badge: '#EB5757' },
-                                { id: 'logistica',  nombre: 'Logística',       es_base: true, color_badge: '#3B82F6' },
-                                { id: 'prensa',     nombre: 'Prensa',          es_base: true, color_badge: '#10B981' },
-                                { id: 'artista',    nombre: 'Artista / Talento', es_base: true, color_badge: '#EC4899' },
+                                { id: 'general', nombre: 'Público General', es_base: true, color_badge: '#3B82F6' },
                             ].map(tipoBase => {
                                 // Aplicar override de branding si existe
                                 const cfg = brandingEntidad[tipoBase.id] || {};
