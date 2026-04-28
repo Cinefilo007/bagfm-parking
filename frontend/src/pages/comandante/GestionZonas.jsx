@@ -451,6 +451,7 @@ export default function GestionZonas() {
             let currentLat = minLat;
             let rowCounter = 0;
             let totalSpotsCount = 0;
+            const puestosMetadata = [];
 
             // Patrón de distribución: 'simple' (P-F-P) o 'doble' (P-F-F-P)
             const pattern = configIA.patron || 'simple';
@@ -458,14 +459,12 @@ export default function GestionZonas() {
             while (currentLat < maxLat) {
                 // Determinar si esta fila es Pasillo o Puesto según el patrón
                 let isAisle = false;
-                let isDobleFrontera = false; // Nueva bandera para el divisor central
+                let isDobleFrontera = false;
 
                 if (pattern === 'simple') {
                     isAisle = rowCounter % 2 !== 0;
                 } else {
-                    // Patrón doble: Fila (0), Fila (1), Pasillo (2), Fila (3), Fila (4), Pasillo (5)
                     isAisle = (rowCounter + 1) % 3 === 0;
-                    // El divisor central ocurre entre la fila index 0 y 1, 3 y 4, etc.
                     isDobleFrontera = rowCounter % 3 === 0; 
                 }
 
@@ -486,33 +485,31 @@ export default function GestionZonas() {
                     simLines.push({ points: [start1, end1], type: lineType, color });
                 }
                 
-                // Si es la frontera interna de una Fila Doble, dibujar divisor especial
                 if (isDobleFrontera && isInside(start2, end2)) {
-                    simLines.push({ points: [start2, end2], type: 'divisor_doble', color: '#c084fc' });
+                    simLines.push({ points: [start2, end2], type: 'divisor_doble', color: '#A855F7' });
                 } else if (isInside(start2, end2)) {
                     simLines.push({ points: [start2, end2], type: lineType, color });
                 }
 
                 if (!isAisle) {
                     const skewOffset = configIA.angulo !== 90 ? (stepSpotDepth * Math.tan((90 - configIA.angulo) * Math.PI / 180)) : 0;
+                    const margin = (maxLng - minLng) * 0.05;
 
-                    for (let lng = minLng; lng <= maxLng - spotWidthDeg; lng += spotWidthDeg) {
+                    for (let lng = minLng + margin; lng <= maxLng - margin - spotWidthDeg; lng += spotWidthDeg) {
                         const p1 = rotatePoint([currentLat, lng], centroide, orientationAngle);
                         const p2 = rotatePoint([currentLat + step, lng + skewOffset], centroide, orientationAngle);
                         
-                        // Respetar circulación cruzada: No poner puestos en los extremos laterales si obstruyen giro
-                        // Dejamos un margen del 5% en los extremos para la "vía de cabecera"
-                        const margin = (maxLng - minLng) * 0.05;
-                        if (lng > minLng + margin && lng < maxLng - margin) {
-                            if (isInside(p1, p2)) {
-                                simLines.push({ points: [p1, p2], type: 'separador', color: '#6366f1' });
-                                totalSpotsCount++;
-                            }
+                        if (isInside(p1, p2)) {
+                            simLines.push({ points: [p1, p2], type: 'separador', color: '#6366f1' });
+                            totalSpotsCount++;
+                            
+                            // Guardar centro para numeración táctica
+                            const center = rotatePoint([currentLat + (step/2), lng + (spotWidthDeg/2)], centroide, orientationAngle);
+                            puestosMetadata.push({ number: totalSpotsCount, center });
                         }
                     }
                 } else {
                     const midLat = currentLat + (step / 2);
-                    // Flechas de flujo en el pasillo
                     const flowPoints = [0.25, 0.5, 0.75];
                     flowPoints.forEach(pos => {
                         const f1 = rotatePoint([midLat, minLng + (maxLng-minLng)*(pos-0.02)], centroide, orientationAngle);
@@ -529,6 +526,7 @@ export default function GestionZonas() {
 
             setAiSuggestions({
                 puestosCount: totalSpotsCount,
+                puestos: puestosMetadata,
                 distribución: pattern === 'doble' ? 'Back-to-Back (F-F)' : 'Lineal (P-F-P)',
                 eficiencia: `${(STANDARDS.MIN_EFFICIENCY * 100).toFixed(0)}%`,
                 lineas: simLines,
@@ -1606,16 +1604,16 @@ export default function GestionZonas() {
                 <div className="h-[calc(85vh-120px)] relative">
                     {/* LABORATORIO DE DISEÑO TÁCTICO */}
                     {drawingMode && tempPoints.length >= 3 && (
-                        <div className="absolute top-4 right-4 z-[2000] w-60 pointer-events-auto">
-                            <div className="bg-[#161B2B]/90 backdrop-blur-3xl border border-white/10 p-3 rounded-2xl shadow-2xl">
-                                <div className="flex items-center justify-between mb-4">
-                                    <div className="flex items-center gap-2 text-indigo-400">
-                                        <Activity size={14} />
-                                        <span className="text-[10px] font-black uppercase tracking-widest">Aegis Lab</span>
+                        <div className="absolute top-4 right-4 z-[2000] w-56 pointer-events-auto">
+                            <div className="bg-[#161B2B]/95 backdrop-blur-3xl border border-white/10 p-2.5 rounded-xl shadow-2xl overflow-hidden">
+                                <div className="flex items-center justify-between mb-3">
+                                    <div className="flex items-center gap-1.5 text-indigo-400">
+                                        <Activity size={12} />
+                                        <h3 className="text-[10px] font-black uppercase tracking-tighter">Aegis Lab</h3>
                                     </div>
-                                    <span className="text-[8px] bg-indigo-500/20 text-indigo-400 px-2 py-0.5 rounded-full font-bold">V3.0</span>
+                                    <span className="text-[7px] bg-indigo-500/20 text-indigo-400 px-1.5 py-0.5 rounded-full font-bold">V3.1</span>
                                 </div>
-                                <div className="space-y-3">
+                                <div className="space-y-2.5">
                                     {/* CONTADOR DE CAPACIDAD IA */}
                                     {tempPoints.length >= 3 && (
                                         <div className="flex gap-2">

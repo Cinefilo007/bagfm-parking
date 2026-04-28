@@ -219,13 +219,24 @@ const MapaBaseReal = ({
                           }}
                         >
                           <Popup className="tactical-popup">
-                             <div className="p-1">
+                             <div className="p-2 min-w-[130px]">
                                  <div className="text-[9px] font-black uppercase tracking-widest text-warning mb-0.5">Área Delimitada</div>
-                                 <div className="text-[11px] font-bold uppercase text-text-main mb-1">{zona.nombre}</div>
-                                 <div className="flex justify-between items-center text-[9px] font-mono border-t border-bg-high/20 pt-2">
+                                 <div className="text-[11px] font-bold uppercase text-text-main mb-1 leading-tight">{zona.nombre}</div>
+                                 <div className="flex justify-between items-center text-[9px] font-mono border-t border-white/10 pt-2 mb-2">
                                      <span className="text-text-sec uppercase font-bold">Uso:</span>
                                      <span className="text-primary font-black text-[11px]">{zona.ocupacion_actual || 0} / {zona.capacidad_total || 0}</span>
                                   </div>
+                                  {drawingMode && (
+                                     <button 
+                                       onClick={(e) => {
+                                         e.stopPropagation();
+                                         onPointDeleted && onPointDeleted(-1, zona.poligono);
+                                       }}
+                                       className="w-full py-1.5 bg-warning text-black text-[9px] font-black uppercase rounded shadow-lg hover:scale-[1.02] transition-all flex items-center justify-center gap-1.5"
+                                     >
+                                       <Edit3 size={10} /> EDITAR ÁREA
+                                      </button>
+                                  )}
                               </div>
                            </Popup>
                         </Polygon>
@@ -324,7 +335,6 @@ const MapaBaseReal = ({
             ))}
             
             {/* Sugerencias de IA (Diseño dinámico) */}
-            {aiSuggestions?.lineas?.map((linea, i) => (
                 <Polyline 
                     key={`ai-loc-${i}`} 
                     positions={linea.points || linea} 
@@ -334,6 +344,20 @@ const MapaBaseReal = ({
                         opacity: linea.type === 'divisor_doble' ? 1 : 0.8, 
                         dashArray: linea.type === 'via' ? '5, 10' : '0'
                     }} 
+                />
+            ))}
+
+            {/* Numeración de Puestos IA */}
+            {aiSuggestions?.puestos?.map((p, i) => (
+                <Marker 
+                    key={`ai-num-${i}`}
+                    position={p.center}
+                    icon={L.divIcon({
+                        className: 'tactical-label',
+                        html: `<div style="color: #818cf8; font-size: 7px; font-weight: 900; font-family: monospace; text-shadow: 0 0 3px rgba(0,0,0,0.9); opacity: 0.8;">${p.number}</div>`,
+                        iconSize: [20, 20],
+                        iconAnchor: [10, 10]
+                    })}
                 />
             ))}
           </MapContainer>
