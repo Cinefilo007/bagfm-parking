@@ -9,7 +9,7 @@ import { cn } from '../../lib/utils';
 import {
     ParkingSquare, Plus, Trash2, RefreshCw, Edit3, Edit2, X,
     MapPin, Clock, Users, Shield, ChevronRight,
-    ChevronDown, Settings, LayoutGrid, Building2,
+    ChevronDown, Settings, LayoutGrid, Building2, Layers,
     AlertTriangle, CheckCircle2, Timer, Hash,
     Lock, Unlock, Zap, Activity, MessageCircle, UserCheck, QrCode, Download, Loader2, Scissors, Target
 } from 'lucide-react';
@@ -393,8 +393,8 @@ export default function GestionZonas() {
     // Parámetros de Diseño Táctico Pro
     const [configIA, setConfigIA] = useState({
         angulo: 90,
-        tipo: 'doble', // 'lineal' | 'doble'
-        accesos: [] // { lat, lng, type: 'entry' | 'exit' }
+        patron: 'doble', 
+        accesos: []
     });
     const [accessPointMode, setAccessPointMode] = useState(null); // 'entry' | 'exit' | null
 
@@ -443,32 +443,37 @@ export default function GestionZonas() {
             const simLines = [];
             const stepSpotDepth = STANDARDS.SPOT_DEPTH / METERS_PER_DEG_LAT;
             const stepAisle = STANDARDS.AISLE_WIDTH / METERS_PER_DEG_LAT;
+            const spotWidthDeg = STANDARDS.SPOT_WIDTH / METERS_PER_DEG_LNG;
             
-            // Ajustar inicio basado en puntos de acceso si existen
             let currentLat = minLat;
-            if (configIA.accesos.length > 0) {
-                // Opcionalmente alinear la primera vía con un acceso
-            }
-
             let rowCounter = 0;
-            const angleRad = (configIA.angulo * Math.PI / 180);
+            let totalSpotsCount = 0;
+
+            // Patrón de distribución: 'simple' (P-F-P) o 'doble' (P-F-F-P)
+            const pattern = configIA.patron || 'simple';
 
             while (currentLat < maxLat) {
-                const isAisle = rowCounter % 2 !== 0;
+                // Determinar si esta fila es Pasillo o Puesto según el patrón
+                let isAisle = false;
+                if (pattern === 'simple') {
+                    isAisle = rowCounter % 2 !== 0;
+                } else {
+                    // Patrón doble: Fila, Fila, Pasillo, Fila, Fila, Pasillo...
+                    // 0:Fila, 1:Fila, 2:Pasillo, 3:Fila, 4:Fila, 5:Pasillo
+                    isAisle = (rowCounter + 1) % 3 === 0;
+                }
+
                 const step = isAisle ? stepAisle : stepSpotDepth;
-                
                 if (currentLat + step > maxLat) break;
                 
                 const lineType = isAisle ? 'via' : 'puesto';
                 const color = isAisle ? '#f59e0b' : '#8b5cf6';
                 
-                // Generar líneas de borde
                 const start1 = rotatePoint([currentLat, minLng], centroide, orientationAngle);
                 const end1 = rotatePoint([currentLat, maxLng], centroide, orientationAngle);
                 const start2 = rotatePoint([currentLat + step, minLng], centroide, orientationAngle);
                 const end2 = rotatePoint([currentLat + step, maxLng], centroide, orientationAngle);
                 
-                // Clipping táctico: Solo guardar líneas si sus puntos están dentro del polígono original
                 const isInside = (p1, p2) => isPointInPolygon(p1, points) && isPointInPolygon(p2, points);
 
                 if (isInside(start1, end1)) {
@@ -479,27 +484,33 @@ export default function GestionZonas() {
                 }
 
                 if (!isAisle) {
-                    const stepWidthM = STANDARDS.SPOT_WIDTH;
-                    const stepWidthDeg = stepWidthM / METERS_PER_DEG_LNG;
-                    
                     const skewOffset = configIA.angulo !== 90 ? (stepSpotDepth * Math.tan((90 - configIA.angulo) * Math.PI / 180)) : 0;
 
-                    for (let lng = minLng; lng <= maxLng; lng += stepWidthDeg) {
+                    for (let lng = minLng; lng <= maxLng - spotWidthDeg; lng += spotWidthDeg) {
                         const p1 = rotatePoint([currentLat, lng], centroide, orientationAngle);
                         const p2 = rotatePoint([currentLat + step, lng + skewOffset], centroide, orientationAngle);
                         
-                        if (isInside(p1, p2)) {
-                            simLines.push({ points: [p1, p2], type: 'separador', color: '#6366f1' });
+                        // Respetar circulación cruzada: No poner puestos en los extremos laterales si obstruyen giro
+                        // Dejamos un margen del 5% en los extremos para la "vía de cabecera"
+                        const margin = (maxLng - minLng) * 0.05;
+                        if (lng > minLng + margin && lng < maxLng - margin) {
+                            if (isInside(p1, p2)) {
+                                simLines.push({ points: [p1, p2], type: 'separador', color: '#6366f1' });
+                                totalSpotsCount++;
+                            }
                         }
                     }
                 } else {
                     const midLat = currentLat + (step / 2);
-                    const flow1 = rotatePoint([midLat, minLng + (maxLng-minLng)*0.45], centroide, orientationAngle);
-                    const flow2 = rotatePoint([midLat, minLng + (maxLng-minLng)*0.55], centroide, orientationAngle);
-                    
-                    if (isPointInPolygon(flow1, points) && isPointInPolygon(flow2, points)) {
-                        simLines.push({ points: [flow1, flow2], type: 'flujo', color: '#f59e0b' });
-                    }
+                    // Flechas de flujo en el pasillo
+                    const flowPoints = [0.25, 0.5, 0.75];
+                    flowPoints.forEach(pos => {
+                        const f1 = rotatePoint([midLat, minLng + (maxLng-minLng)*(pos-0.02)], centroide, orientationAngle);
+                        const f2 = rotatePoint([midLat, minLng + (maxLng-minLng)*(pos+0.02)], centroide, orientationAngle);
+                        if (isPointInPolygon(f1, points)) {
+                            simLines.push({ points: [f1, f2], type: 'flujo', color: '#f59e0b' });
+                        }
+                    });
                 }
 
                 currentLat += step;
@@ -507,8 +518,8 @@ export default function GestionZonas() {
             }
 
             setAiSuggestions({
-                puestosCount: spots,
-                distribución: `Plano Táctico I${aiIteration + 1}`,
+                puestosCount: totalSpotsCount,
+                distribución: pattern === 'doble' ? 'Back-to-Back (F-F)' : 'Lineal (P-F-P)',
                 eficiencia: `${(STANDARDS.MIN_EFFICIENCY * 100).toFixed(0)}%`,
                 lineas: simLines,
                 poligonoSugerido: poligonoSugerido,
@@ -1592,9 +1603,49 @@ export default function GestionZonas() {
                                 </div>
 
                                 <div className="space-y-4">
+                                    {/* CONTADOR DE CAPACIDAD IA */}
+                                    {aiSuggestions && (
+                                        <div className="bg-indigo-500/10 border border-indigo-500/20 p-3 rounded-2xl flex flex-col items-center justify-center animate-pulse">
+                                            <span className="text-[10px] font-black uppercase text-indigo-400 tracking-widest">Capacidad IA</span>
+                                            <span className="text-2xl font-black text-indigo-400">{aiSuggestions.puestosCount} <span className="text-[10px]">Puestos</span></span>
+                                        </div>
+                                    )}
+
                                     <div className="space-y-2">
                                         <label className="text-[9px] font-black uppercase tracking-widest text-text-muted flex justify-between">
-                                            Ángulo <span>{configIA.angulo}°</span>
+                                            Patrón Funcional <span>{configIA.patron === 'doble' ? 'Back-to-Back' : 'Lineal'}</span>
+                                        </label>
+                                        <div className="flex gap-2">
+                                            <button 
+                                                onClick={() => {
+                                                    setConfigIA({...configIA, patron: 'simple'});
+                                                    setTimeout(() => handleAISuggestion(tempPoints), 10);
+                                                }}
+                                                className={cn(
+                                                    "flex-1 py-1.5 rounded-lg text-[9px] font-bold border flex items-center justify-center gap-2",
+                                                    configIA.patron === 'simple' ? "bg-indigo-500 border-indigo-400 text-white" : "bg-white/5 border-white/5 text-text-muted"
+                                                )}
+                                            >
+                                                <LayoutGrid size={10}/> P-F-P
+                                            </button>
+                                            <button 
+                                                onClick={() => {
+                                                    setConfigIA({...configIA, patron: 'doble'});
+                                                    setTimeout(() => handleAISuggestion(tempPoints), 10);
+                                                }}
+                                                className={cn(
+                                                    "flex-1 py-1.5 rounded-lg text-[9px] font-bold border flex items-center justify-center gap-2",
+                                                    configIA.patron === 'doble' ? "bg-indigo-500 border-indigo-400 text-white" : "bg-white/5 border-white/5 text-text-muted"
+                                                )}
+                                            >
+                                                <Layers size={10}/> F-F-P
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    <div className="space-y-2">
+                                        <label className="text-[9px] font-black uppercase tracking-widest text-text-muted flex justify-between">
+                                            Ángulo de Puestos <span>{configIA.angulo}°</span>
                                         </label>
                                         <div className="flex gap-2">
                                             {[90, 45, 60].map(a => (
