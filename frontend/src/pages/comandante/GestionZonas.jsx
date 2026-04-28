@@ -391,18 +391,30 @@ export default function GestionZonas() {
             // Generar una cuadrícula básica sugerida dentro del polígono (Simulación)
             const area = calculatePolygonArea(points);
             const spots = estimateCapacity(area);
-            
-            // Simular líneas de puestos tácticos (trazado equidistante para la propuesta)
+
+            // Calcular Centroide para el escalado del plano (Simulación de Offset)
+            const latSum = points.reduce((s, p) => s + p[0], 0);
+            const lngSum = points.reduce((s, p) => s + p[1], 0);
+            const centroide = [latSum / points.length, lngSum / points.length];
+
+            // Crear polígono contraído (Plano de Área Utilizable - IA)
+            // Escalar cada punto un 8% hacia el centroide para simular márgenes de seguridad/vías
+            const poligonoSugerido = points.map(p => [
+                p[0] + (centroide[0] - p[0]) * 0.1,
+                p[1] + (centroide[1] - p[1]) * 0.1
+            ]);
+
+            // Simular líneas de puestos tácticos dentro del área neta
             const midPoints = [];
-            for (let i = 0; i < points.length; i++) {
-                const p1 = points[i];
-                const p2 = points[(i + 1) % points.length];
+            for (let i = 0; i < poligonoSugerido.length; i++) {
+                const p1 = poligonoSugerido[i];
+                const p2 = poligonoSugerido[(i + 1) % poligonoSugerido.length];
                 midPoints.push([(p1[0] + p2[0]) / 2, (p1[1] + p2[1]) / 2]);
             }
 
             const simLines = [];
             if (midPoints.length >= 2) {
-                // Trazamos un par de ejes de distribución
+                // Trazamos ejes de distribución sobre el plano neta
                 simLines.push([midPoints[0], midPoints[2] || midPoints[1]]);
                 if (midPoints.length > 3) simLines.push([midPoints[1], midPoints[3]]);
             }
@@ -411,7 +423,9 @@ export default function GestionZonas() {
                 puestosCount: spots,
                 distribución: '90 Grados',
                 eficiencia: '65%',
-                lineas: simLines
+                lineas: simLines,
+                poligonoSugerido: poligonoSugerido,
+                areaUtilizable: Math.floor(area * 0.65)
             });
             
             toast.success("Análisis Táctico Completado", { id: 'ai-analysis' });

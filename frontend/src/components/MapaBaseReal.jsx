@@ -347,9 +347,30 @@ const MapaBaseReal = ({ situacion, onSelectEntity, assignmentMode, drawingMode =
                     <Polyline 
                         key={`ai-loc-${i}`} 
                         positions={linea} 
-                        pathOptions={{ color: '#ef4444', weight: 1, opacity: 0.6, dashArray: '2, 4' }} 
+                        pathOptions={{ color: '#8b5cf6', weight: 1.5, opacity: 0.7, dashArray: '5, 5' }} 
                     />
                  ))}
+
+                 {/* Plano de Área Utilizable (IA) */}
+                 {aiSuggestions?.poligonoSugerido && (
+                    <Polygon 
+                        positions={aiSuggestions.poligonoSugerido}
+                        pathOptions={{ 
+                            color: '#8b5cf6', 
+                            fillColor: '#8b5cf6', 
+                            fillOpacity: 0.1, 
+                            weight: 2,
+                            dashArray: '10, 10'
+                        }}
+                    >
+                        <Popup className="tactical-popup">
+                            <div className="p-1">
+                                <div className="text-[9px] font-black uppercase text-indigo-400 mb-1">Propuesta IA</div>
+                                <div className="text-[10px] font-mono text-text-main">Área Neta: {aiSuggestions.areaUtilizable || 0} m²</div>
+                            </div>
+                        </Popup>
+                    </Polygon>
+                 )}
                </>
             )}
           </MapContainer>
