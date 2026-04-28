@@ -8,6 +8,7 @@ import MapaBaseReal from './MapaBaseReal';
 import { Card } from './ui/Card';
 import { toast } from 'react-hot-toast';
 import { calculatePolygonArea, estimateCapacity } from '../lib/geometry';
+import { cn } from '../lib/utils';
 
 const MapaTactico = ({ 
     pollingEnabled = true, 
