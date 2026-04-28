@@ -28,6 +28,10 @@ class ZonaEstacionamiento(Base):
     area_m2 = Column(Numeric(12, 2), nullable=True) # Superficie calculada
     capacidad_sugerida_ia = Column(Integer, nullable=True) # Sugerencia de la IA
 
+    # Persistencia de diseño Aegis Lab (v3.0)
+    config_ia = Column(JSONB, nullable=True) # {angulo, patron, accesos, etc}
+    grilla_tactica = Column(JSONB, nullable=True) # GeoJSON o similar con las líneas generadas
+
     punto_acceso_lat = Column(Numeric(10, 8), nullable=True)
     punto_acceso_lon = Column(Numeric(11, 8), nullable=True)
     radio_cobertura = Column(Integer, default=50, nullable=False)

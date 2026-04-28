@@ -297,13 +297,27 @@ const MapaBaseReal = ({
                                      <div className="text-[10px] font-mono text-primary font-black mb-2">{zona.area_m2.toLocaleString()} m²</div>
                                    )}
                                    <div className="flex justify-between items-center text-[9px] font-mono border-t border-bg-high/20 pt-2">
-                                      <span className="text-text-sec uppercase font-bold">Uso:</span>
-                                      <span className="text-text-main font-black text-[11px]">{zona.ocupacion_actual} / {zona.capacidad_total}</span>
-                                   </div>
-                               </div>
-                            </Popup>
-                          </Polygon>
+                                       <span className="text-text-sec uppercase font-bold">Uso:</span>
+                                       <span className="text-primary font-black text-[11px]">{zona.ocupacion_actual || 0} / {zona.capacidad_total || 0}</span>
+                                    </div>
+                                </div>
+                             </Popup>
+                           </Polygon>
                         )}
+
+                        {/* Renderizar Grilla Persistente (Aegis Lab) de la zona */}
+                        {zona.grilla_tactica?.map((linea, idx) => (
+                           <Polyline 
+                               key={`saved-grid-${zona.id}-${idx}`}
+                               positions={linea.points || linea} 
+                               pathOptions={{ 
+                                   color: linea.color || '#F59E0B', 
+                                   weight: linea.type === 'via' ? 1.5 : (linea.type === 'divisor_doble' ? 2 : 0.8), 
+                                   opacity: linea.type === 'divisor_doble' ? 0.9 : 0.5,
+                                   dashArray: linea.type === 'via' ? '5, 8' : '0' 
+                               }} 
+                           />
+                        ))}
                         {hasCoords(zona) && (
                           <Marker 
                             position={[zona.latitud, zona.longitud]}
@@ -403,18 +417,18 @@ const MapaBaseReal = ({
                  ))}
                  
                  {/* Sugerencias de IA (Plano Táctico Detallado) */}
-                 {aiSuggestions?.lineas?.map((linea, i) => (
+                  {aiSuggestions?.lineas?.map((linea, i) => (
                     <Polyline 
                         key={`ai-loc-${i}`} 
                         positions={linea.points || linea} 
                         pathOptions={{ 
                             color: linea.color || '#8b5cf6', 
-                            weight: linea.type === 'via' ? 2 : 1, 
-                            opacity: 0.8, 
-                            dashArray: linea.type === 'via' ? '5, 10' : '0' 
+                            weight: linea.type === 'via' ? 2 : (linea.type === 'divisor_doble' ? 2 : 1), 
+                            opacity: linea.type === 'divisor_doble' ? 1 : 0.8, 
+                            dashArray: linea.type === 'via' ? '5, 10' : (linea.type === 'flujo' ? '2, 5' : '0')
                         }} 
                     />
-                 ))}
+                  ))}
 
                  {/* Plano de Área Utilizable (IA) */}
                  {aiSuggestions?.poligonoSugerido && (

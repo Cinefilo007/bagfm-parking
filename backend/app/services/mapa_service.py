@@ -108,7 +108,9 @@ async def get_situacion_actual(db: AsyncSession):
             "poligono": z.poligono,
             "area_m2": z.area_m2,
             "capacidad_total": z.capacidad_total,
-            "ocupacion_actual": z.ocupacion_actual
+            "ocupacion_actual": z.ocupacion_actual,
+            "config_ia": z.config_ia,
+            "grilla_tactica": z.grilla_tactica
         })
 
     # 4. Eventos Recientes (Monitor en tiempo real)

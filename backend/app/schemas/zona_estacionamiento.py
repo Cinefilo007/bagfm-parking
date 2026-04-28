@@ -19,6 +19,8 @@ class ZonaEstacionamientoBase(BaseModel):
     radio_cobertura: int = 50
     tiempo_limite_llegada_min: int = 15
     activo: bool = True
+    config_ia: Optional[dict] = None
+    grilla_tactica: Optional[List[Any]] = None
 
 class ZonaEstacionamientoCrear(ZonaEstacionamientoBase):
     pass
@@ -39,6 +41,8 @@ class ZonaEstacionamientoActualizar(BaseModel):
     radio_cobertura: Optional[int] = None
     tiempo_limite_llegada_min: Optional[int] = None
     activo: Optional[bool] = None
+    config_ia: Optional[dict] = None
+    grilla_tactica: Optional[List[Any]] = None
 
 class ZonaEstacionamientoSalida(ZonaEstacionamientoBase):
     id: UUID

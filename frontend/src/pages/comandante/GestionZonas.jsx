@@ -455,12 +455,15 @@ export default function GestionZonas() {
             while (currentLat < maxLat) {
                 // Determinar si esta fila es Pasillo o Puesto según el patrón
                 let isAisle = false;
+                let isDobleFrontera = false; // Nueva bandera para el divisor central
+
                 if (pattern === 'simple') {
                     isAisle = rowCounter % 2 !== 0;
                 } else {
-                    // Patrón doble: Fila, Fila, Pasillo, Fila, Fila, Pasillo...
-                    // 0:Fila, 1:Fila, 2:Pasillo, 3:Fila, 4:Fila, 5:Pasillo
+                    // Patrón doble: Fila (0), Fila (1), Pasillo (2), Fila (3), Fila (4), Pasillo (5)
                     isAisle = (rowCounter + 1) % 3 === 0;
+                    // El divisor central ocurre entre la fila index 0 y 1, 3 y 4, etc.
+                    isDobleFrontera = rowCounter % 3 === 0; 
                 }
 
                 const step = isAisle ? stepAisle : stepSpotDepth;
@@ -479,7 +482,11 @@ export default function GestionZonas() {
                 if (isInside(start1, end1)) {
                     simLines.push({ points: [start1, end1], type: lineType, color });
                 }
-                if (isInside(start2, end2)) {
+                
+                // Si es la frontera interna de una Fila Doble, dibujar divisor especial
+                if (isDobleFrontera && isInside(start2, end2)) {
+                    simLines.push({ points: [start2, end2], type: 'divisor_doble', color: '#c084fc' });
+                } else if (isInside(start2, end2)) {
                     simLines.push({ points: [start2, end2], type: lineType, color });
                 }
 
@@ -616,7 +623,9 @@ export default function GestionZonas() {
             poligono: zona.poligono || null,
             area_m2: zona.area_m2 || null,
             tiempo_limite_llegada_min: zona.tiempo_limite_llegada_min || 15,
-        } : { ...FORM_ZONA_INICIAL, poligono: null, area_m2: null });
+            config_ia: zona.config_ia || { angulo: 90, patron: 'simple', accesos: [] },
+            grilla_tactica: zona.grilla_tactica || []
+        } : { ...FORM_ZONA_INICIAL, poligono: null, area_m2: null, config_ia: { angulo: 90, patron: 'simple', accesos: [] }, grilla_tactica: [] });
         setModalZona(true);
     };
 
@@ -637,6 +646,8 @@ export default function GestionZonas() {
                 tiempo_limite_llegada_min: parseInt(formZona.tiempo_limite_llegada_min, 10) || 15,
                 poligono: formZona.poligono || null,
                 area_m2: formZona.area_m2 || null,
+                config_ia: formZona.config_ia || null,
+                grilla_tactica: formZona.grilla_tactica || null,
             };
             if (editandoZona) {
                 await zonaService.actualizarZona(editandoZona.id, datos);
@@ -1744,19 +1755,21 @@ export default function GestionZonas() {
                         onAISuggestion={handleAISuggestion}
                         onPolygonComplete={(points) => {
                             const area = calculatePolygonArea(points);
-                            const capacidadIA = estimateCapacity(area);
                             
                             setFormZona(f => ({ 
                                 ...f, 
                                 poligono: points, 
                                 area_m2: area,
-                                capacidad_total: f.capacidad_total || capacidadIA
+                                capacidad_total: aiSuggestions?.puestosCount || f.capacidad_total || estimateCapacity(area),
+                                // Datos para persistencia Aegis Tactic
+                                config_ia: configIA,
+                                grilla_tactica: aiSuggestions?.lineas || []
                             }));
                             
                             setAiSuggestions(null);
                             setModalMapaReferencia(false);
                             setDrawingMode(false);
-                            toast.success(`Área georreferenciada: ${area.toLocaleString()} m²`);
+                            toast.success(`Área georreferenciada con IA: ${area.toLocaleString()} m²`);
                         }}
                         pollingEnabled={false}
                     />
