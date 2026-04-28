@@ -74,29 +74,51 @@ export const getPolygonOrientation = (points) => {
     let maxDist = 0;
     let angle = 0;
 
+    // Usamos el primer punto como referencia para la proyección local
+    const origin = points[0];
+    const latRad = origin[0] * Math.PI / 180;
+    const METERS_PER_DEG_LAT = 111320;
+    const METERS_PER_DEG_LNG = 111320 * Math.cos(latRad);
+
     for (let i = 0; i < points.length; i++) {
         const p1 = points[i];
         const p2 = points[(i + 1) % points.length];
-        const d = getDistanceMeters(p1, p2);
+        
+        // Proyectar a metros
+        const dy = (p2[0] - p1[0]) * METERS_PER_DEG_LAT;
+        const dx = (p2[1] - p1[1]) * METERS_PER_DEG_LNG;
+        
+        const d = Math.sqrt(dx * dx + dy * dy);
         if (d > maxDist) {
             maxDist = d;
-            angle = Math.atan2(p2[1] - p1[1], p2[0] - p1[0]);
+            angle = Math.atan2(dy, dx); // Ángulo en espacio métrico
         }
     }
     return angle;
 };
 
 /**
- * Rotar un punto alrededor de un origen.
+ * Rotar un punto en espacio de grados, pero respetando la proporción métrica.
  */
 export const rotatePoint = (point, origin, angle) => {
+    const latRad = origin[0] * Math.PI / 180;
+    const METERS_PER_DEG_LAT = 111320;
+    const METERS_PER_DEG_LNG = 111320 * Math.cos(latRad);
+
+    // 1. Proyectar a metros relativos al origen
+    const y = (point[0] - origin[0]) * METERS_PER_DEG_LAT;
+    const x = (point[1] - origin[1]) * METERS_PER_DEG_LNG;
+
+    // 2. Rotar en espacio métrico (Cartesiano estándar)
     const cos = Math.cos(angle);
     const sin = Math.sin(angle);
-    const dx = point[1] - origin[1];
-    const dy = point[0] - origin[0];
+    
+    const nx = x * cos - y * sin;
+    const ny = x * sin + y * cos;
 
+    // 3. Desproyectar a grados
     return [
-        origin[0] + (dy * cos - dx * sin),
-        origin[1] + (dy * sin + dx * cos)
+        origin[0] + (ny / METERS_PER_DEG_LAT),
+        origin[1] + (nx / METERS_PER_DEG_LNG)
     ];
 };

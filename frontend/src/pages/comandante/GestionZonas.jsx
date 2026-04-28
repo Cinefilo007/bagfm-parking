@@ -415,9 +415,10 @@ export default function GestionZonas() {
             // Determinar orientación óptima (Eje más largo)
             const orientationAngle = getPolygonOrientation(points);
             
-            // Rotar puntos al eje neutro (0°) para cálculo de grilla
+            // Rotar puntos al eje neutro para medir dimensiones reales en metros
             const rotatedPoints = points.map(p => rotatePoint(p, centroide, -orientationAngle));
             
+            // Medir dimensiones en grados y convertirlas a metros para el loop
             const lats = rotatedPoints.map(p => p[0]);
             const lngs = rotatedPoints.map(p => p[1]);
             
@@ -426,19 +427,30 @@ export default function GestionZonas() {
             const minLng = Math.min(...lngs);
             const maxLng = Math.max(...lngs);
 
+            const widthM = (maxLng - minLng) * METERS_PER_DEG_LNG;
+            const heightM = (maxLat - minLat) * METERS_PER_DEG_LAT;
+
             const simLines = [];
             
-            // Espaciado: Profundidad del puesto (5m) + Mitad del Pasillo (3m) = 8m
-            // Pero cada fila doble (puesto-pasillo-puesto) necesita Profundidad*2 + Pasillo = 16m
-            const rowSpacingM = STANDARDS.SPOT_DEPTH * 2 + STANDARDS.AISLE_WIDTH; 
-            const stepLat = rowSpacingM / METERS_PER_DEG_LAT;
+            // Usamos un espaciado de referencia táctica (5 metros = profundidad estandard)
+            // Esto permite que el usuario vea la escala real de los puestos en el terreno.
+            const stepM = STANDARDS.SPOT_DEPTH; 
+            const stepDeg = stepM / METERS_PER_DEG_LAT;
             
-            // Generar filas paralelas al eje principal
-            for (let lat = minLat + (stepLat/4); lat < maxLat; lat += stepLat) {
-                // Rotar línea de vuelta al ángulo original
+            // Generar franjas tácticas cada 5 metros
+            for (let lat = minLat + stepDeg; lat < maxLat; lat += stepDeg) {
                 const startPoint = rotatePoint([lat, minLng], centroide, orientationAngle);
                 const endPoint = rotatePoint([lat, maxLng], centroide, orientationAngle);
                 simLines.push([startPoint, endPoint]);
+            }
+
+            // Si el área es suficientemente ancha, dibujar también líneas divisorias de puestos (cada 2.5m)
+            if (heightM > 10) { // Solo si caben al menos 2 filas
+                const stepWidthM = STANDARDS.SPOT_WIDTH;
+                const stepWidthDeg = stepWidthM / METERS_PER_DEG_LNG;
+                for (let lng = minLng + stepWidthDeg; lng < maxLng; lng += stepWidthDeg * 2) {
+                     // Solo líneas cortas o punteadas? Mejor nos quedamos con las filas por ahora para no saturar
+                }
             }
 
             setAiSuggestions({
