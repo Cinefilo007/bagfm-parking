@@ -1026,11 +1026,14 @@ export default function GestionZonas() {
                         </div>
                     </div>
                     <div className="col-span-2 space-y-3">
-                        <Boton onClick={() => {
-                            setTempPoints(formZona.poligono || []);
-                            setDrawingMode(true);
-                            setModalMapaReferencia(true);
-                        }} className="w-full h-11 bg-warning/10 text-warning border border-warning/20 text-[10px] gap-2 font-black uppercase shadow-[0_0_15px_rgba(245,158,11,0.1)] hover:bg-warning/20 transition-all">
+                        <Boton 
+                            onClick={() => {
+                                setTempPoints(formZona.poligono || []);
+                                setDrawingMode(true);
+                                setModalMapaReferencia(true);
+                            }} 
+                            className="w-full h-11 bg-warning text-bg-app border border-warning/20 text-[10px] gap-2 font-black uppercase shadow-[0_0_15px_rgba(245,158,11,0.2)] hover:brightness-110 transition-all"
+                        >
                             <Scissors size={14} /> Referenciar Área (Dibujo Táctico)
                         </Boton>
 

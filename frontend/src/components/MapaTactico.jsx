@@ -78,12 +78,17 @@ const MapaTactico = ({
     }, [situacionPreload, idsZonasPermitidas, idEntidadFiltro]);
 
     useEffect(() => {
-        if (pollingEnabled) {
+        // Carga inicial si no hay precarga
+        if (!situacionPreload) {
             fetchSituacion();
+        }
+
+        // Configurar polling si está habilitado
+        if (pollingEnabled) {
             const interval = setInterval(fetchSituacion, 30000);
             return () => clearInterval(interval);
         }
-    }, [pollingEnabled]);
+    }, [pollingEnabled, situacionPreload]);
 
     const handleMapClick = async (lat, lng) => {
         if (drawingMode && onPointAdded) {
