@@ -123,8 +123,9 @@ const MapaBaseReal = ({
   assignmentMode, 
   drawingMode = false, 
   tempPoints = [], 
-  onPointMoved, 
-  onPointDeleted,
+  onPointMoved = null, 
+  onPointDeleted = null,
+  accessPoints = [],
   aiSuggestions = null, 
   showPolygons = true, 
   onMapClick = null, 
@@ -380,6 +381,27 @@ const MapaBaseReal = ({
                     </>
                  )}
 
+                 {/* Marcadores de Acceso (Entrada/Salida) */}
+                 {accessPoints?.map((ap, i) => (
+                    <Marker 
+                        key={`ap-${i}`} 
+                        position={[ap.lat, ap.lng]}
+                        icon={L.divIcon({
+                            className: 'custom-div-icon',
+                            html: `
+                                <div class="flex flex-col items-center">
+                                    <div class="px-2 py-0.5 ${ap.type === 'entry' ? 'bg-primary' : 'bg-danger'} text-bg-app text-[8px] font-black rounded-full shadow-lg animate-bounce">
+                                        ${ap.type === 'entry' ? 'ENTRADA' : 'SALIDA'}
+                                    </div>
+                                    <div class="w-2 h-2 ${ap.type === 'entry' ? 'bg-primary' : 'bg-danger'} rounded-full border border-white shadow-lg"></div>
+                                </div>
+                            `,
+                            iconSize: [60, 40],
+                            iconAnchor: [30, 40]
+                        })}
+                    />
+                 ))}
+                 
                  {/* Sugerencias de IA (Plano Táctico Detallado) */}
                  {aiSuggestions?.lineas?.map((linea, i) => (
                     <Polyline 

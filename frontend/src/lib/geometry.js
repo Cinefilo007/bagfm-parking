@@ -122,3 +122,19 @@ export const rotatePoint = (point, origin, angle) => {
         origin[1] + (nx / METERS_PER_DEG_LNG)
     ];
 };
+
+/**
+ * Verifica si un punto está dentro de un polígono (Ray Casting Algorithm).
+ */
+export const isPointInPolygon = (point, polygon) => {
+    const x = point[1], y = point[0]; // [lat, lng] -> y=lat, x=lng
+    let inside = false;
+    for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
+        const xi = polygon[i][1], yi = polygon[i][0];
+        const xj = polygon[j][1], yj = polygon[j][0];
+        const intersect = ((yi > y) !== (yj > y)) &&
+            (x < (xj - xi) * (y - yi) / (yj - yi) + xi);
+        if (intersect) inside = !inside;
+    }
+    return inside;
+};

@@ -27,6 +27,7 @@ import {
     estimateCapacity, 
     getPolygonOrientation, 
     rotatePoint, 
+    isPointInPolygon,
     STANDARDS,
     getDistanceMeters 
 } from '../../lib/geometry';
@@ -389,6 +390,14 @@ export default function GestionZonas() {
     const [aiLoading, setAiLoading] = useState(false);
     const [aiIteration, setAiIteration] = useState(0);
 
+    // Parámetros de Diseño Táctico Pro
+    const [configIA, setConfigIA] = useState({
+        angulo: 90,
+        tipo: 'doble', // 'lineal' | 'doble'
+        accesos: [] // { lat, lng, type: 'entry' | 'exit' }
+    });
+    const [accessPointMode, setAccessPointMode] = useState(null); // 'entry' | 'exit' | null
+
     const handleAISuggestion = async (points) => {
         if (!points || points.length < 3) return;
         
@@ -435,8 +444,14 @@ export default function GestionZonas() {
             const stepSpotDepth = STANDARDS.SPOT_DEPTH / METERS_PER_DEG_LAT;
             const stepAisle = STANDARDS.AISLE_WIDTH / METERS_PER_DEG_LAT;
             
+            // Ajustar inicio basado en puntos de acceso si existen
             let currentLat = minLat;
+            if (configIA.accesos.length > 0) {
+                // Opcionalmente alinear la primera vía con un acceso
+            }
+
             let rowCounter = 0;
+            const angleRad = (configIA.angulo * Math.PI / 180);
 
             while (currentLat < maxLat) {
                 const isAisle = rowCounter % 2 !== 0;
@@ -447,27 +462,44 @@ export default function GestionZonas() {
                 const lineType = isAisle ? 'via' : 'puesto';
                 const color = isAisle ? '#f59e0b' : '#8b5cf6';
                 
+                // Generar líneas de borde
                 const start1 = rotatePoint([currentLat, minLng], centroide, orientationAngle);
                 const end1 = rotatePoint([currentLat, maxLng], centroide, orientationAngle);
                 const start2 = rotatePoint([currentLat + step, minLng], centroide, orientationAngle);
                 const end2 = rotatePoint([currentLat + step, maxLng], centroide, orientationAngle);
                 
-                simLines.push({ points: [start1, end1], type: lineType, color });
-                simLines.push({ points: [start2, end2], type: lineType, color });
+                // Clipping táctico: Solo guardar líneas si sus puntos están dentro del polígono original
+                const isInside = (p1, p2) => isPointInPolygon(p1, points) && isPointInPolygon(p2, points);
+
+                if (isInside(start1, end1)) {
+                    simLines.push({ points: [start1, end1], type: lineType, color });
+                }
+                if (isInside(start2, end2)) {
+                    simLines.push({ points: [start2, end2], type: lineType, color });
+                }
 
                 if (!isAisle) {
                     const stepWidthM = STANDARDS.SPOT_WIDTH;
                     const stepWidthDeg = stepWidthM / METERS_PER_DEG_LNG;
+                    
+                    const skewOffset = configIA.angulo !== 90 ? (stepSpotDepth * Math.tan((90 - configIA.angulo) * Math.PI / 180)) : 0;
+
                     for (let lng = minLng; lng <= maxLng; lng += stepWidthDeg) {
                         const p1 = rotatePoint([currentLat, lng], centroide, orientationAngle);
-                        const p2 = rotatePoint([currentLat + step, lng], centroide, orientationAngle);
-                        simLines.push({ points: [p1, p2], type: 'separador', color: '#6366f1' });
+                        const p2 = rotatePoint([currentLat + step, lng + skewOffset], centroide, orientationAngle);
+                        
+                        if (isInside(p1, p2)) {
+                            simLines.push({ points: [p1, p2], type: 'separador', color: '#6366f1' });
+                        }
                     }
                 } else {
                     const midLat = currentLat + (step / 2);
                     const flow1 = rotatePoint([midLat, minLng + (maxLng-minLng)*0.45], centroide, orientationAngle);
                     const flow2 = rotatePoint([midLat, minLng + (maxLng-minLng)*0.55], centroide, orientationAngle);
-                    simLines.push({ points: [flow1, flow2], type: 'flujo', color: '#f59e0b' });
+                    
+                    if (isPointInPolygon(flow1, points) && isPointInPolygon(flow2, points)) {
+                        simLines.push({ points: [flow1, flow2], type: 'flujo', color: '#f59e0b' });
+                    }
                 }
 
                 currentLat += step;
@@ -1547,12 +1579,95 @@ export default function GestionZonas() {
                 className="max-w-5xl h-[85vh]"
             >
                 <div className="h-[calc(85vh-120px)] relative">
+                    {/* LABORATORIO DE DISEÑO TÁCTICO */}
+                    {drawingMode && tempPoints.length >= 3 && (
+                        <div className="absolute top-4 right-4 z-[2000] w-64 pointer-events-auto">
+                            <div className="bg-[#161B2B]/95 backdrop-blur-xl border border-white/5 p-4 rounded-3xl shadow-2xl">
+                                <div className="flex items-center justify-between mb-4">
+                                    <div className="flex items-center gap-2 text-indigo-400">
+                                        <Activity size={14} />
+                                        <span className="text-[10px] font-black uppercase tracking-widest">Aegis Lab</span>
+                                    </div>
+                                    <span className="text-[8px] bg-indigo-500/20 text-indigo-400 px-2 py-0.5 rounded-full font-bold">V3.0</span>
+                                </div>
+
+                                <div className="space-y-4">
+                                    <div className="space-y-2">
+                                        <label className="text-[9px] font-black uppercase tracking-widest text-text-muted flex justify-between">
+                                            Ángulo <span>{configIA.angulo}°</span>
+                                        </label>
+                                        <div className="flex gap-2">
+                                            {[90, 45, 60].map(a => (
+                                                <button 
+                                                    key={a}
+                                                    onClick={() => {
+                                                        setConfigIA({...configIA, angulo: a});
+                                                        setTimeout(() => handleAISuggestion(tempPoints), 10);
+                                                    }}
+                                                    className={cn(
+                                                        "flex-1 py-1 rounded-lg text-[9px] font-bold border transition-all",
+                                                        configIA.angulo === a ? "bg-indigo-500 border-indigo-400 text-white" : "bg-white/5 border-white/5 text-text-muted"
+                                                    )}
+                                                >
+                                                    {a}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </div>
+
+                                    <div className="space-y-2">
+                                        <label className="text-[9px] font-black uppercase tracking-widest text-text-muted font-bold">Accesos</label>
+                                        <div className="flex gap-2">
+                                            <button 
+                                                onClick={() => setAccessPointMode(accessPointMode === 'entry' ? null : 'entry')}
+                                                className={cn(
+                                                    "flex-1 flex items-center justify-center gap-2 p-2 rounded-xl border transition-all text-[9px]",
+                                                    accessPointMode === 'entry' ? "bg-primary/20 border-primary" : "bg-white/5 border-white/5 text-text-muted"
+                                                )}
+                                            >
+                                                <Target size={12} className="text-primary"/> Entrada
+                                            </button>
+                                            <button 
+                                                onClick={() => setAccessPointMode(accessPointMode === 'exit' ? null : 'exit')}
+                                                className={cn(
+                                                    "flex-1 flex items-center justify-center gap-2 p-2 rounded-xl border transition-all text-[9px]",
+                                                    accessPointMode === 'exit' ? "bg-danger/20 border-danger" : "bg-white/5 border-white/5 text-text-muted"
+                                                )}
+                                            >
+                                                <X size={12} className="text-danger"/> Salida
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    {configIA.accesos.length > 0 && (
+                                         <button 
+                                            onClick={() => setConfigIA({...configIA, accesos: []})}
+                                            className="w-full py-1 bg-danger/10 text-danger text-[8px] font-black uppercase rounded-lg border border-danger/20"
+                                         >
+                                             Limpiar Marcadores ({configIA.accesos.length})
+                                         </button>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+                    )}
                     <MapaTactico 
                         drawingMode={drawingMode}
                         tempPoints={tempPoints}
                         aiSuggestions={aiSuggestions}
                         aiLoading={aiLoading}
+                        accessPoints={configIA.accesos}
+                        accessPointMode={accessPointMode}
                         onPointAdded={(lat, lng) => {
+                            if (accessPointMode) {
+                                setConfigIA(prev => ({
+                                    ...prev,
+                                    accesos: [...prev.accesos, { lat, lng, type: accessPointMode }]
+                                }));
+                                setAccessPointMode(null);
+                                if (aiSuggestions) handleAISuggestion(tempPoints);
+                                return;
+                            }
                             const newPoints = [...tempPoints, [lat, lng]];
                             setTempPoints(newPoints);
                             if (aiSuggestions) handleAISuggestion(newPoints);
