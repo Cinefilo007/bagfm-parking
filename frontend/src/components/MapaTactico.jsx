@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { 
     Target, MapPin, X, Check, Search, Filter, Maximize2, Minimize2, 
-    Shield, Users, Car, Scissors, Square, Activity, MousePointer2, Sparkles
+    Shield, Users, Car, Scissors, Square, Activity, MousePointer2, Sparkles, Layers
 } from 'lucide-react';
 import { mapaService } from '../services/mapaService';
 import MapaBaseReal from './MapaBaseReal';
@@ -29,6 +29,7 @@ const MapaTactico = ({
     const [isAssigning, setIsAssigning] = useState(false);
     const [selectedEntityToMove, setSelectedEntityToMove] = useState(null);
     const [showSelectionModal, setShowSelectionModal] = useState(false);
+    const [showPolygons, setShowPolygons] = useState(true);
 
     const fetchSituacion = async () => {
         try {
@@ -135,10 +136,25 @@ const MapaTactico = ({
                     drawingMode={drawingMode}
                     tempPoints={tempPoints}
                     aiSuggestions={aiSuggestions}
+                    showPolygons={showPolygons}
                     onMapClick={handleMapClick}
                     selectedForMove={selectedEntityToMove}
                     isFullscreen={false}
                 />
+
+                {/* Botón flotante para Alternar Polígonos (Capas) */}
+                <button
+                    onClick={() => setShowPolygons(!showPolygons)}
+                    className={cn(
+                        "absolute bottom-4 left-4 z-[1000] p-3 rounded-2xl border transition-all shadow-lg",
+                        showPolygons 
+                            ? "bg-primary text-bg-app border-primary/20 shadow-primary/20" 
+                            : "bg-bg-card/80 text-text-muted border-white/5 backdrop-blur-md"
+                    )}
+                    title={showPolygons ? "Ocultar Áreas de Estacionamiento" : "Mostrar Áreas de Estacionamiento"}
+                >
+                    <Layers size={18} className={cn(showPolygons && "animate-pulse")} />
+                </button>
 
                 {/* Overlays de Dibujo */}
                 {drawingMode && (

@@ -105,6 +105,8 @@ async def get_situacion_actual(db: AsyncSession):
             "nombre": z.nombre,
             "latitud": z.latitud,
             "longitud": z.longitud,
+            "poligono": z.poligono,
+            "area_m2": z.area_m2,
             "capacidad_total": z.capacidad_total,
             "ocupacion_actual": z.ocupacion_actual
         })

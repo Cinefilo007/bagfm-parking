@@ -117,7 +117,7 @@ function MapResizer({ isFullscreen }) {
   return null;
 }
 
-const MapaBaseReal = ({ situacion, onSelectEntity, assignmentMode, drawingMode = false, tempPoints = [], aiSuggestions = null, onMapClick = null, selectedForMove = null, isFullscreen }) => {
+const MapaBaseReal = ({ situacion, onSelectEntity, assignmentMode, drawingMode = false, tempPoints = [], aiSuggestions = null, showPolygons = true, onMapClick = null, selectedForMove = null, isFullscreen }) => {
   const { isDarkMode } = useThemeStore();
   const [mapType, setMapType] = React.useState('satellite'); // 'satellite' | 'tactical'
 
@@ -264,7 +264,7 @@ const MapaBaseReal = ({ situacion, onSelectEntity, assignmentMode, drawingMode =
                    const hasPolygon = zona.poligono && Array.isArray(zona.poligono) && zona.poligono.length >= 3;
                    return (
                      <React.Fragment key={`zona-group-${zona.id}`}>
-                        {hasPolygon && (
+                        {hasPolygon && showPolygons && (
                           <Polygon 
                             positions={zona.poligono}
                             pathOptions={{
