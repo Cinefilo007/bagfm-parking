@@ -386,11 +386,14 @@ export default function GestionZonas() {
     const [tempPoints, setTempPoints] = useState([]);
     const [modalMapaReferencia, setModalMapaReferencia] = useState(false);
     const [aiSuggestions, setAiSuggestions] = useState(null);
+    const [aiLoading, setAiLoading] = useState(false);
+    const [aiIteration, setAiIteration] = useState(0);
 
     const handleAISuggestion = async (points) => {
         if (!points || points.length < 3) return;
         
-        toast.loading("IA Analizando Orientación y Superficie...", { id: 'ai-analysis' });
+        setAiLoading(true);
+        toast.loading("IA Calculando Distribución Avanzada...", { id: 'ai-analysis' });
         
         setTimeout(() => {
             const area = calculatePolygonArea(points);
@@ -401,10 +404,10 @@ export default function GestionZonas() {
             const lngSum = points.reduce((s, p) => s + p[1], 0);
             const centroide = [latSum / points.length, lngSum / points.length];
 
-            // Plano de Área Utilizable (Contraído para circulación periférica)
+            // Plano de Área Utilizable (REDUCIDO AL 3% SEGÚN SOLICITUD)
             const poligonoSugerido = points.map(p => [
-                p[0] + (centroide[0] - p[0]) * 0.1,
-                p[1] + (centroide[1] - p[1]) * 0.1
+                p[0] + (centroide[0] - p[0]) * 0.03,
+                p[1] + (centroide[1] - p[1]) * 0.03
             ]);
 
             // ESCALADO MÉTRICO REAL (Preciso para 10°N)
@@ -412,8 +415,9 @@ export default function GestionZonas() {
             const METERS_PER_DEG_LAT = 111320;
             const METERS_PER_DEG_LNG = 111320 * Math.cos(latRad);
 
-            // Determinar orientación óptima (Eje más largo)
-            const orientationAngle = getPolygonOrientation(points);
+            // Determinar orientación óptima + Iteración (0, 90, 180, 270)
+            const baseAngle = getPolygonOrientation(points);
+            const orientationAngle = baseAngle + (aiIteration * (Math.PI / 2));
             
             // Rotar puntos al eje neutro para medir dimensiones reales en metros
             const rotatedPoints = points.map(p => rotatePoint(p, centroide, -orientationAngle));
@@ -432,39 +436,44 @@ export default function GestionZonas() {
 
             const simLines = [];
             
-            // Usamos un espaciado de referencia táctica (5 metros = profundidad estandard)
-            // Esto permite que el usuario vea la escala real de los puestos en el terreno.
-            const stepM = STANDARDS.SPOT_DEPTH; 
-            const stepDeg = stepM / METERS_PER_DEG_LAT;
+            // 1. GENERAR FILAS (Cada 5m de profundidad)
+            const stepDepthM = STANDARDS.SPOT_DEPTH; 
+            const stepDepthDeg = stepDepthM / METERS_PER_DEG_LAT;
             
-            // Generar franjas tácticas cada 5 metros
-            for (let lat = minLat + stepDeg; lat < maxLat; lat += stepDeg) {
+            for (let lat = minLat + stepDepthDeg; lat < maxLat; lat += stepDepthDeg) {
                 const startPoint = rotatePoint([lat, minLng], centroide, orientationAngle);
                 const endPoint = rotatePoint([lat, maxLng], centroide, orientationAngle);
                 simLines.push([startPoint, endPoint]);
             }
 
-            // Si el área es suficientemente ancha, dibujar también líneas divisorias de puestos (cada 2.5m)
-            if (heightM > 10) { // Solo si caben al menos 2 filas
-                const stepWidthM = STANDARDS.SPOT_WIDTH;
-                const stepWidthDeg = stepWidthM / METERS_PER_DEG_LNG;
-                for (let lng = minLng + stepWidthDeg; lng < maxLng; lng += stepWidthDeg * 2) {
-                     // Solo líneas cortas o punteadas? Mejor nos quedamos con las filas por ahora para no saturar
+            // 2. GENERAR DIVISIONES DE PUESTOS (Cada 2.5m de ancho)
+            const stepWidthM = STANDARDS.SPOT_WIDTH;
+            const stepWidthDeg = stepWidthM / METERS_PER_DEG_LNG;
+            
+            if (maxLat - minLat > stepDepthDeg) {
+                for (let lng = minLng + stepWidthDeg; lng < maxLng; lng += stepWidthDeg) {
+                    // Dibujamos líneas verticales cortas entre las filas
+                    for (let lat = minLat; lat < maxLat - (stepDepthDeg/2); lat += stepDepthDeg) {
+                        const p1 = rotatePoint([lat, lng], centroide, orientationAngle);
+                        const p2 = rotatePoint([lat + stepDepthDeg, lng], centroide, orientationAngle);
+                        simLines.push([p1, p2]);
+                    }
                 }
             }
 
             setAiSuggestions({
                 puestosCount: spots,
-                distribución: `Orientación Táctica: ${(orientationAngle * 180 / Math.PI).toFixed(1)}°`,
-                eficiencia: `${(STANDARDS.MIN_EFFICIENCY * 100).toFixed(0)}% (Aegis Standard)`,
+                distribución: `Iteración ${aiIteration + 1} (${(orientationAngle * 180 / Math.PI).toFixed(0)}°)`,
+                eficiencia: `${(STANDARDS.MIN_EFFICIENCY * 100).toFixed(0)}%`,
                 lineas: simLines,
                 poligonoSugerido: poligonoSugerido,
                 areaUtilizable: Math.floor(area * STANDARDS.MIN_EFFICIENCY)
             });
             
-            toast.success("Análisis Táctico Completado", { id: 'ai-analysis' });
-            toast("Distribución alineada automáticamente con el terreno operativo", { icon: '🤖' });
-        }, 1500);
+            setAiIteration(prev => (prev + 1) % 4);
+            setAiLoading(false);
+            toast.success("Distribución Actualizada", { id: 'ai-analysis' });
+        }, 1200);
     };
 
     // Estados para Carnetización
@@ -1529,6 +1538,7 @@ export default function GestionZonas() {
                         drawingMode={drawingMode}
                         tempPoints={tempPoints}
                         aiSuggestions={aiSuggestions}
+                        aiLoading={aiLoading}
                         onPointAdded={(lat, lng) => {
                             const newPoints = [...tempPoints, [lat, lng]];
                             setTempPoints(newPoints);

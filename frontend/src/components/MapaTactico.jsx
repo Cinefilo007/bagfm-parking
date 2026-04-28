@@ -23,7 +23,8 @@ const MapaTactico = ({
     onPolygonComplete = null,
     onAISuggestion = null,
     onPointMoved = null,
-    onPointDeleted = null
+    onPointDeleted = null,
+    aiLoading = false
 }) => {
     const [situacion, setSituacion] = useState(situacionPreload);
     const [loading, setLoading] = useState(!situacionPreload);
@@ -200,10 +201,11 @@ const MapaTactico = ({
                             <div className="flex gap-2 mt-2">
                                 <button 
                                     onClick={() => onAISuggestion && onAISuggestion(tempPoints)}
-                                    disabled={tempPoints.length < 3}
+                                    disabled={tempPoints.length < 3 || aiLoading}
                                     className="flex-1 py-2 bg-indigo-500 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:scale-[1.02] active:scale-95 transition-all disabled:opacity-30 flex items-center justify-center gap-2 pointer-events-auto"
                                 >
-                                    <Sparkles size={14} /> Sugerir IA
+                                    {aiLoading ? <Loader2 size={14} className="animate-spin" /> : <Sparkles size={14} />}
+                                    {aiLoading ? 'Calculando...' : 'Sugerir IA'}
                                 </button>
                                 <button 
                                     onClick={() => onPolygonComplete && onPolygonComplete(tempPoints)}
