@@ -1749,6 +1749,37 @@ export default function GestionZonas() {
                                              Limpiar Marcadores ({configIA.accesos.length})
                                          </button>
                                     )}
+                                    <div className="space-y-2 pt-4 border-t border-white/5">
+                                        <button 
+                                            onClick={() => handleAISuggestion(tempPoints)}
+                                            disabled={tempPoints.length < 3 || aiLoading}
+                                            className="w-full py-2.5 bg-indigo-500 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:scale-[1.02] active:scale-95 transition-all disabled:opacity-30 flex items-center justify-center gap-2"
+                                        >
+                                            {aiLoading ? <Loader2 size={14} className="animate-spin" /> : <Sparkles size={14} />}
+                                            {aiLoading ? 'Recalcular Distribución' : 'Sugerir IA'}
+                                        </button>
+                                        <button 
+                                            onClick={() => {
+                                                const area = calculatePolygonArea(tempPoints);
+                                                setFormZona(f => ({ 
+                                                    ...f, 
+                                                    poligono: tempPoints, 
+                                                    area_m2: area,
+                                                    capacidad_total: aiSuggestions?.puestosCount || f.capacidad_total || estimateCapacity(area),
+                                                    config_ia: configIA,
+                                                    grilla_tactica: aiSuggestions?.lineas || []
+                                                }));
+                                                setAiSuggestions(null);
+                                                setModalMapaReferencia(false);
+                                                setDrawingMode(false);
+                                                toast.success("Plano Táctico Guardado");
+                                            }}
+                                            disabled={tempPoints.length < 3}
+                                            className="w-full py-2.5 bg-primary text-bg-app rounded-xl text-[10px] font-black uppercase tracking-widest hover:scale-[1.02] active:scale-95 transition-all disabled:opacity-30 flex items-center justify-center gap-2"
+                                        >
+                                            <Check size={14} /> Finalizar Diseño
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -1819,10 +1850,10 @@ export default function GestionZonas() {
                             onClick={() => {
                                 setTempPoints([]);
                                 setAiSuggestions(null);
-                                toast("Polígono reiniciado", { icon: '🧹' });
+                                toast("Trazado eliminado", { icon: '🧹' });
                             }}
-                            className="absolute bottom-6 right-6 z-[1001] w-10 h-10 bg-danger text-white rounded-full flex items-center justify-center shadow-lg hover:scale-110 active:scale-95 transition-all border-none"
-                            title="Limpiar Polígono"
+                            className="absolute bottom-[148px] left-6 z-[2001] w-11 h-11 bg-danger/90 backdrop-blur-md text-white rounded-2xl flex items-center justify-center shadow-lg hover:scale-110 active:scale-95 transition-all border border-danger/20 hover:bg-danger"
+                            title="Eliminar Trazo"
                         >
                             <Trash2 size={20} />
                         </button>
