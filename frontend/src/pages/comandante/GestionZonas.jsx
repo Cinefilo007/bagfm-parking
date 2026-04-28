@@ -393,7 +393,8 @@ export default function GestionZonas() {
     // Parámetros de Diseño Táctico Pro
     const [configIA, setConfigIA] = useState({
         angulo: 90,
-        patron: 'doble', 
+        patron: 'doble',
+        anchoPasillo: 6.0,
         accesos: []
     });
     const [accessPointMode, setAccessPointMode] = useState(null); // 'entry' | 'exit' | null
@@ -440,10 +441,11 @@ export default function GestionZonas() {
             const minLng = Math.min(...lngs);
             const maxLng = Math.max(...lngs);
 
-            const simLines = [];
+            const ANCHO_PASILLO = configIA.anchoPasillo;
+            const ANCHO_PUESTO = 2.5;
             const stepSpotDepth = STANDARDS.SPOT_DEPTH / METERS_PER_DEG_LAT;
-            const stepAisle = STANDARDS.AISLE_WIDTH / METERS_PER_DEG_LAT;
-            const spotWidthDeg = STANDARDS.SPOT_WIDTH / METERS_PER_DEG_LNG;
+            const stepAisle = ANCHO_PASILLO / METERS_PER_DEG_LAT;
+            const spotWidthDeg = ANCHO_PUESTO / METERS_PER_DEG_LNG;
             
             let currentLat = minLat;
             let rowCounter = 0;
@@ -623,9 +625,9 @@ export default function GestionZonas() {
             poligono: zona.poligono || null,
             area_m2: zona.area_m2 || null,
             tiempo_limite_llegada_min: zona.tiempo_limite_llegada_min || 15,
-            config_ia: zona.config_ia || { angulo: 90, patron: 'simple', accesos: [] },
+            config_ia: zona.config_ia || { angulo: 90, patron: 'simple', anchoPasillo: 6.0, accesos: [] },
             grilla_tactica: zona.grilla_tactica || []
-        } : { ...FORM_ZONA_INICIAL, poligono: null, area_m2: null, config_ia: { angulo: 90, patron: 'simple', accesos: [] }, grilla_tactica: [] });
+        } : { ...FORM_ZONA_INICIAL, poligono: null, area_m2: null, config_ia: { angulo: 90, patron: 'simple', anchoPasillo: 6.0, accesos: [] }, grilla_tactica: [] });
         setModalZona(true);
     };
 
@@ -1615,10 +1617,22 @@ export default function GestionZonas() {
 
                                 <div className="space-y-4">
                                     {/* CONTADOR DE CAPACIDAD IA */}
-                                    {aiSuggestions && (
-                                        <div className="bg-indigo-500/10 border border-indigo-500/20 p-3 rounded-2xl flex flex-col items-center justify-center animate-pulse">
-                                            <span className="text-[10px] font-black uppercase text-indigo-400 tracking-widest">Capacidad IA</span>
-                                            <span className="text-2xl font-black text-indigo-400">{aiSuggestions.puestosCount} <span className="text-[10px]">Puestos</span></span>
+                                    {tempPoints.length >= 3 && (
+                                        <div className="flex gap-2">
+                                            <div className="flex-1 bg-white/5 border border-white/10 p-2 rounded-xl flex flex-col items-center">
+                                                <span className="text-[8px] font-black uppercase text-text-muted">Área Bruta</span>
+                                                <span className="text-sm font-black text-text-main">
+                                                    {calculatePolygonArea(tempPoints).toLocaleString()} <span className="text-[8px] font-normal text-text-muted">m²</span>
+                                                </span>
+                                            </div>
+                                            {aiSuggestions && (
+                                                <div className="flex-1 bg-indigo-500/10 border border-indigo-500/20 p-2 rounded-xl flex flex-col items-center animate-pulse">
+                                                    <span className="text-[8px] font-black uppercase text-indigo-400">Puestos IA</span>
+                                                    <span className="text-sm font-black text-indigo-400">
+                                                        {aiSuggestions.puestosCount} <span className="text-[8px] font-normal text-indigo-400/70">Unid.</span>
+                                                    </span>
+                                                </div>
+                                            )}
                                         </div>
                                     )}
 
@@ -1651,6 +1665,32 @@ export default function GestionZonas() {
                                             >
                                                 <Layers size={10}/> F-F-P
                                             </button>
+                                        </div>
+                                    </div>
+
+                                    <div className="space-y-3">
+                                        <div className="flex justify-between items-center">
+                                            <label className="text-[9px] font-black p-0 uppercase tracking-widest text-text-muted flex items-center gap-1">
+                                                Ancho de Vía
+                                            </label>
+                                            <span className="text-[11px] font-mono font-bold text-indigo-400">{configIA.anchoPasillo}m</span>
+                                        </div>
+                                        <input 
+                                            type="range" 
+                                            min="4" 
+                                            max="12" 
+                                            step="0.5"
+                                            value={configIA.anchoPasillo}
+                                            onChange={(e) => {
+                                                const val = parseFloat(e.target.value);
+                                                setConfigIA(prev => ({ ...prev, anchoPasillo: val }));
+                                                setTimeout(() => handleAISuggestion(tempPoints), 10);
+                                            }}
+                                            className="w-full h-1 bg-white/5 rounded-full appearance-none cursor-pointer accent-indigo-500"
+                                        />
+                                        <div className="flex justify-between text-[7px] text-text-muted font-bold px-1 uppercase opacity-50">
+                                            <span>Compactos (4m)</span>
+                                            <span>Libertad (12m)</span>
                                         </div>
                                     </div>
 

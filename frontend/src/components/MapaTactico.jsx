@@ -165,67 +165,8 @@ const MapaTactico = ({
                     <Layers size={18} className={cn(showPolygons && "animate-pulse")} />
                 </button>
 
-                {/* Overlays de Dibujo */}
-                {drawingMode && (
-                    <div className="absolute top-6 left-6 right-6 z-[1000] flex justify-between items-start pointer-events-none">
-                        <div className="bg-bg-modal/90 backdrop-blur-md border border-primary/30 p-4 rounded-2xl shadow-tactica pointer-events-auto flex flex-col gap-2 min-w-[240px]">
-                            <div className="flex items-center gap-2 text-primary">
-                                <Scissors size={14} className="animate-pulse"/>
-                                <span className="text-[10px] font-black uppercase tracking-[0.2em]">Referenciación de Área</span>
-                            </div>
-                            
-                            <div className="grid grid-cols-2 gap-3 mt-1">
-                                <div className="bg-white/5 p-2 rounded-lg border border-white/5">
-                                    <span className="text-[8px] text-text-muted uppercase block mb-1">Vértices</span>
-                                    <span className="text-sm font-mono font-bold text-text-main">{tempPoints.length}</span>
-                                </div>
-                                <div className="bg-white/5 p-2 rounded-lg border border-white/5">
-                                    <span className="text-[8px] text-text-muted uppercase block mb-1">Área Est.</span>
-                                    <span className="text-sm font-mono font-bold text-primary">
-                                        {calculatePolygonArea(tempPoints).toLocaleString(undefined, { maximumFractionDigits: 1 })} m²
-                                    </span>
-                                </div>
-                            </div>
-
-                            {tempPoints.length >= 3 && (
-                                <div className="flex items-center gap-2 p-2 bg-primary/10 rounded-lg border border-primary/20">
-                                    <div className="p-1.5 bg-primary rounded-md text-bg-app">
-                                        <Car size={12} />
-                                    </div>
-                                    <div className="flex flex-col">
-                                        <span className="text-[8px] text-primary/70 uppercase font-black tracking-widest leading-none">Capacidad Sugerida</span>
-                                        <span className="text-[10px] font-black text-text-main leading-tight mt-1">
-                                            {estimateCapacity(calculatePolygonArea(tempPoints))} Puestos (Efic. 65%)
-                                        </span>
-                                    </div>
-                                </div>
-                            )}
-
-                            <div className="flex gap-2 mt-2">
-                                <button 
-                                    onClick={() => onAISuggestion && onAISuggestion(tempPoints)}
-                                    disabled={tempPoints.length < 3 || aiLoading}
-                                    className="flex-1 py-2 bg-indigo-500 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:scale-[1.02] active:scale-95 transition-all disabled:opacity-30 flex items-center justify-center gap-2 pointer-events-auto"
-                                >
-                                    {aiLoading ? <Loader2 size={14} className="animate-spin" /> : <Sparkles size={14} />}
-                                    {aiLoading ? 'Calculando...' : 'Sugerir IA'}
-                                </button>
-                                <button 
-                                    onClick={() => onPolygonComplete && onPolygonComplete(tempPoints)}
-                                    disabled={tempPoints.length < 3}
-                                    className="flex-1 py-2 bg-primary text-bg-app rounded-xl text-[10px] font-black uppercase tracking-widest hover:scale-[1.02] active:scale-95 transition-all disabled:opacity-30 flex items-center justify-center gap-2 pointer-events-auto"
-                                >
-                                    <Check size={14} /> Finalizar
-                                </button>
-                            </div>
-                        </div>
-
-                        <div className="bg-warning/90 backdrop-blur-md px-4 py-2 rounded-xl border border-warning shadow-tactica flex items-center gap-3 animate-pulse pointer-events-auto">
-                            <MousePointer2 size={16} className="text-bg-app" />
-                            <span className="text-[10px] font-black text-bg-app uppercase tracking-widest leading-none">Modo Trazado Polígono: Haz clic en los bordes</span>
-                        </div>
-                    </div>
-                )}
+                {/* Overlay de Dibujo - Deshabilitado en favor del Aegis Lab Unificado */}
+                {/* {drawingMode && ( ... )} */}
 
                 {/* BOTÓN FLOTANTE: Georreferenciar */}
                 {allowGeoreference && (
