@@ -11,7 +11,7 @@ import {
     MapPin, Clock, Users, Shield, ChevronRight,
     ChevronDown, Settings, LayoutGrid, Building2, Layers,
     AlertTriangle, CheckCircle2, Timer, Hash,
-    Lock, Unlock, Zap, Activity, MessageCircle, UserCheck, QrCode, Download, Loader2, Scissors, Target
+    Lock, Unlock, Zap, Activity, MessageCircle, UserCheck, QrCode, Download, Loader2, Scissors, Target, Sparkles, Check, Car
 } from 'lucide-react';
 import { toPng } from 'html-to-image';
 import PlantillaPreview from '../../components/carnets/PlantillaPreview';
