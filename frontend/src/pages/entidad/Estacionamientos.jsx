@@ -822,37 +822,47 @@ export default function EstacionamientosEntidad() {
     // ── Render ────────────────────────────────────────────────────────────────
 
     return (
-        <div className="p-4 md:p-6 space-y-5 pb-24 max-w-4xl mx-auto animate-in fade-in duration-500">
+        <div className="p-4 space-y-6 pb-32 max-w-[1400px] mx-auto animate-in fade-in duration-500">
 
-            {/* Header */}
-            <header className="flex items-center justify-between gap-4">
-                <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 bg-primary/10 rounded-xl flex items-center justify-center border border-primary/20">
+            {/* Header Táctico Sincronizado */}
+            <header className="relative overflow-hidden bg-bg-card/30 rounded-2xl border border-white/5 p-4 md:p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                {/* Decoración de fondo */}
+                <div className="absolute top-0 right-0 w-64 h-64 bg-primary/5 blur-[100px] -mr-32 -mt-32" />
+                
+                {/* Bloque Izquierdo: Identidad */}
+                <div className="relative flex items-center gap-3">
+                    <div className="p-2.5 bg-primary/10 rounded-xl border border-primary/20 shadow-lg shadow-primary/5">
                         <ParkingSquare className="text-primary" size={20} />
                     </div>
                     <div>
-                        <h1 className="text-xl font-black text-text-main uppercase tracking-tight">Estacionamientos</h1>
-                        <p className="text-[9px] text-text-muted font-bold uppercase tracking-widest">{user?.entidad_nombre} — Puestos Asignados</p>
+                        <h1 className="text-xl md:text-2xl font-black text-text-main uppercase tracking-tighter leading-none">
+                            Estacionamientos
+                        </h1>
+                        <p className="text-[10px] text-text-muted font-bold uppercase tracking-[0.2em] mt-1 flex items-center gap-2 px-1">
+                            <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse shrink-0" />
+                            {user?.entidad_nombre} — Puestos Asignados
+                        </p>
                     </div>
                 </div>
             </header>
 
             {/* KPIs mini */}
-            {/* KPIs mini */}
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+            {/* Panel de Indicadores KPI Sincronizados */}
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
                 {[
-                    { label: 'Total', valor: stats.total, color: 'text-primary', icon: ParkingSquare },
-                    { label: 'Libres', valor: stats.libres, color: 'text-success', icon: CheckCircle2 },
-                    { label: 'Ocupados', valor: stats.ocupados, color: 'text-danger', icon: Car },
-                    { label: 'Reservados', valor: stats.reservados, color: 'text-warning', icon: Shield },
+                    { label: 'Total', valor: stats.total, color: 'text-primary', icon: ParkingSquare, sub: 'Capacidad asignada' },
+                    { label: 'Libres', valor: stats.libres, color: 'text-success', icon: CheckCircle2, sub: 'Disponibilidad real' },
+                    { label: 'Ocupados', valor: stats.ocupados, color: 'text-danger', icon: Car, sub: 'Activos en zona' },
+                    { label: 'Reservados', valor: stats.reservados, color: 'text-warning', icon: Shield, sub: 'Pases no ingresados' },
                 ].map((s, i) => (
                     <div key={i} className="p-4 bg-bg-card/40 border border-white/5 rounded-2xl flex items-center gap-4 group hover:bg-bg-high/80 transition-all border-b-2 border-b-transparent hover:border-b-primary/50">
-                        <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center bg-black/40 border border-white/5 shrink-0", s.color)}>
-                            <s.icon size={18} />
+                        <div className={cn("w-12 h-12 rounded-2xl flex items-center justify-center bg-black/40 border border-white/5 shrink-0", s.color)}>
+                            <s.icon size={22} />
                         </div>
                         <div className="min-w-0">
-                            <div className={cn("text-xl font-black leading-tight truncate", s.color)}>{s.valor}</div>
-                            <div className="text-[9px] font-black uppercase text-text-muted tracking-widest truncate">{s.label}</div>
+                            <div className={cn("text-2xl font-black leading-tight truncate", s.color)}>{s.valor}</div>
+                            <div className="text-[10px] font-black uppercase text-text-muted tracking-widest truncate">{s.label}</div>
+                            <div className="text-[8px] text-text-muted opacity-40 uppercase font-bold mt-0.5 whitespace-nowrap">{s.sub}</div>
                         </div>
                     </div>
                 ))}
