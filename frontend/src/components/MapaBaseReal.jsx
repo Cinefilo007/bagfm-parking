@@ -130,7 +130,8 @@ const MapaBaseReal = ({
   showPolygons = true, 
   onMapClick = null, 
   selectedForMove = null, 
-  isFullscreen 
+  isFullscreen = false,
+  hideSituacion = false
 }) => {
   const { isDarkMode } = useThemeStore();
   const [mapType, setMapType] = React.useState('satellite'); // 'satellite' | 'tactical'
@@ -214,7 +215,7 @@ const MapaBaseReal = ({
             <MapClickHandler onMapClick={onMapClick} assignmentMode={assignmentMode} drawingMode={drawingMode} />
             <MapResizer isFullscreen={isFullscreen} />
 
-            {situacion && (
+            {situacion && !hideSituacion && (
               <>
                 {situacion.alcabalas?.filter(hasCoords).map(alcabala => (
                   <Marker 

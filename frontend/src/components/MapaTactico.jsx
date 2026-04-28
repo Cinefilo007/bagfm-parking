@@ -149,6 +149,7 @@ const MapaTactico = ({
                     onMapClick={handleMapClick}
                     selectedForMove={selectedEntityToMove}
                     isFullscreen={false}
+                    hideSituacion={drawingMode}
                 />
 
                 {/* Botón flotante para Alternar Polígonos (Capas) */}
