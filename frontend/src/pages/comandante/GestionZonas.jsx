@@ -443,6 +443,7 @@ export default function GestionZonas() {
 
             const ANCHO_PASILLO = configIA.anchoPasillo;
             const ANCHO_PUESTO = 2.5;
+            const simLines = [];
             const stepSpotDepth = STANDARDS.SPOT_DEPTH / METERS_PER_DEG_LAT;
             const stepAisle = ANCHO_PASILLO / METERS_PER_DEG_LAT;
             const spotWidthDeg = ANCHO_PUESTO / METERS_PER_DEG_LNG;
@@ -1605,8 +1606,8 @@ export default function GestionZonas() {
                 <div className="h-[calc(85vh-120px)] relative">
                     {/* LABORATORIO DE DISEÑO TÁCTICO */}
                     {drawingMode && tempPoints.length >= 3 && (
-                        <div className="absolute top-4 right-4 z-[2000] w-64 pointer-events-auto">
-                            <div className="bg-[#161B2B]/95 backdrop-blur-xl border border-white/5 p-4 rounded-3xl shadow-2xl">
+                        <div className="absolute top-4 right-4 z-[2000] w-60 pointer-events-auto">
+                            <div className="bg-[#161B2B]/90 backdrop-blur-3xl border border-white/10 p-3 rounded-2xl shadow-2xl">
                                 <div className="flex items-center justify-between mb-4">
                                     <div className="flex items-center gap-2 text-indigo-400">
                                         <Activity size={14} />
@@ -1614,8 +1615,7 @@ export default function GestionZonas() {
                                     </div>
                                     <span className="text-[8px] bg-indigo-500/20 text-indigo-400 px-2 py-0.5 rounded-full font-bold">V3.0</span>
                                 </div>
-
-                                <div className="space-y-4">
+                                <div className="space-y-3">
                                     {/* CONTADOR DE CAPACIDAD IA */}
                                     {tempPoints.length >= 3 && (
                                         <div className="flex gap-2">
@@ -1749,14 +1749,14 @@ export default function GestionZonas() {
                                              Limpiar Marcadores ({configIA.accesos.length})
                                          </button>
                                     )}
-                                    <div className="space-y-2 pt-4 border-t border-white/5">
+                                    <div className="space-y-1.5 pt-3 border-t border-white/10">
                                         <button 
                                             onClick={() => handleAISuggestion(tempPoints)}
                                             disabled={tempPoints.length < 3 || aiLoading}
-                                            className="w-full py-2.5 bg-indigo-500 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:scale-[1.02] active:scale-95 transition-all disabled:opacity-30 flex items-center justify-center gap-2"
+                                            className="w-full py-2 bg-indigo-500 text-white rounded-xl text-[9px] font-black uppercase tracking-widest hover:scale-[1.02] active:scale-95 transition-all disabled:opacity-30 flex items-center justify-center gap-2"
                                         >
-                                            {aiLoading ? <Loader2 size={14} className="animate-spin" /> : <Sparkles size={14} />}
-                                            {aiLoading ? 'Recalcular Distribución' : 'Sugerir IA'}
+                                            {aiLoading ? <Loader2 size={12} className="animate-spin" /> : <Sparkles size={12} />}
+                                            {aiLoading ? 'Calculando...' : 'Actualizar'}
                                         </button>
                                         <button 
                                             onClick={() => {
@@ -1775,9 +1775,9 @@ export default function GestionZonas() {
                                                 toast.success("Plano Táctico Guardado");
                                             }}
                                             disabled={tempPoints.length < 3}
-                                            className="w-full py-2.5 bg-primary text-bg-app rounded-xl text-[10px] font-black uppercase tracking-widest hover:scale-[1.02] active:scale-95 transition-all disabled:opacity-30 flex items-center justify-center gap-2"
+                                            className="w-full py-2 bg-primary text-bg-app rounded-xl text-[9px] font-black uppercase tracking-widest hover:scale-[1.02] active:scale-95 transition-all disabled:opacity-30 flex items-center justify-center gap-2"
                                         >
-                                            <Check size={14} /> Finalizar Diseño
+                                            <Check size={12} /> Finalizar
                                         </button>
                                     </div>
                                 </div>
