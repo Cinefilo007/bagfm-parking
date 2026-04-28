@@ -392,12 +392,26 @@ export default function GestionZonas() {
             const area = calculatePolygonArea(points);
             const spots = estimateCapacity(area);
             
-            // Simular líneas de puestos (esto es solo representativo para la demo)
+            // Simular líneas de puestos tácticos (trazado equidistante para la propuesta)
+            const midPoints = [];
+            for (let i = 0; i < points.length; i++) {
+                const p1 = points[i];
+                const p2 = points[(i + 1) % points.length];
+                midPoints.push([(p1[0] + p2[0]) / 2, (p1[1] + p2[1]) / 2]);
+            }
+
+            const simLines = [];
+            if (midPoints.length >= 2) {
+                // Trazamos un par de ejes de distribución
+                simLines.push([midPoints[0], midPoints[2] || midPoints[1]]);
+                if (midPoints.length > 3) simLines.push([midPoints[1], midPoints[3]]);
+            }
+
             setAiSuggestions({
                 puestosCount: spots,
                 distribución: '90 Grados',
                 eficiencia: '65%',
-                lineas: [] // Aquí vendrían los vectores [start, end]
+                lineas: simLines
             });
             
             toast.success("Análisis Táctico Completado", { id: 'ai-analysis' });

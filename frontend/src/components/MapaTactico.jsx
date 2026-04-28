@@ -147,7 +147,7 @@ const MapaTactico = ({
                 <button
                     onClick={() => setShowPolygons(!showPolygons)}
                     className={cn(
-                        "absolute bottom-4 left-4 z-[1000] p-3 rounded-2xl border transition-all shadow-lg",
+                        "absolute bottom-[88px] left-6 z-[1000] p-3 rounded-2xl border transition-all shadow-lg",
                         showPolygons 
                             ? "bg-primary text-bg-app border-primary/20 shadow-primary/20" 
                             : "bg-bg-card/80 text-text-muted border-white/5 backdrop-blur-md"
