@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { 
     Target, MapPin, X, Check, Search, Filter, Maximize2, Minimize2, 
-    Shield, Users, Car, Scissors, Square, Activity, MousePointer2, Sparkles, Layers
+    Shield, Users, Car, Scissors, Square, Activity, MousePointer2, Sparkles, Layers, Loader2
 } from 'lucide-react';
 import { mapaService } from '../services/mapaService';
 import MapaBaseReal from './MapaBaseReal';
