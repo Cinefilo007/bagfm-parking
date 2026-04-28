@@ -11,7 +11,7 @@ import {
     MapPin, Clock, Users, Shield, ChevronRight,
     ChevronDown, Settings, LayoutGrid, Building2,
     AlertTriangle, CheckCircle2, Timer, Hash,
-    Lock, Unlock, Zap, Activity, MessageCircle, UserCheck, QrCode, Download, Loader2
+    Lock, Unlock, Zap, Activity, MessageCircle, UserCheck, QrCode, Download, Loader2, Scissors
 } from 'lucide-react';
 import { toPng } from 'html-to-image';
 import PlantillaPreview from '../../components/carnets/PlantillaPreview';
@@ -21,6 +21,8 @@ import api from '../../services/api';
 import { QRCode } from 'react-qr-code';
 import { ModalConfirmacion } from '../../components/ui/ModalConfirmacion';
 import { ModalPaseBase } from '../../components/comando/ModalPaseBase';
+import MapaTactico from '../../components/MapaTactico';
+import { calculatePolygonArea, estimateCapacity } from '../../lib/geometry';
 
 
 const preloadBase64Fonts = async () => {
@@ -368,9 +370,40 @@ export default function GestionZonas() {
     const [liberandoPuesto, setLiberandoPuesto] = useState(false);
     const [zonaActiva, setZonaActiva] = useState(null);
     const [confirmConfig, setConfirmConfig] = useState({ isOpen: false, title: '', message: '', onConfirm: null, loading: false });
-    const [refreshKeyBase, setRefreshKeyBase] = useState(0); // Para forzar refresco local de puestos
+    const [refreshKeyBase, setRefreshKeyBase] = useState(0); 
     const qrSectionRef = useRef(null);
     const [mostrarQR, setMostrarQR] = useState(false);
+    
+    // Estados para Georreferenciación Avanzada (Aegis Tactical v2.3)
+    const [drawingMode, setDrawingMode] = useState(false);
+    const [tempPoints, setTempPoints] = useState([]);
+    const [modalMapaReferencia, setModalMapaReferencia] = useState(false);
+    const [aiSuggestions, setAiSuggestions] = useState(null);
+
+    const handleAISuggestion = async (points) => {
+        if (!points || points.length < 3) return;
+        
+        toast.loading("IA Analizando Superficie Satelital...", { id: 'ai-analysis' });
+        
+        // Simulación de análisis de visión artificial (Gemini Vision Táctico)
+        // En una implementación real, aquí enviaríamos el screenshot del mapa a un endpoint de IA
+        setTimeout(() => {
+            // Generar una cuadrícula básica sugerida dentro del polígono (Simulación)
+            const area = calculatePolygonArea(points);
+            const spots = estimateCapacity(area);
+            
+            // Simular líneas de puestos (esto es solo representativo para la demo)
+            setAiSuggestions({
+                puestosCount: spots,
+                distribución: '90 Grados',
+                eficiencia: '65%',
+                lineas: [] // Aquí vendrían los vectores [start, end]
+            });
+            
+            toast.success("Análisis Táctico Completado", { id: 'ai-analysis' });
+            toast("La IA sugiere una distribución a 90° para optimizar el flujo", { icon: '🤖' });
+        }, 2000);
+    };
 
     // Estados para Carnetización
     const [modoExport, setModoExport] = useState('qr');
@@ -453,8 +486,10 @@ export default function GestionZonas() {
             capacidad_total: zona.capacidad_total || '',
             latitud: zona.latitud || '', 
             longitud: zona.longitud || '',
+            poligono: zona.poligono || null,
+            area_m2: zona.area_m2 || null,
             tiempo_limite_llegada_min: zona.tiempo_limite_llegada_min || 15,
-        } : FORM_ZONA_INICIAL);
+        } : { ...FORM_ZONA_INICIAL, poligono: null, area_m2: null });
         setModalZona(true);
     };
 
@@ -473,6 +508,8 @@ export default function GestionZonas() {
                 latitud: (latStr && !isNaN(parseFloat(latStr))) ? parseFloat(latStr) : null,
                 longitud: (lonStr && !isNaN(parseFloat(lonStr))) ? parseFloat(lonStr) : null,
                 tiempo_limite_llegada_min: parseInt(formZona.tiempo_limite_llegada_min, 10) || 15,
+                poligono: formZona.poligono || null,
+                area_m2: formZona.area_m2 || null,
             };
             if (editandoZona) {
                 await zonaService.actualizarZona(editandoZona.id, datos);
@@ -988,7 +1025,15 @@ export default function GestionZonas() {
                                 placeholder="Descripción breve de la zona..." />
                         </div>
                     </div>
-                    <div className="col-span-2">
+                    <div className="col-span-2 space-y-3">
+                        <Boton onClick={() => {
+                            setTempPoints(formZona.poligono || []);
+                            setDrawingMode(true);
+                            setModalMapaReferencia(true);
+                        }} className="w-full h-11 bg-warning/10 text-warning border border-warning/20 text-[10px] gap-2 font-black uppercase shadow-[0_0_15px_rgba(245,158,11,0.1)] hover:bg-warning/20 transition-all">
+                            <Scissors size={14} /> Referenciar Área (Dibujo Táctico)
+                        </Boton>
+
                         <Boton onClick={() => {
                             if ("geolocation" in navigator) {
                                 toast.loading("Obteniendo ubicación GPS...");
@@ -1400,6 +1445,45 @@ export default function GestionZonas() {
                         )}
                     </div>
                 )}
+            </Modal>
+
+            {/* ── MODAL: Mapa de Referencia (Dibujo Táctico) ── */}
+            <Modal 
+                isOpen={modalMapaReferencia} 
+                onClose={() => { 
+                    setModalMapaReferencia(false); 
+                    setDrawingMode(false); 
+                    setAiSuggestions(null);
+                }} 
+                title="REFERENCIACIÓN TÁCTICA DE ÁREA"
+                className="max-w-5xl h-[85vh]"
+            >
+                <div className="h-[calc(85vh-120px)] relative">
+                    <MapaTactico 
+                        drawingMode={drawingMode}
+                        tempPoints={tempPoints}
+                        aiSuggestions={aiSuggestions}
+                        onPointAdded={(lat, lng) => setTempPoints([...tempPoints, [lat, lng]])}
+                        onAISuggestion={handleAISuggestion}
+                        onPolygonComplete={(points) => {
+                            const area = calculatePolygonArea(points);
+                            const capacidadIA = estimateCapacity(area);
+                            
+                            setFormZona(f => ({ 
+                                ...f, 
+                                poligono: points, 
+                                area_m2: area,
+                                capacidad_total: f.capacidad_total || capacidadIA
+                            }));
+                            
+                            setAiSuggestions(null);
+                            setModalMapaReferencia(false);
+                            setDrawingMode(false);
+                            toast.success(`Área georreferenciada: ${area.toLocaleString()} m²`);
+                        }}
+                        pollingEnabled={false}
+                    />
+                </div>
             </Modal>
         </div>
     );

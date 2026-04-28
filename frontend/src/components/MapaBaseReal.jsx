@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { MapContainer, TileLayer, Marker, Popup, Circle, useMapEvents } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, Popup, useMapEvents, Polyline, Polygon } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { Shield, Building, SquareParking, Crosshair, Target } from 'lucide-react';
@@ -95,10 +95,10 @@ const createTacticalPin = (color, label = "", isSelected = false, isDarkMode = t
 };
 
 // Componente interno para manejar clicks en el mapa
-function MapClickHandler({ onMapClick, assignmentMode }) {
+function MapClickHandler({ onMapClick, assignmentMode, drawingMode }) {
   useMapEvents({
     click: (e) => {
-      if (assignmentMode) {
+      if (assignmentMode || drawingMode) {
         onMapClick(e.latlng.lat, e.latlng.lng);
       }
     },
@@ -117,7 +117,7 @@ function MapResizer({ isFullscreen }) {
   return null;
 }
 
-const MapaBaseReal = ({ situacion, onSelectEntity, assignmentMode, onMapClick, selectedForMove, isFullscreen }) => {
+const MapaBaseReal = ({ situacion, onSelectEntity, assignmentMode, drawingMode = false, tempPoints = [], aiSuggestions = null, onMapClick = null, selectedForMove = null, isFullscreen }) => {
   const { isDarkMode } = useThemeStore();
   const [mapType, setMapType] = React.useState('satellite'); // 'satellite' | 'tactical'
 
@@ -197,7 +197,7 @@ const MapaBaseReal = ({ situacion, onSelectEntity, assignmentMode, onMapClick, s
               />
             )}
 
-            <MapClickHandler onMapClick={onMapClick} assignmentMode={assignmentMode} />
+            <MapClickHandler onMapClick={onMapClick} assignmentMode={assignmentMode} drawingMode={drawingMode} />
             <MapResizer isFullscreen={isFullscreen} />
 
             {situacion && (
@@ -260,34 +260,97 @@ const MapaBaseReal = ({ situacion, onSelectEntity, assignmentMode, onMapClick, s
                   </Marker>
                 ))}
 
-                {situacion.zonas_estacionamiento?.filter(hasCoords).map(zona => {
+                {situacion.zonas_estacionamiento?.map(zona => {
+                   const hasPolygon = zona.poligono && Array.isArray(zona.poligono) && zona.poligono.length >= 3;
                    return (
-                     <Marker 
-                       key={`zona-${zona.id}`}
-                       position={[zona.latitud, zona.longitud]}
-                       icon={createTacticalPin(
-                         '#F59E0B', 
-                         zona.nombre, 
-                         selectedForMove?.id === zona.id && selectedForMove?.tipo === 'zona', 
-                         isDarkMode, 
-                         SquareParking
-                       )}
-                       eventHandlers={{ click: () => !assignmentMode && onSelectEntity(zona) }}
-                     >
-                        <Popup className="tactical-popup">
-                           <div className="p-1">
-                               <div className="text-[10px] font-black uppercase tracking-widest text-warning mb-0.5">Zona Logística</div>
-                               <div className="text-[11px] font-bold uppercase text-text-main mb-2">{zona.nombre}</div>
-                               <div className="flex justify-between items-center text-[9px] font-mono border-t border-bg-high/20 pt-2">
-                                  <span className="text-text-sec uppercase font-bold">Uso:</span>
-                                  <span className="text-text-main font-black text-[11px]">{zona.ocupacion_actual} / {zona.capacidad_total}</span>
+                     <React.Fragment key={`zona-group-${zona.id}`}>
+                        {hasPolygon && (
+                          <Polygon 
+                            positions={zona.poligono}
+                            pathOptions={{
+                               fillColor: '#F59E0B',
+                               fillOpacity: 0.15,
+                               color: '#F59E0B',
+                               weight: 2,
+                               dashArray: '5, 5'
+                            }}
+                          >
+                            <Popup className="tactical-popup">
+                               <div className="p-1">
+                                   <div className="text-[9px] font-black uppercase tracking-widest text-warning mb-0.5">Área Delimitada</div>
+                                   <div className="text-[11px] font-bold uppercase text-text-main mb-1">{zona.nombre}</div>
+                                   {zona.area_m2 && (
+                                     <div className="text-[10px] font-mono text-primary font-black mb-2">{zona.area_m2.toLocaleString()} m²</div>
+                                   )}
+                                   <div className="flex justify-between items-center text-[9px] font-mono border-t border-bg-high/20 pt-2">
+                                      <span className="text-text-sec uppercase font-bold">Uso:</span>
+                                      <span className="text-text-main font-black text-[11px]">{zona.ocupacion_actual} / {zona.capacidad_total}</span>
+                                   </div>
                                </div>
-                           </div>
-                        </Popup>
-                     </Marker>
+                            </Popup>
+                          </Polygon>
+                        )}
+                        {hasCoords(zona) && (
+                          <Marker 
+                            position={[zona.latitud, zona.longitud]}
+                            icon={createTacticalPin(
+                              '#F59E0B', 
+                              zona.nombre, 
+                              selectedForMove?.id === zona.id && selectedForMove?.tipo === 'zona', 
+                              isDarkMode, 
+                              SquareParking
+                            )}
+                            eventHandlers={{ click: () => !assignmentMode && onSelectEntity(zona) }}
+                          >
+                             <Popup className="tactical-popup">
+                                <div className="p-1">
+                                    <div className="text-[10px] font-black uppercase tracking-widest text-warning mb-0.5">Zona Logística</div>
+                                    <div className="text-[11px] font-bold uppercase text-text-main mb-2">{zona.nombre}</div>
+                                    <div className="flex justify-between items-center text-[9px] font-mono border-t border-bg-high/20 pt-2">
+                                       <span className="text-text-sec uppercase font-bold">Uso:</span>
+                                       <span className="text-text-main font-black text-[11px]">{zona.ocupacion_actual} / {zona.capacidad_total}</span>
+                                    </div>
+                                </div>
+                             </Popup>
+                          </Marker>
+                        )}
+                     </React.Fragment>
                    );
                 })}
-              </>
+
+                {/* Capas de Dibujo Activo */}
+                {tempPoints && tempPoints.length > 0 && (
+                   <>
+                      <Polyline 
+                        positions={tempPoints} 
+                        pathOptions={{ color: '#4EDEA3', weight: 3, dashArray: '10, 10' }} 
+                      />
+                      {tempPoints.map((p, i) => (
+                        <Circle 
+                          key={`temp-pt-${i}`}
+                          center={p}
+                          radius={1}
+                          pathOptions={{ color: '#4EDEA3', fillColor: '#4EDEA3', fillOpacity: 1 }}
+                        />
+                      ))}
+                      {tempPoints.length >= 3 && (
+                        <Polygon 
+                          positions={tempPoints}
+                          pathOptions={{ fillColor: '#4EDEA3', fillOpacity: 0.1, weight: 0 }}
+                        />
+                      )}
+                    </>
+                 )}
+
+                 {/* Sugerencias de IA (Distribución de Puestos) */}
+                 {aiSuggestions?.lineas?.map((linea, i) => (
+                    <Polyline 
+                        key={`ai-loc-${i}`} 
+                        positions={linea} 
+                        pathOptions={{ color: '#ef4444', weight: 1, opacity: 0.6, dashArray: '2, 4' }} 
+                    />
+                 ))}
+               </>
             )}
           </MapContainer>
       </div>

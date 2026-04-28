@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Optional, List, Any
 from uuid import UUID
 from datetime import datetime
 from pydantic import BaseModel, ConfigDict
@@ -11,6 +11,9 @@ class ZonaEstacionamientoBase(BaseModel):
     descripcion_ubicacion: Optional[str] = None
     latitud: Optional[float] = None
     longitud: Optional[float] = None
+    poligono: Optional[List[Any]] = None
+    area_m2: Optional[float] = None
+    capacidad_sugerida_ia: Optional[int] = None
     punto_acceso_lat: Optional[float] = None
     punto_acceso_lon: Optional[float] = None
     radio_cobertura: int = 50
@@ -30,6 +33,9 @@ class ZonaEstacionamientoActualizar(BaseModel):
     longitud: Optional[float] = None
     punto_acceso_lat: Optional[float] = None
     punto_acceso_lon: Optional[float] = None
+    poligono: Optional[List[Any]] = None
+    area_m2: Optional[float] = None
+    capacidad_sugerida_ia: Optional[int] = None
     radio_cobertura: Optional[int] = None
     tiempo_limite_llegada_min: Optional[int] = None
     activo: Optional[bool] = None

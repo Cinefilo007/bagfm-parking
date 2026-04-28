@@ -4,7 +4,7 @@ Modelo ZonaEstacionamiento.
 """
 import uuid
 from sqlalchemy import Column, String, Integer, Boolean, Text, DateTime, Numeric, ForeignKey
-from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.dialects.postgresql import UUID, JSONB
 from sqlalchemy.sql import func
 from sqlalchemy.orm import relationship
 
@@ -22,6 +22,12 @@ class ZonaEstacionamiento(Base):
     descripcion_ubicacion = Column(Text, nullable=True)
     latitud = Column(Numeric(10, 8), nullable=True)
     longitud = Column(Numeric(11, 8), nullable=True)
+    
+    # Soporte para Referencia Avanzada (Aegis Tactical v2.3)
+    poligono = Column(JSONB, nullable=True) # Array de coordenadas [[lat, lon], ...]
+    area_m2 = Column(Numeric(12, 2), nullable=True) # Superficie calculada
+    capacidad_sugerida_ia = Column(Integer, nullable=True) # Sugerencia de la IA
+
     punto_acceso_lat = Column(Numeric(10, 8), nullable=True)
     punto_acceso_lon = Column(Numeric(11, 8), nullable=True)
     radio_cobertura = Column(Integer, default=50, nullable=False)
