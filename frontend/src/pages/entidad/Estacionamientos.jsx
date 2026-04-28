@@ -11,7 +11,7 @@ import { toast } from 'react-hot-toast';
 import { cn } from '../../lib/utils';
 import {
     ParkingSquare, Car, Plus, Trash2, RefreshCw,
-    Shield, MapPin, Users, Tag, CheckCircle2, QrCode, Search,
+    Shield, MapPin, Map, Users, Tag, CheckCircle2, QrCode, Search,
     Circle, Edit3, ToggleLeft, ToggleRight, Zap, AlertTriangle,
     ChevronDown, ChevronLeft, ChevronRight, LayoutGrid, Settings, Activity,
     Hash, PackagePlus, Palette, Filter, ZapOff, Calendar, Pencil, User, Eye,
@@ -19,6 +19,8 @@ import {
 } from 'lucide-react';
 import { zonaService } from '../../services/zona.service';
 import { entidadService } from '../../services/entidad.service';
+import { mapaService } from '../../services/mapaService';
+import MapaTactico from '../../components/MapaTactico';
 
 /** Mapa de etiquetas de tipo de acceso a mostrar como badge */
 const TIPO_ACCESO_LABEL = {
@@ -247,7 +249,7 @@ const TarjetaTipoAcceso = ({ tipo, onEditar, onEliminar, onToggle }) => (
 
 // ──── Página Principal ────────────────────────────────────────────────────────
 
-const TABS = { ZONAS: 'zonas', PUESTOS: 'puestos', TIPOS: 'tipos' };
+const TABS = { ZONAS: 'zonas', MAPA: 'mapa', PUESTOS: 'puestos', TIPOS: 'tipos' };
 
 export default function EstacionamientosEntidad() {
     const { user } = useAuthStore();
@@ -326,6 +328,11 @@ export default function EstacionamientosEntidad() {
 
     // Modal Confirmación Auto-Distribución
     const [modalAutoDistConfirm, setModalAutoDistConfirm] = useState(false);
+
+    // Estado para el mapa táctico de la entidad
+    const [situacionFiltrada, setSituacionFiltrada] = useState(null);
+    const [cargandoMapa, setCargandoMapa] = useState(false);
+    const [mapaReloadKey, setMapaReloadKey] = useState(0);
 
     // Paginación y Filtro puestos
     const [paginaActual, setPaginaActual] = useState(1);
@@ -554,6 +561,29 @@ export default function EstacionamientosEntidad() {
     useEffect(() => { cargarResumenDisponibilidad(fechaConsulta); }, [cargarResumenDisponibilidad]);
     useEffect(() => { cargarCalendarioLotes(); }, [cargarCalendarioLotes]);
     useEffect(() => { cargarBranding(); }, [cargarBranding]);
+
+    // Cargar situación táctica filtrada cuando se entra a la pestaña de mapa
+    useEffect(() => {
+        const cargarMapaEntidad = async () => {
+            if (tab !== TABS.MAPA) return;
+            setCargandoMapa(true);
+            try {
+                const situ = await mapaService.getSituacion();
+                // Filtrar solo las zonas que pertenecen a esta entidad
+                const idsAsignadas = asignaciones.map(a => a.zona_id);
+                setSituacionFiltrada({
+                    ...situ,
+                    zonas_estacionamiento: situ.zonas_estacionamiento.filter(z => idsAsignadas.includes(z.id))
+                });
+            } catch (error) {
+                console.error("Error cargando mapa de entidad:", error);
+                toast.error("Error al establecer link satelital");
+            } finally {
+                setCargandoMapa(false);
+            }
+        };
+        cargarMapaEntidad();
+    }, [tab, asignaciones, mapaReloadKey]);
 
     // ── Acciones: Puestos ─────────────────────────────────────────────────────
 
@@ -832,6 +862,7 @@ export default function EstacionamientosEntidad() {
             <div className="flex bg-bg-card/40 rounded-xl p-1 border border-white/5 gap-1">
                 {[
                     { id: TABS.ZONAS, label: 'Zonas Asignadas', icon: MapPin },
+                    { id: TABS.MAPA, label: 'Vista Mapa', icon: Map },
                     { id: TABS.PUESTOS, label: 'Puestos Físicos', icon: ParkingSquare },
                     { id: TABS.TIPOS, label: 'Tipos Custom', icon: Tag },
                 ].map(t => (
@@ -1133,6 +1164,55 @@ export default function EstacionamientosEntidad() {
                             })}
                         </div>
                     )}
+                </div>
+            )}
+
+            {/* ── TAB: MAPA TÁCTICO ── */}
+            {tab === TABS.MAPA && (
+                <div className="space-y-4 animate-in zoom-in-95 duration-300">
+                    <div className="flex items-center justify-between bg-bg-card/40 border border-white/5 p-4 rounded-2xl">
+                        <div>
+                            <p className="text-[10px] font-black text-text-main font-display uppercase tracking-[0.2em] flex items-center gap-2">
+                                <div className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
+                                Link Satelital Activo
+                            </p>
+                            <p className="text-[8px] text-text-muted font-bold uppercase tracking-[0.1em] mt-1">
+                                Visualizando {asignaciones.length} zonas georreferenciadas
+                            </p>
+                        </div>
+                        <button 
+                             onClick={() => setMapaReloadKey(k => k + 1)}
+                             className="p-2 rounded-lg bg-white/5 hover:bg-white/10 text-text-muted transition-all"
+                             title="Refrescar Link Satelital"
+                        >
+                            <RefreshCw size={14} className={cargandoMapa ? 'animate-spin' : ''} />
+                        </button>
+                    </div>
+
+                    <div className="h-[500px] rounded-3xl overflow-hidden border border-white/10 shadow-2xl relative group">
+                        <MapaTactico 
+                            pollingEnabled={true} 
+                            situacionPreload={situacionFiltrada} 
+                            idsZonasPermitidas={asignaciones.map(a => a.zona_id)}
+                        />
+                        
+                        {/* Overlay de carga */}
+                        {cargandoMapa && !situacionFiltrada && (
+                            <div className="absolute inset-0 z-[2000] bg-bg-app/60 backdrop-blur-sm flex items-center justify-center">
+                                <div className="flex flex-col items-center gap-3">
+                                    <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>
+                                    <span className="text-[10px] text-primary font-black uppercase tracking-widest">Sincronizando Radar...</span>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+
+                    <div className="flex items-start gap-3 p-4 bg-primary/5 border border-primary/20 rounded-2xl">
+                         <Target size={16} className="text-primary shrink-0 mt-0.5" />
+                         <p className="text-[9px] text-text-muted leading-relaxed uppercase font-bold">
+                             <strong className="text-primary">Modo de Visualización Táctica:</strong> Solo se muestran los activos (Zonas de Parqueo) asignados directamente a {user?.entidad_nombre}. Haz clic en los pines para ver detalles de ocupación en tiempo real.
+                         </p>
+                    </div>
                 </div>
             )}
 

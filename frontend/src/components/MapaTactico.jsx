@@ -5,7 +5,7 @@ import MapaBaseReal from './MapaBaseReal';
 import { Card } from './ui/Card';
 import { toast } from 'react-hot-toast';
 
-const MapaTactico = ({ pollingEnabled = true, situacionPreload = null }) => {
+const MapaTactico = ({ pollingEnabled = true, situacionPreload = null, idsZonasPermitidas = null }) => {
     const [situacion, setSituacion] = useState(situacionPreload);
     const [loading, setLoading] = useState(!situacionPreload);
     const [selected, setSelected] = useState(null);
@@ -16,7 +16,16 @@ const MapaTactico = ({ pollingEnabled = true, situacionPreload = null }) => {
 
     const fetchSituacion = async () => {
         try {
-            const data = await mapaService.getSituacion();
+            let data = await mapaService.getSituacion();
+            
+            // Aplicar filtrado si se especifican IDs permitidos
+            if (idsZonasPermitidas) {
+                data = {
+                    ...data,
+                    zonas_estacionamiento: data.zonas_estacionamiento.filter(z => idsZonasPermitidas.includes(z.id))
+                };
+            }
+
             setSituacion(data);
         } catch (error) {
             console.error("Error cargando situación táctica:", error);
@@ -27,10 +36,17 @@ const MapaTactico = ({ pollingEnabled = true, situacionPreload = null }) => {
 
     useEffect(() => {
         if (situacionPreload) {
-            setSituacion(situacionPreload);
+            let data = situacionPreload;
+            if (idsZonasPermitidas && data.zonas_estacionamiento) {
+                data = {
+                    ...data,
+                    zonas_estacionamiento: data.zonas_estacionamiento.filter(z => idsZonasPermitidas.includes(z.id))
+                };
+            }
+            setSituacion(data);
             setLoading(false);
         }
-    }, [situacionPreload]);
+    }, [situacionPreload, idsZonasPermitidas]);
 
     useEffect(() => {
         if (pollingEnabled) {
