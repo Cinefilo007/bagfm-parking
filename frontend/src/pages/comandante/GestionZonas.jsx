@@ -231,22 +231,26 @@ const ZonaRow = ({
                         <StatBadge valor={puestosReservados} label="Res." color="text-warning" />
                     </div>
 
-                    <div className="flex items-center gap-1 bg-white/5 p-1 rounded-xl border border-white/5">
-                        <button onClick={() => onAsignar(zona)} title="Gestionar Entidades"
-                            className="p-2 rounded-lg hover:bg-primary/10 text-text-muted hover:text-primary transition-all flex items-center gap-2">
-                            <Building2 size={13} />
-                            <span className="text-[8px] font-black uppercase hidden lg:block">Entidades</span>
+                    <div className="flex items-center gap-0.5 bg-white/5 sm:bg-transparent p-1 sm:p-0 rounded-xl">
+                        <button onClick={() => onAsignar(zona)} title="Asignar"
+                            className="p-2 rounded-lg hover:bg-primary/10 text-text-muted hover:text-primary transition-all">
+                            <Building2 size={14} />
                         </button>
-                        <div className="w-[1px] h-4 bg-white/10 mx-1" />
-                        <button onClick={() => onEditar(zona)} title="Editar Configuración"
-                            className="p-2 rounded-lg hover:bg-white/10 text-text-muted hover:text-text-main transition-all flex items-center gap-2">
-                            <Edit3 size={13} />
-                            <span className="text-[8px] font-black uppercase hidden lg:block">Editar</span>
+                        <button onClick={() => onAjustarTiempo(zona)} title="Tiempo"
+                            className="p-2 rounded-lg hover:bg-warning/10 text-text-muted hover:text-warning transition-all">
+                            <Timer size={14} />
                         </button>
-                        <button onClick={() => onEliminar(zona)} title="Eliminar Zona"
-                            className="p-2 rounded-lg hover:bg-danger/10 text-text-muted/40 hover:text-danger transition-all flex items-center gap-2">
-                            <Trash2 size={13} />
-                            <span className="text-[8px] font-black uppercase hidden lg:block">Eliminar</span>
+                        <button onClick={() => onGestionarPuestos(zona)} title="Puestos"
+                            className="p-2 rounded-lg hover:bg-sky-500/10 text-text-muted hover:text-sky-400 transition-all">
+                            <LayoutGrid size={14} />
+                        </button>
+                        <button onClick={() => onEditar(zona)} title="Editar"
+                            className="p-2 rounded-lg hover:bg-white/10 text-text-muted hover:text-text-main transition-all">
+                            <Edit3 size={14} />
+                        </button>
+                        <button onClick={() => onEliminar(zona)} title="Eliminar"
+                            className="p-2 rounded-lg hover:bg-danger/10 text-text-muted/40 hover:text-danger transition-all">
+                            <Trash2 size={14} />
                         </button>
                     </div>
                 </div>
@@ -1557,16 +1561,17 @@ export default function GestionZonas() {
                     />
                     
                     {tempPoints.length > 0 && (
-                        <Boton 
+                        <button 
                             onClick={() => {
                                 setTempPoints([]);
                                 setAiSuggestions(null);
                                 toast("Polígono reiniciado", { icon: '🧹' });
                             }}
-                            className="absolute bottom-6 right-6 z-[1001] bg-danger/20 border-danger/30 text-danger hover:bg-danger hover:text-white px-4 text-[9px] font-black uppercase"
+                            className="absolute bottom-6 right-6 z-[1001] w-10 h-10 bg-danger text-white rounded-full flex items-center justify-center shadow-lg hover:scale-110 active:scale-95 transition-all border-none"
+                            title="Limpiar Polígono"
                         >
-                            <Trash2 size={14} className="mr-2" /> Limpiar Polígono
-                        </Boton>
+                            <Trash2 size={20} />
+                        </button>
                     )}
                 </div>
             </Modal>

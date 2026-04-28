@@ -329,9 +329,9 @@ const MapaBaseReal = ({
                                           e.stopPropagation();
                                           onPointDeleted && onPointDeleted(-1, zona.poligono); // Usamos el handler para inyectar el polígono
                                         }}
-                                        className="w-full py-2 bg-warning text-black text-[9px] font-black uppercase rounded-lg shadow-lg hover:scale-105 transition-all"
+                                        className="w-full py-2 bg-warning text-black text-[10px] font-black uppercase rounded-lg shadow-lg hover:scale-105 transition-all"
                                       >
-                                        Importar para Editar
+                                        EDITAR
                                       </button>
                                     )}
                                  </div>
