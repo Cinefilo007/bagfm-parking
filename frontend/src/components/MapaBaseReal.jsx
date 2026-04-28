@@ -334,7 +334,7 @@ const MapaBaseReal = ({
                 />
             ))}
             
-            {/* Sugerencias de IA (Diseño dinámico) */}
+            {aiSuggestions?.lineas?.map((linea, i) => (
                 <Polyline 
                     key={`ai-loc-${i}`} 
                     positions={linea.points || linea} 
