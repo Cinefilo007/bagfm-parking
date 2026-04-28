@@ -249,7 +249,7 @@ const TarjetaTipoAcceso = ({ tipo, onEditar, onEliminar, onToggle }) => (
 
 // ──── Página Principal ────────────────────────────────────────────────────────
 
-const TABS = { ZONAS: 'zonas', MAPA: 'mapa', PUESTOS: 'puestos', TIPOS: 'tipos' };
+const TABS = { ZONAS: 'zonas', MAPA: 'mapa', TIPOS: 'tipos' };
 
 export default function EstacionamientosEntidad() {
     const { user } = useAuthStore();
@@ -863,7 +863,6 @@ export default function EstacionamientosEntidad() {
                 {[
                     { id: TABS.ZONAS, label: 'Zonas Asignadas', icon: MapPin },
                     { id: TABS.MAPA, label: 'Vista Mapa', icon: Map },
-                    { id: TABS.PUESTOS, label: 'Puestos Físicos', icon: ParkingSquare },
                     { id: TABS.TIPOS, label: 'Tipos Custom', icon: Tag },
                 ].map(t => (
                     <button
@@ -1011,16 +1010,19 @@ export default function EstacionamientosEntidad() {
                                                     </div>
                                                 </div>
                                                 
-                                                    <div className="flex items-center gap-1 shrink-0 ml-1">
-                                                        <button 
-                                                            onClick={(e) => { e.stopPropagation(); handleAbrirGenerar(asig); }}
-                                                            className="h-9 w-9 sm:w-auto sm:px-3 rounded-xl bg-primary/10 hover:bg-primary/20 text-primary border border-primary/20 flex items-center justify-center sm:justify-start gap-2 transition-all group"
-                                                            title="Crear Puestos"
-                                                        >
-                                                            <PackagePlus size={16} className="group-hover:scale-110 transition-transform" />
-                                                            <span className="hidden sm:inline text-[10px] font-black uppercase tracking-wider">Crear Puestos</span>
-                                                        </button>
-                                                    </div>
+                                                <div className="flex items-center gap-1 shrink-0 ml-1">
+                                                    {/* Botón de creación de puestos oculto temporalmente */}
+                                                    {/* 
+                                                    <button 
+                                                        onClick={(e) => { e.stopPropagation(); handleAbrirGenerar(asig); }}
+                                                        className="h-9 w-9 sm:w-auto sm:px-3 rounded-xl bg-primary/10 hover:bg-primary/20 text-primary border border-primary/20 flex items-center justify-center sm:justify-start gap-2 transition-all group"
+                                                        title="Crear Puestos"
+                                                    >
+                                                        <PackagePlus size={16} className="group-hover:scale-110 transition-transform" />
+                                                        <span className="hidden sm:inline text-[10px] font-black uppercase tracking-wider">Crear Puestos</span>
+                                                    </button>
+                                                    */}
+                                                </div>
                                             </div>
                                             <div className="px-14 pb-3 pr-4 pointer-events-none">
                                                 <div className="flex items-center gap-2 mb-1">
@@ -1194,6 +1196,8 @@ export default function EstacionamientosEntidad() {
                             pollingEnabled={true} 
                             situacionPreload={situacionFiltrada} 
                             idsZonasPermitidas={asignaciones.map(a => a.zona_id)}
+                            idEntidadFiltro={user?.entidad_id}
+                            allowGeoreference={false}
                         />
                         
                         {/* Overlay de carga */}
@@ -1216,155 +1220,14 @@ export default function EstacionamientosEntidad() {
                 </div>
             )}
 
-            {/* ── TAB: PUESTOS ── */}
+            {/* ── TAB: PUESTOS (DESHABILITADO TEMPORALMENTE) ── */}
+            {/*
             {tab === TABS.PUESTOS && (
                 <div className="space-y-3">
-                    <div className="flex items-center justify-between">
-                        <p className="text-[9px] font-black text-text-muted uppercase tracking-widest flex items-center gap-2">
-                            <Shield size={11} className="text-primary" />
-                            Puestos físicos generados
-                        </p>
-                        <div className="flex items-center gap-2">
-                            <button 
-                                onClick={handleAutoDistribuir}
-                                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary/10 text-primary border border-primary/20 text-[9px] font-black uppercase hover:bg-primary/20 transition-all"
-                            >
-                                <Zap size={11} /> Auto-Distribución
-                            </button>
-                            <button onClick={cargarPuestos} className="p-1.5 rounded-lg bg-white/5 hover:bg-white/10 transition-all">
-                                <RefreshCw size={14} className={cn("text-text-muted", cargandoPuestos && 'animate-spin')} />
-                            </button>
-                        </div>
-                    </div>
-
-                    {cargandoPuestos ? (
-                        <div className="space-y-2">
-                            {Array(4).fill(0).map((_, i) => (
-                                <div key={i} className="h-14 rounded-xl bg-white/5 animate-pulse border border-white/5" />
-                            ))}
-                        </div>
-                    ) : puestos.length === 0 ? (
-                        <div className="text-center py-12 border border-dashed border-white/10 rounded-2xl">
-                            <ParkingSquare size={40} className="mx-auto text-white/10 mb-3" />
-                            <p className="text-[10px] font-black uppercase tracking-widest text-text-muted/40">
-                                Tu entidad no tiene puestos asignados aún
-                            </p>
-                            <p className="text-[9px] text-text-muted/30 mt-1">
-                                Contáctate con el Comandante de la base para solicitar la asignación de puestos
-                            </p>
-                        </div>
-                    ) : (
-                        <>
-                            {/* Filtro por Zona Chips */}
-                            <div className="flex items-center gap-2 overflow-x-auto pb-4 no-scrollbar">
-                                <div className="flex items-center gap-2 pr-4 border-r border-white/5 shrink-0">
-                                    <Filter size={12} className="text-text-muted" />
-                                    <span className="text-[9px] font-black text-text-muted uppercase tracking-widest">Filtrar:</span>
-                                </div>
-                                <ChipFiltro 
-                                    activo={filtroZona === null} 
-                                    onClick={() => { setFiltroZona(null); setPaginaActual(1); }}
-                                    className="h-8 flex items-center justify-center"
-                                >
-                                    TODAS LAS ZONAS
-                                </ChipFiltro>
-                                {asignaciones.map(a => (
-                                    <ChipFiltro 
-                                        key={a.zona_id}
-                                        activo={filtroZona === a.zona_id}
-                                        onClick={() => { setFiltroZona(a.zona_id); setPaginaActual(1); }}
-                                        className="h-8 flex items-center justify-center"
-                                    >
-                                        {a.zona_nombre?.toUpperCase() || `ZONA ${a.zona_id?.slice(-4)}`}
-                                    </ChipFiltro>
-                                ))}
-                            </div>
-
-                            {/* Agrupado por zona con paginación */}
-                            {(() => {
-                                // Aplicar el filtro primario por zona en la data base
-                                const puestosFiltradosPorZona = filtroZona 
-                                    ? puestos.filter(p => p.zona_id === filtroZona)
-                                    : puestos;
-
-                                // Agrupar
-                                const puestosAgrupados = puestosFiltradosPorZona.reduce((acc, p) => {
-                                    const zona = p.zona_nombre || 'Sin Zona';
-                                    if (!acc[zona]) acc[zona] = [];
-                                    acc[zona].push(p);
-                                    return acc;
-                                }, {});
-
-                                // Ordenar puestos dentro de cada zona
-                                Object.keys(puestosAgrupados).forEach(z => {
-                                    puestosAgrupados[z].sort((a, b) => {
-                                        const numA = a.numero_puesto || a.codigo || '';
-                                        const numB = b.numero_puesto || b.codigo || '';
-                                        return numA.localeCompare(numB, undefined, { numeric: true });
-                                    });
-                                });
-
-                                // Aplanar para paginación global de la pestaña
-                                const todosLosPuestosOrdenados = Object.entries(puestosAgrupados)
-                                    .sort(([zA], [zB]) => zA.localeCompare(zB))
-                                    .flatMap(([_, ps]) => ps);
-
-                                const totalPuestos = todosLosPuestosOrdenados.length;
-                                const totalPaginas = Math.ceil(totalPuestos / elementsPerPage);
-                                const indexInicio = (paginaActual - 1) * elementsPerPage;
-                                const puestosVisibles = todosLosPuestosOrdenados.slice(indexInicio, indexInicio + elementsPerPage);
-
-                                return (
-                                    <>
-                                        <div className="space-y-4">
-                                            {puestosVisibles.map(p => (
-                                                <TarjetaPuesto
-                                                    key={p.id}
-                                                    puesto={p}
-                                                    tipos={tipos}
-                                                    puestosPorQR={puestosPorQR}
-                                                    onAsignar={handleAbrirAsignar}
-                                                    onLiberar={handleLiberar}
-                                                    onReasignar={handleAbrirReasignar}
-                                                />
-                                            ))}
-                                        </div>
-
-                                        {/* Controles de Paginación */}
-                                        {totalPaginas > 1 && (
-                                            <div className="flex items-center justify-between p-4 bg-bg-card/30 border border-white/5 rounded-2xl mt-6">
-                                                <div className="text-[10px] font-black text-text-muted uppercase tracking-widest">
-                                                    Página <span className="text-primary">{paginaActual}</span> de {totalPaginas}
-                                                </div>
-                                                <div className="flex gap-2">
-                                                    <Boton
-                                                        variant="ghost"
-                                                        size="sm"
-                                                        disabled={paginaActual === 1}
-                                                        onClick={() => setPaginaActual(p => p - 1)}
-                                                        className="h-8 px-4"
-                                                    >
-                                                        Anterior
-                                                    </Boton>
-                                                    <Boton
-                                                        variant="ghost"
-                                                        size="sm"
-                                                        disabled={paginaActual === totalPaginas}
-                                                        onClick={() => setPaginaActual(p => p + 1)}
-                                                        className="h-8 px-4"
-                                                    >
-                                                        Siguiente
-                                                    </Boton>
-                                                </div>
-                                            </div>
-                                        )}
-                                    </>
-                                );
-                            })()}
-                        </>
-                    )}
+                    ... (contenido omitido en el comentario)
                 </div>
             )}
+            */}
 
             {/* ── TAB: TIPOS DE ACCESO ── */}
             {tab === TABS.TIPOS && (

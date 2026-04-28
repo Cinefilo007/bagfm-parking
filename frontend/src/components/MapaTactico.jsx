@@ -5,7 +5,13 @@ import MapaBaseReal from './MapaBaseReal';
 import { Card } from './ui/Card';
 import { toast } from 'react-hot-toast';
 
-const MapaTactico = ({ pollingEnabled = true, situacionPreload = null, idsZonasPermitidas = null }) => {
+const MapaTactico = ({ 
+    pollingEnabled = true, 
+    situacionPreload = null, 
+    idsZonasPermitidas = null,
+    idEntidadFiltro = null,
+    allowGeoreference = true
+}) => {
     const [situacion, setSituacion] = useState(situacionPreload);
     const [loading, setLoading] = useState(!situacionPreload);
     const [selected, setSelected] = useState(null);
@@ -23,6 +29,13 @@ const MapaTactico = ({ pollingEnabled = true, situacionPreload = null, idsZonasP
                 data = {
                     ...data,
                     zonas_estacionamiento: data.zonas_estacionamiento.filter(z => idsZonasPermitidas.includes(z.id))
+                };
+            }
+            
+            if (idEntidadFiltro) {
+                data = {
+                    ...data,
+                    entidades: data.entidades.filter(e => e.id === idEntidadFiltro)
                 };
             }
 
@@ -43,10 +56,16 @@ const MapaTactico = ({ pollingEnabled = true, situacionPreload = null, idsZonasP
                     zonas_estacionamiento: data.zonas_estacionamiento.filter(z => idsZonasPermitidas.includes(z.id))
                 };
             }
+            if (idEntidadFiltro && data.entidades) {
+                data = {
+                    ...data,
+                    entidades: data.entidades.filter(e => e.id === idEntidadFiltro)
+                };
+            }
             setSituacion(data);
             setLoading(false);
         }
-    }, [situacionPreload, idsZonasPermitidas]);
+    }, [situacionPreload, idsZonasPermitidas, idEntidadFiltro]);
 
     useEffect(() => {
         if (pollingEnabled) {
@@ -99,26 +118,28 @@ const MapaTactico = ({ pollingEnabled = true, situacionPreload = null, idsZonasP
                 />
 
                 {/* BOTÓN FLOTANTE: Georreferenciar */}
-                <div className="absolute bottom-6 left-6 z-[1000]">
-                    {!isAssigning ? (
-                        <button
-                            onClick={() => setShowSelectionModal(true)}
-                            className="w-12 h-12 bg-primary text-bg-app rounded-full flex items-center justify-center shadow-[0_0_20px_rgba(78,222,163,0.4)] hover:scale-110 active:scale-95 transition-all outline-none border-none"
-                        >
-                            <span className="text-3xl font-light leading-none mb-1">+</span>
-                        </button>
-                    ) : (
-                        <div className="flex items-center gap-4 bg-warning/90 backdrop-blur-md border border-warning px-4 py-2 rounded-2xl shadow-xl animate-pulse">
-                            <span className="text-[10px] font-black text-bg-app uppercase tracking-widest leading-none">{selectedEntityToMove?.nombre}</span>
+                {allowGeoreference && (
+                    <div className="absolute bottom-6 left-6 z-[1000]">
+                        {!isAssigning ? (
                             <button
-                                onClick={() => { setIsAssigning(false); setSelectedEntityToMove(null); }}
-                                className="px-3 py-1 bg-bg-app text-warning rounded-lg text-[9px] font-bold uppercase hover:bg-warning hover:text-bg-app transition-colors"
+                                onClick={() => setShowSelectionModal(true)}
+                                className="w-12 h-12 bg-primary text-bg-app rounded-full flex items-center justify-center shadow-[0_0_20px_rgba(78,222,163,0.4)] hover:scale-110 active:scale-95 transition-all outline-none border-none"
                             >
-                                Cancelar
+                                <span className="text-3xl font-light leading-none mb-1">+</span>
                             </button>
-                        </div>
-                    )}
-                </div>
+                        ) : (
+                            <div className="flex items-center gap-4 bg-warning/90 backdrop-blur-md border border-warning px-4 py-2 rounded-2xl shadow-xl animate-pulse">
+                                <span className="text-[10px] font-black text-bg-app uppercase tracking-widest leading-none">{selectedEntityToMove?.nombre}</span>
+                                <button
+                                    onClick={() => { setIsAssigning(false); setSelectedEntityToMove(null); }}
+                                    className="px-3 py-1 bg-bg-app text-warning rounded-lg text-[9px] font-bold uppercase hover:bg-warning hover:text-bg-app transition-colors"
+                                >
+                                    Cancelar
+                                </button>
+                            </div>
+                        )}
+                    </div>
+                )}
             </div>
 
             {/* Modal de Selección */}
