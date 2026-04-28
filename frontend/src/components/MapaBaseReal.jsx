@@ -380,12 +380,17 @@ const MapaBaseReal = ({
                     </>
                  )}
 
-                 {/* Sugerencias de IA (Distribución de Puestos) */}
+                 {/* Sugerencias de IA (Plano Táctico Detallado) */}
                  {aiSuggestions?.lineas?.map((linea, i) => (
                     <Polyline 
                         key={`ai-loc-${i}`} 
-                        positions={linea} 
-                        pathOptions={{ color: '#8b5cf6', weight: 1.5, opacity: 0.7, dashArray: '5, 5' }} 
+                        positions={linea.points || linea} 
+                        pathOptions={{ 
+                            color: linea.color || '#8b5cf6', 
+                            weight: linea.type === 'via' ? 2 : 1, 
+                            opacity: 0.8, 
+                            dashArray: linea.type === 'via' ? '5, 10' : '0' 
+                        }} 
                     />
                  ))}
 

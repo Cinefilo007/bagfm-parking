@@ -431,39 +431,52 @@ export default function GestionZonas() {
             const minLng = Math.min(...lngs);
             const maxLng = Math.max(...lngs);
 
-            const widthM = (maxLng - minLng) * METERS_PER_DEG_LNG;
-            const heightM = (maxLat - minLat) * METERS_PER_DEG_LAT;
-
             const simLines = [];
+            const stepSpotDepth = STANDARDS.SPOT_DEPTH / METERS_PER_DEG_LAT;
+            const stepAisle = STANDARDS.AISLE_WIDTH / METERS_PER_DEG_LAT;
             
-            // 1. GENERAR FILAS (Cada 5m de profundidad)
-            const stepDepthM = STANDARDS.SPOT_DEPTH; 
-            const stepDepthDeg = stepDepthM / METERS_PER_DEG_LAT;
-            
-            for (let lat = minLat + stepDepthDeg; lat < maxLat; lat += stepDepthDeg) {
-                const startPoint = rotatePoint([lat, minLng], centroide, orientationAngle);
-                const endPoint = rotatePoint([lat, maxLng], centroide, orientationAngle);
-                simLines.push([startPoint, endPoint]);
-            }
+            let currentLat = minLat;
+            let rowCounter = 0;
 
-            // 2. GENERAR DIVISIONES DE PUESTOS (Cada 2.5m de ancho)
-            const stepWidthM = STANDARDS.SPOT_WIDTH;
-            const stepWidthDeg = stepWidthM / METERS_PER_DEG_LNG;
-            
-            if (maxLat - minLat > stepDepthDeg) {
-                for (let lng = minLng + stepWidthDeg; lng < maxLng; lng += stepWidthDeg) {
-                    // Dibujamos líneas verticales cortas entre las filas
-                    for (let lat = minLat; lat < maxLat - (stepDepthDeg/2); lat += stepDepthDeg) {
-                        const p1 = rotatePoint([lat, lng], centroide, orientationAngle);
-                        const p2 = rotatePoint([lat + stepDepthDeg, lng], centroide, orientationAngle);
-                        simLines.push([p1, p2]);
+            while (currentLat < maxLat) {
+                const isAisle = rowCounter % 2 !== 0;
+                const step = isAisle ? stepAisle : stepSpotDepth;
+                
+                if (currentLat + step > maxLat) break;
+                
+                const lineType = isAisle ? 'via' : 'puesto';
+                const color = isAisle ? '#f59e0b' : '#8b5cf6';
+                
+                const start1 = rotatePoint([currentLat, minLng], centroide, orientationAngle);
+                const end1 = rotatePoint([currentLat, maxLng], centroide, orientationAngle);
+                const start2 = rotatePoint([currentLat + step, minLng], centroide, orientationAngle);
+                const end2 = rotatePoint([currentLat + step, maxLng], centroide, orientationAngle);
+                
+                simLines.push({ points: [start1, end1], type: lineType, color });
+                simLines.push({ points: [start2, end2], type: lineType, color });
+
+                if (!isAisle) {
+                    const stepWidthM = STANDARDS.SPOT_WIDTH;
+                    const stepWidthDeg = stepWidthM / METERS_PER_DEG_LNG;
+                    for (let lng = minLng; lng <= maxLng; lng += stepWidthDeg) {
+                        const p1 = rotatePoint([currentLat, lng], centroide, orientationAngle);
+                        const p2 = rotatePoint([currentLat + step, lng], centroide, orientationAngle);
+                        simLines.push({ points: [p1, p2], type: 'separador', color: '#6366f1' });
                     }
+                } else {
+                    const midLat = currentLat + (step / 2);
+                    const flow1 = rotatePoint([midLat, minLng + (maxLng-minLng)*0.45], centroide, orientationAngle);
+                    const flow2 = rotatePoint([midLat, minLng + (maxLng-minLng)*0.55], centroide, orientationAngle);
+                    simLines.push({ points: [flow1, flow2], type: 'flujo', color: '#f59e0b' });
                 }
+
+                currentLat += step;
+                rowCounter++;
             }
 
             setAiSuggestions({
                 puestosCount: spots,
-                distribución: `Iteración ${aiIteration + 1} (${(orientationAngle * 180 / Math.PI).toFixed(0)}°)`,
+                distribución: `Plano Táctico I${aiIteration + 1}`,
                 eficiencia: `${(STANDARDS.MIN_EFFICIENCY * 100).toFixed(0)}%`,
                 lineas: simLines,
                 poligonoSugerido: poligonoSugerido,
