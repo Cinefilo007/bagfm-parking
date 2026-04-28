@@ -231,26 +231,22 @@ const ZonaRow = ({
                         <StatBadge valor={puestosReservados} label="Res." color="text-warning" />
                     </div>
 
-                    <div className="flex items-center gap-0.5 bg-white/5 sm:bg-transparent p-1 sm:p-0 rounded-xl">
-                        <button onClick={() => onAsignar(zona)} title="Asignar"
-                            className="p-2 rounded-lg hover:bg-primary/10 text-text-muted hover:text-primary transition-all">
-                            <Building2 size={14} />
+                    <div className="flex items-center gap-1 bg-white/5 p-1 rounded-xl border border-white/5">
+                        <button onClick={() => onAsignar(zona)} title="Gestionar Entidades"
+                            className="p-2 rounded-lg hover:bg-primary/10 text-text-muted hover:text-primary transition-all flex items-center gap-2">
+                            <Building2 size={13} />
+                            <span className="text-[8px] font-black uppercase hidden lg:block">Entidades</span>
                         </button>
-                        <button onClick={() => onAjustarTiempo(zona)} title="Tiempo"
-                            className="p-2 rounded-lg hover:bg-warning/10 text-text-muted hover:text-warning transition-all">
-                            <Timer size={14} />
+                        <div className="w-[1px] h-4 bg-white/10 mx-1" />
+                        <button onClick={() => onEditar(zona)} title="Editar Configuración"
+                            className="p-2 rounded-lg hover:bg-white/10 text-text-muted hover:text-text-main transition-all flex items-center gap-2">
+                            <Edit3 size={13} />
+                            <span className="text-[8px] font-black uppercase hidden lg:block">Editar</span>
                         </button>
-                        <button onClick={() => onGestionarPuestos(zona)} title="Puestos"
-                            className="p-2 rounded-lg hover:bg-sky-500/10 text-text-muted hover:text-sky-400 transition-all">
-                            <LayoutGrid size={14} />
-                        </button>
-                        <button onClick={() => onEditar(zona)} title="Editar"
-                            className="p-2 rounded-lg hover:bg-white/10 text-text-muted hover:text-text-main transition-all">
-                            <Edit3 size={14} />
-                        </button>
-                        <button onClick={() => onEliminar(zona)} title="Eliminar"
-                            className="p-2 rounded-lg hover:bg-danger/10 text-text-muted/40 hover:text-danger transition-all">
-                            <Trash2 size={14} />
+                        <button onClick={() => onEliminar(zona)} title="Eliminar Zona"
+                            className="p-2 rounded-lg hover:bg-danger/10 text-text-muted/40 hover:text-danger transition-all flex items-center gap-2">
+                            <Trash2 size={13} />
+                            <span className="text-[8px] font-black uppercase hidden lg:block">Eliminar</span>
                         </button>
                     </div>
                 </div>
@@ -1528,7 +1524,14 @@ export default function GestionZonas() {
                             setTempPoints(newPoints);
                             if (aiSuggestions) handleAISuggestion(newPoints);
                         }}
-                        onPointDeleted={(index) => {
+                        onPointDeleted={(index, importedPoints) => {
+                            if (index === -1 && importedPoints) {
+                                // Caso especial: Importar polígono existente del mapa
+                                setTempPoints(importedPoints);
+                                handleAISuggestion(importedPoints);
+                                toast.success("Geometría importada para edición");
+                                return;
+                            }
                             const newPoints = tempPoints.filter((_, i) => i !== index);
                             setTempPoints(newPoints);
                             if (aiSuggestions) handleAISuggestion(newPoints);

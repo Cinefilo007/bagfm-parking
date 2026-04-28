@@ -316,14 +316,25 @@ const MapaBaseReal = ({
                             eventHandlers={{ click: () => !assignmentMode && onSelectEntity(zona) }}
                           >
                              <Popup className="tactical-popup">
-                                <div className="p-1">
+                                 <div className="p-1">
                                     <div className="text-[10px] font-black uppercase tracking-widest text-warning mb-0.5">Zona Logística</div>
                                     <div className="text-[11px] font-bold uppercase text-text-main mb-2">{zona.nombre}</div>
-                                    <div className="flex justify-between items-center text-[9px] font-mono border-t border-bg-high/20 pt-2">
+                                    <div className="flex justify-between items-center text-[9px] font-mono border-t border-bg-high/20 pt-2 mb-3">
                                        <span className="text-text-sec uppercase font-bold">Uso:</span>
                                        <span className="text-text-main font-black text-[11px]">{zona.ocupacion_actual} / {zona.capacidad_total}</span>
                                     </div>
-                                </div>
+                                    {drawingMode && (
+                                      <button 
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          onPointDeleted && onPointDeleted(-1, zona.poligono); // Usamos el handler para inyectar el polígono
+                                        }}
+                                        className="w-full py-2 bg-warning text-black text-[9px] font-black uppercase rounded-lg shadow-lg hover:scale-105 transition-all"
+                                      >
+                                        Importar para Editar
+                                      </button>
+                                    )}
+                                 </div>
                              </Popup>
                           </Marker>
                         )}
