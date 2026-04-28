@@ -22,7 +22,14 @@ import { QRCode } from 'react-qr-code';
 import { ModalConfirmacion } from '../../components/ui/ModalConfirmacion';
 import { ModalPaseBase } from '../../components/comando/ModalPaseBase';
 import MapaTactico from '../../components/MapaTactico';
-import { calculatePolygonArea, estimateCapacity } from '../../lib/geometry';
+import { 
+    calculatePolygonArea, 
+    estimateCapacity, 
+    getPolygonOrientation, 
+    rotatePoint, 
+    STANDARDS,
+    getDistanceMeters 
+} from '../../lib/geometry';
 
 
 const preloadBase64Fonts = async () => {
@@ -383,73 +390,69 @@ export default function GestionZonas() {
     const handleAISuggestion = async (points) => {
         if (!points || points.length < 3) return;
         
-        toast.loading("IA Analizando Superficie Satelital...", { id: 'ai-analysis' });
+        toast.loading("IA Analizando Orientación y Superficie...", { id: 'ai-analysis' });
         
         setTimeout(() => {
             const area = calculatePolygonArea(points);
             const spots = estimateCapacity(area);
 
-            // Calcular Centroide para el escalado (Simulación de Offset)
+            // Calcular Centroide para rotaciones
             const latSum = points.reduce((s, p) => s + p[0], 0);
             const lngSum = points.reduce((s, p) => s + p[1], 0);
             const centroide = [latSum / points.length, lngSum / points.length];
 
-            // Plano de Área Utilizable
+            // Plano de Área Utilizable (Contraído para circulación periférica)
             const poligonoSugerido = points.map(p => [
                 p[0] + (centroide[0] - p[0]) * 0.1,
                 p[1] + (centroide[1] - p[1]) * 0.1
             ]);
 
-            // ESCALADO MÉTRICO REAL
-            const METERS_PER_DEG_LAT = 111000;
-            const METERS_PER_DEG_LNG = 111000 * Math.cos(centroide[0] * Math.PI / 180);
+            // ESCALADO MÉTRICO REAL (Preciso para 10°N)
+            const latRad = centroide[0] * Math.PI / 180;
+            const METERS_PER_DEG_LAT = 111320;
+            const METERS_PER_DEG_LNG = 111320 * Math.cos(latRad);
 
-            const lats = points.map(p => p[0]);
-            const lngs = points.map(p => p[1]);
-            const latRangeM = (Math.max(...lats) - Math.min(...lats)) * METERS_PER_DEG_LAT;
-            const lngRangeM = (Math.max(...lngs) - Math.min(...lngs)) * METERS_PER_DEG_LNG;
+            // Determinar orientación óptima (Eje más largo)
+            const orientationAngle = getPolygonOrientation(points);
+            
+            // Rotar puntos al eje neutro (0°) para cálculo de grilla
+            const rotatedPoints = points.map(p => rotatePoint(p, centroide, -orientationAngle));
+            
+            const lats = rotatedPoints.map(p => p[0]);
+            const lngs = rotatedPoints.map(p => p[1]);
+            
+            const minLat = Math.min(...lats);
+            const maxLat = Math.max(...lats);
+            const minLng = Math.min(...lngs);
+            const maxLng = Math.max(...lngs);
 
             const simLines = [];
-            const isVertical = latRangeM > lngRangeM;
-            const majorDimM = isVertical ? latRangeM : lngRangeM;
             
-            // Generar filas a escala real (Cada 8m: 5m de puesto + 3m de margen)
-            const numRows = Math.floor(majorDimM / 8); 
-
-            if (isVertical) {
-                const stepLat = 8 / METERS_PER_DEG_LAT;
-                const minLng = Math.min(...poligonoSugerido.map(p => p[1]));
-                const maxLng = Math.max(...poligonoSugerido.map(p => p[1]));
-                for (let i = 1; i < numRows; i++) {
-                    const rowLat = Math.min(...lats) + (i * stepLat);
-                    if (rowLat < Math.max(...lats)) {
-                        simLines.push([[rowLat, minLng], [rowLat, maxLng]]);
-                    }
-                }
-            } else {
-                const stepLng = 8 / METERS_PER_DEG_LNG;
-                const minLat = Math.min(...poligonoSugerido.map(p => p[0]));
-                const maxLat = Math.max(...poligonoSugerido.map(p => p[0]));
-                for (let i = 1; i < numRows; i++) {
-                    const rowLng = Math.min(...lngs) + (i * stepLng);
-                    if (rowLng < Math.max(...lngs)) {
-                        simLines.push([[minLat, rowLng], [maxLat, rowLng]]);
-                    }
-                }
+            // Espaciado: Profundidad del puesto (5m) + Mitad del Pasillo (3m) = 8m
+            // Pero cada fila doble (puesto-pasillo-puesto) necesita Profundidad*2 + Pasillo = 16m
+            const rowSpacingM = STANDARDS.SPOT_DEPTH * 2 + STANDARDS.AISLE_WIDTH; 
+            const stepLat = rowSpacingM / METERS_PER_DEG_LAT;
+            
+            // Generar filas paralelas al eje principal
+            for (let lat = minLat + (stepLat/4); lat < maxLat; lat += stepLat) {
+                // Rotar línea de vuelta al ángulo original
+                const startPoint = rotatePoint([lat, minLng], centroide, orientationAngle);
+                const endPoint = rotatePoint([lat, maxLng], centroide, orientationAngle);
+                simLines.push([startPoint, endPoint]);
             }
 
             setAiSuggestions({
                 puestosCount: spots,
-                distribución: isVertical ? 'Filas Transversales' : 'Filas Longitudinales',
-                eficiencia: '65% (Área de Maniobra Incluida)',
+                distribución: `Orientación Táctica: ${(orientationAngle * 180 / Math.PI).toFixed(1)}°`,
+                eficiencia: `${(STANDARDS.MIN_EFFICIENCY * 100).toFixed(0)}% (Aegis Standard)`,
                 lineas: simLines,
                 poligonoSugerido: poligonoSugerido,
-                areaUtilizable: Math.floor(area * 0.65)
+                areaUtilizable: Math.floor(area * STANDARDS.MIN_EFFICIENCY)
             });
             
             toast.success("Análisis Táctico Completado", { id: 'ai-analysis' });
-            toast("La IA sugiere una distribución optimizada para vehículos estándar", { icon: '🤖' });
-        }, 2000);
+            toast("Distribución alineada automáticamente con el terreno operativo", { icon: '🤖' });
+        }, 1500);
     };
 
     // Estados para Carnetización
@@ -1079,9 +1082,10 @@ export default function GestionZonas() {
                                 setDrawingMode(true);
                                 setModalMapaReferencia(true);
                             }} 
-                            className="w-full h-11 bg-warning text-bg-app border border-warning/20 text-[10px] gap-2 font-black uppercase shadow-[0_0_15px_rgba(245,158,11,0.2)] hover:brightness-110 transition-all"
+                            className="w-full h-11 bg-warning text-black border border-black/10 text-[11px] gap-3 font-black uppercase shadow-[0_0_20px_rgba(245,158,11,0.3)] hover:scale-[1.01] active:scale-[0.98] transition-all"
                         >
-                            <Scissors size={14} /> Referenciar Área (Dibujo Táctico)
+                            <Scissors size={15} /> 
+                            <span>Establecer Límites Tácticos (Satelital)</span>
                         </Boton>
 
                         <Boton onClick={() => {
@@ -1513,7 +1517,22 @@ export default function GestionZonas() {
                         drawingMode={drawingMode}
                         tempPoints={tempPoints}
                         aiSuggestions={aiSuggestions}
-                        onPointAdded={(lat, lng) => setTempPoints([...tempPoints, [lat, lng]])}
+                        onPointAdded={(lat, lng) => {
+                            const newPoints = [...tempPoints, [lat, lng]];
+                            setTempPoints(newPoints);
+                            if (aiSuggestions) handleAISuggestion(newPoints);
+                        }}
+                        onPointMoved={(index, lat, lng) => {
+                            const newPoints = [...tempPoints];
+                            newPoints[index] = [lat, lng];
+                            setTempPoints(newPoints);
+                            if (aiSuggestions) handleAISuggestion(newPoints);
+                        }}
+                        onPointDeleted={(index) => {
+                            const newPoints = tempPoints.filter((_, i) => i !== index);
+                            setTempPoints(newPoints);
+                            if (aiSuggestions) handleAISuggestion(newPoints);
+                        }}
                         onAISuggestion={handleAISuggestion}
                         onPolygonComplete={(points) => {
                             const area = calculatePolygonArea(points);
@@ -1533,6 +1552,19 @@ export default function GestionZonas() {
                         }}
                         pollingEnabled={false}
                     />
+                    
+                    {tempPoints.length > 0 && (
+                        <Boton 
+                            onClick={() => {
+                                setTempPoints([]);
+                                setAiSuggestions(null);
+                                toast("Polígono reiniciado", { icon: '🧹' });
+                            }}
+                            className="absolute bottom-6 right-6 z-[1001] bg-danger/20 border-danger/30 text-danger hover:bg-danger hover:text-white px-4 text-[9px] font-black uppercase"
+                        >
+                            <Trash2 size={14} className="mr-2" /> Limpiar Polígono
+                        </Boton>
+                    )}
                 </div>
             </Modal>
         </div>

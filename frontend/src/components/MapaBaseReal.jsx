@@ -117,7 +117,20 @@ function MapResizer({ isFullscreen }) {
   return null;
 }
 
-const MapaBaseReal = ({ situacion, onSelectEntity, assignmentMode, drawingMode = false, tempPoints = [], aiSuggestions = null, showPolygons = true, onMapClick = null, selectedForMove = null, isFullscreen }) => {
+const MapaBaseReal = ({ 
+  situacion, 
+  onSelectEntity, 
+  assignmentMode, 
+  drawingMode = false, 
+  tempPoints = [], 
+  onPointMoved, 
+  onPointDeleted,
+  aiSuggestions = null, 
+  showPolygons = true, 
+  onMapClick = null, 
+  selectedForMove = null, 
+  isFullscreen 
+}) => {
   const { isDarkMode } = useThemeStore();
   const [mapType, setMapType] = React.useState('satellite'); // 'satellite' | 'tactical'
 
@@ -326,11 +339,25 @@ const MapaBaseReal = ({ situacion, onSelectEntity, assignmentMode, drawingMode =
                         pathOptions={{ color: '#4EDEA3', weight: 3, dashArray: '10, 10' }} 
                       />
                       {tempPoints.map((p, i) => (
-                        <Circle 
+                        <Marker 
                           key={`temp-pt-${i}`}
-                          center={p}
-                          radius={1}
-                          pathOptions={{ color: '#4EDEA3', fillColor: '#4EDEA3', fillOpacity: 1 }}
+                          position={p}
+                          draggable={true}
+                          icon={L.divIcon({
+                            className: 'tactical-vertex',
+                            html: `<div class="w-2.5 h-2.5 bg-primary rounded-full border-2 border-bg-app shadow-[0_0_10px_rgba(78,222,163,0.5)]"></div>`,
+                            iconSize: [10, 10],
+                            iconAnchor: [5, 5]
+                          })}
+                          eventHandlers={{
+                            dragend: (e) => {
+                                const { lat, lng } = e.target.getLatLng();
+                                onPointMoved && onPointMoved(i, lat, lng);
+                            },
+                            contextmenu: () => {
+                                onPointDeleted && onPointDeleted(i);
+                            }
+                          }}
                         />
                       ))}
                       {tempPoints.length >= 3 && (

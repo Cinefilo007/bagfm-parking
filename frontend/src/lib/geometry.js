@@ -65,3 +65,38 @@ export const estimateCapacity = (areaM2, efficiencyFactor = STANDARDS.MIN_EFFICI
     const usableArea = areaM2 * efficiencyFactor;
     return Math.floor(usableArea / spacePerVehicle);
 };
+
+/**
+ * Calcula el ángulo del borde más largo del polígono para alinear la grilla.
+ */
+export const getPolygonOrientation = (points) => {
+    if (!points || points.length < 2) return 0;
+    let maxDist = 0;
+    let angle = 0;
+
+    for (let i = 0; i < points.length; i++) {
+        const p1 = points[i];
+        const p2 = points[(i + 1) % points.length];
+        const d = getDistanceMeters(p1, p2);
+        if (d > maxDist) {
+            maxDist = d;
+            angle = Math.atan2(p2[1] - p1[1], p2[0] - p1[0]);
+        }
+    }
+    return angle;
+};
+
+/**
+ * Rotar un punto alrededor de un origen.
+ */
+export const rotatePoint = (point, origin, angle) => {
+    const cos = Math.cos(angle);
+    const sin = Math.sin(angle);
+    const dx = point[1] - origin[1];
+    const dy = point[0] - origin[0];
+
+    return [
+        origin[0] + (dy * cos - dx * sin),
+        origin[1] + (dy * sin + dx * cos)
+    ];
+};
