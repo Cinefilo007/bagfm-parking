@@ -32,14 +32,35 @@ export const calculatePolygonArea = (coordinates) => {
     return area;
 };
 
+export const STANDARDS = {
+    SPOT_WIDTH: 2.5,   // metros
+    SPOT_DEPTH: 5.0,   // metros
+    AISLE_WIDTH: 6.0,  // metros (circulación doble sentido)
+    MIN_EFFICIENCY: 0.65
+};
+
+/**
+ * Calcula la distancia entre dos puntos en metros (Haversine).
+ */
+export const getDistanceMeters = (p1, p2) => {
+    const R = 6371e3; // Radio de la Tierra
+    const phi1 = p1[0] * Math.PI / 180;
+    const phi2 = p2[0] * Math.PI / 180;
+    const deltaPhi = (p2[0] - p1[0]) * Math.PI / 180;
+    const deltaLambda = (p2[1] - p1[1]) * Math.PI / 180;
+
+    const a = Math.sin(deltaPhi / 2) * Math.sin(deltaPhi / 2) +
+        Math.cos(phi1) * Math.cos(phi2) *
+        Math.sin(deltaLambda / 2) * Math.sin(deltaLambda / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+
+    return R * c;
+};
+
 /**
  * Estima la capacidad de vehículos considerando áreas de circulación.
- * @param {number} areaM2 - Área total en m²
- * @param {number} efficiencyFactor - Factor de eficiencia (0.6 - 0.7 sugerido)
- * @param {number} spacePerVehicle - Espacio por vehículo en m² (estándar 12.5)
- * @returns {number} Capacidad estimada
  */
-export const estimateCapacity = (areaM2, efficiencyFactor = 0.65, spacePerVehicle = 12.5) => {
+export const estimateCapacity = (areaM2, efficiencyFactor = STANDARDS.MIN_EFFICIENCY, spacePerVehicle = 12.5) => {
     if (!areaM2 || areaM2 <= 0) return 0;
     const usableArea = areaM2 * efficiencyFactor;
     return Math.floor(usableArea / spacePerVehicle);

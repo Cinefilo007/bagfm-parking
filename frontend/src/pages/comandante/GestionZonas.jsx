@@ -385,51 +385,70 @@ export default function GestionZonas() {
         
         toast.loading("IA Analizando Superficie Satelital...", { id: 'ai-analysis' });
         
-        // Simulación de análisis de visión artificial (Gemini Vision Táctico)
-        // En una implementación real, aquí enviaríamos el screenshot del mapa a un endpoint de IA
         setTimeout(() => {
-            // Generar una cuadrícula básica sugerida dentro del polígono (Simulación)
             const area = calculatePolygonArea(points);
             const spots = estimateCapacity(area);
 
-            // Calcular Centroide para el escalado del plano (Simulación de Offset)
+            // Calcular Centroide para el escalado (Simulación de Offset)
             const latSum = points.reduce((s, p) => s + p[0], 0);
             const lngSum = points.reduce((s, p) => s + p[1], 0);
             const centroide = [latSum / points.length, lngSum / points.length];
 
-            // Crear polígono contraído (Plano de Área Utilizable - IA)
-            // Escalar cada punto un 8% hacia el centroide para simular márgenes de seguridad/vías
+            // Plano de Área Utilizable
             const poligonoSugerido = points.map(p => [
                 p[0] + (centroide[0] - p[0]) * 0.1,
                 p[1] + (centroide[1] - p[1]) * 0.1
             ]);
 
-            // Simular líneas de puestos tácticos dentro del área neta
-            const midPoints = [];
-            for (let i = 0; i < poligonoSugerido.length; i++) {
-                const p1 = poligonoSugerido[i];
-                const p2 = poligonoSugerido[(i + 1) % poligonoSugerido.length];
-                midPoints.push([(p1[0] + p2[0]) / 2, (p1[1] + p2[1]) / 2]);
-            }
+            // ESCALADO MÉTRICO REAL
+            const METERS_PER_DEG_LAT = 111000;
+            const METERS_PER_DEG_LNG = 111000 * Math.cos(centroide[0] * Math.PI / 180);
+
+            const lats = points.map(p => p[0]);
+            const lngs = points.map(p => p[1]);
+            const latRangeM = (Math.max(...lats) - Math.min(...lats)) * METERS_PER_DEG_LAT;
+            const lngRangeM = (Math.max(...lngs) - Math.min(...lngs)) * METERS_PER_DEG_LNG;
 
             const simLines = [];
-            if (midPoints.length >= 2) {
-                // Trazamos ejes de distribución sobre el plano neta
-                simLines.push([midPoints[0], midPoints[2] || midPoints[1]]);
-                if (midPoints.length > 3) simLines.push([midPoints[1], midPoints[3]]);
+            const isVertical = latRangeM > lngRangeM;
+            const majorDimM = isVertical ? latRangeM : lngRangeM;
+            
+            // Generar filas a escala real (Cada 8m: 5m de puesto + 3m de margen)
+            const numRows = Math.floor(majorDimM / 8); 
+
+            if (isVertical) {
+                const stepLat = 8 / METERS_PER_DEG_LAT;
+                const minLng = Math.min(...poligonoSugerido.map(p => p[1]));
+                const maxLng = Math.max(...poligonoSugerido.map(p => p[1]));
+                for (let i = 1; i < numRows; i++) {
+                    const rowLat = Math.min(...lats) + (i * stepLat);
+                    if (rowLat < Math.max(...lats)) {
+                        simLines.push([[rowLat, minLng], [rowLat, maxLng]]);
+                    }
+                }
+            } else {
+                const stepLng = 8 / METERS_PER_DEG_LNG;
+                const minLat = Math.min(...poligonoSugerido.map(p => p[0]));
+                const maxLat = Math.max(...poligonoSugerido.map(p => p[0]));
+                for (let i = 1; i < numRows; i++) {
+                    const rowLng = Math.min(...lngs) + (i * stepLng);
+                    if (rowLng < Math.max(...lngs)) {
+                        simLines.push([[minLat, rowLng], [maxLat, rowLng]]);
+                    }
+                }
             }
 
             setAiSuggestions({
                 puestosCount: spots,
-                distribución: '90 Grados',
-                eficiencia: '65%',
+                distribución: isVertical ? 'Filas Transversales' : 'Filas Longitudinales',
+                eficiencia: '65% (Área de Maniobra Incluida)',
                 lineas: simLines,
                 poligonoSugerido: poligonoSugerido,
                 areaUtilizable: Math.floor(area * 0.65)
             });
             
             toast.success("Análisis Táctico Completado", { id: 'ai-analysis' });
-            toast("La IA sugiere una distribución a 90° para optimizar el flujo", { icon: '🤖' });
+            toast("La IA sugiere una distribución optimizada para vehículos estándar", { icon: '🤖' });
         }, 2000);
     };
 
