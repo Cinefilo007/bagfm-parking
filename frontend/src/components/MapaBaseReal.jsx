@@ -340,7 +340,7 @@ const MapaBaseReal = ({
                     positions={linea.points || linea} 
                     pathOptions={{ 
                         color: linea.color || '#818cf8', 
-                        weight: linea.type === 'via' ? 2 : (linea.type === 'divisor_doble' ? 2 : 1), 
+                        weight: linea.type === 'via' ? 2 : (linea.type === 'divisor_doble' ? 4 : 1), 
                         opacity: linea.type === 'divisor_doble' ? 1 : 0.8, 
                         dashArray: linea.type === 'via' ? '5, 10' : '0'
                     }} 
@@ -354,10 +354,29 @@ const MapaBaseReal = ({
                     position={p.center}
                     icon={L.divIcon({
                         className: 'tactical-label',
-                        html: `<div style="color: #818cf8; font-size: 7px; font-weight: 900; font-family: monospace; text-shadow: 0 0 3px rgba(0,0,0,0.9); opacity: 0.8;">${p.number}</div>`,
-                        iconSize: [20, 20],
-                        iconAnchor: [10, 10]
+                        html: `
+                            <div style="
+                                background: #A855F7;
+                                color: white;
+                                width: 14px;
+                                height: 14px;
+                                display: flex;
+                                align-items: center;
+                                justify-content: center;
+                                border-radius: 3px;
+                                font-size: 8px;
+                                font-weight: 900;
+                                font-family: sans-serif;
+                                border: 1px solid white;
+                                box-shadow: 0 0 5px rgba(0,0,0,0.5);
+                            ">
+                                ${p.number}
+                            </div>
+                        `,
+                        iconSize: [14, 14],
+                        iconAnchor: [7, 7]
                     })}
+                    zIndexOffset={1000}
                 />
             ))}
           </MapContainer>

@@ -536,8 +536,42 @@ export default function GestionZonas() {
             
             setAiIteration(prev => (prev + 1) % 4);
             setAiLoading(false);
-            toast.success("Distribución Actualizada", { id: 'ai-analysis' });
-        }, 1200);
+            toast.success(`Distribución: ${totalSpotsCount} puestos detectados`, { id: 'ai-analysis' });
+        }, 1000);
+    };
+
+    const handleFinalizarDiseno = () => {
+        if (tempPoints.length < 3) {
+            toast.error("Debe definir un área mínima (3 puntos)");
+            return;
+        }
+        
+        // TRANSFERENCIA CRÍTICA AL FORMULARIO PRINCIPAL
+        setFormZona(prev => ({
+            ...prev,
+            poligono: tempPoints,
+            area_m2: calculatePolygonArea(tempPoints),
+            config_ia: configIA,
+            grilla_tactica: aiSuggestions?.lineas || []
+        }));
+
+        setDrawingMode(false);
+        setModalMapaReferencia(false);
+        toast.success("Diseño táctico acoplado al formulario");
+    };
+
+    const handleLimpiarDiseno = () => {
+        setConfirmConfig({
+            isOpen: true,
+            title: 'LIMPIAR DISEÑO ACTUAL',
+            message: '¿Desea borrar todo el trazado y empezar de cero? Esta acción no se puede deshacer.',
+            onConfirm: () => {
+                setTempPoints([]);
+                setAiSuggestions(null);
+                setConfirmConfig(prev => ({ ...prev, isOpen: false }));
+                toast.success("Área de trabajo despejada");
+            }
+        });
     };
 
     // Estados para Carnetización
@@ -1756,22 +1790,6 @@ export default function GestionZonas() {
                                             {aiLoading ? <Loader2 size={12} className="animate-spin" /> : <Sparkles size={12} />}
                                             {aiLoading ? 'Calculando...' : 'Actualizar'}
                                         </button>
-                                        <button 
-                                            onClick={() => {
-                                                const area = calculatePolygonArea(tempPoints);
-                                                setFormZona(f => ({ 
-                                                    ...f, 
-                                                    poligono: tempPoints, 
-                                                    area_m2: area,
-                                                    capacidad_total: aiSuggestions?.puestosCount || f.capacidad_total || estimateCapacity(area),
-                                                    config_ia: configIA,
-                                                    grilla_tactica: aiSuggestions?.lineas || []
-                                                }));
-                                                setAiSuggestions(null);
-                                                setModalMapaReferencia(false);
-                                                setDrawingMode(false);
-                                                toast.success("Plano Táctico Guardado");
-                                            }}
                                             disabled={tempPoints.length < 3}
                                             className="w-full py-2 bg-primary text-bg-app rounded-xl text-[9px] font-black uppercase tracking-widest hover:scale-[1.02] active:scale-95 transition-all disabled:opacity-30 flex items-center justify-center gap-2"
                                         >
