@@ -167,14 +167,15 @@ async def completar_datos_portador(
 @router.get("/zona/{zona_id}/trazabilidad")
 async def obtener_trazabilidad_zona(
     zona_id: UUID,
-    limite: int = 100,
+    limite: int = 20,
+    skip: int = 0,
     db: AsyncSession = Depends(obtener_db),
     current_user: Usuario = Depends(require_rol(["SUPERVISOR_PARQUEROS", "PARQUERO", "ADMIN_BASE", "COMANDANTE"]))
 ):
     """
-    Retorna el historial temporal de vehículos de la zona.
+    Retorna el historial temporal de vehículos de la zona con soporte para paginación.
     """
-    return await parquero_service.get_trazabilidad_zona(db, zona_id, limite)
+    return await parquero_service.get_trazabilidad_zona(db, zona_id, limite, skip)
 
 
 @router.get("/perdidos")

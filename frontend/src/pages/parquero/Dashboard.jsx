@@ -370,7 +370,7 @@ const DashboardParquero = () => {
                 {zonaInfo && <>
 
                     {/* ── KPIs ── */}
-                    <div className="grid grid-cols-4 gap-2">
+                    <div className=\"grid grid-cols-2 md:grid-cols-4 gap-2\">
                         <KpiCard label="Libres"    valor={kpis.libres}    icon={CheckCircle2} color="text-success" />
                         <KpiCard label="Ocupados"  valor={kpis.ocupados}  icon={Car}          color="text-danger"  />
 
@@ -470,25 +470,27 @@ const DashboardParquero = () => {
                         </div>
 
 
-                        {/* Grid de puestos */}
-                        {puestos.length > 0 ? (
-                            <div className="grid grid-cols-4 sm:grid-cols-6 gap-2">
-                                {puestos.map(puesto => (
-                                    <TarjetaPuesto
-                                        key={puesto.id}
-                                        puesto={puesto}
-                                        vehiculosEnZona={vehiculosEnZona}
-                                        onClick={() => !puesto.virtual && setPuestoModal(puesto)}
-                                    />
-                                ))}
-                            </div>
-                        ) : (
-                            <div className="text-center py-8 text-text-muted/40">
-                                <ParkingSquare size={36} className="mx-auto mb-3 opacity-30" />
-                                <p className="text-[10px] font-black uppercase tracking-widest">Zona sin mapa de puestos físicos</p>
-                                <p className="text-[9px] opacity-60 mt-1">Capacidad total: {zonaInfo.capacidad_total}</p>
-                            </div>
-                        )}
+                        {/* Grid de puestos con Scroll */}
+                        <div className=\"max-h-[380px] overflow-y-auto pr-1 custom-scrollbar\">
+                            {puestos.length > 0 ? (
+                                <div className=\"grid grid-cols-4 sm:grid-cols-6 gap-2\">
+                                    {puestos.map(puesto => (
+                                        <TarjetaPuesto
+                                            key={puesto.id}
+                                            puesto={puesto}
+                                            vehiculosEnZona={vehiculosEnZona}
+                                            onClick={() => !puesto.virtual && setPuestoModal(puesto)}
+                                        />
+                                    ))}
+                                </div>
+                            ) : (
+                                <div className=\"text-center py-8 text-text-muted/40\">
+                                    <ParkingSquare size={36} className=\"mx-auto mb-3 opacity-30\" />
+                                    <p className=\"text-[10px] font-black uppercase tracking-widest\">Zona sin mapa de puestos físicos</p>
+                                    <p className=\"text-[9px] opacity-60 mt-1\">Capacidad total: {zonaInfo.capacidad_total}</p>
+                                </div>
+                            )}
+                        </div>
                     </Card>
 
                     {/* ── VEHÍCULOS EN ZONA ── */}
@@ -499,7 +501,7 @@ const DashboardParquero = () => {
                                 Vehículos en Zona ({vehiculosEnZona.length})
                             </p>
                         </div>
-                        <div className="space-y-2">
+                        <div className=\"max-h-[300px] overflow-y-auto pr-1 custom-scrollbar space-y-2\">
                             {vehiculosEnZona.map(v => (
                                 <TarjetaVehiculo 
                                     key={v.id} 
@@ -510,9 +512,9 @@ const DashboardParquero = () => {
                                 />
                             ))}
                             {vehiculosEnZona.length === 0 && (
-                                <div className="text-center py-6 text-text-muted/40">
-                                    <Car size={32} className="mx-auto mb-2 opacity-40" />
-                                    <p className="text-[9px] font-black uppercase tracking-widest">Sin vehículos activos en zona</p>
+                                <div className=\"text-center py-6 text-text-muted/40\">
+                                    <Car size={32} className=\"mx-auto mb-2 opacity-40\" />
+                                    <p className=\"text-[9px] font-black uppercase tracking-widest\">Sin vehículos activos en zona</p>
                                 </div>
                             )}
                         </div>

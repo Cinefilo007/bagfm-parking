@@ -465,7 +465,7 @@ class ParqueroService:
     # ──────────────────────────────────────────────────────────────────────────
 
     async def get_trazabilidad_zona(
-        self, db: AsyncSession, zona_id: UUID, limite: int = 100
+        self, db: AsyncSession, zona_id: UUID, limite: int = 100, skip: int = 0
     ) -> List[Dict[str, Any]]:
         """
         Retorna el historial temporal de vehículos de la zona.
@@ -473,8 +473,11 @@ class ParqueroService:
         - Accesos de la alcabala que tenían como destino esta zona
         - VehiculoPase (ingresó zona / salió zona)
         Ordena por timestamp desc.
+        Paginación: Como combinamos dos fuentes, buscamos limite + skip en ambas, 
+        mezclamos y cortamos.
         """
         eventos = []
+        fetch_limit = limite + skip
 
         # --- Accesos de alcabala (entrada base con zona destino) ---
         res_accesos = await db.execute(
@@ -485,7 +488,7 @@ class ParqueroService:
                 Acceso.tipo == AccesoTipo.entrada
             )
             .order_by(Acceso.timestamp.desc())
-            .limit(limite)
+            .limit(fetch_limit)
         )
         for acceso, qr in res_accesos.all():
             placa = None
@@ -504,10 +507,10 @@ class ParqueroService:
         res_vp_in = await db.execute(
             select(VehiculoPase).where(
                 VehiculoPase.zona_asignada_id == zona_id,
-                VehiculoPase.hora_ingreso.isnot(None)
+                and_(VehiculoPase.hora_ingreso.isnot(None))
             )
             .order_by(VehiculoPase.hora_ingreso.desc())
-            .limit(limite)
+            .limit(fetch_limit)
         )
         for vp in res_vp_in.scalars().all():
             eventos.append({
@@ -540,7 +543,9 @@ class ParqueroService:
             return datetime.min.replace(tzinfo=timezone.utc)
 
         eventos.sort(key=sort_key, reverse=True)
-        return eventos[:limite]
+        
+        # Aplicar skip y limite sobre la lista combinada
+        return eventos[skip : skip + limite]
 
     async def get_vehiculos_perdidos(self, db: AsyncSession, usuario_id: UUID) -> List[Dict]:
         """

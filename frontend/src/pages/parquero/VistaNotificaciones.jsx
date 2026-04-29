@@ -1,9 +1,9 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import {
     ArrowLeft, Bell, Car, ParkingSquare, LogOut, LogIn,
     RefreshCw, ChevronDown, ChevronUp, Clock, Shield,
-    AlertCircle, CheckCircle2
+    AlertCircle, CheckCircle2, Calendar, ChevronRight
 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import { cn } from '../../lib/utils';
@@ -18,15 +18,21 @@ const formatearHora = (isoString) => {
     } catch { return '—'; }
 };
 
-const formatearFechaHora = (isoString) => {
-    if (!isoString) return '—';
+const formatearFechaDisplay = (isoString) => {
+    if (!isoString) return '';
     try {
         const d = new Date(isoString);
-        return d.toLocaleString('es-VE', {
-            day: '2-digit', month: 'short',
-            hour: '2-digit', minute: '2-digit'
-        });
-    } catch { return '—'; }
+        const hoy = new Date();
+        const ayer = new Date();
+        ayer.setDate(hoy.getDate() - 1);
+
+        if (d.toDateString() === hoy.toDateString()) return 'HOY';
+        if (d.toDateString() === ayer.toDateString()) return 'AYER';
+
+        return d.toLocaleDateString('es-VE', {
+            day: '2-digit', month: 'short', year: d.getFullYear() !== hoy.getFullYear() ? 'numeric' : undefined
+        }).toUpperCase();
+    } catch { return 'FECHA DESCONOCIDA'; }
 };
 
 const tiempoRelativo = (isoString) => {
@@ -36,7 +42,7 @@ const tiempoRelativo = (isoString) => {
         if (diff < 60) return 'Hace un momento';
         if (diff < 3600) return `Hace ${Math.floor(diff / 60)} min`;
         if (diff < 86400) return `Hace ${Math.floor(diff / 3600)}h`;
-        return formatearFechaHora(isoString);
+        return formatearHora(isoString);
     } catch { return null; }
 };
 
@@ -48,7 +54,7 @@ const CONFIG_TIPO = {
         bg: 'bg-indigo-500/10',
         border: 'border-indigo-500/20',
         dot: 'bg-indigo-400',
-        label: 'Alcabala',
+        label: 'SALIDA DE ALCABALA',
     },
     ingreso_zona: {
         Icon: LogIn,
@@ -56,7 +62,7 @@ const CONFIG_TIPO = {
         bg: 'bg-success/10',
         border: 'border-success/20',
         dot: 'bg-success',
-        label: 'Ingresó a Zona',
+        label: 'INGRESÓ A ZONA',
     },
     salida_zona: {
         Icon: LogOut,
@@ -64,11 +70,11 @@ const CONFIG_TIPO = {
         bg: 'bg-warning/10',
         border: 'border-warning/20',
         dot: 'bg-warning',
-        label: 'Salió de Zona',
+        label: 'SALIÓ DE ZONA',
     },
 };
 
-// ── Tarjeta de evento individual ──────────────────────────────────────────
+// ── Tarjeta de evento individual (Timeline) ───────────────────────────────
 const TarjetaEvento = ({ evento, onEntrada }) => {
     const [cargando, setCargando] = useState(false);
     const cfg = CONFIG_TIPO[evento.tipo] || CONFIG_TIPO.alcabala;
@@ -89,51 +95,64 @@ const TarjetaEvento = ({ evento, onEntrada }) => {
 
     return (
         <div className={cn(
-            'flex items-start gap-3 p-3 rounded-xl border transition-all',
-            cfg.bg, cfg.border
+            'group relative flex flex-col p-4 rounded-2xl border bg-bg-card/40 border-white/5 hover:border-white/10 transition-all hover:bg-bg-card/60 shadow-sm overflow-hidden'
         )}>
-            <div className={cn('w-8 h-8 rounded-lg flex items-center justify-center shrink-0 mt-0.5', cfg.bg, cfg.border, 'border')}>
-                <Icon size={15} className={cfg.color} />
-            </div>
-            <div className="flex-1 min-w-0">
-                <div className="flex items-center justify-between gap-2">
-                    <span className={cn('text-[9px] font-black uppercase tracking-widest', cfg.color)}>
-                        {cfg.label}
-                    </span>
-                    <span className="text-[9px] text-text-muted/60 shrink-0">
-                        {formatearHora(evento.timestamp)}
-                    </span>
+            {/* Decoración lateral según tipo */}
+            <div className={cn('absolute left-0 top-0 bottom-0 w-1', cfg.dot)} />
+
+            <div className="flex items-start justify-between gap-3 mb-2">
+                <div className="flex items-center gap-2">
+                    <div className={cn('w-8 h-8 rounded-xl flex items-center justify-center shrink-0', cfg.bg, cfg.color)}>
+                        <Icon size={16} />
+                    </div>
+                    <div>
+                        <span className={cn('text-[9px] font-black uppercase tracking-widest leading-none', cfg.color)}>
+                            {cfg.label}
+                        </span>
+                        <div className="flex items-center gap-1.5 mt-0.5">
+                            <Clock size={10} className="text-text-muted/40" />
+                            <span className="text-[10px] font-bold text-text-muted/60 shrink-0">
+                                {formatearHora(evento.timestamp)}
+                            </span>
+                        </div>
+                    </div>
                 </div>
-                <p className="text-[11px] font-black text-text-main mt-0.5">
-                    {evento.placa ? (
-                        <span className="font-black tracking-wider">{evento.placa}</span>
-                    ) : (
-                        <span className="text-text-muted italic">Placa no registrada</span>
-                    )}
-                </p>
-                {evento.descripcion && (
-                    <p className="text-[10px] text-text-muted mt-0.5">{evento.descripcion}</p>
-                )}
+
                 {evento.tipo === 'alcabala' && evento.placa && (
                     <button
                         onClick={handleEntrada}
                         disabled={cargando}
-                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-success text-white text-[9px] font-black uppercase tracking-widest mt-2 hover:bg-success/90 transition-all active:scale-95 disabled:opacity-50"
+                        className="flex items-center gap-1.5 px-3 h-8 rounded-xl bg-success text-white text-[9px] font-black uppercase tracking-widest hover:bg-success/90 transition-all active:scale-95 disabled:opacity-50"
                     >
-                        {cargando ? <RefreshCw size={10} className="animate-spin" /> : <LogIn size={11} />}
-                        Recibir
+                        {cargando ? <RefreshCw size={10} className="animate-spin" /> : <LogIn size={12} />}
+                        RECIBIR
                     </button>
                 )}
-                {evento.tipo === 'ingreso_zona' && evento.puesto_asignado_id && (
-                    <div className="flex items-center gap-1 mt-1">
-                        <ParkingSquare size={10} className="text-success" />
-                        <span className="text-[9px] text-success font-bold">Puesto asignado</span>
-                    </div>
-                )}
-                {evento.tipo === 'ingreso_zona' && evento.activo === false && (
-                    <div className="flex items-center gap-1 mt-1">
-                        <CheckCircle2 size={10} className="text-text-muted" />
-                        <span className="text-[9px] text-text-muted">Ya salió de la zona</span>
+            </div>
+
+            <div className="flex items-center justify-between">
+                <div>
+                    <h3 className="text-base font-black text-text-main tracking-widest">
+                        {evento.placa || <span className="text-text-muted/40 italic">SIN PLACA</span>}
+                    </h3>
+                    {evento.descripcion && (
+                        <p className="text-[10px] text-text-muted mt-0.5 font-medium">{evento.descripcion}</p>
+                    )}
+                </div>
+                
+                {evento.tipo === 'ingreso_zona' && (
+                    <div className="text-right">
+                        {evento.puesto_asignado_id ? (
+                            <div className="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-success/10 text-success border border-success/20">
+                                <ParkingSquare size={10} />
+                                <span className="text-[9px] font-black uppercase">PUESTO OK</span>
+                            </div>
+                        ) : (
+                            <div className="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-white/5 text-text-muted border border-white/5">
+                                <AlertCircle size={10} />
+                                <span className="text-[9px] font-black uppercase">SIN PUESTO</span>
+                            </div>
+                        )}
                     </div>
                 )}
             </div>
@@ -148,39 +167,40 @@ const GrupoVehiculo = ({ placa, eventos, onEntrada }) => {
     const cfg = CONFIG_TIPO[ultimoEvento?.tipo] || CONFIG_TIPO.alcabala;
 
     return (
-        <div className="bg-bg-card rounded-2xl border border-white/5 overflow-hidden">
+        <div className="bg-bg-card/40 rounded-2xl border border-white/5 overflow-hidden transition-all hover:bg-bg-card/60">
             <button
                 onClick={() => setExpandido(p => !p)}
-                className="w-full flex items-center gap-3 p-3 hover:bg-white/3 transition-colors"
+                className="w-full flex items-center gap-3 p-4 hover:bg-white/3 transition-colors text-left"
             >
                 <div className={cn(
-                    'w-10 h-10 rounded-xl flex items-center justify-center shrink-0 border',
+                    'w-11 h-11 rounded-2xl flex items-center justify-center shrink-0 border',
                     cfg.bg, cfg.border
                 )}>
-                    <Car size={18} className={cfg.color} />
+                    <Car size={20} className={cfg.color} />
                 </div>
-                <div className="flex-1 text-left min-w-0">
-                    <p className="text-sm font-black text-text-main tracking-wider">{placa || 'Sin placa'}</p>
-                    <p className={cn('text-[9px] font-black uppercase tracking-widest', cfg.color)}>
-                        {cfg.label}
-                        <span className="text-text-muted/60 font-normal ml-2">
-                            {tiempoRelativo(ultimoEvento?.timestamp)}
+                <div className="flex-1 min-w-0">
+                    <p className="text-sm font-black text-text-main tracking-widest uppercase">{placa || 'Sin placa'}</p>
+                    <div className="flex items-center gap-2 mt-0.5">
+                        <span className={cn('text-[9px] font-black uppercase tracking-widest', cfg.color)}>
+                            {cfg.label}
                         </span>
-                    </p>
+                        <span className="text-[9px] text-text-muted/40 font-bold flex items-center gap-1">
+                            <Clock size={8} /> {tiempoRelativo(ultimoEvento?.timestamp)}
+                        </span>
+                    </div>
                 </div>
-                <div className="flex items-center gap-2">
-                    <span className="text-[9px] font-black text-text-muted bg-white/5 px-2 py-1 rounded-full">
+                <div className="flex items-center gap-3">
+                    <span className="text-[9px] font-black text-text-muted bg-white/5 px-3 py-1.5 rounded-xl border border-white/5 uppercase tracking-tighter">
                         {eventos.length} {eventos.length === 1 ? 'evento' : 'eventos'}
                     </span>
-                    {expandido
-                        ? <ChevronUp size={14} className="text-text-muted" />
-                        : <ChevronDown size={14} className="text-text-muted" />
-                    }
+                    <div className="w-8 h-8 rounded-full flex items-center justify-center bg-white/5 text-text-muted group-hover:bg-white/10 transition-all">
+                        {expandido ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                    </div>
                 </div>
             </button>
 
             {expandido && (
-                <div className="px-3 pb-3 space-y-2 border-t border-white/5 pt-2">
+                <div className="px-4 pb-4 space-y-3 border-t border-white/5 pt-4 bg-black/10">
                     {eventos.map((evento, i) => (
                         <TarjetaEvento key={i} evento={evento} onEntrada={onEntrada} />
                     ))}
@@ -202,43 +222,58 @@ const VistaNotificaciones = () => {
 
     const [eventos, setEventos] = useState([]);
     const [cargando, setCargando] = useState(true);
-    const [vistaMode, setVistaMode] = useState('vehiculos'); // 'vehiculos' | 'timeline'
+    const [cargandoMas, setCargandoMas] = useState(false);
+    const [vistaMode, setVistaMode] = useState('timeline'); // 'vehiculos' | 'timeline'
+    
+    // Paginación Backend
+    const [skip, setSkip] = useState(0);
+    const [hasMore, setHasMore] = useState(true);
+    const LIMITE = 20;
 
-    const cargarZonaYHistorial = useCallback(async () => {
+    const cargarHistorial = useCallback(async (isLoadMore = false) => {
+        if (!zonaId) return;
+        
+        if (isLoadMore) setCargandoMas(true);
+        else setCargando(true);
+
         try {
-            let targetId = zonaId;
-            let targetNombre = zonaNombre;
-
-            if (!targetId) {
-                const z = await parqueroService.getMiZona();
-                if (z) {
-                    setZonaDataInternal(z);
-                    targetId = z.id;
-                }
-            }
-
-            if (targetId) {
-                const data = await parqueroService.getTrazabilidadZona(targetId);
+            const currentSkip = isLoadMore ? skip + LIMITE : 0;
+            const data = await parqueroService.getTrazabilidadZona(zonaId, LIMITE, currentSkip);
+            
+            if (isLoadMore) {
+                setEventos(prev => [...prev, ...(data || [])]);
+                setSkip(currentSkip);
+            } else {
                 setEventos(data || []);
+                setSkip(0);
             }
+
+            if (!data || data.length < LIMITE) setHasMore(false);
+            else setHasMore(true);
+
         } catch (err) {
             console.error("Error cargando trazabilidad:", err);
+            toast.error("Error al cargar historial");
         } finally {
             setCargando(false);
+            setCargandoMas(false);
         }
-    }, [zonaId, zonaNombre]);
+    }, [zonaId, skip]);
 
+    // Carga inicial y auto-refresh solo para la primera página
     useEffect(() => {
-        cargarZonaYHistorial();
-        const interval = setInterval(cargarZonaYHistorial, 15000);
+        cargarHistorial();
+        const interval = setInterval(() => {
+            if (skip === 0) cargarHistorial();
+        }, 30000);
         return () => clearInterval(interval);
-    }, [cargarZonaYHistorial]);
+    }, [zonaId]); // Solo re-cargar si cambia la zona
 
     const handleEntradaRapida = async (placa) => {
         try {
             await parqueroService.registrarLlegadaPlaca(placa, zonaId);
             toast.success(`Entrada rápida registrada: ${placa}`);
-            cargarZonaYHistorial();
+            cargarHistorial(false); // Recargar desde el inicio
         } catch (err) {
             toast.error(err.response?.data?.detail || "No se pudo registrar la entrada");
             throw err;
@@ -246,7 +281,18 @@ const VistaNotificaciones = () => {
     };
 
     // Agrupar eventos por placa para vista "vehiculos"
-    const eventosPorPlaca = eventoAgrupadoPorPlaca(eventos);
+    const eventosPorPlaca = useMemo(() => eventoAgrupadoPorPlaca(eventos), [eventos]);
+
+    // Agrupar eventos por fecha para vista "timeline"
+    const eventosAgrupadosPorFecha = useMemo(() => {
+        const groups = {};
+        eventos.forEach(ev => {
+            const dateStr = formatearFechaDisplay(ev.timestamp);
+            if (!groups[dateStr]) groups[dateStr] = [];
+            groups[dateStr].push(ev);
+        });
+        return groups;
+    }, [eventos]);
 
     return (
         <div className="min-h-screen bg-bg-app flex flex-col">
@@ -256,118 +302,144 @@ const VistaNotificaciones = () => {
                 <div className="flex items-center gap-4 max-w-2xl mx-auto w-full">
                     <button
                         onClick={() => navigate('/parquero/')}
-                        className="w-9 h-9 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center hover:bg-white/10 transition-all"
+                        className="w-10 h-10 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center hover:bg-white/10 transition-all active:scale-90"
                     >
-                        <ArrowLeft size={18} className="text-text-muted" />
+                        <ArrowLeft size={20} className="text-text-muted" />
                     </button>
-                    <div>
-                        <h1 className="text-sm font-black uppercase tracking-wide text-text-main leading-none flex items-center gap-2">
-                            <Bell size={14} className="text-primary" /> Notificaciones
+                    <div className="flex-1 min-w-0">
+                        <h1 className="text-sm font-black uppercase tracking-widest text-text-main leading-none flex items-center gap-2">
+                            <Bell size={14} className="text-primary" /> Historial / Notif.
                         </h1>
-                        <p className="text-[9px] text-text-muted font-bold mt-0.5">{zonaNombre}</p>
+                        <p className="text-[9px] text-text-muted font-bold mt-1 truncate uppercase tracking-tighter opacity-60">
+                            {zonaNombre}
+                        </p>
                     </div>
-                    <div className="ml-auto flex items-center gap-2">
-                        <span className="text-[9px] font-black text-text-muted bg-white/5 px-2 py-1 rounded-full">
-                            {eventos.length} eventos
+                    <div className="flex items-center gap-2">
+                        <span className="hidden sm:inline-flex text-[10px] font-black text-text-muted bg-white/5 px-3 py-1.5 rounded-xl border border-white/5">
+                            {eventos.length} EVENTOS
                         </span>
                         <button
-                            onClick={cargarZonaYHistorial}
-                            className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center hover:bg-white/10 transition-all"
+                            onClick={() => cargarHistorial(false)}
+                            className="w-10 h-10 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center hover:bg-primary/20 transition-all active:rotate-180 duration-500"
                         >
-                            <RefreshCw size={16} className={cn('text-text-muted', cargando && 'animate-spin')} />
+                            <RefreshCw size={18} className={cn('text-primary', (cargando && !cargandoMas) && 'animate-spin')} />
                         </button>
                     </div>
                 </div>
             </header>
 
-            {/* Tabs vista */}
-            <div className="max-w-2xl mx-auto w-full px-4 pt-4">
-                <div className="flex gap-2 max-w-md bg-bg-low rounded-2xl p-1 border border-white/5">
-                    <button
-                        onClick={() => setVistaMode('vehiculos')}
-                        className={cn(
-                            'flex-1 h-9 rounded-xl flex items-center justify-center gap-1.5 text-[10px] font-black uppercase tracking-widest transition-all',
-                            vistaMode === 'vehiculos'
-                                ? 'bg-bg-card text-primary border border-primary/20 shadow-sm'
-                                : 'text-text-muted hover:text-text-main'
-                        )}
-                    >
-                        <Car size={12} /> Por Vehículo
-                    </button>
+            {/* Tabs vista con diseño Táctico */}
+            <div className="max-w-2xl mx-auto w-full px-4 pt-6">
+                <div className="flex gap-1.5 bg-bg-card/30 rounded-2xl p-1.5 border border-white/5 shadow-inner">
                     <button
                         onClick={() => setVistaMode('timeline')}
                         className={cn(
-                            'flex-1 h-9 rounded-xl flex items-center justify-center gap-1.5 text-[10px] font-black uppercase tracking-widest transition-all',
+                            'flex-1 h-11 rounded-xl flex items-center justify-center gap-2 text-[10px] font-black uppercase tracking-widest transition-all',
                             vistaMode === 'timeline'
-                                ? 'bg-bg-card text-primary border border-primary/20 shadow-sm'
-                                : 'text-text-muted hover:text-text-main'
+                                ? 'bg-primary text-white shadow-[0_0_15px_rgba(234,179,8,0.3)]'
+                                : 'text-text-muted hover:text-text-main hover:bg-white/5'
                         )}
                     >
-                        <Clock size={12} /> Línea de Tiempo
+                        <Clock size={14} /> Línea de Tiempo
+                    </button>
+                    <button
+                        onClick={() => setVistaMode('vehiculos')}
+                        className={cn(
+                            'flex-1 h-11 rounded-xl flex items-center justify-center gap-2 text-[10px] font-black uppercase tracking-widest transition-all',
+                            vistaMode === 'vehiculos'
+                                ? 'bg-primary text-white shadow-[0_0_15px_rgba(234,179,8,0.3)]'
+                                : 'text-text-muted hover:text-text-main hover:bg-white/5'
+                        )}
+                    >
+                        <Car size={14} /> Por Vehículo
                     </button>
                 </div>
             </div>
 
             {/* Contenido */}
-            <div className="flex-1 max-w-2xl mx-auto w-full px-4 py-4 space-y-4 pb-10">
+            <div className="flex-1 max-w-2xl mx-auto w-full px-4 py-6 space-y-6 pb-24">
 
-                {cargando && (
-                    <div className="flex flex-col items-center justify-center py-16 gap-3">
-                        <RefreshCw size={32} className="text-primary animate-spin" />
-                        <p className="text-[10px] font-black text-text-muted uppercase tracking-widest">Cargando trazabilidad...</p>
+                {(cargando && !cargandoMas) && (
+                    <div className="flex flex-col items-center justify-center py-20 gap-4">
+                        <div className="relative">
+                            <div className="w-16 h-16 rounded-full border-4 border-primary/10 border-t-primary animate-spin" />
+                            <Shield size={24} className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-primary/40" />
+                        </div>
+                        <p className="text-[10px] font-black text-text-muted uppercase tracking-[0.3em] animate-pulse">Sincronizando Trazabilidad...</p>
                     </div>
                 )}
 
-                {!cargando && eventos.length === 0 && (
-                    <div className="flex flex-col items-center justify-center py-16 gap-3">
-                        <Bell size={40} className="text-text-muted/30" />
-                        <p className="text-[10px] font-black text-text-muted uppercase tracking-widest">Sin eventos en esta zona</p>
+                {(!cargando || cargandoMas) && eventos.length === 0 && (
+                    <div className="flex flex-col items-center justify-center py-20 gap-4 bg-bg-card/20 rounded-3xl border border-dashed border-white/5">
+                        <div className="w-20 h-20 rounded-full bg-white/5 flex items-center justify-center">
+                            <Bell size={40} className="text-text-muted/20" />
+                        </div>
+                        <div className="text-center">
+                            <p className="text-xs font-black text-text-muted uppercase tracking-widest">Sin registros activos</p>
+                            <p className="text-[10px] text-text-muted/40 mt-1 uppercase">Los eventos de alcabala y zona aparecerán aquí</p>
+                        </div>
+                    </div>
+                )}
+
+                {/* Vista: Línea de tiempo Crónica Agrupada */}
+                {(!cargando || cargandoMas) && vistaMode === 'timeline' && (
+                    <div className="space-y-8">
+                        {Object.entries(eventosAgrupadosPorFecha).map(([fecha, evs]) => (
+                            <div key={fecha} className="space-y-3">
+                                <div className="flex items-center gap-3 px-1">
+                                    <div className="h-px flex-1 bg-gradient-to-r from-transparent to-white/10" />
+                                    <span className="text-[10px] font-black text-primary bg-primary/10 px-3 py-1 rounded-full border border-primary/20 tracking-widest">
+                                        {fecha}
+                                    </span>
+                                    <div className="h-px flex-1 bg-gradient-to-l from-transparent to-white/10" />
+                                </div>
+                                <div className="space-y-3 pl-2">
+                                    {evs.map((evento, i) => (
+                                        <TarjetaEvento key={i} evento={evento} onEntrada={handleEntradaRapida} />
+                                    ))}
+                                </div>
+                            </div>
+                        ))}
                     </div>
                 )}
 
                 {/* Vista: Agrupado por vehículo */}
-                {!cargando && vistaMode === 'vehiculos' && (
-                    <>
-                        {/* Leyenda */}
-                        <div className="flex flex-wrap gap-2 py-1">
-                            {Object.entries(CONFIG_TIPO).map(([tipo, cfg]) => {
-                                const { Icon } = cfg;
-                                return (
-                                    <div key={tipo} className={cn('flex items-center gap-1.5 px-2 py-1 rounded-full border text-[9px] font-black', cfg.bg, cfg.border, cfg.color)}>
-                                        <Icon size={10} />
-                                        {cfg.label}
-                                    </div>
-                                );
-                            })}
-                        </div>
-
+                {(!cargando || cargandoMas) && vistaMode === 'vehiculos' && (
+                    <div className="space-y-3">
                         {Object.entries(eventosPorPlaca).map(([placa, evts]) => (
                             <GrupoVehiculo key={placa} placa={placa} eventos={evts} onEntrada={handleEntradaRapida} />
                         ))}
-                    </>
+                    </div>
                 )}
 
-                {/* Vista: Línea de tiempo crónica */}
-                {!cargando && vistaMode === 'timeline' && (
-                    <div className="space-y-2">
-                        {eventos.map((evento, i) => (
-                            <div key={i} className="flex gap-3 items-start">
-                                {/* Línea temporal */}
-                                <div className="flex flex-col items-center shrink-0 pt-1">
-                                    <div className={cn(
-                                        'w-2.5 h-2.5 rounded-full',
-                                        (CONFIG_TIPO[evento.tipo] || CONFIG_TIPO.alcabala).dot
-                                    )} />
-                                    {i < eventos.length - 1 && (
-                                        <div className="w-px flex-1 min-h-[24px] bg-white/10 mt-1" />
-                                    )}
-                                </div>
-                                {/* Contenido */}
-                                <div className="flex-1 pb-3">
-                                    <TarjetaEvento evento={evento} onEntrada={handleEntradaRapida} />
-                                </div>
+                {/* Paginación: Cargar Más */}
+                {hasMore && (
+                    <div className="pt-4 flex justify-center">
+                        <button
+                            onClick={() => cargarHistorial(true)}
+                            disabled={cargandoMas}
+                            className="group flex flex-col items-center gap-2 transition-all active:scale-95 disabled:opacity-50"
+                        >
+                            <div className="w-12 h-12 rounded-full bg-white/5 border border-white/10 flex items-center justify-center group-hover:bg-white/10 transition-all">
+                                {cargandoMas ? (
+                                    <RefreshCw size={20} className="text-primary animate-spin" />
+                                ) : (
+                                    <ChevronDown size={24} className="text-text-muted group-hover:text-primary transition-colors" />
+                                )}
                             </div>
-                        ))}
+                            <span className="text-[9px] font-black text-text-muted uppercase tracking-[0.2em] group-hover:text-text-main">
+                                {cargandoMas ? 'Cargando...' : 'Cargar más eventos'}
+                            </span>
+                        </button>
+                    </div>
+                )}
+                
+                {!hasMore && eventos.length > 0 && (
+                    <div className="pt-8 text-center">
+                        <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 border border-white/5">
+                            <CheckCircle2 size={12} className="text-success" />
+                            <span className="text-[9px] font-black text-text-muted uppercase tracking-widest">Fin del historial táctico</span>
+                        </div>
                     </div>
                 )}
             </div>
@@ -377,12 +449,13 @@ const VistaNotificaciones = () => {
 
 // ── Helper: agrupar eventos por placa ────────────────────────────────────
 function eventoAgrupadoPorPlaca(eventos) {
-    return eventos.reduce((acc, evento) => {
+    const acc = {};
+    eventos.forEach(evento => {
         const key = evento.placa || 'SIN_PLACA';
         if (!acc[key]) acc[key] = [];
         acc[key].push(evento);
-        return acc;
-    }, {});
+    });
+    return acc;
 }
 
 export default VistaNotificaciones;

@@ -85,9 +85,13 @@ export const parqueroService = {
     /**
      * Obtiene el historial temporal de vehículos de la zona (trazabilidad).
      * @param {string} zonaId UUID de la zona.
+     * @param {number} limite Cantidad de elementos a traer.
+     * @param {number} skip Elementos a saltar.
      */
-    async getTrazabilidadZona(zonaId) {
-        const { data } = await api.get(`/parqueros/zona/${zonaId}/trazabilidad`);
+    async getTrazabilidadZona(zonaId, limite = 20, skip = 0) {
+        const { data } = await api.get(`/parqueros/zona/${zonaId}/trazabilidad`, {
+            params: { limite, skip }
+        });
         return data;
     },
 

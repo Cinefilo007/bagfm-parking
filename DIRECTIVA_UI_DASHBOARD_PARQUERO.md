@@ -35,5 +35,15 @@ Establecer las reglas de visualización táctica para el mapa de puestos de esta
 - La información del vehículo debe obtenerse cruzando el `id` del puesto o su `numero_puesto` con la lista de `vehiculosEnZona` enviada por el backend.
 - En caso de no existir datos del vehículo para un puesto marcado como ocupado, se mostrará el texto "S/D" (Sin Datos) o se mantendrá la etiqueta de estado por defecto "Ocup.".
 
+## 7. ADAPTABILIDAD Y NAVEGACIÓN (UX TÁCTICA)
+- **KPIs en Móvil**: En dispositivos móviles, los indicadores clave se muestran en una cuadrícula de **2x2** para maximizar el área de interacción.
+- **Control de Scroll**:
+    - El **Mapa de Puestos** y la lista de **Vehículos en Zona** deben tener un límite de altura máximo (`max-height`) para evitar el desplazamiento excesivo de la interfaz general.
+    - Se debe utilizar scroll interno para navegar dentro de estos contenedores.
+- **Paginación de Eventos**:
+    - Las vistas de historial y trazabilidad utilizan **paginación desde el servidor** (`limit` y `skip`) para garantizar el rendimiento en zonas con alta densidad de operaciones.
+    - Se implementa un botón de "Cargar más" para expandir el historial cronológicamente.
+- **Agrupamiento Cronológico**: La línea de tiempo agrupa los eventos por fecha (HOY, AYER, FECHA) para facilitar la auditoría visual rápida de sucesos.
+
 ---
-*Ultima actualización: 2026-04-27 (Implementación Vehículos Perdidos)*
+*Ultima actualización: 2026-04-29 (Implementación Scroll, KPIs 2x2 y Paginación Backend)*
