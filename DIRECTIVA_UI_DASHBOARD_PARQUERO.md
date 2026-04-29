@@ -35,7 +35,15 @@ Establecer las reglas de visualización táctica para el mapa de puestos de esta
 - La información del vehículo debe obtenerse cruzando el `id` del puesto o su `numero_puesto` con la lista de `vehiculosEnZona` enviada por el backend.
 - En caso de no existir datos del vehículo para un puesto marcado como ocupado, se mostrará el texto "S/D" (Sin Datos) o se mantendrá la etiqueta de estado por defecto "Ocup.".
 
-## 7. ADAPTABILIDAD Y NAVEGACIÓN (UX TÁCTICA)
+## 7. CONTROL DE CAPAS (VISUALIZACIÓN)
+- **Botón de Capas (Layers)**: Permite alternar la visibilidad de los elementos geométricos del mapa.
+- **Vinculación Táctica**: Al ocultar los polígonos de las zonas, el sistema debe ocultar automáticamente:
+    - Los perímetros de las zonas de estacionamiento.
+    - Las **grillas tácticas guardadas** (líneas de puestos, divisores y vías).
+    - Las **sugerencias generadas por la IA** (puestos numerados y trazados propuestos).
+- **Persistencia**: El estado de visualización se mantiene durante la sesión activa del componente para facilitar el análisis visual sin ruido.
+
+## 8. ADAPTABILIDAD Y NAVEGACIÓN (UX TÁCTICA)
 - **KPIs en Móvil**: En dispositivos móviles, los indicadores clave se muestran en una cuadrícula de **2x2** para maximizar el área de interacción.
 - **Control de Scroll**:
     - El **Mapa de Puestos** y la lista de **Vehículos en Zona** deben tener un límite de altura máximo (`max-height`) para evitar el desplazamiento excesivo de la interfaz general.

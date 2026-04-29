@@ -258,8 +258,8 @@ const MapaBaseReal = ({
                         </Polygon>
                     )}
 
-                    {/* La grilla táctica interna también permanece */}
-                    {zona.grilla_tactica?.map((linea, idx) => (
+                    {/* La grilla táctica interna se oculta con la capa de polígonos */}
+                    {showPolygons && zona.grilla_tactica?.map((linea, idx) => (
                       <Polyline 
                           key={`saved-grid-${zona.id}-${idx}`}
                           positions={linea.points || linea} 
@@ -350,7 +350,7 @@ const MapaBaseReal = ({
                 />
             ))}
             
-            {aiSuggestions?.lineas?.map((linea, i) => (
+            {showPolygons && aiSuggestions?.lineas?.map((linea, i) => (
                 <Polyline 
                     key={`ai-loc-${i}`} 
                     positions={linea.points || linea} 
@@ -364,7 +364,7 @@ const MapaBaseReal = ({
             ))}
 
             {/* Numeración de Puestos IA */}
-            {aiSuggestions?.puestos?.map((p, i) => (
+            {showPolygons && aiSuggestions?.puestos?.map((p, i) => (
                 <Marker 
                     key={`ai-num-${i}`}
                     position={p.center}
