@@ -54,7 +54,7 @@ const CONFIG_TIPO = {
         bg: 'bg-indigo-500/10',
         border: 'border-indigo-500/20',
         dot: 'bg-indigo-400',
-        label: 'SALIDA DE ALCABALA',
+        label: 'ENTRADA POR ALCABALA',
     },
     ingreso_zona: {
         Icon: LogIn,

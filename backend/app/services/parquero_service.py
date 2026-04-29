@@ -497,7 +497,7 @@ class ParqueroService:
             eventos.append({
                 "tipo": "alcabala",
                 "placa": placa,
-                "descripcion": f"Acceso por alcabala: {acceso.punto_acceso}",
+                "descripcion": f"Entrada por alcabala: {acceso.punto_acceso}",
                 "timestamp": acceso.timestamp.isoformat() if acceso.timestamp else None,
                 "punto": acceso.punto_acceso,
                 "es_manual": acceso.es_manual,
