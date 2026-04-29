@@ -95,6 +95,12 @@ const MapaBaseReal = ({
   const { isDarkMode } = useThemeStore();
   const [mapType, setMapType] = React.useState('satellite'); 
 
+  // Límites tácticos de la Base Aérea La Carlota
+  const boundsBase = [
+      [10.4850, -66.8550], // Noroeste
+      [10.4980, -66.8250]  // Sureste
+  ];
+
   const hasCoords = (item) => {
       return item && typeof item.latitud === 'number' && typeof item.longitud === 'number';
   };
@@ -122,20 +128,29 @@ const MapaBaseReal = ({
               </button>
           </div>
 
-          <MapContainer 
+        <style>
+          {`
+            .leaflet-control-attribution { display: none !important; }
+            .leaflet-container { background: #09090b !important; }
+            .tactical-label { pointer-events: none !important; }
+          `}
+        </style>
+        <MapContainer 
             center={[10.490, -66.848]} 
             zoom={16} 
             maxZoom={20}
+            maxBounds={boundsBase}
+            maxBoundsViscosity={1.0}
+            minZoom={16}
             style={{ height: '100%', width: '100%', background: '#0D1117' }}
             zoomControl={mapType === 'satellite'}
             className="tactical-map-container"
           >
             {mapType === 'satellite' ? (
                <TileLayer
-                 url="https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}"
-                 attribution="&copy; Google Maps"
-                 maxNativeZoom={20}
-                 maxZoom={20}
+                 url="https://{s}.google.com/vt/lyrs=y&x={x}&y={y}&z={z}"
+                 subdomains={['mt0', 'mt1', 'mt2', 'mt3']}
+                 maxZoom={21}
                />
             ) : (
                <TileLayer 
