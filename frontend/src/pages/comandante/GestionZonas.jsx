@@ -1790,6 +1790,8 @@ export default function GestionZonas() {
                                             {aiLoading ? <Loader2 size={12} className="animate-spin" /> : <Sparkles size={12} />}
                                             {aiLoading ? 'Calculando...' : 'Actualizar'}
                                         </button>
+                                        <button 
+                                            onClick={handleFinalizarDiseno}
                                             disabled={tempPoints.length < 3}
                                             className="w-full py-2 bg-primary text-bg-app rounded-xl text-[9px] font-black uppercase tracking-widest hover:scale-[1.02] active:scale-95 transition-all disabled:opacity-30 flex items-center justify-center gap-2"
                                         >
