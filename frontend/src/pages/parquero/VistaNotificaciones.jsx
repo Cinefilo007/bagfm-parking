@@ -231,14 +231,27 @@ const VistaNotificaciones = () => {
     const LIMITE = 20;
 
     const cargarHistorial = useCallback(async (isLoadMore = false) => {
-        if (!zonaId) return;
+        let targetId = zonaId;
         
         if (isLoadMore) setCargandoMas(true);
         else setCargando(true);
 
         try {
+            // Si no tenemos zonaId (ej: refresh), intentamos recuperarla
+            if (!targetId) {
+                const z = await parqueroService.getMiZona();
+                if (z && z.id) {
+                    setZonaDataInternal(z);
+                    targetId = z.id;
+                } else {
+                    // Si aún no hay zona, no podemos cargar historial
+                    setCargando(false);
+                    return;
+                }
+            }
+
             const currentSkip = isLoadMore ? skip + LIMITE : 0;
-            const data = await parqueroService.getTrazabilidadZona(zonaId, LIMITE, currentSkip);
+            const data = await parqueroService.getTrazabilidadZona(targetId, LIMITE, currentSkip);
             
             if (isLoadMore) {
                 setEventos(prev => [...prev, ...(data || [])]);
