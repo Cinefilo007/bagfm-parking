@@ -95,10 +95,10 @@ const MapaBaseReal = ({
   const { isDarkMode } = useThemeStore();
   const [mapType, setMapType] = React.useState('satellite'); 
 
-  // Radio operativo de 20km alrededor del centro de la base
+  // Perímetro EXACTO de la Base Aérea (Según captura del Comandante)
   const boundsBase = [
-      [10.3000, -67.0500], // Suroeste (Aprox 20km del centro)
-      [10.6800, -66.6500]  // Noreste (Aprox 20km del centro)
+      [10.4750, -66.8650], // Suroeste (Fin de pista oeste / Colinas)
+      [10.5050, -66.8150]  // Noreste (Fin de pista este / Autopista)
   ];
 
   const hasCoords = (item) => {
@@ -136,12 +136,12 @@ const MapaBaseReal = ({
           `}
         </style>
         <MapContainer 
-            center={[10.488, -66.840]} 
-            zoom={16} 
+            center={[10.490, -66.840]} 
+            zoom={15} 
             maxZoom={20}
             maxBounds={boundsBase}
             maxBoundsViscosity={1.0}
-            minZoom={12}
+            minZoom={15}
             style={{ height: '100%', width: '100%', background: '#0D1117' }}
             zoomControl={mapType === 'satellite'}
             className="tactical-map-container"
