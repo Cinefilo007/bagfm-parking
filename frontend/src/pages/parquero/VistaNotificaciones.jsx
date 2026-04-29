@@ -3,7 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import {
     ArrowLeft, Bell, Car, ParkingSquare, LogOut, LogIn,
     RefreshCw, ChevronDown, ChevronUp, Clock, Shield,
-    AlertCircle, CheckCircle2, Calendar, ChevronRight
+    AlertCircle, CheckCircle2
 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import { cn } from '../../lib/utils';
