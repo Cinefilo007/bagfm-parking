@@ -95,10 +95,10 @@ const MapaBaseReal = ({
   const { isDarkMode } = useThemeStore();
   const [mapType, setMapType] = React.useState('satellite'); 
 
-  // Límites tácticos de la Base Aérea La Carlota
+  // Límites tácticos de la Base Aérea La Carlota (BAGFM) - Ajustados
   const boundsBase = [
-      [10.4850, -66.8550], // Noroeste
-      [10.4980, -66.8250]  // Sureste
+      [10.4800, -66.8600], // Suroeste (Más abajo para ver pista y hangares)
+      [10.5000, -66.8200]  // Noreste
   ];
 
   const hasCoords = (item) => {
@@ -136,7 +136,7 @@ const MapaBaseReal = ({
           `}
         </style>
         <MapContainer 
-            center={[10.490, -66.848]} 
+            center={[10.488, -66.840]} 
             zoom={16} 
             maxZoom={20}
             maxBounds={boundsBase}
