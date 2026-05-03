@@ -49,7 +49,8 @@ async def listar_zonas(
     db: AsyncSession = Depends(obtener_db),
     current_user: Usuario = Depends(require_rol(["COMANDANTE", "ADMIN_BASE", "SUPERVISOR", "PARQUERO", "ADMIN_ENTIDAD", "SUPERVISOR_PARQUEROS"]))
 ):
-    return await zona_service.obtener_zonas(db, skip, limit, activa)
+    entidad_id = current_user.entidad_id if current_user.rol == "ADMIN_ENTIDAD" else None
+    return await zona_service.obtener_zonas(db, skip, limit, activa, entidad_id)
 
 @router.put("/{zona_id}/tiempo-llegada")
 async def modificar_tiempo_limite(

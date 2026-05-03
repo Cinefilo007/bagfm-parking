@@ -48,19 +48,25 @@ class ZonaEstacionamientoService:
         return resultado.scalars().first()
 
     async def obtener_zonas(
-        self, db: AsyncSession, skip: int = 0, limit: int = 100, activa: Optional[bool] = None
+        self, db: AsyncSession, skip: int = 0, limit: int = 100, activa: Optional[bool] = None, entidad_id: Optional[UUID] = None
     ) -> List[dict]:
         from app.models.vehiculo_pase import VehiculoPase
         from app.models.codigo_qr import CodigoQR
         from app.models.enums import TipoAccesoPase
         
         query = select(ZonaEstacionamiento)
+        if entidad_id:
+            query = query.join(AsignacionZona, AsignacionZona.zona_id == ZonaEstacionamiento.id).where(
+                AsignacionZona.entidad_id == entidad_id,
+                AsignacionZona.activa == True
+            )
+            
         if activa is not None:
             query = query.filter(ZonaEstacionamiento.activo == activa)
         query = query.offset(skip).limit(limit)
         
         resultado = await db.execute(query)
-        zonas = resultado.scalars().all()
+        zonas = resultado.scalars().unique().all()
         
         resultado_final = []
         for zona in zonas:

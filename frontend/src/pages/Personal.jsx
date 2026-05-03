@@ -82,7 +82,7 @@ const TacticalKPIs = ({ personal }) => {
   }, [personal]);
 
   return (
-    <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+    <div className="grid grid-cols-2 gap-4 mb-8">
       {stats.map((s, i) => (
         <div key={i} className="p-4 bg-bg-card/40 border border-white/5 rounded-2xl flex items-center gap-4 group hover:bg-bg-high/80 transition-all border-b-2 border-b-transparent hover:border-b-primary/50">
           <div className={cn("w-12 h-12 rounded-2xl flex items-center justify-center bg-black/40 border border-white/5", s.color)}>
@@ -146,7 +146,10 @@ const MiembroCard = ({ miembro, userActual, zonas, onUpdate, onToggleActivo, onE
       onUpdate(updated);
       toast.success("Perfil actualizado");
       setTab('kpis');
-    } catch (err) { toast.error("Error al actualizar"); }
+    } catch (err) { 
+      const msg = err.response?.data?.detail || "Error al actualizar";
+      toast.error(msg);
+    }
     finally { setGuardandoAction(false); }
   };
 
@@ -157,7 +160,10 @@ const MiembroCard = ({ miembro, userActual, zonas, onUpdate, onToggleActivo, onE
       onUpdate(updated);
       toast.success("Ubicación táctica asignada");
       await cargarDatosDetalle();
-    } catch (err) { toast.error("Fallo de asignación"); }
+    } catch (err) { 
+      const msg = err.response?.data?.detail || "Fallo de asignación";
+      toast.error(msg);
+    }
     finally { setGuardandoAction(false); }
   };
 
@@ -169,7 +175,10 @@ const MiembroCard = ({ miembro, userActual, zonas, onUpdate, onToggleActivo, onE
           setFormInc({ tipo: '', descripcion: '' });
           toast.success("Incentivo otorgado");
           await cargarDatosDetalle();
-      } catch (e) { toast.error("Fallo al registrar"); }
+      } catch (err) { 
+          const msg = err.response?.data?.detail || "Fallo al registrar";
+          toast.error(msg);
+      }
       finally { setGuardandoAction(false); }
   };
 
@@ -181,7 +190,10 @@ const MiembroCard = ({ miembro, userActual, zonas, onUpdate, onToggleActivo, onE
           setFormSanc({ tipo: '', motivo: '', ejecutar_inmediato: false });
           toast.success("Medida disciplinaria aplicada");
           await cargarDatosDetalle();
-      } catch (e) { toast.error("Error en protocolo de sanción"); }
+      } catch (err) { 
+          const msg = err.response?.data?.detail || "Error en protocolo de sanción";
+          toast.error(msg);
+      }
       finally { setGuardandoAction(false); }
   };
 
@@ -576,9 +588,7 @@ export default function Personal() {
 
       // LISTADO DE ZONAS (FIX 403: Endpoint adaptado según rol)
       try {
-        let endpointSub = '/zonas';
-        if (userActual.rol === 'ADMIN_ENTIDAD') endpointSub = '/zonas?limit=100';
-        const resZonas = await api.get(endpointSub);
+        const resZonas = await api.get('/zonas'); // El backend ya filtra por entidad si el rol es ADMIN_ENTIDAD
         setZonas(resZonas.data);
       } catch (err) {
         console.error("Fallo al cargar zonas tácticas:", err);

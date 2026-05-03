@@ -151,13 +151,44 @@ class SocioService:
         return lista_final
 
     async def vincular_vehiculo(self, db: AsyncSession, socio_id: UUID, datos: dict) -> Vehiculo:
-        # Verificar si la placa ya existe
+        # 1. Obtener al solicitante para verificar su rol
+        query_user = select(Usuario).where(Usuario.id == socio_id)
+        res_user = await db.execute(query_user)
+        solicitante = res_user.scalar_one_or_none()
+
+        # 2. Verificar si la placa ya existe
         placa = datos.get("placa", "").upper()
         query_v = select(Vehiculo).where(Vehiculo.placa == placa)
         res_v = await db.execute(query_v)
-        if res_v.scalars().first():
-             raise EntidadDuplicada(f"La placa {placa} ya está registrada en el sistema")
+        vehiculo_existente = res_v.scalars().first()
 
+        if vehiculo_existente:
+            # Si el vehículo ya es del solicitante, no hacemos nada o lanzamos error específico
+            if vehiculo_existente.socio_id == socio_id:
+                raise EntidadDuplicada(f"Ya tienes la placa {placa} registrada en tu flota")
+            
+            # LÓGICA TÁCTICA: Si el dueño actual es un socio TEMPORAL y el nuevo es un SOCIO permanente,
+            # permitimos la transferencia automática del vehículo.
+            query_owner = select(Usuario).where(Usuario.id == vehiculo_existente.socio_id)
+            res_owner = await db.execute(query_owner)
+            dueno_actual = res_owner.scalar_one_or_none()
+
+            if dueno_actual and dueno_actual.cedula.startswith("BAGFM-") and solicitante.rol == RolTipo.SOCIO:
+                # Transferir vehículo al socio permanente
+                vehiculo_existente.socio_id = socio_id
+                vehiculo_existente.marca = datos.get("marca", "").upper()
+                vehiculo_existente.modelo = datos.get("modelo", "").upper()
+                vehiculo_existente.color = datos.get("color", "").upper()
+                vehiculo_existente.año = datos.get("año")
+                vehiculo_existente.tipo = datos.get("tipo")
+                vehiculo_existente.activo = True
+                await db.commit()
+                await db.refresh(vehiculo_existente)
+                return vehiculo_existente
+            else:
+                raise EntidadDuplicada(f"La placa {placa} ya está vinculada a otro miembro activo")
+
+        # 3. Crear nuevo vehículo si no existía
         nuevo_v = Vehiculo(
             placa=placa,
             marca=datos.get("marca", "").upper(),
