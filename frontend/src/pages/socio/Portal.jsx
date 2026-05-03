@@ -189,123 +189,165 @@ export default function PortalSocio() {
     <div className="min-h-screen bg-bg-app pb-24 flex flex-col font-sans text-text-main">
       <LayoutHeader titulo="Mi Credencial" subtitle={String(data?.nombre_entidad || 'SISTEMA BAGFM')} />
 
-      <main className="flex-1 px-4 sm:px-5 py-6 space-y-6 max-w-md mx-auto w-full">
-        <TacticalCard className="text-center py-8 relative overflow-hidden">
-           {/* Decoración Táctica */}
-           <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-full -mr-16 -mt-16 blur-3xl opacity-50" />
+      <main className="flex-1 px-4 sm:px-6 py-6 max-w-6xl mx-auto w-full">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+          
+          {/* Columna Izquierda/Superior: Credencial Táctica */}
+          <div className="lg:col-span-5 space-y-6">
+            <TacticalCard className="text-center py-10 relative overflow-hidden shadow-2xl">
+               {/* Decoración Táctica */}
+               <div className="absolute top-0 right-0 w-48 h-48 bg-primary/10 rounded-full -mr-24 -mt-24 blur-[80px] opacity-40" />
+               <div className="absolute bottom-0 left-0 w-32 h-32 bg-primary/5 rounded-full -ml-16 -mb-16 blur-3xl opacity-30" />
 
-           <div className="mb-6 flex flex-col items-center gap-3">
-              <TacticalBadge variant={esActivo ? 'activa' : 'suspendida'}>
-                {esActivo ? 'ACCESO AUTORIZADO' : 'ACCESO DENEGADO'}
-              </TacticalBadge>
-              <button 
-                onClick={handleDownloadQR}
-                className="flex items-center gap-2 text-[8px] font-black tracking-widest text-primary uppercase hover:bg-primary/10 px-3 py-1 rounded-full transition-all border border-primary/20"
-              >
-                <Download size={10} /> Descargar QR
-              </button>
-           </div>
+               <div className="mb-8 flex flex-col items-center gap-4 relative z-10">
+                  <TacticalBadge variant={esActivo ? 'activa' : 'suspendida'}>
+                    {esActivo ? 'ACCESO AUTORIZADO' : 'ACCESO DENEGADO'}
+                  </TacticalBadge>
+                  <button 
+                    onClick={handleDownloadQR}
+                    className="flex items-center gap-2 text-[9px] font-black tracking-widest text-primary uppercase hover:bg-primary/10 px-4 py-2 rounded-full transition-all border border-primary/20 backdrop-blur-sm"
+                  >
+                    <Download size={12} /> Descargar Credencial
+                  </button>
+               </div>
 
-           {/* QR Code Container */}
-           <div ref={qrRef} className="p-4 bg-white rounded-3xl mx-auto w-52 h-52 flex items-center justify-center mb-6 shadow-[0_0_50px_rgba(255,255,255,0.05)] border-4 border-white/10">
-              <div className="p-2 bg-white">
-                {data?.qr_token ? (
-                  <QRCode 
-                    value={String(data.qr_token)} 
-                    size={172} 
-                    level="H"
-                    style={{ height: "auto", maxWidth: "100%", width: "100%" }}
-                  />
-                ) : (
-                  <div className="text-black/20 italic text-xs">Token Inderminado</div>
-                )}
-              </div>
-           </div>
-
-           <div className="space-y-1">
-              <h2 className="text-xl font-display font-black tracking-tight uppercase text-white px-2 break-words">
-                {String(p?.nombre_completo || user?.nombre || 'SOCIO')}
-              </h2>
-              <p className="text-[10px] font-mono text-text-muted tracking-[0.3em] font-bold pb-2">
-                CÉDULA: {String(p?.cedula || user?.cedula || 'N/A')}
-              </p>
-              <button 
-                onClick={openProfileModal}
-                className="inline-flex items-center gap-1.5 text-[9px] font-black text-white/70 hover:text-white uppercase tracking-widest bg-white/5 hover:bg-white/10 px-3 py-1.5 rounded-full transition-colors border border-white/10"
-              >
-                <Edit3 size={10} /> Editar Perfil
-              </button>
-           </div>
-
-           <div className="mt-8 grid grid-cols-2 border-t border-white/5 pt-6 bg-black/10 -mx-4 -mb-4">
-              <div className="py-4">
-                 <p className="text-[8px] text-text-muted uppercase font-bold tracking-widest mb-1 opacity-60">Estado M.</p>
-                 <div className="flex items-center justify-center gap-1.5">
-                    {esActivo ? <ShieldCheck size={12} className="text-primary" /> : <ShieldAlert size={12} className="text-danger" />}
-                    <p className={`text-[11px] font-black uppercase ${esActivo ? 'text-primary' : 'text-danger'}`}>{String(m?.estado || 'DESCONOCIDO')}</p>
-                 </div>
-              </div>
-              <div className="py-4 border-l border-white/5">
-                 <p className="text-[8px] text-text-muted uppercase font-bold tracking-widest mb-1 opacity-60">Vencimiento</p>
-                 <div className="flex items-center justify-center gap-1.5">
-                    <Clock size={12} className="text-text-muted" />
-                    <p className="text-[11px] font-black text-text-main uppercase font-mono">{m?.fecha_fin ? new Date(m.fecha_fin).toLocaleDateString() : 'INDETERM.'}</p>
-                 </div>
-              </div>
-           </div>
-        </TacticalCard>
-
-        {/* Vehículos Vinculados */}
-        <div className="space-y-3">
-            <div className="flex items-center justify-between px-1">
-              <h3 className="text-[10px] uppercase font-black text-text-muted tracking-[0.3em] flex items-center gap-2">
-                <Car size={12} /> Flota Autorizada
-              </h3>
-              {(!isInvitado || vehiculos.length === 0) && (
-                <button 
-                  onClick={() => setIsModalOpen(true)}
-                  className="flex items-center gap-1 text-[9px] font-black text-primary uppercase tracking-widest"
-                >
-                  <Plus size={14} /> Vincular
-                </button>
-              )}
-           </div>
-
-           <div className="space-y-3">
-              {vehiculos.map((v, i) => (
-                <div key={i} className="p-4 bg-bg-low/40 border border-white/5 rounded-2xl flex items-center justify-between group">
-                  <div className="flex items-center gap-4">
-                    <div className="w-10 h-10 rounded-xl bg-black/40 flex items-center justify-center text-text-muted border border-white/5 group-hover:text-primary transition-colors">
-                      <Car size={20} />
-                    </div>
-                    <div>
-                      <p className="text-[9px] font-bold text-text-muted uppercase tracking-widest leading-none mb-1">{String(v.marca)} {String(v.modelo)}</p>
-                      <p className="text-lg font-mono font-black text-white leading-none">{String(v.placa)}</p>
-                    </div>
+               {/* QR Code Container - AGRANDADO TÁCTICAMENTE */}
+               <div ref={qrRef} className="p-6 bg-white rounded-[2.5rem] mx-auto w-64 h-64 sm:w-80 sm:h-80 flex items-center justify-center mb-8 shadow-[0_0_60px_rgba(255,255,255,0.08)] border-8 border-white/10 relative z-10 transition-transform hover:scale-[1.02] duration-500">
+                  <div className="p-2 bg-white">
+                    {data?.qr_token ? (
+                      <QRCode 
+                        value={String(data.qr_token)} 
+                        size={280} 
+                        level="H"
+                        style={{ height: "auto", maxWidth: "100%", width: "100%" }}
+                      />
+                    ) : (
+                      <div className="text-black/20 italic text-sm font-black">SINCRO ERROR</div>
+                    )}
                   </div>
-                  <span className="text-[8px] font-black text-primary bg-primary/10 px-2 py-1 rounded-lg border border-primary/20">AUTORIZADO</span>
-                </div>
-              ))}
-              {vehiculos.length === 0 && (
-                <p className="text-center py-6 text-text-muted text-[10px] font-bold uppercase tracking-[0.2em] border border-dashed border-white/10 rounded-2xl italic opacity-50">
-                  Sin vehículos registrados
-                </p>
-              )}
-           </div>
-        </div>
+               </div>
 
-        {/* Acciones Finales */}
-        <div className="pt-4 space-y-4">
-           <Boton onClick={fetchPortal} variant="ghost" className="w-full bg-white/5 border-white/5 text-text-muted hover:text-white">
-              <RefreshCw size={16} className="mr-2" /> REVALIDAR CREDENCIAL
-           </Boton>
-           
-           <button 
-             onClick={logout}
-             className="w-full py-4 text-[10px] font-black text-danger uppercase tracking-[0.3em] flex items-center justify-center gap-2 hover:bg-danger/5 rounded-2xl transition-all"
-           >
-             <LogOut size={16} /> FINALIZAR SESIÓN
-           </button>
+               <div className="space-y-2 relative z-10">
+                  <h2 className="text-2xl sm:text-3xl font-display font-black tracking-tight uppercase text-white px-4 break-words leading-tight">
+                    {String(p?.nombre_completo || user?.nombre || 'SOCIO')}
+                  </h2>
+                  <p className="text-[11px] font-mono text-text-muted tracking-[0.4em] font-bold pb-4 opacity-70">
+                    ID-CARD: {String(p?.cedula || user?.cedula || 'N/A')}
+                  </p>
+                  <button 
+                    onClick={openProfileModal}
+                    className="inline-flex items-center gap-2 text-[10px] font-black text-white/80 hover:text-white uppercase tracking-widest bg-white/5 hover:bg-white/10 px-5 py-2.5 rounded-full transition-all border border-white/10 hover:border-primary/30"
+                  >
+                    <Edit3 size={12} /> Completar Datos
+                  </button>
+               </div>
+
+               <div className="mt-10 grid grid-cols-2 border-t border-white/5 pt-0 bg-black/20 -mx-4 -mb-4 divide-x divide-white/5">
+                  <div className="py-6">
+                     <p className="text-[9px] text-text-muted uppercase font-black tracking-[0.2em] mb-2 opacity-50">Estatus Operativo</p>
+                     <div className="flex items-center justify-center gap-2">
+                        {esActivo ? <ShieldCheck size={14} className="text-primary" /> : <ShieldAlert size={14} className="text-danger" />}
+                        <p className={`text-[12px] font-black uppercase tracking-widest ${esActivo ? 'text-primary' : 'text-danger'}`}>{String(m?.estado || 'DESCONOCIDO')}</p>
+                     </div>
+                  </div>
+                  <div className="py-6">
+                     <p className="text-[9px] text-text-muted uppercase font-black tracking-[0.2em] mb-2 opacity-50">Vencimiento</p>
+                     <div className="flex items-center justify-center gap-2">
+                        <Clock size={14} className="text-text-muted opacity-60" />
+                        <p className="text-[12px] font-black text-text-main uppercase font-mono tracking-tight">{m?.fecha_fin ? new Date(m.fecha_fin).toLocaleDateString() : 'SIN FECHA'}</p>
+                     </div>
+                  </div>
+               </div>
+            </TacticalCard>
+          </div>
+
+          {/* Columna Derecha: Flota y Acciones */}
+          <div className="lg:col-span-7 space-y-6">
+            <div className="space-y-4">
+                <div className="flex items-center justify-between px-2">
+                  <h3 className="text-[11px] uppercase font-black text-text-muted tracking-[0.4em] flex items-center gap-3">
+                    <Car size={14} className="text-primary" /> Flota Autorizada
+                    <span className="text-[10px] bg-white/5 px-2 py-0.5 rounded-md font-mono text-white/40">
+                      {vehiculos.length}/{isInvitado ? '1' : '3'}
+                    </span>
+                  </h3>
+                  {((isInvitado && vehiculos.length < 1) || (!isInvitado && vehiculos.length < 3)) && (
+                    <button 
+                      onClick={() => setIsModalOpen(true)}
+                      className="flex items-center gap-2 text-[10px] font-black text-primary hover:text-primary/80 uppercase tracking-widest transition-colors bg-primary/5 px-4 py-2 rounded-xl border border-primary/10"
+                    >
+                      <Plus size={16} /> Vincular Vehículo
+                    </button>
+                  )}
+               </div>
+
+               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-1 gap-4">
+                  {vehiculos.map((v, i) => (
+                    <div key={i} className="p-5 bg-bg-card border border-white/5 rounded-3xl flex items-center justify-between group hover:border-primary/20 transition-all shadow-lg hover:shadow-primary/5">
+                      <div className="flex items-center gap-5">
+                        <div className="w-14 h-14 rounded-2xl bg-black/40 flex items-center justify-center text-text-muted border border-white/5 group-hover:text-primary group-hover:border-primary/20 transition-all">
+                          <Car size={24} />
+                        </div>
+                        <div>
+                          <p className="text-[10px] font-black text-text-muted uppercase tracking-widest leading-none mb-2 opacity-60">{String(v.marca)} {String(v.modelo)}</p>
+                          <p className="text-2xl font-mono font-black text-white leading-none tracking-tight">{String(v.placa)}</p>
+                        </div>
+                      </div>
+                      <div className="flex flex-col items-end gap-2">
+                        <span className="text-[9px] font-black text-primary bg-primary/10 px-3 py-1.5 rounded-full border border-primary/20 uppercase tracking-widest">ACTIVO</span>
+                        <p className="text-[8px] font-bold text-text-muted uppercase tracking-tighter opacity-30">Verificado</p>
+                      </div>
+                    </div>
+                  ))}
+                  {vehiculos.length === 0 && (
+                    <div className="text-center py-12 bg-white/2 border-2 border-dashed border-white/5 rounded-[2.5rem] flex flex-col items-center gap-4 group hover:bg-white/[0.03] transition-all">
+                      <div className="p-4 bg-white/5 rounded-full text-text-muted/30 group-hover:scale-110 transition-transform">
+                        <Car size={40} />
+                      </div>
+                      <p className="text-text-muted text-[11px] font-black uppercase tracking-[0.3em] italic opacity-40">
+                        No hay vehículos en tu flota operativa
+                      </p>
+                      <Boton onClick={() => setIsModalOpen(true)} variant="ghost" className="text-[9px] font-black tracking-widest border-white/10 h-10 px-8">VINCULAR PRIMER VEHÍCULO</Boton>
+                    </div>
+                  )}
+               </div>
+            </div>
+
+            {/* Panel de Ayuda / Info */}
+            <TacticalCard className="bg-gradient-to-br from-primary/10 to-transparent border-primary/10 p-6">
+               <h4 className="text-[10px] font-black text-primary uppercase tracking-[0.4em] mb-4 flex items-center gap-2">
+                  <ShieldCheck size={14} /> Protocolo de Acceso
+               </h4>
+               <ul className="space-y-3">
+                  <li className="flex items-start gap-3 text-[11px] font-medium text-white/70 leading-relaxed">
+                     <span className="w-1.5 h-1.5 rounded-full bg-primary mt-1.5 shrink-0" />
+                     Muestra el código QR al personal de alcabala para validar tu identidad.
+                  </li>
+                  <li className="flex items-start gap-3 text-[11px] font-medium text-white/70 leading-relaxed">
+                     <span className="w-1.5 h-1.5 rounded-full bg-primary mt-1.5 shrink-0" />
+                     Asegúrate de que la placa del vehículo que conduces esté vinculada a tu perfil.
+                  </li>
+                  <li className="flex items-start gap-3 text-[11px] font-medium text-white/70 leading-relaxed">
+                     <span className="w-1.5 h-1.5 rounded-full bg-primary mt-1.5 shrink-0" />
+                     Mantén tu membresía activa para garantizar el acceso ininterrumpido.
+                  </li>
+               </ul>
+            </TacticalCard>
+
+            {/* Acciones Finales */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+               <Boton onClick={fetchPortal} variant="ghost" className="h-14 bg-white/5 border-white/5 text-[10px] font-black uppercase tracking-[0.2em] hover:bg-white/10">
+                  <RefreshCw size={16} className="mr-2" /> REVALIDAR SISTEMA
+               </Boton>
+               
+               <button 
+                 onClick={logout}
+                 className="h-14 bg-danger/10 text-danger hover:bg-danger/20 border border-danger/10 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] flex items-center justify-center gap-2 transition-all"
+               >
+                 <LogOut size={16} /> FINALIZAR SESIÓN
+               </button>
+            </div>
+          </div>
         </div>
       </main>
 

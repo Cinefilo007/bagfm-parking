@@ -263,6 +263,12 @@ async def vincular_vehiculo_socio(
             detail="Los pases de invitados solo permiten 1 vehículo registrado."
         )
 
+    if membresia and count_vehiculos >= 3:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Como socio permanente, tienes un límite de 3 vehículos en tu flota autorizada."
+        )
+
     try:
         return await socio_service.vincular_vehiculo(db, usuario_actual.id, vehiculo.model_dump())
     except Exception as e:
