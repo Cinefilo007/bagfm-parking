@@ -246,7 +246,7 @@ export default function SociosEntidad() {
       </header>
 
       {/* KPIs - Títulos de una sola palabra */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+      <div className="grid grid-cols-1 xs:grid-cols-2 lg:grid-cols-4 gap-3">
         {[
           { label: 'Registrados', valor: stats.total, color: 'text-primary', icon: Users, sub: 'Padrón total' },
           { label: 'Activos', valor: stats.activos, color: 'text-success', icon: ShieldCheck, sub: 'Al día' },
@@ -258,7 +258,7 @@ export default function SociosEntidad() {
               <s.icon size={20} />
             </div>
             <div className="min-w-0">
-              <div className={`text-2xl font-black leading-tight ${s.color}`}>{s.valor}</div>
+              <div className={`text-xl sm:text-2xl font-black leading-tight ${s.color}`}>{s.valor}</div>
               <div className="text-[10px] font-black uppercase text-text-muted tracking-widest">{s.label}</div>
               <div className="text-[7px] text-text-muted opacity-30 uppercase font-bold">{s.sub}</div>
             </div>
@@ -269,20 +269,20 @@ export default function SociosEntidad() {
       <main className="space-y-4">
         {/* Barra de búsqueda + acciones */}
         <section className="bg-bg-card/40 border border-white/5 rounded-2xl p-3 backdrop-blur-md">
-           <div className="flex flex-col lg:flex-row gap-3 items-stretch justify-between">
-              <div className="w-full lg:max-w-md">
+           <div className="flex flex-col sm:flex-row gap-3 items-stretch justify-between">
+              <div className="w-full sm:max-w-md">
                  <Input 
-                   placeholder="BUSCAR POR IDENTIDAD O NOMBRE..."
+                   placeholder="BUSCAR..."
                    icon={<Search size={18} className="text-primary" />}
                    value={searchTerm}
                    onChange={(e) => setSearchTerm(e.target.value.toUpperCase())}
-                   className="h-11 bg-bg-app border-white/10 text-sm font-bold"
+                   className="h-11 bg-bg-app border-white/10 text-xs font-bold"
                  />
               </div>
-              <div className="flex items-center gap-2 w-full lg:w-auto">
+              <div className="flex items-center gap-2 w-full sm:w-auto">
                  <Boton 
                    variant="ghost" 
-                   className="h-11 px-4 gap-2 border-white/5 text-text-muted hover:text-primary transition-all font-black uppercase tracking-widest text-[10px]"
+                   className="flex-1 sm:flex-none h-11 px-4 gap-2 border-white/5 text-text-muted hover:text-primary transition-all font-black uppercase tracking-widest text-[10px]"
                    onClick={() => setIsImportModalOpen(true)}
                  >
                     <FileSpreadsheet size={16} />

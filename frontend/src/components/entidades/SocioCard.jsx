@@ -56,81 +56,88 @@ export const SocioCard = ({ socio, onAction }) => {
       
       {/* HEADER: Info + Acciones + Badge + Chevron */}
       <div 
-        className="flex justify-between items-center cursor-pointer"
+        className="p-3 cursor-pointer flex flex-col sm:flex-row sm:items-center justify-between gap-3"
         onClick={() => setIsOpen(!isOpen)}
       >
-        {/* Lado izquierdo: Avatar + Datos */}
-        <div className="flex items-center gap-3 min-w-0">
-          <div className={`h-10 w-10 rounded-xl bg-white/5 flex items-center justify-center border border-white/10 shrink-0 transition-colors group-hover:border-primary/30 ${statusColor}`}>
-            <User size={20} />
-          </div>
-          <div className="min-w-0">
-            <h4 className="text-sm font-bold text-text-main leading-none mb-1 flex items-center gap-2 truncate">
-              {socio.nombre_completo}
-              {esExonerado && <ShieldCheck size={13} className="text-primary shrink-0" />}
-            </h4>
-            <div className="flex items-center gap-2">
-              <p className="text-[10px] text-text-muted font-mono uppercase tracking-widest">
+        {/* Nivel Superior: Avatar + Info + (Badge/Chevron en móvil) */}
+        <div className="flex items-center justify-between sm:justify-start gap-3 min-w-0">
+          <div className="flex items-center gap-3 min-w-0">
+            <div className={`h-10 w-10 rounded-xl bg-white/5 flex items-center justify-center border border-white/10 shrink-0 transition-colors group-hover:border-primary/30 ${statusColor}`}>
+              <User size={20} />
+            </div>
+            <div className="min-w-0">
+              <h4 className="text-sm font-bold text-text-main leading-none mb-1 flex items-center gap-2 truncate">
+                {socio.nombre_completo}
+                {esExonerado && <ShieldCheck size={13} className="text-primary shrink-0" />}
+              </h4>
+              <p className="text-[10px] text-text-muted font-mono uppercase tracking-widest truncate">
                 {socio.cedula}
-              </p>
-              <span className="text-white/10">•</span>
-              <p className="text-[10px] font-bold text-text-muted/50 truncate">
-                {socio.telefono || 'SIN TEL'}
               </p>
             </div>
           </div>
+
+          {/* Badge y Chevron (Solo visibles aquí en móvil) */}
+          <div className="flex items-center gap-2 sm:hidden shrink-0">
+            <Badge variant={badgeVariant} className="text-[9px] px-2 py-0.5">
+              {statusLabel}
+            </Badge>
+            <ChevronDown size={15} className={`text-text-muted transition-transform duration-300 ${isOpen ? 'rotate-180' : ''}`} />
+          </div>
         </div>
 
-        {/* Lado derecho: Botones de acción + Badge + Chevron */}
-        <div className="flex items-center gap-1.5 shrink-0 ml-2">
-          {/* Botones de acción como iconos */}
-          <button
-            onClick={(e) => { e.stopPropagation(); onAction('renovacion', socio); }}
-            className="h-8 w-8 rounded-lg bg-primary/10 border border-primary/20 text-primary hover:bg-primary/20 flex items-center justify-center transition-all hover:scale-105"
-            title="Renovar membresía"
-          >
-            <RefreshCw size={14} />
-          </button>
+        {/* Nivel de Acciones: Botones + Badge (Desktop) + Chevron (Desktop) */}
+        <div className="flex items-center justify-between sm:justify-end gap-1.5 shrink-0">
+          {/* Botones de acción principales */}
+          <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar">
+            <button
+              onClick={(e) => { e.stopPropagation(); onAction('renovacion', socio); }}
+              className="h-8 w-8 rounded-lg bg-primary/10 border border-primary/20 text-primary hover:bg-primary/20 flex items-center justify-center transition-all hover:scale-105 shrink-0"
+              title="Renovar membresía"
+            >
+              <RefreshCw size={14} />
+            </button>
 
-          <button
-            onClick={(e) => { e.stopPropagation(); onAction('estado', { socio, nuevoEstado: esSuspendido ? 'activa' : 'suspendida' }); }}
-            className={`h-8 w-8 rounded-lg border flex items-center justify-center transition-all hover:scale-105 ${
-              esSuspendido 
-                ? 'bg-primary/10 border-primary/20 text-primary hover:bg-primary/20' 
-                : 'bg-danger/10 border-danger/20 text-danger hover:bg-danger/20'
-            }`}
-            title={esSuspendido ? 'Activar' : 'Suspender'}
-          >
-            {esSuspendido ? <Play size={14} /> : <Pause size={14} />}
-          </button>
+            <button
+              onClick={(e) => { e.stopPropagation(); onAction('estado', { socio, nuevoEstado: esSuspendido ? 'activa' : 'suspendida' }); }}
+              className={`h-8 w-8 rounded-lg border flex items-center justify-center transition-all hover:scale-105 shrink-0 ${
+                esSuspendido 
+                  ? 'bg-primary/10 border-primary/20 text-primary hover:bg-primary/20' 
+                  : 'bg-danger/10 border-danger/20 text-danger hover:bg-danger/20'
+              }`}
+              title={esSuspendido ? 'Activar' : 'Suspender'}
+            >
+              {esSuspendido ? <Play size={14} /> : <Pause size={14} />}
+            </button>
 
-          <button
-            onClick={(e) => { e.stopPropagation(); onAction('estado', { socio, nuevoEstado: esExonerado ? 'activa' : 'exonerada' }); }}
-            className={`h-8 w-8 rounded-lg border flex items-center justify-center transition-all hover:scale-105 ${
-              esExonerado 
-                ? 'bg-primary/20 border-primary/30 text-primary' 
-                : 'bg-white/5 border-white/10 text-text-muted hover:text-primary hover:border-primary/20'
-            }`}
-            title={esExonerado ? 'Quitar exoneración' : 'Exonerar'}
-          >
-            <ShieldAlert size={14} />
-          </button>
+            <button
+              onClick={(e) => { e.stopPropagation(); onAction('estado', { socio, nuevoEstado: esExonerado ? 'activa' : 'exonerada' }); }}
+              className={`h-8 w-8 rounded-lg border flex items-center justify-center transition-all hover:scale-105 shrink-0 ${
+                esExonerado 
+                  ? 'bg-primary/20 border-primary/30 text-primary' 
+                  : 'bg-white/5 border-white/10 text-text-muted hover:text-primary hover:border-primary/20'
+              }`}
+              title={esExonerado ? 'Quitar exoneración' : 'Exonerar'}
+            >
+              <ShieldAlert size={14} />
+            </button>
 
-          <button
-            onClick={(e) => { e.stopPropagation(); onAction('eliminar', socio); }}
-            className="h-8 w-8 rounded-lg border border-white/5 bg-white/5 text-text-muted/40 hover:bg-danger/10 hover:border-danger/20 hover:text-danger flex items-center justify-center transition-all hover:scale-105"
-            title="Eliminar socio"
-          >
-            <Trash2 size={13} />
-          </button>
+            <button
+              onClick={(e) => { e.stopPropagation(); onAction('eliminar', socio); }}
+              className="h-8 w-8 rounded-lg border border-white/5 bg-white/5 text-text-muted/40 hover:bg-danger/10 hover:border-danger/20 hover:text-danger flex items-center justify-center transition-all hover:scale-105 shrink-0"
+              title="Eliminar socio"
+            >
+              <Trash2 size={13} />
+            </button>
+          </div>
 
-          <div className="w-px h-6 bg-white/5 mx-1" />
-
-          <Badge variant={badgeVariant}>
-            {statusLabel}
-          </Badge>
-
-          <ChevronDown size={15} className={`text-text-muted transition-transform duration-300 ml-1 ${isOpen ? 'rotate-180' : ''}`} />
+          {/* Separador y Badge/Chevron (Solo Desktop) */}
+          <div className="hidden sm:flex items-center gap-1.5 ml-1.5">
+            <div className="w-px h-6 bg-white/5 mx-1" />
+            <Badge variant={badgeVariant}>
+              {statusLabel}
+            </Badge>
+            <ChevronDown size={15} className={`text-text-muted transition-transform duration-300 ml-1 ${isOpen ? 'rotate-180' : ''}`} />
+          </div>
         </div>
       </div>
 
