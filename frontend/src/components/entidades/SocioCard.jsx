@@ -180,7 +180,7 @@ export const SocioCard = ({ socio, onAction }) => {
           {/* Vehículos vinculados */}
           <div className="flex items-center gap-1.5 mb-2">
             <Car size={12} className="text-primary/60" />
-            <span className="text-[9px] uppercase font-black text-text-muted/50 tracking-widest">Unidades</span>
+            <span className="text-[9px] uppercase font-black text-text-muted/50 tracking-widest">Vehículos</span>
             {tieneVehiculos && (
               <span className="text-[8px] font-black text-primary/40 bg-primary/5 px-1.5 py-0.5 rounded">{socio.vehiculos.length}</span>
             )}
@@ -197,7 +197,7 @@ export const SocioCard = ({ socio, onAction }) => {
                 </div>
               ))
             ) : (
-              <p className="text-[9px] font-black text-danger/30 uppercase tracking-widest italic col-span-full py-2">Sin unidades registradas</p>
+              <p className="text-[9px] font-black text-danger/30 uppercase tracking-widest italic col-span-full py-2">Sin vehículos registrados</p>
             )}
           </div>
         </div>

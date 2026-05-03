@@ -25,6 +25,7 @@ export default function SociosEntidad() {
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const fileInputRef = useRef(null);
   
@@ -179,14 +180,24 @@ export default function SociosEntidad() {
       await socioService.cambiarEstado(socio.id, nuevoEstado);
       fetchSocios();
     } else if (type === 'eliminar') {
-      if (!window.confirm(`Eliminar a ${payload.nombre_completo}? Se borrarán todos sus registros (membresías, vehículos, QRs).`)) return;
-      try {
-        await socioService.eliminar(payload.id);
-        toast.success(`${payload.nombre_completo} eliminado`);
-        fetchSocios();
-      } catch (err) {
-        toast.error(err.response?.data?.detail || 'Error al eliminar');
-      }
+      setSocioSeleccionado(payload);
+      setIsDeleteModalOpen(true);
+    }
+  };
+
+  const ejecutarEliminacion = async () => {
+    if (!socioSeleccionado) return;
+    try {
+      setLoading(true);
+      await socioService.eliminar(socioSeleccionado.id);
+      toast.success(`${socioSeleccionado.nombre_completo} eliminado`);
+      setIsDeleteModalOpen(false);
+      setSocioSeleccionado(null);
+      fetchSocios();
+    } catch (err) {
+      toast.error(err.response?.data?.detail || 'Error al eliminar');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -230,7 +241,7 @@ export default function SociosEntidad() {
           </h1>
           <p className="text-text-muted text-sm mt-1 flex items-center gap-1.5 px-1 font-bold uppercase tracking-wider">
             <span className="w-1.5 h-1.5 rounded-full bg-success animate-pulse" />
-            {user?.entidad_nombre || 'ADMINISTRACIÓN'} // {sociosFiltrados.length} SOCIOS
+            {user?.entidad_nombre || 'ADMINISTRACIÓN'}
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
@@ -245,8 +256,8 @@ export default function SociosEntidad() {
         </div>
       </header>
 
-      {/* KPIs - Títulos de una sola palabra */}
-      <div className="grid grid-cols-1 xs:grid-cols-2 lg:grid-cols-4 gap-3">
+      {/* KPIs - Cuadrícula 2x2 forzada en móvil/tablet */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         {[
           { label: 'Registrados', valor: stats.total, color: 'text-primary', icon: Users, sub: 'Padrón total' },
           { label: 'Activos', valor: stats.activos, color: 'text-success', icon: ShieldCheck, sub: 'Al día' },
@@ -530,6 +541,27 @@ export default function SociosEntidad() {
           <Boton onClick={confirmarRenovacion} className="w-full h-12 bg-primary text-bg-app font-black uppercase tracking-[0.2em] shadow-tactica">
             Confirmar
           </Boton>
+        </div>
+      {/* ═══════ MODAL: CONFIRMACIÓN ELIMINAR ═══════ */}
+      <Modal isOpen={isDeleteModalOpen} onClose={() => setIsDeleteModalOpen(false)} title="CONFIRMAR ELIMINACIÓN">
+        <div className="space-y-6">
+          <div className="p-6 bg-danger/5 border border-danger/10 rounded-[32px] flex flex-col items-center text-center">
+            <div className="w-16 h-16 rounded-full bg-danger/10 flex items-center justify-center text-danger mb-4 shadow-lg shadow-danger/20">
+              <Trash2 size={32} />
+            </div>
+            <h3 className="text-lg font-black text-text-main uppercase tracking-tight mb-2">¿Eliminar miembro?</h3>
+            <p className="text-sm text-text-muted leading-relaxed italic">
+               Estás a punto de eliminar a <span className="text-text-main font-bold">"{socioSeleccionado?.nombre_completo}"</span>.
+               Esta acción borrará de forma permanente todos sus vehículos, membresías y registros asociados.
+            </p>
+          </div>
+
+          <div className="flex gap-3 pt-2">
+            <Boton variant="ghost" className="flex-1" onClick={() => setIsDeleteModalOpen(false)}>Cancelar</Boton>
+            <Boton onClick={ejecutarEliminacion} className="flex-1 bg-danger text-white font-black uppercase tracking-[0.2em] h-12 shadow-tactica">
+               Eliminar
+            </Boton>
+          </div>
         </div>
       </Modal>
     </div>
