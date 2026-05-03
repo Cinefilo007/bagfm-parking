@@ -542,6 +542,8 @@ export default function SociosEntidad() {
             Confirmar
           </Boton>
         </div>
+      </Modal>
+
       {/* ═══════ MODAL: CONFIRMACIÓN ELIMINAR ═══════ */}
       <Modal isOpen={isDeleteModalOpen} onClose={() => setIsDeleteModalOpen(false)} title="CONFIRMAR ELIMINACIÓN">
         <div className="space-y-6">
