@@ -149,6 +149,13 @@ export default function SociosEntidad() {
     }
   };
 
+  const stats = {
+    total: socios.length,
+    activos: socios.filter(s => s.membresia?.estado === 'activa' && !s.membresia?.progreso?.vencida).length,
+    vencidos: socios.filter(s => s.membresia?.estado === 'vencida' || s.membresia?.progreso?.vencida).length,
+    suspendidos: socios.filter(s => s.membresia?.estado === 'suspendida').length,
+  };
+
   const sociosFiltrados = socios.filter(s => 
     s.nombre_completo?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     s.cedula.includes(searchTerm)
@@ -181,6 +188,27 @@ export default function SociosEntidad() {
            </Boton>
         </div>
       </header>
+
+      {/* Panel de Indicadores KPI */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        {[
+          { label: 'Total Miembros', valor: stats.total, color: 'text-primary', icon: Users, sub: 'Padrón registrado' },
+          { label: 'Acceso Activo', valor: stats.activos, color: 'text-success', icon: ShieldCheck, sub: 'Membresías al día' },
+          { label: 'Vencidos', valor: stats.vencidos, color: 'text-amber-500', icon: Clock, sub: 'Requieren renovación' },
+          { label: 'Suspendidos', valor: stats.suspendidos, color: 'text-danger', icon: Pause, sub: 'Acceso restringido' },
+        ].map((s, i) => (
+          <div key={i} className="p-4 bg-bg-card/40 border border-white/5 rounded-2xl flex items-center gap-4 group hover:bg-bg-high/80 transition-all border-b-2 border-b-transparent hover:border-b-primary/50">
+            <div className={`w-12 h-12 rounded-2xl flex items-center justify-center bg-black/40 border border-white/5 shrink-0 ${s.color}`}>
+              <s.icon size={22} />
+            </div>
+            <div className="min-w-0">
+              <div className={`text-2xl font-black leading-tight truncate ${s.color}`}>{s.valor}</div>
+              <div className="text-[10px] font-black uppercase text-text-muted tracking-widest truncate">{s.label}</div>
+              <div className="text-[8px] text-text-muted opacity-40 uppercase font-bold mt-0.5 whitespace-nowrap">{s.sub}</div>
+            </div>
+          </div>
+        ))}
+      </div>
 
       <main className="space-y-6">
         {/* Barra de Herramientas Táctica Inline */}
@@ -222,8 +250,8 @@ export default function SociosEntidad() {
            </div>
         </section>
 
-        {/* Lista de Registros Aegis v2 */}
-        <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-4">
+        {/* Lista de Registros Aegis v2 - Una sola columna para mayor detalle */}
+        <section className="grid grid-cols-1 gap-4">
           {loading ? (
              Array(6).fill(0).map((_, i) => (
                <div key={i} className="h-48 rounded-2xl bg-white/5 animate-pulse border border-white/5" />

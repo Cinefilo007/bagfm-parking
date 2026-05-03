@@ -67,7 +67,7 @@ export const SocioCard = ({ socio, onAction }) => {
               {socio.nombre_completo}
               {esExonerado && <ShieldCheck size={14} className="text-primary" />}
             </h4>
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
               <p className="text-[10px] text-text-muted font-mono uppercase tracking-widest">
                 ID: {socio.cedula}
               </p>
@@ -75,11 +75,22 @@ export const SocioCard = ({ socio, onAction }) => {
               <p className="text-[10px] font-bold uppercase tracking-tighter text-text-muted/60">
                 {socio.telefono || 'SIN TEL'}
               </p>
+              {socio.email && (
+                <>
+                  <span className="text-white/10">•</span>
+                  <p className="text-[10px] font-bold text-primary/40 lowercase tracking-tight truncate max-w-[150px] sm:max-w-none">
+                    {socio.email}
+                  </p>
+                </>
+              )}
             </div>
-          </div>
         </div>
         
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-4">
+          <div className="hidden sm:flex flex-col items-end mr-2">
+            <span className="text-[8px] font-black text-text-muted uppercase tracking-widest opacity-40">Membresía</span>
+            <span className={`text-[10px] font-black uppercase ${statusColor}`}>{statusLabel}</span>
+          </div>
           <Badge variant={badgeVariant}>
             {statusLabel}
           </Badge>
@@ -91,7 +102,10 @@ export const SocioCard = ({ socio, onAction }) => {
       {m && !esExonerado && (
         <div className="mt-4 px-1">
           <div className="flex justify-between items-end mb-1.5">
-            <span className="text-[8px] uppercase font-bold tracking-widest text-text-muted">TIEMPO DE ACCESO</span>
+            <div className="flex items-center gap-2">
+               <Clock size={12} className="text-text-muted/40" />
+               <span className="text-[8px] uppercase font-bold tracking-widest text-text-muted">TIEMPO DE ACCESO</span>
+            </div>
             <span className={`text-[10px] font-mono font-bold ${progreso.porcentaje > 80 ? 'text-danger' : 'text-text-muted'}`}>
               {progreso.dias_restantes} DÍAS RESTANTES
             </span>
@@ -110,7 +124,7 @@ export const SocioCard = ({ socio, onAction }) => {
 
       {/* SECCIÓN DESPLEGABLE */}
       {isOpen && (
-        <div className="animate-in fade-in slide-in-from-top-2 duration-300 mt-4">
+        <div className="animate-in fade-in slide-in-from-top-2 duration-300 mt-6 border-t border-white/5 pt-4">
           {esExonerado && (
             <div className="mb-4 px-3 py-2 bg-primary/5 rounded-lg border border-primary/10 flex items-center gap-3">
               <ShieldCheck size={16} className="text-primary" />
@@ -119,34 +133,42 @@ export const SocioCard = ({ socio, onAction }) => {
           )}
 
           {/* Resumen de Vehículos y Fecha */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-4">
-            <div className="p-2.5 bg-white/5 rounded-xl border border-white/5">
-              <div className="flex items-center gap-2 mb-2">
-                <Car size={13} className="text-text-muted/50" />
-                <span className="text-[9px] uppercase font-bold text-text-muted tracking-widest">Vehículos Registrados</span>
+          <div className="grid grid-cols-1 md:grid-cols-12 gap-4 mb-4">
+            <div className="md:col-span-8 p-3 bg-white/2 rounded-xl border border-white/5">
+              <div className="flex items-center gap-2 mb-3">
+                <Car size={14} className="text-primary" />
+                <span className="text-[10px] uppercase font-black text-text-muted tracking-widest">Unidades Vinculadas</span>
               </div>
-              <div className="space-y-1.5">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                 {tieneVehiculos ? (
                   socio.vehiculos.map((v, idx) => (
-                    <div key={idx} className="flex justify-between items-center text-[11px] font-mono bg-white/5 p-1.5 rounded-lg border border-white/5">
-                      <span className="text-text-main font-bold">{v.placa}</span>
-                      <span className="text-text-muted text-[9px] uppercase">{v.marca} {v.modelo}</span>
+                    <div key={idx} className="flex flex-col gap-1 bg-black/20 p-2.5 rounded-xl border border-white/5 hover:border-primary/20 transition-all">
+                      <div className="flex justify-between items-center">
+                         <span className="text-xs font-black text-primary font-mono tracking-wider">{v.placa}</span>
+                         <span className="text-[8px] font-black px-1.5 py-0.5 rounded bg-white/5 text-text-muted/60 uppercase">{v.color || 'COLOR N/A'}</span>
+                      </div>
+                      <span className="text-[10px] font-bold text-text-main uppercase opacity-80">{v.marca} {v.modelo}</span>
                     </div>
                   ))
                 ) : (
-                  <p className="text-[11px] font-bold font-mono text-danger uppercase">Sin Registro de Unidades</p>
+                  <div className="col-span-full py-4 text-center">
+                    <p className="text-[10px] font-black text-danger/40 uppercase tracking-widest italic">Sin Unidades en Sistema</p>
+                  </div>
                 )}
               </div>
             </div>
 
-            <div className="p-2.5 bg-white/5 rounded-xl border border-white/5 flex flex-col justify-center">
-              <div className="flex items-center gap-2 mb-1">
-                <Calendar size={13} className="text-text-muted/50" />
-                <span className="text-[9px] uppercase font-bold text-text-muted tracking-widest">Vencimiento de Acceso</span>
+            <div className="md:col-span-4 p-3 bg-white/2 rounded-xl border border-white/5 flex flex-col">
+              <div className="flex items-center gap-2 mb-3">
+                <Calendar size={14} className="text-secondary" />
+                <span className="text-[10px] uppercase font-black text-text-muted tracking-widest">Estado de Vigencia</span>
               </div>
-              <p className="text-lg font-bold font-mono text-text-main">
-                {m?.fecha_fin ? new Date(m.fecha_fin).toLocaleDateString() : 'N/A'}
-              </p>
+              <div className="flex-1 flex flex-col justify-center">
+                 <p className="text-[9px] font-bold text-text-muted uppercase mb-1">Vencimiento del Ciclo</p>
+                 <p className="text-2xl font-black font-mono text-text-main italic">
+                   {m?.fecha_fin ? new Date(m.fecha_fin).toLocaleDateString('es-VE', { day: '2-digit', month: 'short', year: 'numeric' }).toUpperCase() : 'NO ASIGNADA'}
+                 </p>
+              </div>
             </div>
           </div>
 

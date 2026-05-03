@@ -147,6 +147,7 @@ bagfm/
     ├── DEPLOYMENT.md                ← 🚀 Guía de despliegue Railway
     ├── GUIA_INSTALACION_PWA.md      ← Instalación PWA móvil
     ├── RAILWAY_STABILITY.md         ← Estabilidad Railway
+    ├── DIRECTIVA_SCRIPTS_UTILIDAD.md ← 🛠️ Scripts de utilidad y generación de datos
     └── REGISTRO_CAMBIOS.md          ← Log de cambios
 ```
 
@@ -215,6 +216,7 @@ bagfm/
 | [DIRECTIVA_MAPA_TACTICO.md](./DIRECTIVA_MAPA_TACTICO.md) | 🗺️ Mapa táctico de la base |
 | [DIRECTIVA_DISEÑO_VISUAL.md](./DIRECTIVA_DISEÑO_VISUAL.md) | Aegis Tactical v3 — spec completa |
 | [DEPLOYMENT.md](./DEPLOYMENT.md) | 🚀 Guía de despliegue para Railway |
+| [DIRECTIVA_SCRIPTS_UTILIDAD.md](./DIRECTIVA_SCRIPTS_UTILIDAD.md) | 🛠️ Scripts de utilidad y generación de datos |
 | [REGISTRO_CAMBIOS.md](./REGISTRO_CAMBIOS.md) | Log de cambios por versión |
 
 ---
