@@ -9,7 +9,8 @@ import {
   Phone, Search, FileUp, Car, Plus, 
   Trash2, Download, RefreshCw, Filter,
   FileSpreadsheet, ShieldCheck, Clock, Pause,
-  AlertTriangle, CheckCircle2, Upload, Calendar
+  AlertTriangle, CheckCircle2, Upload, Calendar,
+  ChevronLeft, ChevronRight
 } from 'lucide-react';
 import api from '../../services/api';
 import socioService from '../../services/socioService';
@@ -39,6 +40,10 @@ export default function SociosEntidad() {
   const [importValidation, setImportValidation] = useState(null); // { valid, errors[], preview[] }
   const [importFechaExp, setImportFechaExp] = useState('');
   const [importando, setImportando] = useState(false);
+  const [creando, setCreando] = useState(false);
+  const [eliminando, setEliminando] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const ITEMS_PER_PAGE = 10;
 
   const [isRenovarModalOpen, setIsRenovarModalOpen] = useState(false);
   const [socioSeleccionado, setSocioSeleccionado] = useState(null);
@@ -62,10 +67,8 @@ export default function SociosEntidad() {
   const handleCrearSocio = async (e) => {
     e.preventDefault();
     try {
+      setCreando(true);
       const payload = { ...nuevoSocio, entidad_id: user.entidad_id };
-      if (payload.fecha_expiracion) {
-        payload.fecha_expiracion = payload.fecha_expiracion;
-      }
       await api.post('/socios/', payload);
       setIsModalOpen(false);
       setNuevoSocio({ 
@@ -76,6 +79,8 @@ export default function SociosEntidad() {
       toast.success('Miembro registrado con éxito');
     } catch (err) {
       toast.error(err.response?.data?.detail || 'Error al registrar miembro');
+    } finally {
+      setCreando(false);
     }
   };
 
@@ -188,7 +193,7 @@ export default function SociosEntidad() {
   const ejecutarEliminacion = async () => {
     if (!socioSeleccionado) return;
     try {
-      setLoading(true);
+      setEliminando(true);
       await socioService.eliminar(socioSeleccionado.id);
       toast.success(`${socioSeleccionado.nombre_completo} eliminado`);
       setIsDeleteModalOpen(false);
@@ -197,7 +202,7 @@ export default function SociosEntidad() {
     } catch (err) {
       toast.error(err.response?.data?.detail || 'Error al eliminar');
     } finally {
-      setLoading(false);
+      setEliminando(false);
     }
   };
 
@@ -224,6 +229,16 @@ export default function SociosEntidad() {
     s.nombre_completo?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     s.cedula.includes(searchTerm)
   );
+
+  // Resetear a pág 1 al buscar
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm]);
+
+  // Lógica de Paginación
+  const totalPages = Math.ceil(sociosFiltrados.length / ITEMS_PER_PAGE);
+  const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+  const paginatedSocios = sociosFiltrados.slice(startIndex, startIndex + ITEMS_PER_PAGE);
 
   // Fecha mínima para el selector (hoy)
   const hoyISO = new Date().toISOString().split('T')[0];
@@ -304,27 +319,81 @@ export default function SociosEntidad() {
         </section>
 
         {/* Lista de socios */}
-        <section className="grid grid-cols-1 gap-3">
-          {loading ? (
-             Array(6).fill(0).map((_, i) => (
-               <div key={i} className="h-20 rounded-2xl bg-white/5 animate-pulse border border-white/5" />
-             ))
-          ) : (
-            <>
-              {sociosFiltrados.map(socio => (
-                <div key={socio.id} className="animate-in zoom-in-95 duration-300">
-                  <SocioCard socio={socio} onAction={handleAction} />
-                </div>
-              ))}
-              {sociosFiltrados.length === 0 && (
-                <div className="col-span-full py-16 text-center border border-dashed border-white/10 rounded-[32px] bg-bg-card/20">
-                   <Users size={40} className="mx-auto text-white/5 mb-4 opacity-20" />
-                   <p className="text-text-muted text-[10px] font-black uppercase tracking-[0.3em] opacity-40">
-                     {searchTerm ? 'Sin coincidencias' : 'Padrón vacío'}
-                   </p>
-                </div>
-              )}
-            </>
+        <section className="space-y-4">
+          <div className="grid grid-cols-1 gap-3">
+            {loading ? (
+               Array(6).fill(0).map((_, i) => (
+                 <div key={i} className="h-20 rounded-2xl bg-white/5 animate-pulse border border-white/5" />
+               ))
+            ) : (
+              <>
+                {paginatedSocios.map(socio => (
+                  <div key={socio.id} className="animate-in zoom-in-95 duration-300">
+                    <SocioCard socio={socio} onAction={handleAction} />
+                  </div>
+                ))}
+                {sociosFiltrados.length === 0 && (
+                  <div className="col-span-full py-16 text-center border border-dashed border-white/10 rounded-[32px] bg-bg-card/20">
+                     <Users size={40} className="mx-auto text-white/5 mb-4 opacity-20" />
+                     <p className="text-text-muted text-[10px] font-black uppercase tracking-[0.3em] opacity-40">
+                       {searchTerm ? 'Sin coincidencias' : 'Padrón vacío'}
+                     </p>
+                  </div>
+                )}
+              </>
+            )}
+          </div>
+
+          {/* Controles de Paginación */}
+          {!loading && totalPages > 1 && (
+            <div className="flex items-center justify-center gap-2 pt-4">
+              <Boton 
+                variant="ghost" 
+                size="sm" 
+                disabled={currentPage === 1}
+                onClick={() => setCurrentPage(p => p - 1)}
+                className="h-9 w-9 p-0 border-white/5"
+              >
+                <ChevronLeft size={16} />
+              </Boton>
+
+              <div className="flex items-center gap-1 bg-black/20 p-1 rounded-xl border border-white/5">
+                {[...Array(totalPages)].map((_, i) => {
+                  const page = i + 1;
+                  // Mostrar solo algunas páginas si hay muchas (opcional, aquí simple)
+                  return (
+                    <button
+                      key={page}
+                      onClick={() => setCurrentPage(page)}
+                      className={`h-7 min-w-[28px] px-2 rounded-lg text-[10px] font-black transition-all ${
+                        currentPage === page 
+                          ? 'bg-primary text-bg-app shadow-lg shadow-primary/20' 
+                          : 'text-text-muted hover:bg-white/5'
+                      }`}
+                    >
+                      {page}
+                    </button>
+                  );
+                })}
+              </div>
+
+              <Boton 
+                variant="ghost" 
+                size="sm" 
+                disabled={currentPage === totalPages}
+                onClick={() => setCurrentPage(p => p + 1)}
+                className="h-9 w-9 p-0 border-white/5"
+              >
+                <ChevronRight size={16} />
+              </Boton>
+            </div>
+          )}
+          
+          {/* Contador de resultados */}
+          {!loading && sociosFiltrados.length > 0 && (
+            <p className="text-center text-[9px] font-black text-text-muted/30 uppercase tracking-[0.2em]">
+              Mostrando {startIndex + 1}-{Math.min(startIndex + ITEMS_PER_PAGE, sociosFiltrados.length)} de {sociosFiltrados.length} socios
+            </p>
           )}
         </section>
       </main>
@@ -412,8 +481,9 @@ export default function SociosEntidad() {
 
           <div className="pt-4 border-t border-white/5 flex gap-3">
              <Boton type="button" variant="ghost" className="flex-1" onClick={() => setIsModalOpen(false)}>Cancelar</Boton>
-             <Boton type="submit" className="flex-[2] bg-primary text-bg-app font-black uppercase tracking-[0.2em] h-12 shadow-tactica">
-                Registrar
+             <Boton type="submit" disabled={creando} className="flex-[2] bg-primary text-bg-app font-black uppercase tracking-[0.2em] h-12 shadow-tactica">
+                {creando ? <RefreshCw className="animate-spin mr-2" size={16} /> : null}
+                {creando ? 'Procesando...' : 'Registrar'}
              </Boton>
           </div>
         </form>
@@ -560,8 +630,9 @@ export default function SociosEntidad() {
 
           <div className="flex gap-3 pt-2">
             <Boton variant="ghost" className="flex-1" onClick={() => setIsDeleteModalOpen(false)}>Cancelar</Boton>
-            <Boton onClick={ejecutarEliminacion} className="flex-1 bg-danger text-white font-black uppercase tracking-[0.2em] h-12 shadow-tactica">
-               Eliminar
+            <Boton onClick={ejecutarEliminacion} disabled={eliminando} className="flex-1 bg-danger text-white font-black uppercase tracking-[0.2em] h-12 shadow-tactica">
+               {eliminando ? <RefreshCw className="animate-spin mr-2" size={16} /> : null}
+               {eliminando ? 'Eliminando...' : 'Eliminar'}
             </Boton>
           </div>
         </div>

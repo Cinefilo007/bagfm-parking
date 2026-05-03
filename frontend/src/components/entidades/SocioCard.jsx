@@ -26,6 +26,10 @@ export const SocioCard = ({ socio, onAction }) => {
   const esSuspendido = m?.estado === 'suspendida';
   const esVencido = progreso?.vencida || m?.estado === 'vencida';
 
+  // Lógica de progreso visual basada en 30 días
+  const diasRestantes = progreso?.dias_restantes || 0;
+  const visualProgress = Math.max(0, Math.min(100, ((30 - diasRestantes) / 30) * 100));
+
   // Determinar color y mensaje de estado
   let statusColor = 'text-text-muted';
   let statusLabel = 'SIN ACCESO';
@@ -161,7 +165,7 @@ export const SocioCard = ({ socio, onAction }) => {
                 progreso.porcentaje > 90 ? 'bg-danger' : 
                 progreso.porcentaje > 70 ? 'bg-amber-500' : 'bg-primary'
               }`}
-              style={{ width: `${100 - progreso.porcentaje}%` }}
+              style={{ width: `${visualProgress}%` }}
             />
           </div>
         </div>
