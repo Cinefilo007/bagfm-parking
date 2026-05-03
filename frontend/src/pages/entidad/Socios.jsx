@@ -8,7 +8,7 @@ import {
   Users, UserPlus, Hash, User, Mail, 
   Phone, Search, FileUp, Car, Plus, 
   Trash2, Download, RefreshCw, Filter,
-  FileSpreadsheet
+  FileSpreadsheet, ShieldCheck, Clock, Pause
 } from 'lucide-react';
 import api from '../../services/api';
 import socioService from '../../services/socioService';
