@@ -20,6 +20,7 @@ import EditorCarnets from '../pages/entidad/EditorCarnets';
 import Ajustes from '../pages/Ajustes';
 import Personal from '../pages/Personal';
 import PortalSocio from '../pages/socio/Portal';
+import InfraccionesSocio from '../pages/socio/Infracciones';
 import PortalEvento from '../pages/PortalEvento';
 import PortalPase from '../pages/PortalPase';
 import DashboardParquero from '../pages/parquero/Dashboard';
@@ -130,7 +131,8 @@ export const router = createBrowserRouter([
             path: 'socio',
             element: <RutaProtegida rolesPermitidos={['SOCIO']} />,
             children: [
-              { path: 'portal', element: <PortalSocio /> }
+              { path: 'portal',       element: <PortalSocio /> },
+              { path: 'infracciones', element: <InfraccionesSocio /> }
             ]
           },
           // AJUSTES

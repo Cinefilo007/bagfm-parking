@@ -211,13 +211,12 @@ export default function PortalSocio() {
                   </button>
                </div>
 
-               {/* QR Code Container - AGRANDADO TÁCTICAMENTE */}
-               <div ref={qrRef} className="p-6 bg-white rounded-[2.5rem] mx-auto w-64 h-64 sm:w-80 sm:h-80 flex items-center justify-center mb-8 shadow-[0_0_60px_rgba(255,255,255,0.08)] border-8 border-white/10 relative z-10 transition-transform hover:scale-[1.02] duration-500">
-                  <div className="p-2 bg-white">
+               {/* QR Code Container — Fluido para móvil, no se corta */}
+               <div ref={qrRef} className="p-4 sm:p-6 bg-white rounded-[2rem] w-full max-w-xs sm:max-w-sm mx-auto aspect-square flex items-center justify-center mb-8 shadow-[0_0_60px_rgba(255,255,255,0.08)] border-4 sm:border-8 border-white/10 relative z-10 transition-transform hover:scale-[1.01] duration-500">
+                  <div className="w-full h-full p-1 bg-white flex items-center justify-center">
                     {data?.qr_token ? (
                       <QRCode 
                         value={String(data.qr_token)} 
-                        size={280} 
                         level="H"
                         style={{ height: "auto", maxWidth: "100%", width: "100%" }}
                       />
@@ -334,19 +333,13 @@ export default function PortalSocio() {
                </ul>
             </TacticalCard>
 
-            {/* Acciones Finales */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-               <Boton onClick={fetchPortal} variant="ghost" className="h-14 bg-white/5 border-white/5 text-[10px] font-black uppercase tracking-[0.2em] hover:bg-white/10">
-                  <RefreshCw size={16} className="mr-2" /> REVALIDAR SISTEMA
-               </Boton>
-               
-               <button 
-                 onClick={logout}
-                 className="h-14 bg-danger/10 text-danger hover:bg-danger/20 border border-danger/10 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] flex items-center justify-center gap-2 transition-all"
-               >
-                 <LogOut size={16} /> FINALIZAR SESIÓN
-               </button>
-            </div>
+            {/* Acción de Sesión */}
+            <button 
+              onClick={logout}
+              className="w-full h-14 bg-danger/10 text-danger hover:bg-danger/20 border border-danger/10 rounded-2xl text-[10px] font-black uppercase tracking-[0.3em] flex items-center justify-center gap-2 transition-all"
+            >
+              <LogOut size={16} /> FINALIZAR SESIÓN
+            </button>
           </div>
         </div>
       </main>

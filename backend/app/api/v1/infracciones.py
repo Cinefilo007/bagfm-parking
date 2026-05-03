@@ -17,6 +17,27 @@ router = APIRouter()
 # Solo SUPERVISOR, ADMIN_BASE o COMANDANTE pueden registrar infracciones
 DEPENDENCY_SUPERVISOR = Depends(require_rol([RolTipo.SUPERVISOR, RolTipo.ADMIN_BASE, RolTipo.COMANDANTE]))
 
+@router.get("/me", response_model=List[InfraccionSalida])
+async def mis_infracciones(
+    db: AsyncSession = Depends(obtener_db),
+    usuario_actual: Usuario = Depends(require_rol([RolTipo.SOCIO]))
+):
+    """
+    Retorna las infracciones del socio autenticado.
+    """
+    from app.models.vehiculo import Vehiculo
+    # Obtener IDs de vehículos del socio
+    res_vehs = await db.execute(select(Vehiculo.id).where(Vehiculo.socio_id == usuario_actual.id))
+    vehiculo_ids = [r[0] for r in res_vehs.all()]
+
+    if not vehiculo_ids:
+        return []
+
+    query = select(Infraccion).where(Infraccion.vehiculo_id.in_(vehiculo_ids)).order_by(Infraccion.created_at.desc())
+    result = await db.execute(query)
+    return result.scalars().all()
+
+
 @router.get("", response_model=List[InfraccionSalida])
 async def listar_infracciones(
     db: AsyncSession = Depends(obtener_db),
