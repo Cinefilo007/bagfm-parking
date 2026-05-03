@@ -1,7 +1,8 @@
 import openpyxl
 from io import BytesIO
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional
 from uuid import UUID
+from datetime import date
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.schemas.socio import SocioCrear
 from app.schemas.vehiculo import VehiculoCrear
@@ -18,11 +19,12 @@ class ImportService:
         db: AsyncSession, 
         file_content: bytes, 
         entidad_id: UUID, 
-        creador_id: UUID
+        creador_id: UUID,
+        fecha_expiracion: Optional[date] = None
     ) -> Dict[str, Any]:
         """
         Procesa un archivo Excel para importar socios masivamente.
-        Columnas esperadas: cedula, nombre, apellido, email, telefono
+        Columnas esperadas: cedula, nombre, apellido, email, telefono, placa, marca, modelo, color
         """
         try:
             wb = openpyxl.load_workbook(BytesIO(file_content), data_only=True)
@@ -33,9 +35,6 @@ class ImportService:
                 "exitosos": 0,
                 "errores": []
             }
-            
-            # Mapeo de columnas (asumiendo orden fijo o buscando encabezados)
-            # Por simplicidad ahora: A=cedula, B=nombre, C=apellido, D=email, E=telefono
             
             rows = list(sheet.iter_rows(min_row=2, values_only=True))
             resumen["total"] = len(rows)
@@ -77,7 +76,8 @@ class ImportService:
                         telefono=telefono,
                         entidad_id=entidad_id,
                         password=cedula,
-                        vehiculos=[]
+                        vehiculos=[],
+                        fecha_expiracion=fecha_expiracion
                     )
                     
                     # Si hay datos de vehículo, añadirlo

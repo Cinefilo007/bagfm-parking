@@ -13,11 +13,13 @@ from app.core.excepciones import EntidadNoEncontrada
 
 class MembresiaService:
     async def crear_membresia_inicial(
-        self, db: AsyncSession, socio_id: UUID, entidad_id: UUID, meses: int = 1, creador_id: Optional[UUID] = None
+        self, db: AsyncSession, socio_id: UUID, entidad_id: UUID, 
+        meses: int = 1, creador_id: Optional[UUID] = None,
+        fecha_fin_override: Optional[date] = None
     ) -> Membresia:
-        """Crea la membresía inicial de un socio."""
+        """Crea la membresía inicial de un socio. Si fecha_fin_override se provee, se usa directamente."""
         fecha_inicio = date.today()
-        fecha_fin = fecha_inicio + relativedelta(months=meses)
+        fecha_fin = fecha_fin_override if fecha_fin_override else fecha_inicio + relativedelta(months=meses)
         
         nueva = Membresia(
             socio_id=socio_id,

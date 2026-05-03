@@ -178,6 +178,15 @@ export default function SociosEntidad() {
       const { socio, nuevoEstado } = payload;
       await socioService.cambiarEstado(socio.id, nuevoEstado);
       fetchSocios();
+    } else if (type === 'eliminar') {
+      if (!window.confirm(`Eliminar a ${payload.nombre_completo}? Se borrarán todos sus registros (membresías, vehículos, QRs).`)) return;
+      try {
+        await socioService.eliminar(payload.id);
+        toast.success(`${payload.nombre_completo} eliminado`);
+        fetchSocios();
+      } catch (err) {
+        toast.error(err.response?.data?.detail || 'Error al eliminar');
+      }
     }
   };
 
@@ -260,7 +269,7 @@ export default function SociosEntidad() {
       <main className="space-y-4">
         {/* Barra de búsqueda + acciones */}
         <section className="bg-bg-card/40 border border-white/5 rounded-2xl p-3 backdrop-blur-md">
-           <div className="flex flex-col lg:flex-row gap-3 items-center justify-between">
+           <div className="flex flex-col lg:flex-row gap-3 items-stretch justify-between">
               <div className="w-full lg:max-w-md">
                  <Input 
                    placeholder="BUSCAR POR IDENTIDAD O NOMBRE..."

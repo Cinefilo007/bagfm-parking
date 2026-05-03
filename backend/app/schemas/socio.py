@@ -18,6 +18,7 @@ class SocioCrear(SocioBase):
     password: Optional[str] = None # Si es None, el servicio usará la cédula
     entidad_id: UUID
     vehiculos: Optional[List[VehiculoCrear]] = []
+    fecha_expiracion: Optional[date] = None  # Fecha de expiración de la membresía
 
 class MembresiaProgreso(BaseModel):
     dias_restantes: int

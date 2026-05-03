@@ -1,12 +1,14 @@
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
+from sqlalchemy import select, delete
 from uuid import UUID
 from typing import List, Optional
+from datetime import date
 
 from app.models.usuario import Usuario
 from app.models.entidad_civil import EntidadCivil
 from app.models.membresia import Membresia
 from app.models.vehiculo import Vehiculo
+from app.models.codigo_qr import CodigoQR
 from app.models.enums import RolTipo, MembresiaEstado
 from app.schemas.socio import SocioCrear, MembresiaBase
 from app.core.security import hashear_password
@@ -44,12 +46,14 @@ class SocioService:
         db.add(nuevo_socio)
         await db.flush() # Para obtener el ID del nuevo_socio
 
-        # 4. Crear la Membresia Inicial (1 mes por defecto)
+        # 4. Crear la Membresia con fecha_expiracion si se proporcionó
         nueva_membresia = await membresia_service.crear_membresia_inicial(
-            db, nuevo_socio.id, datos.entidad_id, meses=1, creador_id=creador_id
+            db, nuevo_socio.id, datos.entidad_id, 
+            meses=1, creador_id=creador_id,
+            fecha_fin_override=datos.fecha_expiracion
         )
 
-        # 4. Crear Vehículos (Opcional)
+        # 5. Crear Vehículos (Opcional)
         if datos.vehiculos:
             for v_data in datos.vehiculos:
                 nuevo_v = Vehiculo(
@@ -66,6 +70,26 @@ class SocioService:
         await db.commit()
         await db.refresh(nuevo_socio)
         return nuevo_socio
+
+    async def eliminar_socio_cascada(self, db: AsyncSession, socio_id: UUID) -> dict:
+        """Elimina un socio y todos sus registros asociados en cascada."""
+        # Verificar que el socio existe
+        query = select(Usuario).where(Usuario.id == socio_id, Usuario.rol == RolTipo.SOCIO)
+        res = await db.execute(query)
+        socio = res.scalar_one_or_none()
+        if not socio:
+            raise EntidadNoEncontrada("Socio no encontrado")
+
+        nombre = socio.nombre_completo
+
+        # Eliminar en orden: QRs -> Membresías -> Vehículos -> Usuario
+        await db.execute(delete(CodigoQR).where(CodigoQR.usuario_id == socio_id))
+        await db.execute(delete(Membresia).where(Membresia.socio_id == socio_id))
+        await db.execute(delete(Vehiculo).where(Vehiculo.socio_id == socio_id))
+        await db.delete(socio)
+        await db.commit()
+
+        return {"eliminado": True, "nombre": nombre}
 
     async def obtener_socios_entidad(self, db: AsyncSession, entidad_id: UUID) -> List[dict]:
         # 1. Traer socios y su membresía activa

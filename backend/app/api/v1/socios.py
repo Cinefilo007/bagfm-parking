@@ -1,7 +1,8 @@
-from fastapi import APIRouter, Depends, HTTPException, status, File, UploadFile, Response
+from fastapi import APIRouter, Depends, HTTPException, status, File, UploadFile, Response, Query
 from sqlalchemy.ext.asyncio import AsyncSession
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional
 from uuid import UUID
+from datetime import date
 
 from app.core.database import obtener_db
 from app.core.dependencias import obtener_usuario_actual, require_rol
@@ -65,6 +66,7 @@ async def listar_socios_por_entidad(
 async def importar_socios_excel(
     entidad_id: UUID,
     file: UploadFile = File(...),
+    fecha_expiracion: Optional[date] = Query(None, description="Fecha de expiración para el lote"),
     db: AsyncSession = Depends(obtener_db),
     usuario_actual: Usuario = Depends(require_rol(GESTORES_SOCIOS))
 ):
@@ -81,10 +83,28 @@ async def importar_socios_excel(
     try:
         contenido = await file.read()
         resultado = await import_service.procesar_excel_socios(
-            db, contenido, entidad_id, usuario_actual.id
+            db, contenido, entidad_id, usuario_actual.id,
+            fecha_expiracion=fecha_expiracion
         )
         return resultado
     except ValueError as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(e)
+        )
+
+@router.delete("/{socio_id}", status_code=status.HTTP_200_OK)
+async def eliminar_socio(
+    socio_id: UUID,
+    db: AsyncSession = Depends(obtener_db),
+    usuario_actual: Usuario = Depends(require_rol(GESTORES_SOCIOS))
+):
+    """
+    Elimina un socio y todos sus registros asociados (membresías, vehículos, QRs) en cascada.
+    """
+    try:
+        return await socio_service.eliminar_socio_cascada(db, socio_id)
+    except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=str(e)

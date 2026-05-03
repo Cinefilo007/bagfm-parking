@@ -57,6 +57,12 @@ const socioService = {
   actualizarPerfil: async (datos) => {
     const response = await api.put('/socios/me', datos);
     return response.data;
+  },
+
+  // Eliminar socio con cascada (membresías, vehículos, QRs)
+  eliminar: async (socioId) => {
+    const response = await api.delete(`/socios/${socioId}`);
+    return response.data;
   }
 };
 
