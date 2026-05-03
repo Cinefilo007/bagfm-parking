@@ -84,6 +84,7 @@ export const SocioCard = ({ socio, onAction }) => {
                 </>
               )}
             </div>
+          </div>
         </div>
         
         <div className="flex items-center gap-4">
