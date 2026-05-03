@@ -47,7 +47,7 @@ const TacticalBadge = ({ children, variant }) => {
 };
 
 export default function PortalSocio() {
-  const { logout, user } = useAuthStore();
+  const { logout, user, updatePerfil } = useAuthStore();
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const qrRef = useRef();
@@ -141,7 +141,7 @@ export default function PortalSocio() {
     e.preventDefault();
     setSubmittingProfile(true);
     try {
-      await socioService.actualizarPerfil(perfilForm);
+      await updatePerfil(perfilForm);
       toast.success("Perfil actualizado tácticamente");
       setIsProfileModalOpen(false);
       fetchPortal();
@@ -332,14 +332,6 @@ export default function PortalSocio() {
                   </li>
                </ul>
             </TacticalCard>
-
-            {/* Acción de Sesión */}
-            <button 
-              onClick={logout}
-              className="w-full h-14 bg-danger/10 text-danger hover:bg-danger/20 border border-danger/10 rounded-2xl text-[10px] font-black uppercase tracking-[0.3em] flex items-center justify-center gap-2 transition-all"
-            >
-              <LogOut size={16} /> FINALIZAR SESIÓN
-            </button>
           </div>
         </div>
       </main>

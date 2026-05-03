@@ -9,6 +9,24 @@ export function usePushNotifications() {
   const [subscription, setSubscription] = useState(null);
   const [error, setError] = useState(null);
 
+  useEffect(() => {
+    async function checkSubscription() {
+      if ('serviceWorker' in navigator && 'PushManager' in window) {
+        try {
+          const registration = await navigator.serviceWorker.ready;
+          const sub = await registration.pushManager.getSubscription();
+          if (sub) {
+            setSubscription(sub);
+            setIsSubscribed(true);
+          }
+        } catch (err) {
+          console.error("Error al comprobar la suscripción Push:", err);
+        }
+      }
+    }
+    checkSubscription();
+  }, []);
+
   const subscribeUser = useCallback(async () => {
     try {
       if (!('serviceWorker' in navigator) || !('PushManager' in window)) {

@@ -62,6 +62,8 @@ class AuthService:
             "nombre": usuario.nombre,
             "apellido": usuario.apellido,
             "cedula": usuario.cedula,
+            "email": usuario.email,
+            "telefono": usuario.telefono,
             "debe_cambiar_password": usuario.debe_cambiar_password
         }
         

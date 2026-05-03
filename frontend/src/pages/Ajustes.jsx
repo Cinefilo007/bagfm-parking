@@ -301,7 +301,7 @@ export default function Ajustes() {
                     className="h-12 md:h-14 w-full md:max-w-[260px] bg-[#252a3d] hover:bg-[#2f3448] text-white border border-white/5 font-bold uppercase tracking-[0.1em] text-[10px] md:text-[11px] flex items-center justify-center gap-3 group transition-all shadow-xl"
                  >
                     <Lock size={18} className="group-hover:scale-110 transition-transform" />
-                    Seguridad de Acceso
+                    Cambiar Contraseña
                  </Boton>
               </div>
             </CardContent>
@@ -321,7 +321,7 @@ export default function Ajustes() {
                 </div>
                 <div>
                   <h4 className="text-sm font-black text-white uppercase tracking-tight italic">Acceso por Biometría</h4>
-                  <p className="text-[10px] text-text-muted font-bold uppercase tracking-widest mt-0.5">Dispositivos de Confianza Masivos</p>
+                  <p className="text-[10px] text-text-muted font-bold uppercase tracking-widest mt-0.5">Dispositivos de Confianza</p>
                 </div>
               </div>
               <Boton 
@@ -571,13 +571,10 @@ export default function Ajustes() {
       )}
       <section className="max-w-4xl mx-auto px-2 md:px-6 pt-4">
         <button 
-          className="w-full h-14 bg-red-500 hover:bg-red-600 active:scale-[0.98] transition-all rounded-xl flex items-center justify-center gap-3 px-8 shadow-[0_10px_20px_-5px_rgba(239,68,68,0.4)] group border border-white/10"
           onClick={logout}
+          className="w-full h-14 bg-danger/10 text-danger hover:bg-danger/20 border border-danger/10 rounded-2xl text-[10px] font-black uppercase tracking-[0.3em] flex items-center justify-center gap-2 transition-all"
         >
-          <LogOut size={18} className="text-white" />
-          <span className="font-bold uppercase text-[11px] tracking-[0.1em] text-white">
-            Finalizar Sesión Operativa
-          </span>
+          <LogOut size={16} /> FINALIZAR SESIÓN
         </button>
       </section>
 
