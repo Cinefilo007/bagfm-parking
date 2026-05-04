@@ -8,7 +8,7 @@ import { useAuthStore } from '../../store/auth.store';
 import {
     AlertTriangle, Shield, RefreshCw, MapPin,
     CheckCircle2, XCircle, Filter, Search,
-    Car, ChevronUp, Clock, Users, Hash,
+    Car, ChevronUp, Clock, Users, Hash, User, Phone,
     Ban, Scale, ChevronRight, Flame, Eye,
     TrendingUp, Map, Plus, Upload, Trash2, Camera, Info
 } from 'lucide-react';
@@ -172,15 +172,111 @@ export default function DashboardInfracciones() {
     const [enviandoReporte, setEnviandoReporte] = useState(false);
     const [archivosEvidencia, setArchivosEvidencia] = useState([]);
     const [previews, setPreviews] = useState([]);
+    
+    // IA & Search States
+    const [iaTrabajando, setIaTrabajando] = useState(false);
+    const [iaMensaje, setIaMensaje] = useState(null);
+    const [buscandoVehiculo, setBuscandoVehiculo] = useState(false);
+    const [vehiculoInfo, setVehiculoInfo] = useState(null);
+    const [obteniendoGPS, setObteniendoGPS] = useState(false);
+
     const [formReporte, setFormReporte] = useState({
         tipo: 'mal_estacionado',
         gravedad: 'leve',
         descripcion: '',
         vehiculo_placa: '',
+        vehiculo_marca: '',
+        vehiculo_modelo: '',
         zona_id: '',
+        latitud: null,
+        longitud: null,
         bloquea_salida: true,
         bloquea_acceso_futuro: false
     });
+
+    const analizarEvidencias = async (files) => {
+        setIaTrabajando(true);
+        setIaMensaje({ type: 'info', text: '✨ IA analizando imágenes...' });
+        
+        try {
+            const formData = new FormData();
+            files.forEach(f => formData.append('archivos', f));
+            
+            const { data } = await api.post('/infracciones/analizar-evidencias', formData, {
+                headers: { 'Content-Type': 'multipart/form-data' }
+            });
+            
+            if (data.placa || data.marca || data.modelo) {
+                setFormReporte(prev => ({
+                    ...prev,
+                    vehiculo_placa: data.placa || prev.vehiculo_placa,
+                    vehiculo_marca: data.marca || prev.vehiculo_marca,
+                    vehiculo_modelo: data.modelo || prev.vehiculo_modelo
+                }));
+                setIaMensaje({ type: 'success', text: 'Datos extraídos por IA' });
+                
+                if (data.placa) {
+                    buscarVehiculo(data.placa);
+                }
+            } else {
+                setIaMensaje({ type: 'warning', text: 'No se pudo leer la placa, ingrésela manualmente' });
+            }
+        } catch (error) {
+            console.error(error);
+            setIaMensaje({ type: 'warning', text: 'No se pudo leer la placa, ingrésela manualmente' });
+        } finally {
+            setIaTrabajando(false);
+        }
+    };
+
+    const buscarVehiculo = async (placaBuscada) => {
+        if (!placaBuscada || placaBuscada.length < 3) return;
+        
+        setBuscandoVehiculo(true);
+        try {
+            const { data } = await api.get(`/infracciones/buscar-vehiculo/${placaBuscada}`);
+            setVehiculoInfo(data);
+        } catch (error) {
+            console.error("Error buscando vehiculo", error);
+            setVehiculoInfo({ encontrado: false });
+        } finally {
+            setBuscandoVehiculo(false);
+        }
+    };
+
+    // Efecto para buscar cuando el usuario escribe (debounce)
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            if (formReporte.vehiculo_placa && !iaTrabajando) {
+                buscarVehiculo(formReporte.vehiculo_placa);
+            }
+        }, 600);
+        return () => clearTimeout(timer);
+    }, [formReporte.vehiculo_placa, iaTrabajando]);
+
+    const handleObtenerUbicacion = () => {
+        if (!navigator.geolocation) {
+            toast.error('Geolocalización no disponible en este dispositivo');
+            return;
+        }
+        setObteniendoGPS(true);
+        navigator.geolocation.getCurrentPosition(
+            (pos) => {
+                setFormReporte(prev => ({
+                    ...prev,
+                    latitud: parseFloat(pos.coords.latitude.toFixed(8)),
+                    longitud: parseFloat(pos.coords.longitude.toFixed(8)),
+                }));
+                setObteniendoGPS(false);
+                toast.success('Ubicación capturada');
+            },
+            () => {
+                setObteniendoGPS(false);
+                toast.error('No se pudo obtener la ubicación');
+            },
+            { enableHighAccuracy: true, timeout: 8000 }
+        );
+    };
 
     const cargarDatos = useCallback(async () => {
         setCargando(true);
@@ -257,6 +353,10 @@ export default function DashboardInfracciones() {
         // Generar previews
         const newPreviews = newFiles.map(file => URL.createObjectURL(file));
         setPreviews(newPreviews);
+        
+        if (selectedFiles.length > 0) {
+            analizarEvidencias(selectedFiles);
+        }
     };
 
     const removeFile = (index) => {
@@ -275,7 +375,13 @@ export default function DashboardInfracciones() {
         formData.append('gravedad', formReporte.gravedad);
         formData.append('descripcion', formReporte.descripcion);
         if (formReporte.vehiculo_placa) formData.append('vehiculo_placa', formReporte.vehiculo_placa);
+        if (formReporte.vehiculo_marca) formData.append('vehiculo_marca', formReporte.vehiculo_marca);
+        if (formReporte.vehiculo_modelo) formData.append('vehiculo_modelo', formReporte.vehiculo_modelo);
         if (formReporte.zona_id) formData.append('zona_id', formReporte.zona_id);
+        if (formReporte.latitud) {
+            formData.append('latitud', formReporte.latitud);
+            formData.append('longitud', formReporte.longitud);
+        }
         formData.append('bloquea_salida', formReporte.bloquea_salida);
         formData.append('bloquea_acceso_futuro', formReporte.bloquea_acceso_futuro);
         
@@ -294,12 +400,18 @@ export default function DashboardInfracciones() {
                 gravedad: 'leve',
                 descripcion: '',
                 vehiculo_placa: '',
+                vehiculo_marca: '',
+                vehiculo_modelo: '',
                 zona_id: '',
+                latitud: null,
+                longitud: null,
                 bloquea_salida: true,
                 bloquea_acceso_futuro: false
             });
             setArchivosEvidencia([]);
             setPreviews([]);
+            setIaMensaje(null);
+            setVehiculoInfo(null);
             cargarDatos();
         } catch (error) {
             toast.error("Error al enviar el reporte");
@@ -552,18 +664,87 @@ export default function DashboardInfracciones() {
                     {/* Columna Izquierda: Datos */}
                     <div className="space-y-4">
                         <div>
-                            <label className="text-[10px] font-black text-text-muted uppercase tracking-widest block mb-2">Vehículo y Ubicación</label>
+                            <div className="flex justify-between items-end mb-2">
+                                <label className="text-[10px] font-black text-text-muted uppercase tracking-widest block">Vehículo y Ubicación</label>
+                                {buscandoVehiculo && <RefreshCw size={12} className="animate-spin text-text-muted" />}
+                            </div>
                             <div className="space-y-3">
                                 <div className="relative">
                                     <Car className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted" size={16} />
                                     <input 
                                         type="text" 
                                         placeholder="PLACA DEL VEHÍCULO"
+                                        disabled={iaTrabajando}
                                         value={formReporte.vehiculo_placa}
                                         onChange={e => setFormReporte({...formReporte, vehiculo_placa: e.target.value.toUpperCase()})}
-                                        className="w-full h-11 bg-white/5 border border-white/10 rounded-xl pl-10 pr-4 text-sm font-bold text-text-main focus:border-primary/50 outline-none transition-all uppercase"
+                                        className="w-full h-11 bg-white/5 border border-white/10 rounded-xl pl-10 pr-4 text-sm font-bold text-text-main focus:border-primary/50 outline-none transition-all uppercase disabled:opacity-50"
                                     />
                                 </div>
+                                
+                                {/* Resultados de búsqueda (Responsable o Huérfano) */}
+                                {vehiculoInfo && (
+                                    <div className="animate-in fade-in slide-in-from-top-2 duration-300">
+                                        {vehiculoInfo.encontrado ? (
+                                            <div className="p-3 bg-primary/10 border border-primary/20 rounded-xl relative overflow-hidden">
+                                                <div className="absolute top-0 right-0 bg-primary/20 px-2 py-1 rounded-bl-lg">
+                                                    <span className="text-[8px] font-black text-primary tracking-widest uppercase">{vehiculoInfo.tipo}</span>
+                                                </div>
+                                                <div className="flex items-start gap-3">
+                                                    <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center shrink-0">
+                                                        <User size={20} className="text-primary" />
+                                                    </div>
+                                                    <div>
+                                                        <p className="text-xs font-black text-text-main uppercase tracking-wider">
+                                                            {vehiculoInfo.responsable.nombre} {vehiculoInfo.responsable.apellido}
+                                                        </p>
+                                                        <p className="text-[10px] text-primary/80 font-bold uppercase mb-2">
+                                                            Rol: {vehiculoInfo.responsable.rol}
+                                                        </p>
+                                                        {vehiculoInfo.responsable.telefono && (
+                                                            <a href={`tel:${vehiculoInfo.responsable.telefono}`} className="inline-flex items-center gap-1.5 bg-success/15 hover:bg-success/25 text-success px-2.5 py-1 rounded-md transition-colors">
+                                                                <Phone size={12} />
+                                                                <span className="text-[10px] font-black uppercase">Llamar Rápido</span>
+                                                            </a>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        ) : (
+                                            <div className="p-3 bg-warning/10 border border-warning/20 rounded-xl">
+                                                <div className="flex items-center gap-2 mb-2">
+                                                    <AlertTriangle size={14} className="text-warning" />
+                                                    <span className="text-[10px] font-black text-warning uppercase tracking-widest">Vehículo Desconocido</span>
+                                                </div>
+                                                <p className="text-[10px] text-text-muted mb-3">
+                                                    Será registrado como vehículo huérfano.
+                                                </p>
+                                                <div className="grid grid-cols-2 gap-2">
+                                                    <div>
+                                                        <label className="text-[8px] font-bold text-white/40 uppercase mb-1 block">Marca (IA)</label>
+                                                        <input 
+                                                            value={formReporte.vehiculo_marca}
+                                                            onChange={e => setFormReporte({...formReporte, vehiculo_marca: e.target.value.toUpperCase()})}
+                                                            disabled={iaTrabajando}
+                                                            placeholder="Ej: TOYOTA"
+                                                            className="w-full bg-black/20 border border-white/5 rounded-lg px-2 py-1.5 text-xs text-text-main focus:border-warning/50 outline-none uppercase disabled:opacity-50"
+                                                        />
+                                                    </div>
+                                                    <div>
+                                                        <label className="text-[8px] font-bold text-white/40 uppercase mb-1 block">Modelo (IA)</label>
+                                                        <input 
+                                                            value={formReporte.vehiculo_modelo}
+                                                            onChange={e => setFormReporte({...formReporte, vehiculo_modelo: e.target.value.toUpperCase()})}
+                                                            disabled={iaTrabajando}
+                                                            placeholder="Ej: COROLLA"
+                                                            className="w-full bg-black/20 border border-white/5 rounded-lg px-2 py-1.5 text-xs text-text-main focus:border-warning/50 outline-none uppercase disabled:opacity-50"
+                                                        />
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
+
                                 <select 
                                     className="w-full h-11 bg-white/5 border border-white/10 rounded-xl px-4 text-sm font-bold text-text-main focus:border-primary/50 outline-none"
                                     value={formReporte.zona_id}
@@ -639,16 +820,57 @@ export default function DashboardInfracciones() {
                                     </div>
                                 ))}
                                 {previews.length < 3 && (
-                                    <label className="aspect-square rounded-xl border-2 border-dashed border-white/10 flex flex-col items-center justify-center gap-2 hover:bg-white/5 hover:border-primary/50 cursor-pointer transition-all">
-                                        <Upload size={18} className="text-text-muted" />
-                                        <span className="text-[8px] font-black text-text-muted uppercase">Subir</span>
-                                        <input type="file" multiple accept="image/*" onChange={handleFileChange} className="hidden" />
+                                    <label className={cn(
+                                        "aspect-square rounded-xl border-2 border-dashed flex flex-col items-center justify-center gap-2 transition-all cursor-pointer",
+                                        iaTrabajando ? "border-primary/50 bg-primary/5" : "border-white/10 hover:bg-white/5 hover:border-primary/50"
+                                    )}>
+                                        {iaTrabajando ? (
+                                            <RefreshCw size={18} className="text-primary animate-spin" />
+                                        ) : (
+                                            <Upload size={18} className="text-text-muted" />
+                                        )}
+                                        <span className="text-[8px] font-black text-text-muted uppercase text-center leading-tight px-1">
+                                            {iaTrabajando ? 'Analizando IA...' : 'Subir'}
+                                        </span>
+                                        <input type="file" multiple accept="image/*" onChange={handleFileChange} disabled={iaTrabajando} className="hidden" />
                                     </label>
                                 )}
                             </div>
+                            
+                            {iaMensaje && (
+                                <p className={cn("text-[9px] mb-3 flex items-center gap-1", 
+                                    iaMensaje.type === 'success' ? 'text-success' : 
+                                    iaMensaje.type === 'warning' ? 'text-warning' : 'text-primary'
+                                )}>
+                                    {iaMensaje.type === 'success' ? <CheckCircle2 size={11} /> : iaMensaje.type === 'warning' ? <AlertTriangle size={11} /> : <Info size={11} />}
+                                    {iaMensaje.text}
+                                </p>
+                            )}
+
+                            <div className="p-3 bg-white/5 rounded-xl border border-white/5 mb-3">
+                                <div className="flex items-center justify-between">
+                                    <div className="flex items-center gap-2">
+                                        <MapPin size={12} className={formReporte.latitud ? 'text-success' : 'text-text-muted/60'} />
+                                        <span className="text-[9px] font-black uppercase tracking-wider text-text-muted">GPS</span>
+                                    </div>
+                                    <button
+                                        onClick={handleObtenerUbicacion}
+                                        disabled={obteniendoGPS}
+                                        className={cn(
+                                            "h-6 px-2 rounded flex items-center gap-1 text-[8px] font-black uppercase transition-all",
+                                            formReporte.latitud ? "bg-success/20 text-success" : "bg-primary/20 text-primary hover:bg-primary/30"
+                                        )}
+                                    >
+                                        {obteniendoGPS ? <RefreshCw size={10} className="animate-spin" /> :
+                                            formReporte.latitud ? <><CheckCircle2 size={10} /> OK</> : <><MapPin size={10} /> Capturar</>
+                                        }
+                                    </button>
+                                </div>
+                            </div>
+
                             <div className="p-3 bg-primary/5 rounded-xl border border-primary/10 flex gap-2">
                                 <Info size={14} className="text-primary shrink-0" />
-                                <p className="text-[9px] text-text-muted leading-tight">Las fotos serán almacenadas en el bucket de seguridad y vinculadas al registro del vehículo.</p>
+                                <p className="text-[9px] text-text-muted leading-tight">Las fotos serán analizadas por IA para extraer datos automáticamente.</p>
                             </div>
                         </div>
 
@@ -678,8 +900,8 @@ export default function DashboardInfracciones() {
 
                         <Boton 
                             onClick={handleEnviarReporte}
-                            disabled={enviandoReporte}
-                            className="w-full h-12 bg-primary text-bg-app font-black uppercase tracking-widest shadow-tactica"
+                            disabled={enviandoReporte || iaTrabajando}
+                            className="w-full h-12 bg-primary text-bg-app font-black uppercase tracking-widest shadow-tactica disabled:opacity-50"
                         >
                             {enviandoReporte ? <RefreshCw size={20} className="animate-spin" /> : <><Shield size={18} /> Registrar Infracción</>}
                         </Boton>

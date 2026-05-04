@@ -6,7 +6,7 @@ import axios from 'axios';
 // Axios Instance Configuration
 const getBaseURL = () => {
   // 1. Obtener URL desde variables de entorno o fallback seguro
-  let url = import.meta.env.VITE_API_URL || 'https://bagfm-backend-production.up.railway.app/api/v1';
+  let url = import.meta.env.VITE_API_URL || 'https://api.bagfm.app/api/v1';
   
   // 2. Normalización básica
   url = url.trim();
