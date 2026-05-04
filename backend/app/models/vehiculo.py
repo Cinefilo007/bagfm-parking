@@ -21,7 +21,7 @@ class Vehiculo(Base):
     año = Column(Integer, nullable=True)
     tipo = Column(String(50), nullable=True) # sedan, suv, moto...
     
-    socio_id = Column(UUID(as_uuid=True), ForeignKey("usuarios.id", ondelete="RESTRICT"), nullable=False)
+    socio_id = Column(UUID(as_uuid=True), ForeignKey("usuarios.id", ondelete="RESTRICT"), nullable=True)
     
     activo = Column(Boolean, default=True, nullable=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)

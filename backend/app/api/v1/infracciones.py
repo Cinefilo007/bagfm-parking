@@ -11,6 +11,7 @@ from app.core.database import obtener_db
 from app.core.dependencias import obtener_usuario_actual, require_rol
 from app.schemas.infraccion import InfraccionCrear, InfraccionSalida, InfraccionResolver
 from app.services.infraccion_service import infraccion_service
+from app.services.ai_vision_service import ai_vision_service
 
 router = APIRouter()
 
@@ -60,51 +61,151 @@ async def listar_infracciones_activas(
     """
     return await infraccion_service.obtener_activas(db)
 
+@router.post("/analizar-evidencias", status_code=status.HTTP_200_OK)
+async def analizar_evidencias_endpoint(
+    archivos: List[UploadFile] = File(...),
+    usuario_actual: Usuario = DEPENDENCY_SUPERVISOR
+):
+    """
+    Envía hasta 3 fotos al servicio de IA (Gemini) para extraer placa, marca y modelo.
+    """
+    files_data = []
+    mime_types = []
+    for f in archivos[:3]:
+        data = await f.read()
+        if data:
+            files_data.append(data)
+            mime_types.append(f.content_type)
+    
+    resultado = await ai_vision_service.analizar_evidencias_vehiculo(files_data, mime_types)
+    return resultado
+
+@router.get("/buscar-vehiculo/{placa}")
+async def buscar_vehiculo_endpoint(
+    placa: str,
+    db: AsyncSession = Depends(obtener_db),
+    usuario_actual: Usuario = DEPENDENCY_SUPERVISOR
+):
+    """
+    Busca un vehículo por placa en socios permanentes y pases temporales.
+    """
+    from app.models.vehiculo import Vehiculo
+    from app.models.codigo_qr import CodigoQR
+    from sqlalchemy.orm import selectinload
+    
+    placa_upper = placa.upper().strip()
+    
+    # 1. Buscar en socios permanentes
+    stmt = select(Vehiculo).options(selectinload(Vehiculo.propietario)).where(Vehiculo.placa == placa_upper)
+    res = await db.execute(stmt)
+    veh_perm = res.scalar_one_or_none()
+    
+    if veh_perm and veh_perm.propietario:
+        return {
+            "encontrado": True,
+            "tipo": "PERMANENTE",
+            "placa": veh_perm.placa,
+            "marca": veh_perm.marca,
+            "modelo": veh_perm.modelo,
+            "responsable": {
+                "nombre": veh_perm.propietario.nombre,
+                "apellido": veh_perm.propietario.apellido,
+                "telefono": veh_perm.propietario.telefono,
+                "rol": veh_perm.propietario.rol.name
+            }
+        }
+        
+    # 2. Buscar en pases temporales (codigos_qr)
+    stmt_qr = select(CodigoQR).where(CodigoQR.vehiculo_placa == placa_upper).order_by(CodigoQR.created_at.desc())
+    res_qr = await db.execute(stmt_qr)
+    qr_temp = res_qr.scalar_one_or_none() # Tomar el más reciente
+    
+    if qr_temp:
+        return {
+            "encontrado": True,
+            "tipo": "TEMPORAL",
+            "placa": qr_temp.vehiculo_placa,
+            "marca": qr_temp.vehiculo_marca,
+            "modelo": qr_temp.vehiculo_modelo,
+            "responsable": {
+                "nombre": qr_temp.nombre_portador or "Desconocido",
+                "apellido": "",
+                "telefono": qr_temp.telefono_portador,
+                "rol": "VISITANTE_TEMPORAL"
+            }
+        }
+        
+    return {"encontrado": False}
+
 @router.post("", response_model=InfraccionSalida, status_code=status.HTTP_201_CREATED)
 async def registrar_infraccion(
     tipo: InfraccionTipo = Form(...),
     gravedad: GravedadInfraccion = Form(GravedadInfraccion.leve),
     descripcion: str = Form(...),
     vehiculo_placa: Optional[str] = Form(None),
+    vehiculo_marca: Optional[str] = Form(None),
+    vehiculo_modelo: Optional[str] = Form(None),
     zona_id: Optional[UUID] = Form(None),
     bloquea_salida: bool = Form(True),
     bloquea_acceso_futuro: bool = Form(False),
+    latitud: Optional[float] = Form(None),
+    longitud: Optional[float] = Form(None),
     archivos: List[UploadFile] = File(None),
     db: AsyncSession = Depends(obtener_db),
     usuario_actual: Usuario = DEPENDENCY_SUPERVISOR
 ):
     """
-    Registra una nueva infracción con soporte para evidencias fotográficas.
+    Registra una nueva infracción con soporte para evidencias fotográficas y GPS.
+    Si el vehículo no existe, lo crea como "huérfano".
     """
     # 1. Subir archivos si existen
     urls_evidencia = []
     if archivos:
-        # Filtrar solo archivos con contenido
         files_to_upload = [f for f in archivos if f.size > 0]
         if files_to_upload:
             from app.services.storage_service import storage_service
-            urls_evidencia = await storage_service.subir_multiples_evidencias(files_to_upload[:3]) # Max 3
+            urls_evidencia = await storage_service.subir_multiples_evidencias(files_to_upload[:3])
 
-    # 2. Buscar vehiculo por placa si se proporcionó
+    # 2. Buscar o crear vehiculo por placa
     vehiculo_id = None
+    vehiculo_obj = None
     if vehiculo_placa:
         from app.models.vehiculo import Vehiculo
-        stmt = select(Vehiculo).where(Vehiculo.placa == vehiculo_placa.upper())
+        placa_upper = vehiculo_placa.upper().strip()
+        stmt = select(Vehiculo).where(Vehiculo.placa == placa_upper)
         res = await db.execute(stmt)
-        vehiculo = res.scalar_one_or_none()
-        if vehiculo:
-            vehiculo_id = vehiculo.id
+        vehiculo_obj = res.scalar_one_or_none()
+        
+        if vehiculo_obj:
+            vehiculo_id = vehiculo_obj.id
+        else:
+            # Crear vehículo huérfano
+            nuevo_veh = Vehiculo(
+                placa=placa_upper,
+                marca=vehiculo_marca or "DESCONOCIDA",
+                modelo=vehiculo_modelo or "DESCONOCIDO",
+                color="DESCONOCIDO",
+                socio_id=None,
+                activo=True
+            )
+            db.add(nuevo_veh)
+            await db.flush()
+            vehiculo_id = nuevo_veh.id
+            vehiculo_obj = nuevo_veh
 
-    # 3. Mapear a objeto Crear (o pasar directamente al service)
+    # 3. Mapear a objeto Crear
     datos_dict = {
         "tipo": tipo,
         "gravedad": gravedad,
         "descripcion": descripcion,
         "vehiculo_id": vehiculo_id,
+        "usuario_id": vehiculo_obj.socio_id if vehiculo_obj else None,
         "zona_id": zona_id,
         "bloquea_salida": bloquea_salida,
         "bloquea_acceso_futuro": bloquea_acceso_futuro,
-        "fotos_evidencia": urls_evidencia
+        "fotos_evidencia": urls_evidencia,
+        "latitud_infraccion": latitud,
+        "longitud_infraccion": longitud
     }
     
     from app.schemas.infraccion import InfraccionCrear
@@ -112,7 +213,8 @@ async def registrar_infraccion(
     
     resultado = await infraccion_service.registrar(db, datos, usuario_actual.id)
     
-    if vehiculo_id and vehiculo and vehiculo.socio_id:
+    # Notificar si hay un dueño asociado
+    if vehiculo_obj and vehiculo_obj.socio_id:
         from app.services.notificacion_service import notificacion_service
         try:
             await notificacion_service.notificar_infraccion_socio(
