@@ -210,6 +210,7 @@ class ParqueroService:
         if vehiculo_pase:
             vehiculo_pase.ingresado = True
             vehiculo_pase.hora_ingreso = datetime.now(timezone.utc)
+            vehiculo_pase.hora_salida = None  # Limpiar salida previa — evita evento fantasma en historial
             
             # Incrementar ocupación
             await self._actualizar_ocupacion_zona(db, zona_id, 1)
@@ -468,32 +469,38 @@ class ParqueroService:
         self, db: AsyncSession, zona_id: UUID, limite: int = 100, skip: int = 0
     ) -> List[Dict[str, Any]]:
         """
+        SOP: Historial de Zona (Aegis v2.4).
         Retorna el historial temporal de vehículos de la zona.
         Combina:
-        - Accesos de la alcabala que tenían como destino esta zona
+        - Accesos de alcabala con destino confirmado a esta zona (Acceso.zona_id == zona_id).
+          Usa el campo persistido en el momento del acceso, NO el QR actual.
+          Garantiza estabilidad histórica: si la zona del socio cambia, los accesos
+          anteriores NO se mueven al historial de la nueva zona.
         - VehiculoPase (ingresó zona / salió zona)
-        Ordena por timestamp desc.
-        Paginación: Como combinamos dos fuentes, buscamos limite + skip en ambas, 
-        mezclamos y cortamos.
+        Ordena por timestamp desc. Paginación sobre lista combinada.
         """
         eventos = []
         fetch_limit = limite + skip
 
-        # --- Accesos de alcabala (entrada base con zona destino) ---
+        # --- Accesos de alcabala usando zona_id persistido en el acceso ---
+        # Filtro directo por Acceso.zona_id: estable e independiente del QR actual.
+        # Fallback: si el acceso no tiene zona_id (registros previos a v2.4), usar join con QR.
         res_accesos = await db.execute(
-            select(Acceso, CodigoQR)
-            .outerjoin(CodigoQR, Acceso.qr_id == CodigoQR.id)
+            select(Acceso)
             .where(
-                CodigoQR.zona_asignada_id == zona_id,
+                Acceso.zona_id == zona_id,
                 Acceso.tipo == AccesoTipo.entrada
             )
             .order_by(Acceso.timestamp.desc())
             .limit(fetch_limit)
         )
-        for acceso, qr in res_accesos.all():
-            placa = None
-            if qr and qr.vehiculo_placa:
-                placa = qr.vehiculo_placa
+        for acceso in res_accesos.scalars().all():
+            # Intentar resolver la placa: primero desde el acceso, luego desde el QR
+            placa = acceso.vehiculo_placa
+            if not placa and acceso.qr_id:
+                qr = await db.get(CodigoQR, acceso.qr_id)
+                if qr:
+                    placa = qr.vehiculo_placa
             eventos.append({
                 "tipo": "alcabala",
                 "placa": placa,
@@ -516,18 +523,18 @@ class ParqueroService:
             eventos.append({
                 "tipo": "ingreso_zona",
                 "placa": vp.placa,
-                "descripcion": f"Ingresó a zona",
+                "descripcion": "Ingresó a zona",
                 "timestamp": vp.hora_ingreso.isoformat() if vp.hora_ingreso else None,
                 "puesto_asignado_id": str(vp.puesto_asignado_id) if vp.puesto_asignado_id else None,
                 "activo": vp.ingresado,
             })
             
-            # Si ya salió, añadir evento de salida
+            # Solo agregar evento de salida si el vehículo ya salió
             if vp.hora_salida:
                 eventos.append({
                     "tipo": "salida_zona",
                     "placa": vp.placa,
-                    "descripcion": f"Salió de zona",
+                    "descripcion": "Salió de zona",
                     "timestamp": vp.hora_salida.isoformat(),
                     "activo": False,
                 })

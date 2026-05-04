@@ -42,7 +42,13 @@ class Acceso(Base):
     vehiculo_color = Column(String(50), nullable=True)
 
     observaciones = Column(String(500), nullable=True) # Destino declarado / Motivo excepción
-    es_excepcion = Column(Boolean, default=False, nullable=False) # Flag para alertas tácticas
+    es_excepcion = Column(Boolean, default=False, nullable=False)
+    
+    # Zona de destino del acceso — persistida en el momento del registro.
+    # Para socios permanentes: resuelta desde membresia.zona_id o asignaciones_zona.
+    # Para pases masivos: resuelta desde codigos_qr.zona_asignada_id o lote.zona_estacionamiento_id.
+    # Permite filtrar historial de parquero por zona de forma estable (no depende del QR actual).
+    zona_id = Column(UUID(as_uuid=True), ForeignKey("zonas_estacionamiento.id", ondelete="SET NULL"), nullable=True, index=True) # Flag para alertas tácticas
 
     # Relaciones
 

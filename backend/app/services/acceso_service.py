@@ -15,6 +15,7 @@ from app.models.codigo_qr import CodigoQR
 from app.models.entidad_civil import EntidadCivil
 from app.models.vehiculo_pase import VehiculoPase
 from app.models.alcabala_evento import LotePaseMasivo
+from app.models.asignacion_zona import AsignacionZona
 from app.models.zona_estacionamiento import ZonaEstacionamiento
 from app.models.puesto_estacionamiento import PuestoEstacionamiento
 from app.models.enums import AccesoTipo, MembresiaEstado, InfraccionEstado, QRTipo, TipoAccesoPase, RolTipo
@@ -342,6 +343,37 @@ class AccesoService:
             except Exception as e_cupo:
                 print(f"[CUPO] Error verificando cupo de {socio.id}: {e_cupo}")
 
+            # 5.g Resolver zona de destino para socio permanente
+            # Prioridad: membresia.zona_id (override) → zona única de la entidad (automático)
+            zona_id_socio = membresia.zona_id if membresia else None
+            zona_nombre_socio = None
+            mensaje_zona = None
+
+            if not zona_id_socio and socio.entidad_id:
+                # Buscar asignaciones activas de la entidad
+                res_asig = await db.execute(
+                    select(AsignacionZona)
+                    .where(
+                        AsignacionZona.entidad_id == socio.entidad_id,
+                        AsignacionZona.activa == True
+                    )
+                )
+                asignaciones = res_asig.scalars().all()
+
+                if len(asignaciones) == 1:
+                    # Una sola zona → asignación automática
+                    zona_id_socio = asignaciones[0].zona_id
+                    zona_nombre_socio = asignaciones[0].zona_nombre
+                elif len(asignaciones) > 1:
+                    # Múltiples zonas → requiere asignación explícita en membresía
+                    mensaje_zona = "Entidad con múltiples zonas. Contacte al administrador para asignar zona al socio."
+
+            # Resolver nombre de zona si tenemos el ID pero no el nombre
+            if zona_id_socio and not zona_nombre_socio:
+                z_db = await db.get(ZonaEstacionamiento, zona_id_socio)
+                if z_db:
+                    zona_nombre_socio = z_db.nombre
+
             return ResultadoValidacion(
                 permitido = not bloqueado,
                 mensaje = msg_bloqueo if bloqueado else "Validación Exitosa",
@@ -364,7 +396,10 @@ class AccesoService:
                 } if membresia else None,
                 ultima_entrada = ultima_entrada.timestamp if ultima_entrada else None,
                 alerta_cupo = estado_cupo["bloqueado"],
-                cupo_info = estado_cupo
+                cupo_info = estado_cupo,
+                zona_asignada_id = zona_id_socio,
+                zona_nombre = zona_nombre_socio,
+                mensaje_adicional = mensaje_zona
             )
 
         except Exception as e:
@@ -490,7 +525,44 @@ class AccesoService:
                     db.add(salida_auto)
                     await db.flush() 
 
-        # 3. Persistir Acceso
+        # 3. Resolver zona de destino para persistir en el registro de acceso
+        # Para pases masivos: desde QR o lote. Para socios permanentes: desde membresía o entidad.
+        zona_id_acceso = None
+        if datos.qr_id:
+            qr_para_zona = await db.get(CodigoQR, datos.qr_id)
+            if qr_para_zona:
+                zona_id_acceso = qr_para_zona.zona_asignada_id
+                if not zona_id_acceso and qr_para_zona.lote_id:
+                    lote_para_zona = await db.get(LotePaseMasivo, qr_para_zona.lote_id)
+                    if lote_para_zona:
+                        zona_id_acceso = lote_para_zona.zona_estacionamiento_id
+
+        # Si aún no tenemos zona y tenemos usuario (socio permanente), buscar en membresía/entidad
+        if not zona_id_acceso and final_usuario_id:
+            res_mem_zona = await db.execute(
+                select(Membresia)
+                .where(Membresia.socio_id == final_usuario_id)
+                .order_by(Membresia.updated_at.desc())
+            )
+            mem_zona = res_mem_zona.scalars().first()
+            if mem_zona and mem_zona.zona_id:
+                zona_id_acceso = mem_zona.zona_id
+            elif mem_zona:
+                # Fallback: zona única de la entidad del socio
+                res_usr_zona = await db.get(Usuario, final_usuario_id)
+                if res_usr_zona and res_usr_zona.entidad_id:
+                    res_asig_zona = await db.execute(
+                        select(AsignacionZona)
+                        .where(
+                            AsignacionZona.entidad_id == res_usr_zona.entidad_id,
+                            AsignacionZona.activa == True
+                        )
+                    )
+                    asig_list = res_asig_zona.scalars().all()
+                    if len(asig_list) == 1:
+                        zona_id_acceso = asig_list[0].zona_id
+
+        # 4. Persistir Acceso
         nuevo_acceso = Acceso(
             qr_id = datos.qr_id,
             usuario_id = final_usuario_id,
@@ -500,7 +572,7 @@ class AccesoService:
             punto_acceso = datos.punto_acceso,
             registrado_por = registrado_por_id,
             es_manual = datos.es_manual,
-            # Nuevos campos de Aegis Tactical v2.2 (Vehículos Fantasma)
+            # Campos de trazabilidad de contingencia (Aegis Tactical v2.2)
             nombre_manual = datos.nombre_manual,
             cedula_manual = datos.cedula_manual,
             telefono_manual = datos.telefono_manual,
@@ -509,7 +581,9 @@ class AccesoService:
             vehiculo_modelo = datos.vehiculo_modelo,
             vehiculo_color = datos.vehiculo_color,
             observaciones = datos.observaciones,
-            es_excepcion = datos.es_excepcion
+            es_excepcion = datos.es_excepcion,
+            # Zona de destino persistida en el momento del acceso
+            zona_id = zona_id_acceso
         )
         db.add(nuevo_acceso)
 

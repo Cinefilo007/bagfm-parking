@@ -200,6 +200,8 @@
 | `entidad_id` | UUID | FK → entidades |
 | `vehiculo_id` | UUID | FK → vehiculos, NULL |
 | `cupo_numero` | INTEGER | NULL |
+| `puestos_asignados` | INTEGER | DEFAULT 1 |
+| `zona_id` | UUID | FK → zonas, NULL | **v2.4**: Override de zona por socio. NULL = resuelve automáticamente desde entidad |
 | `estado` | ENUM `membresia_estado` | NOT NULL |
 | `fecha_inicio` | DATE | NOT NULL |
 | `fecha_fin` | DATE | NULL |
@@ -257,6 +259,7 @@
 | `registrado_por` | UUID | FK → usuarios |
 | `es_manual` | BOOLEAN | DEFAULT false |
 | `timestamp` | TIMESTAMPTZ | DEFAULT now() |
+| `zona_id` | UUID | FK → zonas, NULL | **v2.4**: Zona de destino persistida al momento del acceso. Permite historial estable por zona. |
 
 ---
 
@@ -563,6 +566,7 @@ CREATE INDEX idx_qr_fantasma ON codigos_qr(hora_entrada_base) WHERE hora_entrada
 | 0.6.1 | 2026-04-03 | Geoposicionamiento |
 | 0.7.0 | 2026-04-05 | Alcabalas fijas |
 | 2.0.0 | 2026-04-18 | **Evolución v2.0** completa |
+| 2.4.0 | 2026-05-04 | **Zona socio permanente**: `membresias.zona_id` (override por socio), `accesos.zona_id` (destino persistido). Resuelve historial del parquero y asignación de zona al socio permanente en alcabala. |
 
 ### Detalle v2.0:
 - **8 tablas nuevas**: `tipos_acceso_custom`, `puestos_estacionamiento`, `asignaciones_zona`, `incentivos_parquero`, `sanciones_parquero`, `plantillas_carnet`, `mensajes_broadcast`, `vehiculos_pase`

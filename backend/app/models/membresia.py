@@ -24,6 +24,11 @@ class Membresia(Base):
     # Puestos de estacionamiento simultáneos asignados a este socio
     puestos_asignados = Column(Integer, nullable=False, default=1, server_default="1")
     
+    # Zona de estacionamiento asignada a este socio específicamente (override).
+    # Si es NULL, el sistema resuelve la zona de la entidad automáticamente.
+    # Si la entidad tiene solo 1 zona activa → se usa esa. Si tiene varias → requiere asignación explícita.
+    zona_id = Column(UUID(as_uuid=True), ForeignKey("zonas_estacionamiento.id", ondelete="SET NULL"), nullable=True)
+    
     estado = Column(SQLEnum(MembresiaEstado, name="membresia_estado", native_enum=True), nullable=False)
     
     fecha_inicio = Column(Date, nullable=False)
