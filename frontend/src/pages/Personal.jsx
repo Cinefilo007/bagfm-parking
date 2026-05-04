@@ -201,7 +201,7 @@ const ModalGestion = ({ miembro, isOpen, onClose, zonas, onUpdate, userActual })
   const estilos = getRolStyles(miembro.rol);
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title={`${miembro.nombre} ${miembro.apellido}`}>
+    <Modal isOpen={isOpen} onClose={onClose} title={`${miembro.nombre} ${miembro.apellido}`} className="sm:max-w-2xl">
       {/* Header del operativo */}
       <div className="flex items-center gap-3 p-3 bg-bg-card/60 rounded-xl border border-white/5 mb-4">
         <div className={cn('w-12 h-12 rounded-xl flex items-center justify-center border shrink-0', estilos.avatar)}>
@@ -244,7 +244,7 @@ const ModalGestion = ({ miembro, isOpen, onClose, zonas, onUpdate, userActual })
           {/* ── TAB KPIs ── */}
           {tab === 'kpis' && (
             <div className="space-y-3">
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                 <div className="bg-white/5 rounded-xl p-3 border border-white/5">
                   <span className="text-[8px] font-black text-text-muted uppercase tracking-widest block mb-1">Días Operativo</span>
                   <span className="text-2xl font-black text-primary">{details.kpis?.dias_activo || 0}</span>
@@ -322,23 +322,31 @@ const ModalGestion = ({ miembro, isOpen, onClose, zonas, onUpdate, userActual })
           {/* ── TAB INCENTIVOS ── */}
           {tab === 'incentivos' && (
             <div className="space-y-4">
-              <div className="bg-white/5 border border-amber-400/10 p-3 rounded-2xl">
-                <div className="flex items-center gap-2 px-1 mb-2">
-                  <PlusCircle size={12} className="text-amber-400" />
-                  <span className="text-[9px] font-black text-text-muted uppercase tracking-widest">Añadir Reconocimiento</span>
+              <div className="bg-white/5 border border-amber-400/10 p-4 rounded-2xl">
+                <div className="flex items-center gap-2 mb-3">
+                  <PlusCircle size={14} className="text-amber-400" />
+                  <span className="text-[10px] font-black text-text-muted uppercase tracking-widest">Añadir Reconocimiento</span>
                 </div>
-                <form onSubmit={handleInc} className="flex flex-col md:flex-row items-end gap-3">
-                  <select className="w-full md:w-48 h-10 bg-bg-card border border-white/10 rounded-xl px-3 text-xs font-bold text-text-main focus:ring-1 focus:ring-amber-400 outline-none"
-                    required value={formInc.tipo} onChange={e => setFormInc({ ...formInc, tipo: e.target.value })}>
-                    <option value="">SELECCIONAR...</option>
-                    {TIPOS_INCENTIVO.map(t => <option key={t.valor} value={t.valor}>{t.etiqueta}</option>)}
-                  </select>
-                  <input className="flex-1 h-10 bg-bg-card border border-white/10 rounded-xl px-3 text-xs font-bold text-text-main outline-none focus:ring-1 focus:ring-amber-400 w-full"
-                    required placeholder="Descripción del mérito..." value={formInc.descripcion} onChange={e => setFormInc({ ...formInc, descripcion: e.target.value })} />
-                  <Boton type="submit" isLoading={guardandoAction} className="h-10 px-5 bg-amber-400 text-bg-app hover:bg-amber-500 text-[10px] font-black uppercase w-full md:w-auto">Registrar</Boton>
+                <form onSubmit={handleInc} className="grid grid-cols-1 sm:grid-cols-12 gap-3 items-start">
+                  <div className="sm:col-span-4">
+                    <label className="text-[8px] font-black text-text-muted uppercase tracking-widest px-1 block mb-1">Tipo de Incentivo</label>
+                    <select className="w-full h-10 bg-bg-card border border-white/10 rounded-xl px-3 text-xs font-bold text-text-main focus:ring-1 focus:ring-amber-400 outline-none"
+                      required value={formInc.tipo} onChange={e => setFormInc({ ...formInc, tipo: e.target.value })}>
+                      <option value="">SELECCIONAR...</option>
+                      {TIPOS_INCENTIVO.map(t => <option key={t.valor} value={t.valor}>{t.etiqueta}</option>)}
+                    </select>
+                  </div>
+                  <div className="sm:col-span-6">
+                    <label className="text-[8px] font-black text-text-muted uppercase tracking-widest px-1 block mb-1">Descripción del mérito</label>
+                    <input className="w-full h-10 bg-bg-card border border-white/10 rounded-xl px-3 text-xs font-bold text-text-main outline-none focus:ring-1 focus:ring-amber-400"
+                      required placeholder="Ej: Excelente manejo de flujo..." value={formInc.descripcion} onChange={e => setFormInc({ ...formInc, descripcion: e.target.value })} />
+                  </div>
+                  <div className="sm:col-span-2 sm:pt-4">
+                    <Boton type="submit" isLoading={guardandoAction} className="h-10 w-full bg-amber-400 text-bg-app hover:bg-amber-500 text-[10px] font-black uppercase tracking-widest mt-[5px]">Registrar</Boton>
+                  </div>
                 </form>
               </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                 {details.incentivos.length === 0
                   ? <div className="col-span-full py-8 text-center border border-dashed border-white/5 rounded-xl"><p className="text-[9px] text-text-muted italic uppercase opacity-30">Sin registros</p></div>
                   : details.incentivos.map(inc => {
@@ -360,31 +368,37 @@ const ModalGestion = ({ miembro, isOpen, onClose, zonas, onUpdate, userActual })
           {/* ── TAB SANCIONES ── */}
           {tab === 'sanciones' && (
             <div className="space-y-4">
-              <div className="bg-white/5 border border-danger/10 p-3 rounded-2xl">
-                <div className="flex items-center gap-2 px-1 mb-2">
-                  <ShieldAlert size={12} className="text-danger" />
-                  <span className="text-[9px] font-black text-text-muted uppercase tracking-widest">Aplicar Medida Disciplinaria</span>
+              <div className="bg-white/5 border border-danger/10 p-4 rounded-2xl">
+                <div className="flex items-center gap-2 mb-3">
+                  <ShieldAlert size={14} className="text-danger" />
+                  <span className="text-[10px] font-black text-text-muted uppercase tracking-widest">Aplicar Medida Disciplinaria</span>
                 </div>
-                <form onSubmit={handleSanc} className="flex flex-col md:flex-row items-end gap-3">
-                  <select className="w-full md:w-48 h-10 bg-bg-card border border-white/10 rounded-xl px-3 text-xs font-bold text-text-main focus:ring-1 focus:ring-danger outline-none"
-                    required value={formSanc.tipo} onChange={e => setFormSanc({ ...formSanc, tipo: e.target.value })}>
-                    <option value="">SELECCIONAR...</option>
-                    {TIPOS_SANCION.map(t => <option key={t.valor} value={t.valor}>{t.etiqueta}</option>)}
-                  </select>
-                  <input className="flex-1 h-10 bg-bg-card border border-white/10 rounded-xl px-3 text-xs font-bold text-text-main outline-none focus:ring-1 focus:ring-danger w-full"
-                    required placeholder="Motivo de la sanción..." value={formSanc.motivo} onChange={e => setFormSanc({ ...formSanc, motivo: e.target.value })} />
-                  <div className="flex items-center gap-3 w-full md:w-auto">
-                    {formSanc.tipo === 'relevo_inmediato' && (
-                      <label className="flex items-center gap-2 p-2 bg-danger/10 border border-danger/20 rounded-lg cursor-pointer shrink-0">
+                <form onSubmit={handleSanc} className="grid grid-cols-1 sm:grid-cols-12 gap-3 items-start">
+                  <div className="sm:col-span-4">
+                    <label className="text-[8px] font-black text-text-muted uppercase tracking-widest px-1 block mb-1">Tipo de Falta</label>
+                    <select className="w-full h-10 bg-bg-card border border-white/10 rounded-xl px-3 text-xs font-bold text-text-main focus:ring-1 focus:ring-danger outline-none"
+                      required value={formSanc.tipo} onChange={e => setFormSanc({ ...formSanc, tipo: e.target.value })}>
+                      <option value="">SELECCIONAR...</option>
+                      {TIPOS_SANCION.map(t => <option key={t.valor} value={t.valor}>{t.etiqueta}</option>)}
+                    </select>
+                  </div>
+                  <div className="sm:col-span-6">
+                    <label className="text-[8px] font-black text-text-muted uppercase tracking-widest px-1 block mb-1">Motivo detallado</label>
+                    <input className="w-full h-10 bg-bg-card border border-white/10 rounded-xl px-3 text-xs font-bold text-text-main outline-none focus:ring-1 focus:ring-danger"
+                      required placeholder="Especifique la infracción..." value={formSanc.motivo} onChange={e => setFormSanc({ ...formSanc, motivo: e.target.value })} />
+                  </div>
+                  <div className="sm:col-span-12 flex items-center justify-between mt-2 pt-2 border-t border-white/5">
+                    {formSanc.tipo === 'relevo_inmediato' ? (
+                      <label className="flex items-center gap-2 p-2 bg-danger/10 border border-danger/20 rounded-lg cursor-pointer">
                         <input type="checkbox" className="accent-danger" checked={formSanc.ejecutar_inmediato} onChange={e => setFormSanc({ ...formSanc, ejecutar_inmediato: e.target.checked })} />
-                        <span className="text-[8px] font-black text-danger uppercase">Ejecutar Cierre</span>
+                        <span className="text-[8px] font-black text-danger uppercase">Ejecutar Cierre Automático</span>
                       </label>
-                    )}
-                    <Boton type="submit" isLoading={guardandoAction} className="h-10 px-5 bg-danger text-white hover:bg-red-600 text-[10px] font-black uppercase w-full">Sancionar</Boton>
+                    ) : <div />}
+                    <Boton type="submit" isLoading={guardandoAction} className="h-10 px-6 bg-danger text-white hover:bg-red-600 text-[10px] font-black uppercase tracking-widest">Sancionar</Boton>
                   </div>
                 </form>
               </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                 {details.sanciones.length === 0
                   ? <div className="col-span-full py-8 text-center border border-dashed border-white/5 rounded-xl"><p className="text-[9px] text-text-muted italic uppercase opacity-30">Sin sanciones</p></div>
                   : details.sanciones.map(s => {
@@ -407,7 +421,7 @@ const ModalGestion = ({ miembro, isOpen, onClose, zonas, onUpdate, userActual })
 
           {/* ── TAB EDITAR ── */}
           {tab === 'editar' && (
-            <form onSubmit={handleEdit} className="bg-white/5 border border-white/5 p-4 rounded-2xl grid grid-cols-2 gap-4 items-end">
+            <form onSubmit={handleEdit} className="bg-white/5 border border-white/5 p-4 rounded-2xl grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-1">
                 <label className="text-[8px] font-black text-text-muted uppercase tracking-widest px-1">Nombres</label>
                 <input className="w-full h-10 bg-bg-card border border-white/10 rounded-xl px-3 text-xs font-bold text-text-main outline-none focus:ring-1 focus:ring-primary"
@@ -423,7 +437,9 @@ const ModalGestion = ({ miembro, isOpen, onClose, zonas, onUpdate, userActual })
                 <input className="w-full h-10 bg-bg-card border border-white/10 rounded-xl px-3 text-xs font-bold text-text-main outline-none focus:ring-1 focus:ring-primary"
                   value={formEdit.telefono} onChange={e => setFormEdit({ ...formEdit, telefono: e.target.value })} />
               </div>
-              <Boton type="submit" isLoading={guardandoAction} className="h-10 text-[10px] font-black uppercase tracking-widest">Guardar</Boton>
+              <div className="flex items-end sm:pt-4">
+                <Boton type="submit" isLoading={guardandoAction} className="h-10 w-full text-[10px] font-black uppercase tracking-widest">Guardar Cambios</Boton>
+              </div>
             </form>
           )}
         </div>
@@ -473,13 +489,15 @@ const MiembroCard = ({ miembro, userActual, zonas, onUpdate, onToggleActivo, onE
 
         {/* Acciones */}
         <div className="flex items-center gap-1.5 shrink-0">
-          <button
-            onClick={() => setModalOpen(true)}
-            className="h-8 px-3 rounded-xl flex items-center gap-1.5 bg-primary/10 text-primary hover:bg-primary/20 border border-primary/20 transition-all text-[9px] font-black uppercase tracking-widest"
-            title="Gestionar operativo"
-          >
-            <UserCog size={13} /> <span className="hidden sm:inline">Gestionar</span>
-          </button>
+          {userActual.rol !== 'ALCABALA' && (
+            <button
+              onClick={() => setModalOpen(true)}
+              className="h-8 px-3 rounded-xl flex items-center gap-1.5 bg-primary/10 text-primary hover:bg-primary/20 border border-primary/20 transition-all text-[9px] font-black uppercase tracking-widest"
+              title="Gestionar operativo"
+            >
+              <UserCog size={13} /> <span className="hidden sm:inline">Gestionar</span>
+            </button>
+          )}
 
           <button
             onClick={(e) => { e.stopPropagation(); onToggleActivo(miembro.id); }}
