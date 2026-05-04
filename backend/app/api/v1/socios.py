@@ -110,6 +110,29 @@ async def eliminar_socio(
             detail=str(e)
         )
 
+@router.patch("/{socio_id}/membresia")
+async def actualizar_membresia_socio(
+    socio_id: UUID,
+    puestos_asignados: int,
+    db: AsyncSession = Depends(obtener_db),
+    usuario_actual: Usuario = Depends(require_rol(GESTORES_SOCIOS))
+):
+    """
+    Actualiza los puestos de estacionamiento asignados a un socio.
+    Permite configurar cuántos vehículos simultáneos puede tener el socio dentro de la base.
+    """
+    if usuario_actual.rol == RolTipo.ADMIN_ENTIDAD:
+        # Solo puede editar socios de su entidad
+        query_socio = select(Usuario).where(Usuario.id == socio_id)
+        res = await db.execute(query_socio)
+        socio = res.scalar_one_or_none()
+        if not socio or socio.entidad_id != usuario_actual.entidad_id:
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Sin permiso sobre este socio")
+    try:
+        return await socio_service.actualizar_puestos_asignados(db, socio_id, puestos_asignados)
+    except Exception as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+
 @router.get("/template", status_code=status.HTTP_200_OK)
 async def descargar_plantilla_socios(
     usuario_actual: Usuario = Depends(require_rol(GESTORES_SOCIOS))

@@ -19,6 +19,7 @@ class SocioCrear(SocioBase):
     entidad_id: UUID
     vehiculos: Optional[List[VehiculoCrear]] = []
     fecha_expiracion: Optional[date] = None  # Fecha de expiración de la membresía
+    puestos_asignados: int = 1  # Número de puestos simultáneos en la zona
 
 class MembresiaProgreso(BaseModel):
     dias_restantes: int
@@ -32,6 +33,7 @@ class MembresiaInfo(BaseModel):
     fecha_inicio: date
     fecha_fin: Optional[date]
     progreso: MembresiaProgreso
+    puestos_asignados: int = 1
 
 class SocioSalida(SocioBase):
     id: UUID

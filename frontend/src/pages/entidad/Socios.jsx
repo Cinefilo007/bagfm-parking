@@ -32,7 +32,7 @@ export default function SociosEntidad() {
   
   const [nuevoSocio, setNuevoSocio] = useState({
     cedula: '', nombre: '', apellido: '', email: '', telefono: '',
-    entidad_id: user?.entidad_id, vehiculos: [], fecha_expiracion: ''
+    entidad_id: user?.entidad_id, vehiculos: [], fecha_expiracion: '', puestos_asignados: 1
   });
 
   // Estado del modal de importación
@@ -73,7 +73,7 @@ export default function SociosEntidad() {
       setIsModalOpen(false);
       setNuevoSocio({ 
         cedula: '', nombre: '', apellido: '', email: '', telefono: '', 
-        entidad_id: user.entidad_id, vehiculos: [], fecha_expiracion: ''
+        entidad_id: user.entidad_id, vehiculos: [], fecha_expiracion: '', puestos_asignados: 1
       });
       fetchSocios();
       toast.success('Miembro registrado con éxito');
@@ -448,6 +448,27 @@ export default function SociosEntidad() {
                   value={nuevoSocio.fecha_expiracion}
                   onChange={(e) => setNuevoSocio({...nuevoSocio, fecha_expiracion: e.target.value})}
                 />
+             </div>
+
+             {/* Puestos de Estacionamiento */}
+             <div className="space-y-2 pt-2">
+                <div className="flex items-center gap-2 border-b border-white/5 pb-2">
+                   <span className="text-emerald-400 text-sm">🅿️</span>
+                   <span className="text-[10px] font-black text-text-muted uppercase tracking-widest">Puestos Asignados</span>
+                   <span className="ml-auto text-[9px] text-text-muted">Vehículos simult. permitidos</span>
+                </div>
+                <div className="flex items-center gap-3">
+                  <button type="button"
+                    onClick={() => setNuevoSocio({...nuevoSocio, puestos_asignados: Math.max(1, nuevoSocio.puestos_asignados - 1)})}
+                    className="w-9 h-9 rounded-lg bg-white/5 hover:bg-white/10 text-white font-bold text-lg transition-colors"
+                  >−</button>
+                  <span className="text-2xl font-black text-white w-10 text-center">{nuevoSocio.puestos_asignados}</span>
+                  <button type="button"
+                    onClick={() => setNuevoSocio({...nuevoSocio, puestos_asignados: Math.min(5, nuevoSocio.puestos_asignados + 1)})}
+                    className="w-9 h-9 rounded-lg bg-white/5 hover:bg-white/10 text-white font-bold text-lg transition-colors"
+                  >+</button>
+                  <span className="text-[10px] text-text-muted ml-1">máx. 5</span>
+                </div>
              </div>
 
              {/* Vehículos */}

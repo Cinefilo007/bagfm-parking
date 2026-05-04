@@ -21,6 +21,8 @@ class Membresia(Base):
     
     # Campo opcional para puestos pre-asignados
     cupo_numero = Column(Integer, nullable=True)
+    # Puestos de estacionamiento simultáneos asignados a este socio
+    puestos_asignados = Column(Integer, nullable=False, default=1, server_default="1")
     
     estado = Column(SQLEnum(MembresiaEstado, name="membresia_estado", native_enum=True), nullable=False)
     

@@ -90,6 +90,10 @@ class ResultadoValidacion(BaseModel):
     # Flags de contingencia
     requiere_datos_manuales: bool = False
     es_pase_adelantado: bool = False
+    
+    # Control de cupos de estacionamiento
+    alerta_cupo: bool = False
+    cupo_info: Optional[dict] = None  # {cupo_total, cupo_usado, cupo_libre}
 
 
 class EventoTactico(BaseModel):

@@ -15,7 +15,8 @@ class MembresiaService:
     async def crear_membresia_inicial(
         self, db: AsyncSession, socio_id: UUID, entidad_id: UUID, 
         meses: int = 1, creador_id: Optional[UUID] = None,
-        fecha_fin_override: Optional[date] = None
+        fecha_fin_override: Optional[date] = None,
+        puestos_asignados: int = 1
     ) -> Membresia:
         """Crea la membresía inicial de un socio. Si fecha_fin_override se provee, se usa directamente."""
         fecha_inicio = date.today()
@@ -27,7 +28,8 @@ class MembresiaService:
             estado=MembresiaEstado.activa,
             fecha_inicio=fecha_inicio,
             fecha_fin=fecha_fin,
-            created_by=creador_id
+            created_by=creador_id,
+            puestos_asignados=puestos_asignados
         )
         db.add(nueva)
         await db.flush()
@@ -120,6 +122,52 @@ class MembresiaService:
             "dias_restantes": max(0, remaining_days),
             "porcentaje": porcentaje,
             "vencida": remaining_days < 0
+        }
+
+    async def verificar_cupo_socio(self, db: AsyncSession, socio_id: UUID) -> dict:
+        """
+        Verifica si el socio tiene puestos de estacionamiento disponibles.
+        Cuenta los accesos de entrada SIN una salida posterior para sus vehículos.
+        """
+        from sqlalchemy import select as sa_select
+        from app.models.acceso import Acceso
+        from app.models.vehiculo import Vehiculo
+        from app.models.enums import AccesoTipo
+        
+        # Obtener membresía activa y su configuración de puestos
+        q_mem = sa_select(Membresia).where(Membresia.socio_id == socio_id).order_by(Membresia.created_at.desc())
+        res_mem = await db.execute(q_mem)
+        membresia = res_mem.scalars().first()
+        puestos_asignados = membresia.puestos_asignados if membresia else 1
+
+        # Obtener los IDs de los vehículos del socio
+        q_veh = sa_select(Vehiculo.id).where(Vehiculo.socio_id == socio_id, Vehiculo.activo == True)
+        res_veh = await db.execute(q_veh)
+        vehiculo_ids = res_veh.scalars().all()
+
+        if not vehiculo_ids:
+            return {"cupo_total": puestos_asignados, "cupo_usado": 0, "cupo_libre": puestos_asignados, "bloqueado": False}
+
+        # Contar vehículos actualmente dentro: último acceso por vehículo es ENTRADA
+        vehiculos_adentro = 0
+        for vid in vehiculo_ids:
+            q_ultimo = (
+                sa_select(Acceso)
+                .where(Acceso.vehiculo_id == vid)
+                .order_by(Acceso.timestamp.desc())
+                .limit(1)
+            )
+            res_ultimo = await db.execute(q_ultimo)
+            ultimo_acceso = res_ultimo.scalar_one_or_none()
+            if ultimo_acceso and ultimo_acceso.tipo == AccesoTipo.entrada:
+                vehiculos_adentro += 1
+
+        cupo_libre = puestos_asignados - vehiculos_adentro
+        return {
+            "cupo_total": puestos_asignados,
+            "cupo_usado": vehiculos_adentro,
+            "cupo_libre": cupo_libre,
+            "bloqueado": cupo_libre <= 0
         }
 
 membresia_service = MembresiaService()

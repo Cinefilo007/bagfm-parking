@@ -656,6 +656,32 @@ const ScannerAlcabala = () => {
                             </div>
                         )}
 
+                        {/* ── ALERTA TÁCTICA: CUPO AGOTADO ── */}
+                        {resultado.alerta_cupo && tipoAcceso === 'entrada' && (
+                            <div
+                                className="rounded-xl border-2 border-orange-500/50 overflow-hidden"
+                                style={{ background: 'color-mix(in srgb, #f97316 10%, var(--bg-card))' }}
+                            >
+                                <div className="flex items-center gap-2 px-3 py-2 bg-orange-500/20 border-b border-orange-500/30">
+                                    <AlertOctagon size={14} className="text-orange-400 shrink-0 animate-pulse" />
+                                    <span className="text-[9px] font-black text-orange-300 uppercase tracking-widest">
+                                        ⚠ ALERTA TÁCTICA — CUPO AGOTADO
+                                    </span>
+                                    <span className="ml-auto text-[9px] font-bold text-orange-400 bg-orange-500/20 px-1.5 py-0.5 rounded">
+                                        {resultado.cupo_info?.cupo_usado}/{resultado.cupo_info?.cupo_total} PUESTOS
+                                    </span>
+                                </div>
+                                <div className="p-3 space-y-1.5">
+                                    <p className="text-[10px] font-bold text-text-main leading-snug">
+                                        Este socio ya tiene <span className="text-orange-400 font-black">{resultado.cupo_info?.cupo_usado} vehículo(s)</span> dentro con cupo asignado de <span className="text-white font-black">{resultado.cupo_info?.cupo_total}</span>.
+                                    </p>
+                                    <p className="text-[9px] text-text-muted leading-relaxed">
+                                        Informe al socio: su puesto puede estar ocupado. Solicite el registro de salida antes de autorizar otro ingreso. <span className="text-orange-300 font-bold">El uso no autorizado de puestos ajenos es objeto de sanción.</span>
+                                    </p>
+                                </div>
+                            </div>
+                        )}
+
                         {/* Ficha del socio (LECTURA) - sólo si hay datos */}
                         {resultado.permitido && (resultado.socio || resultado.vehiculo || resultado.vehiculos?.length > 0) && (
                             <FichaSocio

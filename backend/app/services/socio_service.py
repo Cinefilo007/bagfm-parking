@@ -50,7 +50,8 @@ class SocioService:
         nueva_membresia = await membresia_service.crear_membresia_inicial(
             db, nuevo_socio.id, datos.entidad_id, 
             meses=1, creador_id=creador_id,
-            fecha_fin_override=datos.fecha_expiracion
+            fecha_fin_override=datos.fecha_expiracion,
+            puestos_asignados=getattr(datos, 'puestos_asignados', 1)
         )
 
         # 5. Crear Vehículos (Opcional)
@@ -143,7 +144,8 @@ class SocioService:
                     "estado": membresia.estado,
                     "fecha_inicio": membresia.fecha_inicio,
                     "fecha_fin": membresia.fecha_fin,
-                    "progreso": progreso
+                    "progreso": progreso,
+                    "puestos_asignados": membresia.puestos_asignados
                 }
             
             lista_final.append(socio_dict)
@@ -202,5 +204,18 @@ class SocioService:
         await db.commit()
         await db.refresh(nuevo_v)
         return nuevo_v
+
+    async def actualizar_puestos_asignados(self, db: AsyncSession, socio_id: UUID, puestos: int) -> Membresia:
+        """Actualiza la cantidad de puestos de estacionamiento asignados al socio."""
+        from app.core.excepciones import EntidadNoEncontrada
+        q = select(Membresia).where(Membresia.socio_id == socio_id).order_by(Membresia.created_at.desc())
+        res = await db.execute(q)
+        membresia = res.scalars().first()
+        if not membresia:
+            raise EntidadNoEncontrada("Membresía no encontrada para este socio")
+        membresia.puestos_asignados = max(1, puestos)
+        await db.commit()
+        await db.refresh(membresia)
+        return membresia
 
 socio_service = SocioService()

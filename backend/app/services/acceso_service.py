@@ -335,6 +335,13 @@ class AccesoService:
             res_last = await db.execute(query_last)
             ultima_entrada = res_last.scalar_one_or_none()
 
+            # 5.f Verificar cupo de estacionamiento
+            estado_cupo = {"cupo_total": 1, "cupo_usado": 0, "cupo_libre": 1, "bloqueado": False}
+            try:
+                estado_cupo = await membresia_service.verificar_cupo_socio(db, socio.id)
+            except Exception as e_cupo:
+                print(f"[CUPO] Error verificando cupo de {socio.id}: {e_cupo}")
+
             return ResultadoValidacion(
                 permitido = not bloqueado,
                 mensaje = msg_bloqueo if bloqueado else "Validación Exitosa",
@@ -352,9 +359,12 @@ class AccesoService:
                     "estado": membresia.estado,
                     "fecha_inicio": membresia.fecha_inicio,
                     "fecha_fin": membresia.fecha_fin,
-                    "progreso": membresia_service.calcular_progreso(membresia)
+                    "progreso": membresia_service.calcular_progreso(membresia),
+                    "puestos_asignados": membresia.puestos_asignados
                 } if membresia else None,
-                ultima_entrada = ultima_entrada.timestamp if ultima_entrada else None
+                ultima_entrada = ultima_entrada.timestamp if ultima_entrada else None,
+                alerta_cupo = estado_cupo["bloqueado"],
+                cupo_info = estado_cupo
             )
 
         except Exception as e:
