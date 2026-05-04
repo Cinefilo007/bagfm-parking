@@ -96,11 +96,11 @@ async def buscar_vehiculo_endpoint(
     placa_upper = placa.upper().strip()
     
     # 1. Buscar en socios permanentes
-    stmt = select(Vehiculo).options(selectinload(Vehiculo.propietario)).where(Vehiculo.placa == placa_upper)
+    stmt = select(Vehiculo).options(selectinload(Vehiculo.socio)).where(Vehiculo.placa == placa_upper)
     res = await db.execute(stmt)
     veh_perm = res.scalar_one_or_none()
     
-    if veh_perm and veh_perm.propietario:
+    if veh_perm and veh_perm.socio:
         return {
             "encontrado": True,
             "tipo": "PERMANENTE",
@@ -108,10 +108,10 @@ async def buscar_vehiculo_endpoint(
             "marca": veh_perm.marca,
             "modelo": veh_perm.modelo,
             "responsable": {
-                "nombre": veh_perm.propietario.nombre,
-                "apellido": veh_perm.propietario.apellido,
-                "telefono": veh_perm.propietario.telefono,
-                "rol": veh_perm.propietario.rol.name
+                "nombre": veh_perm.socio.nombre,
+                "apellido": veh_perm.socio.apellido,
+                "telefono": veh_perm.socio.telefono,
+                "rol": veh_perm.socio.rol.name
             }
         }
         
@@ -241,3 +241,46 @@ async def resolver_infraccion(
         return await infraccion_service.resolver(db, id, datos, usuario_actual)
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN if "permisos" in str(e).lower() else status.HTTP_404_NOT_FOUND, detail=str(e))
+
+@router.get("/lista-negra")
+async def obtener_lista_negra(
+    db: AsyncSession = Depends(obtener_db),
+    usuario_actual: Usuario = Depends(require_rol([RolTipo.ADMIN_BASE, RolTipo.COMANDANTE, RolTipo.SUPERVISOR_PARQUEROS, RolTipo.ADMIN_ENTIDAD, RolTipo.SUPERVISOR]))
+):
+    """
+    Retorna los vehículos y usuarios en la lista negra (bloquea_acceso_futuro=True)
+    """
+    from app.models.infraccion import Infraccion
+    from app.models.vehiculo import Vehiculo
+    from sqlalchemy.orm import selectinload
+    from sqlalchemy import select
+    
+    stmt = (
+        select(Infraccion)
+        .options(selectinload(Infraccion.vehiculo).selectinload(Vehiculo.socio))
+        .where(Infraccion.bloquea_acceso_futuro == True, Infraccion.estado == "activa")
+        .order_by(Infraccion.created_at.desc())
+    )
+    res = await db.execute(stmt)
+    infracciones = res.scalars().all()
+    
+    lista = []
+    for inf in infracciones:
+        nombre = "DESCONOCIDO"
+        cedula = "N/A"
+        placa = inf.vehiculo.placa if inf.vehiculo else "S/P"
+        
+        if inf.vehiculo and inf.vehiculo.socio:
+            nombre = inf.vehiculo.socio.nombre_completo
+            cedula = inf.vehiculo.socio.cedula
+            
+        lista.append({
+            "id": str(inf.id),
+            "nombre": nombre,
+            "cedula": cedula,
+            "placa": placa,
+            "motivo": inf.descripcion or inf.tipo.value,
+            "bloqueado_at": inf.created_at.isoformat()
+        })
+        
+    return lista

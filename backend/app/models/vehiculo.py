@@ -27,7 +27,4 @@ class Vehiculo(Base):
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
 
     # Relaciones
-    # propietario = relationship("Usuario", back_populates="vehiculos")
-    # membresias = relationship("Membresia", back_populates="vehiculo")
-    # codigos_qr = relationship("CodigoQR", back_populates="vehiculo")
-    # infracciones = relationship("Infraccion", back_populates="vehiculo")
+    socio = relationship("Usuario", foreign_keys=[socio_id], backref="vehiculos_asociados")

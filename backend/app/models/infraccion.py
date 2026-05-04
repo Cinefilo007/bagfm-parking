@@ -48,7 +48,7 @@ class Infraccion(Base):
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
 
     # Relaciones
-    # vehiculo = relationship("Vehiculo", back_populates="infracciones")
-    # infractor = relationship("Usuario", foreign_keys=[usuario_id])
-    # reportero = relationship("Usuario", foreign_keys=[reportado_por])
-    # resolutor = relationship("Usuario", foreign_keys=[resuelta_por])
+    vehiculo = relationship("Vehiculo", backref="infracciones_asociadas")
+    infractor = relationship("Usuario", foreign_keys=[usuario_id])
+    reportero = relationship("Usuario", foreign_keys=[reportado_por])
+    resolutor = relationship("Usuario", foreign_keys=[resuelta_por])
