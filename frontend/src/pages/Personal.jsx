@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Card, CardContent } from '../components/ui/Card';
 import { Boton } from '../components/ui/Boton';
 import { Modal } from '../components/ui/Modal';
@@ -6,8 +6,8 @@ import { Input } from '../components/ui/Input';
 import {
   UserCircle, Plus, UserCog, Hash, Phone, Building2, Power, RotateCcw,
   UserMinus, BadgeCheck, Search, ChevronLeft, ChevronRight, MapPin,
-  ChevronDown, ChevronUp, Star, AlertTriangle, Edit2, X, Check,
-  TrendingUp, Shield, Award, Clock, Zap, AlertCircle, Users, LayoutGrid,
+  Star, AlertTriangle, Edit2, X, Check,
+  TrendingUp, Shield, Award, Clock, Zap, AlertCircle, Users,
   ShieldAlert, Mail, PlusCircle, HandMetal
 } from 'lucide-react';
 import personalService from '../services/personal.service';
@@ -15,6 +15,7 @@ import api from '../services/api';
 import { useAuthStore } from '../store/auth.store';
 import { toast } from 'react-hot-toast';
 import { cn } from '../lib/utils';
+
 
 // ─── CONSTANTES Y DATOS DE REFERENCIA ─────────────────────────────────────────
 
@@ -82,7 +83,7 @@ const TacticalKPIs = ({ personal }) => {
   }, [personal]);
 
   return (
-    <div className="grid grid-cols-2 gap-4 mb-8">
+    <div className="grid grid-cols-2 xl:grid-cols-4 gap-4 mb-8">
       {stats.map((s, i) => (
         <div key={i} className="p-4 bg-bg-card/40 border border-white/5 rounded-2xl flex items-center gap-4 group hover:bg-bg-high/80 transition-all border-b-2 border-b-transparent hover:border-b-primary/50">
           <div className={cn("w-12 h-12 rounded-2xl flex items-center justify-center bg-black/40 border border-white/5", s.color)}>
@@ -99,57 +100,70 @@ const TacticalKPIs = ({ personal }) => {
   );
 };
 
-const MiembroCard = ({ miembro, userActual, zonas, onUpdate, onToggleActivo, onEliminar }) => {
-  const [isExpanded, setIsExpanded] = useState(false);
+// ─── CONFIGURACIÓN DE TABS POR ROL ───────────────────────────────────────────
+
+const TABS_POR_ROL = {
+  PARQUERO:           ['kpis', 'zona', 'incentivos', 'sanciones', 'editar'],
+  SUPERVISOR_PARQUEROS:['kpis', 'zona', 'incentivos', 'sanciones', 'editar'],
+  ALCABALA:           ['kpis', 'incentivos', 'sanciones', 'editar'],
+  SUPERVISOR:         ['kpis', 'incentivos', 'sanciones', 'editar'],
+  ADMIN_BASE:         ['editar'],
+  ADMIN_ENTIDAD:      ['editar'],
+  COMANDANTE:         ['editar'],
+};
+
+const INFO_SECUNDARIA_ROL = {
+  PARQUERO:            (m) => m.zona_nombre ? `Zona: ${m.zona_nombre}` : 'Sin zona asignada',
+  SUPERVISOR_PARQUEROS:(m) => m.zona_nombre ? `Supervisando: ${m.zona_nombre}` : 'Supervisión general',
+  ALCABALA:            (m) => m.cedula ? `Operador de acceso` : '',
+  SUPERVISOR:          (_) => 'Supervisor de ronda',
+  ADMIN_BASE:          (_) => 'Administrador de Base',
+  ADMIN_ENTIDAD:       (_) => 'Administrador de Entidad',
+  COMANDANTE:          (_) => 'Comandante de Base',
+};
+
+// ─── MODAL DE GESTIÓN POR ROL ────────────────────────────────────────────────
+
+const ModalGestion = ({ miembro, isOpen, onClose, zonas, onUpdate, userActual }) => {
   const [tab, setTab] = useState('kpis');
   const [loadingDetails, setLoadingDetails] = useState(false);
-  
   const [details, setDetails] = useState({ kpis: null, incentivos: [], sanciones: [] });
-  const [zonaSeleccionada, setZonaSeleccionada] = useState(miembro.zona_asignada_id || '');
+  const [zonaSeleccionada, setZonaSeleccionada] = useState(miembro?.zona_asignada_id || '');
   const [guardandoAction, setGuardandoAction] = useState(false);
-
-  const [formEdit, setFormEdit] = useState({ nombre: miembro.nombre, apellido: miembro.apellido, email: miembro.email || '', telefono: miembro.telefono || '' });
+  const [formEdit, setFormEdit] = useState({ nombre: miembro?.nombre || '', apellido: miembro?.apellido || '', email: miembro?.email || '', telefono: miembro?.telefono || '' });
   const [formInc, setFormInc] = useState({ tipo: '', descripcion: '' });
   const [formSanc, setFormSanc] = useState({ tipo: '', motivo: '', ejecutar_inmediato: false });
 
-  const estilosActivos = getRolStyles(miembro.rol);
-  const estaInactivo = !miembro.activo;
+  const tabsDisponibles = (TABS_POR_ROL[miembro?.rol] || ['editar']).map(id => ({
+    kpis:       { id: 'kpis',       label: 'KPIs',       icon: TrendingUp },
+    zona:       { id: 'zona',       label: 'Zona',       icon: MapPin },
+    incentivos: { id: 'incentivos', label: 'Incentivos', icon: Star },
+    sanciones:  { id: 'sanciones', label: 'Sanciones',  icon: ShieldAlert },
+    editar:     { id: 'editar',     label: 'Editar',     icon: Edit2 },
+  }[id]));
 
-  const cargarDatosDetalle = useCallback(async () => {
-    if (!isExpanded) return;
+  useEffect(() => {
+    if (!isOpen || !miembro) return;
+    setTab(tabsDisponibles[0]?.id || 'editar');
+    setFormEdit({ nombre: miembro.nombre, apellido: miembro.apellido, email: miembro.email || '', telefono: miembro.telefono || '' });
+    setZonaSeleccionada(miembro.zona_asignada_id || '');
     setLoadingDetails(true);
-    try {
-      const [k, inc, sanc] = await Promise.all([
-        personalService.obtenerKpis(miembro.id).catch(() => null),
-        personalService.listarIncentivos(miembro.id).catch(() => []),
-        personalService.listarSanciones(miembro.id).catch(() => [])
-      ]);
-      setDetails({ kpis: k, incentivos: inc, sanciones: sanc });
-    } catch (e) {
-      console.error(e);
-    } finally {
-      setLoadingDetails(false);
-    }
-  }, [miembro.id, isExpanded]);
+    Promise.all([
+      personalService.obtenerKpis(miembro.id).catch(() => null),
+      personalService.listarIncentivos(miembro.id).catch(() => []),
+      personalService.listarSanciones(miembro.id).catch(() => []),
+    ]).then(([k, inc, sanc]) => setDetails({ kpis: k, incentivos: inc, sanciones: sanc }))
+      .finally(() => setLoadingDetails(false));
+  }, [isOpen, miembro?.id]);
 
-  useEffect(() => { cargarDatosDetalle(); }, [cargarDatosDetalle]);
+  if (!miembro) return null;
 
   const handleEdit = async (e) => {
-    e.preventDefault();
-    setGuardandoAction(true);
+    e.preventDefault(); setGuardandoAction(true);
     try {
-      const updated = await personalService.actualizar(miembro.id, {
-        ...formEdit,
-        nombre: formEdit.nombre.toUpperCase(),
-        apellido: formEdit.apellido.toUpperCase()
-      });
-      onUpdate(updated);
-      toast.success("Perfil actualizado");
-      setTab('kpis');
-    } catch (err) { 
-      const msg = err.response?.data?.detail || "Error al actualizar";
-      toast.error(msg);
-    }
+      const updated = await personalService.actualizar(miembro.id, { ...formEdit, nombre: formEdit.nombre.toUpperCase(), apellido: formEdit.apellido.toUpperCase() });
+      onUpdate(updated); toast.success('Perfil actualizado'); onClose();
+    } catch (err) { toast.error(err.response?.data?.detail || 'Error al actualizar'); }
     finally { setGuardandoAction(false); }
   };
 
@@ -157,126 +171,329 @@ const MiembroCard = ({ miembro, userActual, zonas, onUpdate, onToggleActivo, onE
     setGuardandoAction(true);
     try {
       const updated = await personalService.asignarZona(miembro.id, zonaSeleccionada || null);
-      onUpdate(updated);
-      toast.success("Ubicación táctica asignada");
-      await cargarDatosDetalle();
-    } catch (err) { 
-      const msg = err.response?.data?.detail || "Fallo de asignación";
-      toast.error(msg);
-    }
+      onUpdate(updated); toast.success('Zona asignada');
+    } catch (err) { toast.error(err.response?.data?.detail || 'Fallo de asignación'); }
     finally { setGuardandoAction(false); }
   };
 
   const handleInc = async (e) => {
-      e.preventDefault();
-      setGuardandoAction(true);
-      try {
-          await personalService.agregarIncentivo(miembro.id, formInc);
-          setFormInc({ tipo: '', descripcion: '' });
-          toast.success("Incentivo otorgado");
-          await cargarDatosDetalle();
-      } catch (err) { 
-          const msg = err.response?.data?.detail || "Fallo al registrar";
-          toast.error(msg);
-      }
-      finally { setGuardandoAction(false); }
+    e.preventDefault(); setGuardandoAction(true);
+    try {
+      await personalService.agregarIncentivo(miembro.id, formInc);
+      setFormInc({ tipo: '', descripcion: '' }); toast.success('Incentivo otorgado');
+      const inc = await personalService.listarIncentivos(miembro.id).catch(() => []);
+      setDetails(d => ({ ...d, incentivos: inc }));
+    } catch (err) { toast.error(err.response?.data?.detail || 'Error al registrar'); }
+    finally { setGuardandoAction(false); }
   };
 
   const handleSanc = async (e) => {
-      e.preventDefault();
-      setGuardandoAction(true);
-      try {
-          await personalService.agregarSancion(miembro.id, formSanc);
-          setFormSanc({ tipo: '', motivo: '', ejecutar_inmediato: false });
-          toast.success("Medida disciplinaria aplicada");
-          await cargarDatosDetalle();
-      } catch (err) { 
-          const msg = err.response?.data?.detail || "Error en protocolo de sanción";
-          toast.error(msg);
-      }
-      finally { setGuardandoAction(false); }
+    e.preventDefault(); setGuardandoAction(true);
+    try {
+      await personalService.agregarSancion(miembro.id, formSanc);
+      setFormSanc({ tipo: '', motivo: '', ejecutar_inmediato: false }); toast.success('Sanción aplicada');
+      const sanc = await personalService.listarSanciones(miembro.id).catch(() => []);
+      setDetails(d => ({ ...d, sanciones: sanc }));
+    } catch (err) { toast.error(err.response?.data?.detail || 'Error en sanción'); }
+    finally { setGuardandoAction(false); }
   };
 
-  const tabsDisponibles = [
-    { id: 'kpis', label: 'KPIs', icon: TrendingUp },
-    { id: 'zona', label: 'Zona', icon: MapPin, show: ['PARQUERO', 'SUPERVISOR_PARQUEROS'].includes(miembro.rol) },
-    { id: 'incentivos', label: 'Incentivos', icon: Star },
-    { id: 'sanciones', label: 'Sanciones', icon: ShieldAlert },
-    { id: 'editar', label: 'Editar', icon: Edit2 },
-  ].filter(t => t.show !== false);
+  const estilos = getRolStyles(miembro.rol);
 
   return (
-    <div className={cn(
-      "flex flex-col items-stretch gap-0 bg-bg-card/40 border border-white/5 rounded-2xl group transition-all duration-300 overflow-hidden",
-      isExpanded ? "border-primary/30 ring-1 ring-primary/10 shadow-tactica" : "hover:border-white/10 hover:bg-bg-high/60"
-    )}>
-      {/* ── FILA PRINCIPAL (THIN CARD) ── */}
-      <div 
-        className="flex flex-col sm:flex-row sm:items-center gap-3 p-3 relative cursor-pointer"
-        onClick={() => setIsExpanded(!isExpanded)}
-      >
-        <div className={cn("absolute left-0 top-0 bottom-0 w-1 rounded-l-2xl", estaInactivo ? 'bg-danger' : estilosActivos.bar)} />
-        
-        <div className="flex items-center gap-3 flex-1 min-w-0">
-          <div className={cn(
-            "h-10 w-10 rounded-xl flex items-center justify-center border shrink-0",
-            estaInactivo ? 'bg-danger/10 border-danger/20 text-danger' : estilosActivos.avatar
-          )}>
-            <UserCircle size={22} />
+    <Modal isOpen={isOpen} onClose={onClose} title={`${miembro.nombre} ${miembro.apellido}`}>
+      {/* Header del operativo */}
+      <div className="flex items-center gap-3 p-3 bg-bg-card/60 rounded-xl border border-white/5 mb-4">
+        <div className={cn('w-12 h-12 rounded-xl flex items-center justify-center border shrink-0', estilos.avatar)}>
+          <UserCircle size={24} />
+        </div>
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className={cn('px-2 py-0.5 rounded-md text-[8px] font-black uppercase tracking-widest border', estilos.badge)}>
+              {miembro.rol.replace(/_/g, ' ')}
+            </span>
+            <span className={cn('text-[8px] font-black uppercase', miembro.activo ? 'text-success' : 'text-danger')}>
+              {miembro.activo ? '● ACTIVO' : '● INACTIVO'}
+            </span>
           </div>
-          <div className="min-w-0">
-            <div className="flex items-center gap-2 flex-wrap">
-              <h3 className="text-sm font-black text-text-main uppercase leading-none truncate">{miembro.nombre} {miembro.apellido}</h3>
-              <span className={cn(
-                "px-2 py-0.5 rounded-md text-[8px] font-black uppercase tracking-widest border border-white/5 leading-none",
-                estaInactivo ? 'text-danger bg-danger/10 border-danger/20' : estilosActivos.badge
-              )}>
-                {estaInactivo ? 'INACTIVO' : miembro.rol.replace(/_/g, ' ')}
-              </span>
+          <div className="flex items-center gap-3 mt-1 text-[9px] font-bold text-text-muted/60 uppercase tracking-wider">
+            <span className="flex items-center gap-1"><Hash size={9} className="text-primary/50" /> {miembro.cedula}</span>
+            {miembro.telefono && <span className="flex items-center gap-1"><Phone size={9} /> {miembro.telefono}</span>}
+          </div>
+        </div>
+      </div>
+
+      {/* Tabs según rol */}
+      <div className="flex gap-1 mb-4 overflow-x-auto scrollbar-none pb-1">
+        {tabsDisponibles.map(t => (
+          <button key={t.id} onClick={() => setTab(t.id)}
+            className={cn('flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest whitespace-nowrap transition-all',
+              tab === t.id ? 'bg-primary/10 text-primary border border-primary/20' : 'text-text-muted hover:text-text-main hover:bg-white/5 border border-transparent')}>
+            <t.icon size={11} /> {t.label}
+          </button>
+        ))}
+      </div>
+
+      {loadingDetails ? (
+        <div className="flex items-center justify-center py-12 opacity-30">
+          <Clock size={28} className="animate-spin mr-2" />
+          <span className="text-[10px] font-black uppercase tracking-widest">Sincronizando...</span>
+        </div>
+      ) : (
+        <div className="space-y-4">
+          {/* ── TAB KPIs ── */}
+          {tab === 'kpis' && (
+            <div className="space-y-3">
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                <div className="bg-white/5 rounded-xl p-3 border border-white/5">
+                  <span className="text-[8px] font-black text-text-muted uppercase tracking-widest block mb-1">Días Operativo</span>
+                  <span className="text-2xl font-black text-primary">{details.kpis?.dias_activo || 0}</span>
+                </div>
+                <div className="bg-white/5 rounded-xl p-3 border border-white/5">
+                  <span className="text-[8px] font-black text-text-muted uppercase tracking-widest block mb-1">Incentivos</span>
+                  <span className="text-2xl font-black text-amber-400">{details.kpis?.total_incentivos || 0}</span>
+                </div>
+                {['PARQUERO','SUPERVISOR_PARQUEROS'].includes(miembro.rol) && (
+                  <div className="bg-white/5 rounded-xl p-3 border border-white/5">
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-[8px] font-black text-text-muted uppercase tracking-widest">Asig. Manuales</span>
+                      {details.kpis?.asignaciones_manuales > 10 && <AlertTriangle size={10} className="text-danger animate-pulse" />}
+                    </div>
+                    <span className={cn('text-2xl font-black', details.kpis?.asignaciones_manuales > 10 ? 'text-danger' : 'text-sky-400')}>
+                      {details.kpis?.asignaciones_manuales || 0}
+                    </span>
+                  </div>
+                )}
+                <div className="bg-white/5 rounded-xl p-3 border border-white/5">
+                  <span className="text-[8px] font-black text-text-muted uppercase tracking-widest block mb-1">Sanciones Totales</span>
+                  <span className={cn('text-2xl font-black', details.kpis?.total_sanciones > 0 ? 'text-danger' : 'text-white/20')}>{details.kpis?.total_sanciones || 0}</span>
+                </div>
+                <div className="bg-white/5 rounded-xl p-3 border border-white/5">
+                  <span className="text-[8px] font-black text-text-muted uppercase tracking-widest block mb-1">Alertas Activas</span>
+                  <span className={cn('text-2xl font-black', details.kpis?.sanciones_activas > 0 ? 'text-danger' : 'text-success/30')}>{details.kpis?.sanciones_activas || 0}</span>
+                </div>
+              </div>
+              {(details.kpis?.ultimo_incentivo || details.kpis?.ultima_sancion) && (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {details.kpis?.ultimo_incentivo && (
+                    <div className="flex items-center gap-3 p-3 bg-amber-400/5 border border-amber-400/10 rounded-xl">
+                      <Star size={14} className="text-amber-400 shrink-0" />
+                      <div>
+                        <p className="text-[8px] font-black text-text-muted uppercase tracking-tighter">Último Incentivo</p>
+                        <p className="text-[10px] font-bold text-amber-400/80 uppercase">{details.kpis.ultimo_incentivo.replace(/_/g, ' ')}</p>
+                      </div>
+                    </div>
+                  )}
+                  {details.kpis?.ultima_sancion && (
+                    <div className="flex items-center gap-3 p-3 bg-danger/5 border border-danger/10 rounded-xl">
+                      <ShieldAlert size={14} className="text-danger shrink-0" />
+                      <div>
+                        <p className="text-[8px] font-black text-text-muted uppercase tracking-tighter">Última Sanción</p>
+                        <p className="text-[10px] font-bold text-danger/80 uppercase">{details.kpis.ultima_sancion.replace(/_/g, ' ')}</p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
-            <div className="flex items-center gap-3 mt-1 text-[9px] font-bold text-text-muted/60 uppercase tracking-wider">
-              <span className="flex items-center gap-1"><Hash size={10} className="text-primary/50" /> {miembro.cedula}</span>
-              {miembro.zona_nombre && <span className="flex items-center gap-1 text-emerald-400/80"><MapPin size={10} /> {miembro.zona_nombre}</span>}
-              <span className="flex items-center gap-1"><Phone size={10} /> {miembro.telefono || 'SIN TEL.'}</span>
+          )}
+
+          {/* ── TAB ZONA ── */}
+          {tab === 'zona' && (
+            <div className="flex flex-col sm:flex-row items-center gap-4 bg-white/5 border border-white/5 p-4 rounded-2xl">
+              <div className="flex items-center gap-3 shrink-0">
+                <div className="p-2 bg-primary/10 rounded-xl text-primary"><MapPin size={18} /></div>
+                <div>
+                  <p className="text-[8px] font-black text-text-muted uppercase tracking-widest">Ubicación Táctica</p>
+                  <p className="text-sm font-black text-text-main uppercase">{miembro.zona_nombre || 'Sin asignación'}</p>
+                </div>
+              </div>
+              <div className="flex-1 flex flex-col sm:flex-row items-center gap-3 w-full">
+                <select className="flex-1 h-10 bg-bg-card border border-white/10 rounded-xl px-4 text-xs font-bold text-text-main focus:ring-1 focus:ring-primary outline-none appearance-none w-full"
+                  value={zonaSeleccionada} onChange={e => setZonaSeleccionada(e.target.value)}>
+                  <option value="">— DESASIGNAR (PATRULLAJE) —</option>
+                  {zonas.map(z => <option key={z.id} value={z.id}>{z.nombre}</option>)}
+                </select>
+                <Boton onClick={handleAsignarZona} isLoading={guardandoAction} className="h-10 px-6 text-[10px] uppercase font-black tracking-widest w-full sm:w-auto">Asignar</Boton>
+              </div>
             </div>
+          )}
+
+          {/* ── TAB INCENTIVOS ── */}
+          {tab === 'incentivos' && (
+            <div className="space-y-4">
+              <div className="bg-white/5 border border-amber-400/10 p-3 rounded-2xl">
+                <div className="flex items-center gap-2 px-1 mb-2">
+                  <PlusCircle size={12} className="text-amber-400" />
+                  <span className="text-[9px] font-black text-text-muted uppercase tracking-widest">Añadir Reconocimiento</span>
+                </div>
+                <form onSubmit={handleInc} className="flex flex-col md:flex-row items-end gap-3">
+                  <select className="w-full md:w-48 h-10 bg-bg-card border border-white/10 rounded-xl px-3 text-xs font-bold text-text-main focus:ring-1 focus:ring-amber-400 outline-none"
+                    required value={formInc.tipo} onChange={e => setFormInc({ ...formInc, tipo: e.target.value })}>
+                    <option value="">SELECCIONAR...</option>
+                    {TIPOS_INCENTIVO.map(t => <option key={t.valor} value={t.valor}>{t.etiqueta}</option>)}
+                  </select>
+                  <input className="flex-1 h-10 bg-bg-card border border-white/10 rounded-xl px-3 text-xs font-bold text-text-main outline-none focus:ring-1 focus:ring-amber-400 w-full"
+                    required placeholder="Descripción del mérito..." value={formInc.descripcion} onChange={e => setFormInc({ ...formInc, descripcion: e.target.value })} />
+                  <Boton type="submit" isLoading={guardandoAction} className="h-10 px-5 bg-amber-400 text-bg-app hover:bg-amber-500 text-[10px] font-black uppercase w-full md:w-auto">Registrar</Boton>
+                </form>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {details.incentivos.length === 0
+                  ? <div className="col-span-full py-8 text-center border border-dashed border-white/5 rounded-xl"><p className="text-[9px] text-text-muted italic uppercase opacity-30">Sin registros</p></div>
+                  : details.incentivos.map(inc => {
+                    const st = ETIQUETA_INCENTIVO[inc.tipo] || { label: inc.tipo, color: 'bg-white/5 text-text-muted' };
+                    return (
+                      <div key={inc.id} className="p-3 bg-white/5 border border-white/5 rounded-xl flex items-start gap-3">
+                        <div className={cn('px-2 py-0.5 rounded-md text-[7px] font-black uppercase shrink-0 mt-0.5', st.color)}>{st.label}</div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-[10px] font-bold text-text-main leading-tight truncate">{inc.descripcion}</p>
+                          <p className="text-[7px] text-text-muted mt-1 uppercase font-bold opacity-40">{new Date(inc.created_at).toLocaleDateString()}</p>
+                        </div>
+                      </div>
+                    );
+                  })}
+              </div>
+            </div>
+          )}
+
+          {/* ── TAB SANCIONES ── */}
+          {tab === 'sanciones' && (
+            <div className="space-y-4">
+              <div className="bg-white/5 border border-danger/10 p-3 rounded-2xl">
+                <div className="flex items-center gap-2 px-1 mb-2">
+                  <ShieldAlert size={12} className="text-danger" />
+                  <span className="text-[9px] font-black text-text-muted uppercase tracking-widest">Aplicar Medida Disciplinaria</span>
+                </div>
+                <form onSubmit={handleSanc} className="flex flex-col md:flex-row items-end gap-3">
+                  <select className="w-full md:w-48 h-10 bg-bg-card border border-white/10 rounded-xl px-3 text-xs font-bold text-text-main focus:ring-1 focus:ring-danger outline-none"
+                    required value={formSanc.tipo} onChange={e => setFormSanc({ ...formSanc, tipo: e.target.value })}>
+                    <option value="">SELECCIONAR...</option>
+                    {TIPOS_SANCION.map(t => <option key={t.valor} value={t.valor}>{t.etiqueta}</option>)}
+                  </select>
+                  <input className="flex-1 h-10 bg-bg-card border border-white/10 rounded-xl px-3 text-xs font-bold text-text-main outline-none focus:ring-1 focus:ring-danger w-full"
+                    required placeholder="Motivo de la sanción..." value={formSanc.motivo} onChange={e => setFormSanc({ ...formSanc, motivo: e.target.value })} />
+                  <div className="flex items-center gap-3 w-full md:w-auto">
+                    {formSanc.tipo === 'relevo_inmediato' && (
+                      <label className="flex items-center gap-2 p-2 bg-danger/10 border border-danger/20 rounded-lg cursor-pointer shrink-0">
+                        <input type="checkbox" className="accent-danger" checked={formSanc.ejecutar_inmediato} onChange={e => setFormSanc({ ...formSanc, ejecutar_inmediato: e.target.checked })} />
+                        <span className="text-[8px] font-black text-danger uppercase">Ejecutar Cierre</span>
+                      </label>
+                    )}
+                    <Boton type="submit" isLoading={guardandoAction} className="h-10 px-5 bg-danger text-white hover:bg-red-600 text-[10px] font-black uppercase w-full">Sancionar</Boton>
+                  </div>
+                </form>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {details.sanciones.length === 0
+                  ? <div className="col-span-full py-8 text-center border border-dashed border-white/5 rounded-xl"><p className="text-[9px] text-text-muted italic uppercase opacity-30">Sin sanciones</p></div>
+                  : details.sanciones.map(s => {
+                    const st = ETIQUETA_SANCION[s.tipo] || { label: s.tipo, color: 'bg-white/5 text-text-muted' };
+                    const status = ESTADO_SANCION[s.estado] || { label: s.estado, color: 'text-text-muted' };
+                    return (
+                      <div key={s.id} className="p-3 bg-white/5 border border-white/5 rounded-xl space-y-1.5">
+                        <div className="flex items-center justify-between">
+                          <div className={cn('px-2 py-0.5 rounded-md text-[7px] font-black uppercase', st.color)}>{st.label}</div>
+                          <div className={cn('text-[7px] font-black uppercase', status.color)}>{status.label}</div>
+                        </div>
+                        <p className="text-[10px] font-bold text-text-main leading-tight truncate">{s.motivo}</p>
+                        <p className="text-[7px] text-text-muted uppercase font-bold opacity-40">{new Date(s.created_at).toLocaleDateString()}</p>
+                      </div>
+                    );
+                  })}
+              </div>
+            </div>
+          )}
+
+          {/* ── TAB EDITAR ── */}
+          {tab === 'editar' && (
+            <form onSubmit={handleEdit} className="bg-white/5 border border-white/5 p-4 rounded-2xl grid grid-cols-2 gap-4 items-end">
+              <div className="space-y-1">
+                <label className="text-[8px] font-black text-text-muted uppercase tracking-widest px-1">Nombres</label>
+                <input className="w-full h-10 bg-bg-card border border-white/10 rounded-xl px-3 text-xs font-bold text-text-main outline-none focus:ring-1 focus:ring-primary"
+                  required value={formEdit.nombre} onChange={e => setFormEdit({ ...formEdit, nombre: e.target.value.toUpperCase() })} />
+              </div>
+              <div className="space-y-1">
+                <label className="text-[8px] font-black text-text-muted uppercase tracking-widest px-1">Apellidos</label>
+                <input className="w-full h-10 bg-bg-card border border-white/10 rounded-xl px-3 text-xs font-bold text-text-main outline-none focus:ring-1 focus:ring-primary"
+                  required value={formEdit.apellido} onChange={e => setFormEdit({ ...formEdit, apellido: e.target.value.toUpperCase() })} />
+              </div>
+              <div className="space-y-1">
+                <label className="text-[8px] font-black text-text-muted uppercase tracking-widest px-1">Teléfono</label>
+                <input className="w-full h-10 bg-bg-card border border-white/10 rounded-xl px-3 text-xs font-bold text-text-main outline-none focus:ring-1 focus:ring-primary"
+                  value={formEdit.telefono} onChange={e => setFormEdit({ ...formEdit, telefono: e.target.value })} />
+              </div>
+              <Boton type="submit" isLoading={guardandoAction} className="h-10 text-[10px] font-black uppercase tracking-widest">Guardar</Boton>
+            </form>
+          )}
+        </div>
+      )}
+    </Modal>
+  );
+};
+
+// ─── TARJETA SIMPLE DE MIEMBRO ────────────────────────────────────────────────
+
+const MiembroCard = ({ miembro, userActual, zonas, onUpdate, onToggleActivo, onEliminar }) => {
+  const [modalOpen, setModalOpen] = useState(false);
+  const estilos = getRolStyles(miembro.rol);
+  const estaInactivo = !miembro.activo;
+  const infoSecundaria = (INFO_SECUNDARIA_ROL[miembro.rol] || (() => ''))(miembro);
+
+  return (
+    <>
+      <div className={cn(
+        'flex items-center gap-3 p-3 bg-bg-card/40 border border-white/5 rounded-2xl group transition-all duration-200 relative',
+        estaInactivo ? 'border-danger/20' : 'hover:border-white/10 hover:bg-bg-high/60'
+      )}>
+        {/* Barra lateral de estado */}
+        <div className={cn('absolute left-0 top-0 bottom-0 w-1 rounded-l-2xl', estaInactivo ? 'bg-danger' : estilos.bar)} />
+
+        {/* Avatar */}
+        <div className={cn('h-10 w-10 rounded-xl flex items-center justify-center border shrink-0 ml-1',
+          estaInactivo ? 'bg-danger/10 border-danger/20 text-danger' : estilos.avatar)}>
+          <UserCircle size={22} />
+        </div>
+
+        {/* Identidad */}
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 flex-wrap">
+            <h3 className="text-sm font-black text-text-main uppercase leading-none">{miembro.nombre} {miembro.apellido}</h3>
+            <span className={cn('px-2 py-0.5 rounded-md text-[8px] font-black uppercase tracking-widest border leading-none',
+              estaInactivo ? 'text-danger bg-danger/10 border-danger/20' : estilos.badge)}>
+              {estaInactivo ? 'INACTIVO' : miembro.rol.replace(/_/g, ' ')}
+            </span>
+          </div>
+          <div className="flex items-center gap-3 mt-1 text-[9px] font-bold text-text-muted/60 uppercase tracking-wider flex-wrap">
+            <span className="flex items-center gap-1"><Hash size={9} className="text-primary/50" /> {miembro.cedula}</span>
+            {infoSecundaria && <span className="flex items-center gap-1 text-sky-400/80"><MapPin size={9} /> {infoSecundaria}</span>}
+            {miembro.telefono && <span className="flex items-center gap-1"><Phone size={9} /> {miembro.telefono}</span>}
           </div>
         </div>
 
-        <div className="hidden xl:flex items-center gap-6 px-6 border-l border-white/5 shrink-0">
-          <div className="text-center">
-            <div className="text-sm font-black text-white leading-none">{details.kpis?.dias_activo || '—'}</div>
-            <div className="text-[7px] font-black text-text-muted uppercase">Días Activo</div>
-          </div>
-          <div className="text-center">
-            <div className={cn("text-sm font-black leading-none", (details.kpis?.asignaciones_manuales > 10) ? 'text-danger' : 'text-sky-400')}>
-                {details.kpis?.asignaciones_manuales || '0'}
-            </div>
-            <div className="text-[7px] font-black text-text-muted uppercase">Asig. Manuales</div>
-          </div>
-          <div className="text-center">
-            <div className="text-sm font-black text-amber-400 leading-none">{details.kpis?.total_incentivos || '0'}</div>
-            <div className="text-[7px] font-black text-text-muted uppercase">Incentivos</div>
-          </div>
-          <div className="text-center">
-            <div className="text-sm font-black text-danger leading-none">{details.kpis?.sanciones_activas || '0'}</div>
-            <div className="text-[7px] font-black text-text-muted uppercase">Sanc. Activas</div>
-          </div>
-        </div>
+        {/* Acciones */}
+        <div className="flex items-center gap-1.5 shrink-0">
+          <button
+            onClick={() => setModalOpen(true)}
+            className="h-8 px-3 rounded-xl flex items-center gap-1.5 bg-primary/10 text-primary hover:bg-primary/20 border border-primary/20 transition-all text-[9px] font-black uppercase tracking-widest"
+            title="Gestionar operativo"
+          >
+            <UserCog size={13} /> <span className="hidden sm:inline">Gestionar</span>
+          </button>
 
-        <div className="flex items-center gap-1.5 ml-auto border-t sm:border-t-0 sm:border-l border-white/5 pt-2 sm:pt-0 sm:pl-3">
-          <button 
+          <button
             onClick={(e) => { e.stopPropagation(); onToggleActivo(miembro.id); }}
-            className={cn(
-              "h-8 w-8 rounded-xl flex items-center justify-center transition-all",
-              miembro.activo ? 'bg-warning/10 text-warning hover:bg-warning/20 border border-warning/10' : 'bg-success/10 text-success hover:bg-success/20 border border-success/10'
-            )}
-            title={miembro.activo ? 'Pausar Operador' : 'Reactivar'}
+            className={cn('h-8 w-8 rounded-xl flex items-center justify-center transition-all',
+              miembro.activo
+                ? 'bg-warning/10 text-warning hover:bg-warning/20 border border-warning/10'
+                : 'bg-success/10 text-success hover:bg-success/20 border border-success/10')}
+            title={miembro.activo ? 'Pausar' : 'Reactivar'}
           >
             {miembro.activo ? <Power size={14} /> : <RotateCcw size={14} />}
           </button>
-          
+
           {userActual.rol === 'COMANDANTE' && (
-            <button 
+            <button
               onClick={(e) => { e.stopPropagation(); onEliminar(miembro.id, miembro.nombre); }}
               className="h-8 w-8 bg-danger/10 text-danger hover:bg-danger/20 border border-danger/10 rounded-xl flex items-center justify-center transition-all"
               title="Dar de baja definitiva"
@@ -284,277 +501,24 @@ const MiembroCard = ({ miembro, userActual, zonas, onUpdate, onToggleActivo, onE
               <UserMinus size={14} />
             </button>
           )}
-
-          <div className={cn(
-            "h-8 w-8 rounded-xl flex items-center justify-center transition-all",
-            isExpanded ? 'bg-primary/20 text-primary' : 'bg-white/5 text-text-muted'
-          )}>
-            {isExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
-          </div>
         </div>
       </div>
 
-      {/* ── SECCIÓN EXPANDIBLE (DISCRETA Y HORIZONTAL) ── */}
-      {isExpanded && (
-        <div className="bg-black/20 border-t border-white/5 animate-in slide-in-from-top-2 duration-300">
-          <div className="flex gap-1 p-2 bg-black/40 border-b border-white/5 sticky top-0 z-10 overflow-x-auto scrollbar-none">
-            {tabsDisponibles.map(t => (
-              <button
-                key={t.id}
-                onClick={() => setTab(t.id)}
-                className={cn(
-                  "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest whitespace-nowrap transition-all",
-                  tab === t.id ? 'bg-primary/10 text-primary border border-primary/20' : 'text-text-muted hover:text-text-main hover:bg-white/5'
-                )}
-              >
-                <t.icon size={11} /> {t.label}
-              </button>
-            ))}
-          </div>
-
-          <div className="p-4 overflow-y-auto scrollbar-tactica">
-            {loadingDetails ? (
-              <div className="flex flex-col items-center justify-center py-10 opacity-30">
-                <Clock size={32} className="animate-spin mb-2" />
-                <span className="text-[10px] font-black uppercase tracking-widest">Sincronizando Archivos...</span>
-              </div>
-            ) : (
-              <>
-                {tab === 'kpis' && (
-                  <div className="space-y-4">
-                    <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
-                      <div className="bg-white/5 rounded-xl p-3 border border-white/5">
-                        <span className="text-[8px] font-black text-text-muted uppercase tracking-widest block mb-1">Días Operativo</span>
-                        <span className="text-2xl font-black text-primary">{details.kpis?.dias_activo || 0}</span>
-                      </div>
-                      <div className="bg-white/5 rounded-xl p-3 border border-white/5">
-                        <span className="text-[8px] font-black text-text-muted uppercase tracking-widest block mb-1">Incentivos</span>
-                        <span className="text-2xl font-black text-amber-400">{details.kpis?.total_incentivos || 0}</span>
-                      </div>
-                      <div className="bg-white/5 rounded-xl p-3 border border-white/5 relative group/manual">
-                        <div className="flex items-center justify-between mb-1">
-                          <span className="text-[8px] font-black text-text-muted uppercase tracking-widest block">Asig. Manuales</span>
-                          {details.kpis?.asignaciones_manuales > 10 && <AlertTriangle size={10} className="text-danger animate-pulse" />}
-                        </div>
-                        <span className={cn("text-2xl font-black", details.kpis?.asignaciones_manuales > 10 ? 'text-danger' : 'text-sky-400')}>
-                            {details.kpis?.asignaciones_manuales || 0}
-                        </span>
-                        {details.kpis?.asignaciones_manuales > 10 && (
-                            <div className="absolute top-0 right-0 p-1 hidden group-hover/manual:block bg-danger text-white text-[6px] font-black uppercase rounded">Alerta de Integridad</div>
-                        )}
-                      </div>
-                      <div className="bg-white/5 rounded-xl p-3 border border-white/5">
-                        <span className="text-[8px] font-black text-text-muted uppercase tracking-widest block mb-1">Sanciones Totales</span>
-                        <span className={cn("text-2xl font-black", details.kpis?.total_sanciones > 0 ? 'text-danger' : 'text-white/20')}>{details.kpis?.total_sanciones || 0}</span>
-                      </div>
-                      <div className="bg-white/5 rounded-xl p-3 border border-white/5">
-                        <span className="text-[8px] font-black text-text-muted uppercase tracking-widest block mb-1">Alertas Activas</span>
-                        <span className={cn("text-2xl font-black", details.kpis?.sanciones_activas > 0 ? 'text-danger' : 'text-success/30')}>{details.kpis?.sanciones_activas || 0}</span>
-                      </div>
-                    </div>
-                    {(details.kpis?.ultimo_incentivo || details.kpis?.ultima_sancion) && (
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                        {details.kpis?.ultimo_incentivo && (
-                          <div className="flex items-center gap-3 p-3 bg-amber-400/5 border border-amber-400/10 rounded-xl">
-                            <Star size={16} className="text-amber-400 shrink-0" />
-                            <div>
-                                <p className="text-[8px] font-black text-text-muted uppercase tracking-tighter">Último Incentivo</p>
-                                <p className="text-[10px] font-bold text-amber-400/80 uppercase">{details.kpis.ultimo_incentivo.replace(/_/g, ' ')}</p>
-                            </div>
-                          </div>
-                        )}
-                        {details.kpis?.ultima_sancion && (
-                          <div className="flex items-center gap-3 p-3 bg-danger/5 border border-danger/10 rounded-xl">
-                            <ShieldAlert size={16} className="text-danger shrink-0" />
-                            <div>
-                                <p className="text-[8px] font-black text-text-muted uppercase tracking-tighter">Última Sanción</p>
-                                <p className="text-[10px] font-bold text-danger/80 uppercase">{details.kpis.ultima_sancion.replace(/_/g, ' ')}</p>
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                )}
-
-                {/* ── TAB: ZONA (REDISEÑO DISCRETO) ── */}
-                {tab === 'zona' && (
-                  <div className="space-y-4">
-                    <div className="flex flex-col sm:flex-row items-center gap-4 bg-white/5 border border-white/5 p-4 rounded-2xl">
-                      <div className="flex items-center gap-3 shrink-0">
-                        <div className="p-2 bg-primary/10 rounded-xl text-primary">
-                          <MapPin size={18} />
-                        </div>
-                        <div>
-                          <p className="text-[8px] font-black text-text-muted uppercase tracking-widest">Ubicación Táctica</p>
-                          <p className="text-sm font-black text-text-main uppercase tracking-tight">{miembro.zona_nombre || 'Sin asignación'}</p>
-                        </div>
-                      </div>
-                      
-                      <div className="hidden sm:block w-px h-10 bg-white/5 mx-2" />
-                      
-                      <div className="flex-1 flex flex-col sm:flex-row items-center gap-3 w-full">
-                        <select
-                          className="flex-1 h-10 bg-bg-card border border-white/10 rounded-xl px-4 text-xs font-bold text-text-main focus:ring-1 focus:ring-primary outline-none transition-all appearance-none"
-                          value={zonaSeleccionada}
-                          onChange={(e) => setZonaSeleccionada(e.target.value)}
-                        >
-                          <option value="">— DESASIGNAR (PATRULLAJE) —</option>
-                          {zonas.map(z => <option key={z.id} value={z.id}>{z.nombre}</option>)}
-                        </select>
-                        <Boton onClick={handleAsignarZona} isLoading={guardandoAction} className="h-10 px-6 text-[10px] uppercase font-black tracking-widest w-full sm:w-auto">Asignar Zona</Boton>
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                {/* ── TAB: INCENTIVOS (REDISEÑO HORIZONTAL) ── */}
-                {tab === 'incentivos' && (
-                  <div className="space-y-6">
-                    <div className="bg-white/5 border border-amber-400/10 p-3 rounded-2xl">
-                      <div className="flex items-center gap-2 px-1 mb-2">
-                        <PlusCircle size={12} className="text-amber-400" />
-                        <span className="text-[9px] font-black text-text-muted uppercase tracking-widest">Añadir Reconocimiento</span>
-                      </div>
-                      <form onSubmit={handleInc} className="flex flex-col md:flex-row items-end gap-3">
-                        <div className="w-full md:w-56 shrink-0 space-y-1">
-                          <label className="text-[8px] font-black text-text-muted uppercase tracking-widest px-1 opacity-60">Tipo</label>
-                          <select className="w-full h-10 bg-bg-card border border-white/10 rounded-xl px-3 text-xs font-bold text-text-main focus:ring-1 focus:ring-amber-400 outline-none" 
-                              required value={formInc.tipo} onChange={e => setFormInc({...formInc, tipo: e.target.value})}>
-                              <option value="">SELECCIONAR...</option>
-                              {TIPOS_INCENTIVO.map(t => <option key={t.valor} value={t.valor}>{t.etiqueta}</option>)}
-                          </select>
-                        </div>
-                        <div className="flex-1 space-y-1 w-full">
-                          <label className="text-[8px] font-black text-text-muted uppercase tracking-widest px-1 opacity-60">Descripción del mérito</label>
-                          <input className="w-full h-10 bg-bg-card border border-white/10 rounded-xl px-3 text-xs font-bold text-text-main outline-none focus:ring-1 focus:ring-amber-400" 
-                              required placeholder="Ej: Excelente manejo de flujo vehicular en Zona A" value={formInc.descripcion} onChange={e => setFormInc({...formInc, descripcion: e.target.value})} />
-                        </div>
-                        <Boton type="submit" isLoading={guardandoAction} className="h-10 px-6 bg-amber-400 text-bg-app hover:bg-amber-500 text-[10px] font-black uppercase tracking-widest w-full md:w-auto">Registrar</Boton>
-                      </form>
-                    </div>
-
-                    <div className="space-y-3">
-                        <div className="flex items-center gap-2 px-1">
-                            <Star size={12} className="text-amber-400 opacity-40" />
-                            <span className="text-[9px] font-black text-text-muted uppercase tracking-widest">Historial de Méritos</span>
-                        </div>
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                            {details.incentivos.length === 0 ? (
-                                <div className="col-span-full py-8 text-center bg-white/2 rounded-xl border border-dashed border-white/5">
-                                  <p className="text-[9px] text-text-muted italic uppercase tracking-widest opacity-30">Sin registros de incentivo</p>
-                                </div>
-                            ) : details.incentivos.map(inc => {
-                                const st = ETIQUETA_INCENTIVO[inc.tipo] || {label: inc.tipo, color: 'bg-white/5 text-text-muted'};
-                                return (
-                                    <div key={inc.id} className="p-3 bg-white/5 border border-white/5 rounded-xl flex items-start gap-3">
-                                        <div className={cn("px-2 py-0.5 rounded-md text-[7px] font-black uppercase shrink-0 mt-0.5", st.color)}>{st.label}</div>
-                                        <div className="flex-1 min-w-0">
-                                            <p className="text-[10px] font-bold text-text-main leading-tight truncate">{inc.descripcion}</p>
-                                            <p className="text-[7px] text-text-muted mt-1 uppercase font-bold opacity-40">{new Date(inc.created_at).toLocaleDateString()}</p>
-                                        </div>
-                                    </div>
-                                )
-                            })}
-                        </div>
-                    </div>
-                  </div>
-                )}
-
-                {/* ── TAB: SANCIONES (REDISEÑO DISCRETO) ── */}
-                {tab === 'sanciones' && (
-                  <div className="space-y-6">
-                    <div className="bg-white/5 border border-danger/10 p-3 rounded-2xl">
-                      <div className="flex items-center gap-2 px-1 mb-2">
-                        <ShieldAlert size={12} className="text-danger" />
-                        <span className="text-[9px] font-black text-text-muted uppercase tracking-widest">Aplicar Medida Disciplinaria</span>
-                      </div>
-                      <form onSubmit={handleSanc} className="flex flex-col md:flex-row items-end gap-3">
-                        <div className="w-full md:w-56 shrink-0 space-y-1">
-                          <label className="text-[8px] font-black text-text-muted uppercase tracking-widest px-1 opacity-60">Gravedad / Tipo</label>
-                          <select className="w-full h-10 bg-bg-card border border-white/10 rounded-xl px-3 text-xs font-bold text-text-main focus:ring-1 focus:ring-danger outline-none" 
-                              required value={formSanc.tipo} onChange={e => setFormSanc({...formSanc, tipo: e.target.value})}>
-                              <option value="">SELECCIONAR...</option>
-                              {TIPOS_SANCION.map(t => <option key={t.valor} value={t.valor}>{t.etiqueta}</option>)}
-                          </select>
-                        </div>
-                        <div className="flex-1 space-y-1 w-full">
-                          <label className="text-[8px] font-black text-text-muted uppercase tracking-widest px-1 opacity-60">Motivo de la sanción</label>
-                          <input className="w-full h-10 bg-bg-card border border-white/10 rounded-xl px-3 text-xs font-bold text-text-main outline-none focus:ring-1 focus:ring-danger" 
-                              required placeholder="Detalle la infracción cometida..." value={formSanc.motivo} onChange={e => setFormSanc({...formSanc, motivo: e.target.value})} />
-                        </div>
-                        <div className="flex items-center gap-4 w-full md:w-auto">
-                          {formSanc.tipo === 'relevo_inmediato' && (
-                            <label className="flex items-center gap-2 p-2 bg-danger/10 border border-danger/20 rounded-lg cursor-pointer shrink-0">
-                                <input type="checkbox" className="accent-danger" checked={formSanc.ejecutar_inmediato} onChange={e => setFormSanc({...formSanc, ejecutar_inmediato: e.target.checked})} />
-                                <span className="text-[8px] font-black text-danger uppercase tracking-tight">Ejecutar Cierre</span>
-                            </label>
-                          )}
-                          <Boton type="submit" isLoading={guardandoAction} className="h-10 px-6 bg-danger text-white hover:bg-red-600 text-[10px] font-black uppercase tracking-widest w-full">Sancionar</Boton>
-                        </div>
-                      </form>
-                    </div>
-
-                    <div className="space-y-3">
-                        <div className="flex items-center gap-2 px-1">
-                            <Shield size={12} className="text-danger opacity-40" />
-                            <span className="text-[9px] font-black text-text-muted uppercase tracking-widest">Registro de Faltas</span>
-                        </div>
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                             {details.sanciones.length === 0 ? (
-                                <div className="col-span-full py-8 text-center bg-white/2 rounded-xl border border-dashed border-white/5">
-                                  <p className="text-[9px] text-text-muted italic uppercase tracking-widest opacity-30">Sin sanciones registradas</p>
-                                </div>
-                            ) : details.sanciones.map(s => {
-                                const st = ETIQUETA_SANCION[s.tipo] || {label: s.tipo, color: 'bg-white/5 text-text-muted'};
-                                const status = ESTADO_SANCION[s.estado] || {label: s.estado, color: 'text-text-muted'};
-                                return (
-                                    <div key={s.id} className="p-3 bg-white/5 border border-white/5 rounded-xl space-y-2">
-                                        <div className="flex items-center justify-between">
-                                            <div className={cn("px-2 py-0.5 rounded-md text-[7px] font-black uppercase", st.color)}>{st.label}</div>
-                                            <div className={cn("text-[7px] font-black uppercase", status.color)}>{status.label}</div>
-                                        </div>
-                                        <p className="text-[10px] font-bold text-text-main leading-tight truncate">{s.motivo}</p>
-                                        <p className="text-[7px] text-text-muted uppercase font-bold opacity-40">{new Date(s.created_at).toLocaleDateString()}</p>
-                                    </div>
-                                )
-                            })}
-                        </div>
-                    </div>
-                  </div>
-                )}
-
-                {/* ── TAB: EDITAR ── */}
-                {tab === 'editar' && (
-                  <div className="max-w-4xl bg-white/5 border border-white/5 p-4 rounded-2xl">
-                     <form onSubmit={handleEdit} className="grid grid-cols-2 lg:grid-cols-4 gap-4 items-end">
-                        <div className="space-y-1">
-                          <label className="text-[8px] font-black text-text-muted uppercase tracking-widest px-1">Nombres</label>
-                          <input className="w-full h-10 bg-bg-card border border-white/10 rounded-xl px-3 text-xs font-bold text-text-main outline-none focus:ring-1 focus:ring-primary" 
-                            required value={formEdit.nombre} onChange={e => setFormEdit({...formEdit, nombre: e.target.value.toUpperCase()})} />
-                        </div>
-                        <div className="space-y-1">
-                          <label className="text-[8px] font-black text-text-muted uppercase tracking-widest px-1">Apellidos</label>
-                          <input className="w-full h-10 bg-bg-card border border-white/10 rounded-xl px-3 text-xs font-bold text-text-main outline-none focus:ring-1 focus:ring-primary" 
-                            required value={formEdit.apellido} onChange={e => setFormEdit({...formEdit, apellido: e.target.value.toUpperCase()})} />
-                        </div>
-                        <div className="space-y-1">
-                          <label className="text-[8px] font-black text-text-muted uppercase tracking-widest px-1">Teléfono</label>
-                          <input className="w-full h-10 bg-bg-card border border-white/10 rounded-xl px-3 text-xs font-bold text-text-main outline-none focus:ring-1 focus:ring-primary" 
-                            value={formEdit.telefono} onChange={e => setFormEdit({...formEdit, telefono: e.target.value})} />
-                        </div>
-                        <Boton type="submit" isLoading={guardandoAction} className="h-10 text-[10px] font-black uppercase tracking-widest">Guardar</Boton>
-                     </form>
-                  </div>
-                )}
-              </>
-            )}
-          </div>
-        </div>
-      )}
-    </div>
+      {/* Modal de gestión según rol */}
+      <ModalGestion
+        miembro={miembro}
+        isOpen={modalOpen}
+        onClose={() => setModalOpen(false)}
+        zonas={zonas}
+        onUpdate={onUpdate}
+        userActual={userActual}
+      />
+    </>
   );
 };
+
+
+
 
 export default function Personal() {
   const { user: userActual } = useAuthStore();
@@ -698,7 +662,7 @@ export default function Personal() {
           <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-text-muted" size={18} />
           <input
             type="text"
-            placeholder="BUSCAR POR NOMBRE, CÉDULA O PLACA..."
+            placeholder="BUSCAR POR NOMBRE O CÉDULA..."
             className="w-full h-12 bg-bg-card border border-bg-high/10 rounded-xl pl-12 pr-4 text-sm font-bold text-text-main focus:ring-1 focus:ring-primary outline-none transition-all placeholder:text-text-muted/40 uppercase"
             value={search}
             onChange={(e) => { setSearch(e.target.value); setPage(0); }}

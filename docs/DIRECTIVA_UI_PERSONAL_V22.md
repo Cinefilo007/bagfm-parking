@@ -1,4 +1,54 @@
-# DIRECTIVA UI — GESTIÓN TÁCTICA DE PERSONAL (v2.2)
+# DIRECTIVA UI — GESTIÓN TÁCTICA DE PERSONAL (v2.3)
+
+## 1. Visión
+La interfaz de **Fuerza de Tareas** usa un sistema de listado simple con modal de gestión contextual según el rol del operativo. Esto permite ver todos los usuarios (parqueros, alcabalas, supervisores, administradores) sin mostrar opciones irrelevantes para cada uno.
+
+## 2. Componentes de la Interfaz
+
+### 2.1 KPIs Tácticos Globales
+- Grid **2x2 en móvil**, **4 en línea en `xl`** (`grid-cols-2 xl:grid-cols-4`).
+- Métricas: Operativos Totales, Activos Hoy, Parqueros en Campo, Zonas Cubiertas.
+
+### 2.2 Buscador
+- Placeholder: `BUSCAR POR NOMBRE O CÉDULA...` (sin placa).
+
+### 2.3 Tarjeta de Operativo (`MiembroCard`) — v2.3
+Tarjeta delgada **sin expansión inline**. Muestra:
+- Barra lateral de color del rol.
+- Avatar + Nombre + Badge de rol.
+- Info secundaria contextual según rol:
+  - `PARQUERO`: zona asignada o "Sin zona".
+  - `SUPERVISOR_PARQUEROS`: zona supervisada.
+  - `ALCABALA`: "Operador de acceso".
+  - `SUPERVISOR`: "Supervisor de ronda".
+  - `ADMIN_BASE` / `ADMIN_ENTIDAD`: su descripción de cargo.
+- Cédula y teléfono (si existe).
+- Acciones: **Gestionar** (abre modal), Toggle activo/pausa, Baja definitiva (solo COMANDANTE).
+
+### 2.4 Modal de Gestión (`ModalGestion`) — NUEVO v2.3
+Se abre al presionar "Gestionar". Las **tabs disponibles varían según el rol** del operativo gestionado:
+
+| Rol              | Tabs disponibles                          |
+|------------------|-------------------------------------------|
+| PARQUERO         | KPIs, Zona, Incentivos, Sanciones, Editar |
+| SUPERVISOR_PARQUEROS | KPIs, Zona, Incentivos, Sanciones, Editar |
+| ALCABALA         | KPIs, Incentivos, Sanciones, Editar       |
+| SUPERVISOR       | KPIs, Incentivos, Sanciones, Editar       |
+| ADMIN_BASE       | Editar                                    |
+| ADMIN_ENTIDAD    | Editar                                    |
+| COMANDANTE       | Editar                                    |
+
+- El tab de **KPIs** muestra "Asig. Manuales" solo para `PARQUERO` y `SUPERVISOR_PARQUEROS`.
+- El tab de **Zona** solo aparece para roles con zona asignable.
+
+## 3. Comportamiento y UX
+- Las tarjetas no se expanden en el listado.
+- El modal carga KPIs, incentivos y sanciones al abrirse.
+- El buscador filtra por nombre o cédula únicamente.
+
+---
+*Fecha: 2026-05-04 | Versión 2.3 — Tarjetas simples con modal contextual por rol*
+
 
 ## 1. Visión
 Evolucionar la interfaz de **Fuerza de Tareas** para alinearla con el estándar táctico de **Pases Masivos**. Se busca una gestión de alta densidad, eliminando modales intrusivos y utilizando componentes expandibles que mantengan el contexto operativo.
