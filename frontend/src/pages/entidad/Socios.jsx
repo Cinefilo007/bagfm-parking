@@ -10,7 +10,7 @@ import {
   Trash2, Download, RefreshCw, Filter,
   FileSpreadsheet, ShieldCheck, Clock, Pause,
   AlertTriangle, CheckCircle2, Upload, Calendar,
-  ChevronLeft, ChevronRight
+  ChevronLeft, ChevronRight, Edit2
 } from 'lucide-react';
 import api from '../../services/api';
 import socioService from '../../services/socioService';
@@ -25,6 +25,7 @@ export default function SociosEntidad() {
   const [socios, setSocios] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
@@ -33,6 +34,11 @@ export default function SociosEntidad() {
   const [nuevoSocio, setNuevoSocio] = useState({
     cedula: '', nombre: '', apellido: '', email: '', telefono: '',
     entidad_id: user?.entidad_id, vehiculos: [], fecha_expiracion: '', puestos_asignados: 1
+  });
+
+  const [editSocio, setEditSocio] = useState({
+    id: '', cedula: '', nombre: '', apellido: '', email: '', telefono: '',
+    puestos_asignados: 1, fecha_expiracion: ''
   });
 
   // Estado del modal de importación
@@ -187,6 +193,18 @@ export default function SociosEntidad() {
     } else if (type === 'eliminar') {
       setSocioSeleccionado(payload);
       setIsDeleteModalOpen(true);
+    } else if (type === 'editar') {
+      setEditSocio({
+        id: payload.id,
+        cedula: payload.cedula,
+        nombre: payload.nombre,
+        apellido: payload.apellido,
+        email: payload.email || '',
+        telefono: payload.telefono || '',
+        puestos_asignados: payload.membresia?.puestos_asignados || 1,
+        fecha_expiracion: payload.membresia?.fecha_fin || ''
+      });
+      setIsEditModalOpen(true);
     }
   };
 
@@ -215,6 +233,21 @@ export default function SociosEntidad() {
       toast.success('Membresía renovada');
     } catch (err) {
       toast.error('Error en la renovación');
+    }
+  };
+
+  const handleUpdateSocio = async (e) => {
+    e.preventDefault();
+    try {
+      setCreando(true);
+      await api.patch(`/socios/${editSocio.id}`, editSocio);
+      setIsEditModalOpen(false);
+      fetchSocios();
+      toast.success('Miembro actualizado correctamente');
+    } catch (err) {
+      toast.error(err.response?.data?.detail || 'Error al actualizar miembro');
+    } finally {
+      setCreando(false);
     }
   };
 
@@ -506,6 +539,93 @@ export default function SociosEntidad() {
                 {creando ? <RefreshCw className="animate-spin mr-2" size={16} /> : null}
                 {creando ? 'Procesando...' : 'Registrar'}
              </Boton>
+          </div>
+        </form>
+      </Modal>
+
+      {/* ═══════ MODAL: EDITAR MIEMBRO ═══════ */}
+      <Modal isOpen={isEditModalOpen} onClose={() => setIsEditModalOpen(false)} title="ACTUALIZACIÓN DE REGISTRO">
+        <form onSubmit={handleUpdateSocio} className="space-y-5">
+          <div className="space-y-4">
+             <div className="flex items-center gap-2 border-b border-white/5 pb-2">
+                <Edit2 size={14} className="text-primary" />
+                <span className="text-[10px] font-black text-text-muted uppercase tracking-widest">Identidad y Contacto</span>
+             </div>
+             <div className="grid grid-cols-2 gap-3">
+                <Input 
+                   label="Cédula" required placeholder="V-000000"
+                   value={editSocio.cedula}
+                   onChange={(e) => setEditSocio({...editSocio, cedula: e.target.value.toUpperCase()})}
+                />
+                <Input 
+                   label="Teléfono" placeholder="0412-0000000"
+                   value={editSocio.telefono}
+                   onChange={(e) => setEditSocio({...editSocio, telefono: e.target.value})}
+                />
+             </div>
+             <div className="grid grid-cols-2 gap-3">
+               <Input 
+                 label="Nombres" required placeholder="NOMBRE"
+                 value={editSocio.nombre}
+                 onChange={(e) => setEditSocio({...editSocio, nombre: e.target.value.toUpperCase()})}
+               />
+               <Input 
+                 label="Apellidos" required placeholder="APELLIDO"
+                 value={editSocio.apellido}
+                 onChange={(e) => setEditSocio({...editSocio, apellido: e.target.value.toUpperCase()})}
+               />
+             </div>
+             <Input 
+               label="Correo Electrónico" type="email" placeholder="socio@entidad.com"
+               value={editSocio.email}
+               onChange={(e) => setEditSocio({...editSocio, email: e.target.value.toLowerCase()})}
+             />
+
+             {/* Fecha de expiración */}
+             <div className="space-y-2 pt-2">
+                <div className="flex items-center gap-2 border-b border-white/5 pb-2">
+                   <Calendar size={14} className="text-amber-500" />
+                   <span className="text-[10px] font-black text-text-muted uppercase tracking-widest">Vigencia de Membresía</span>
+                </div>
+                <Input 
+                  label="Fecha de Expiración" type="date" required
+                  value={editSocio.fecha_expiracion}
+                  onChange={(e) => setEditSocio({...editSocio, fecha_expiracion: e.target.value})}
+                />
+             </div>
+
+             {/* Puestos de Estacionamiento */}
+             <div className="space-y-2 pt-2">
+                <div className="flex items-center gap-2 border-b border-white/5 pb-2">
+                   <span className="text-emerald-400 text-sm">🅿️</span>
+                   <span className="text-[10px] font-black text-text-muted uppercase tracking-widest">Puestos Asignados</span>
+                </div>
+                <div className="flex items-center gap-3">
+                  <button type="button"
+                    onClick={() => setEditSocio({...editSocio, puestos_asignados: Math.max(1, editSocio.puestos_asignados - 1)})}
+                    className="w-9 h-9 rounded-lg bg-white/5 hover:bg-white/10 text-white font-bold text-lg transition-colors"
+                  >−</button>
+                  <span className="text-2xl font-black text-white w-10 text-center">{editSocio.puestos_asignados}</span>
+                  <button type="button"
+                    onClick={() => setEditSocio({...editSocio, puestos_asignados: Math.min(5, editSocio.puestos_asignados + 1)})}
+                    className="w-9 h-9 rounded-lg bg-white/5 hover:bg-white/10 text-white font-bold text-lg transition-colors"
+                  >+</button>
+                </div>
+             </div>
+          </div>
+
+          <div className="flex gap-3 pt-2">
+            <Boton 
+              type="button" variant="ghost" className="flex-1"
+              onClick={() => setIsEditModalOpen(false)}
+            >
+              Cancelar
+            </Boton>
+            <Boton 
+              type="submit" disabled={creando} className="flex-[2] bg-primary text-bg-app font-black uppercase tracking-widest"
+            >
+              {creando ? <RefreshCw className="animate-spin" size={18} /> : 'Guardar Cambios'}
+            </Boton>
           </div>
         </form>
       </Modal>

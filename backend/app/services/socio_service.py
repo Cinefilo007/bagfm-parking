@@ -10,7 +10,7 @@ from app.models.membresia import Membresia
 from app.models.vehiculo import Vehiculo
 from app.models.codigo_qr import CodigoQR
 from app.models.enums import RolTipo, MembresiaEstado
-from app.schemas.socio import SocioCrear, MembresiaBase
+from app.schemas.socio import SocioCrear, SocioUpdate, MembresiaBase
 from app.core.security import hashear_password
 from app.core.excepciones import EntidadNoEncontrada, EntidadDuplicada
 from app.services.membresia_service import membresia_service
@@ -217,5 +217,37 @@ class SocioService:
         await db.commit()
         await db.refresh(membresia)
         return membresia
+
+    async def actualizar_socio(self, db: AsyncSession, socio_id: UUID, datos: SocioUpdate) -> Usuario:
+        """Actualiza los datos básicos y de membresía de un socio."""
+        # 1. Buscar el socio
+        query = select(Usuario).where(Usuario.id == socio_id, Usuario.rol == RolTipo.SOCIO)
+        res = await db.execute(query)
+        socio = res.scalar_one_or_none()
+        
+        if not socio:
+            raise EntidadNoEncontrada("Socio no encontrado")
+            
+        # 2. Actualizar datos de Usuario
+        if datos.nombre: socio.nombre = datos.nombre
+        if datos.apellido: socio.apellido = datos.apellido
+        if datos.email: socio.email = datos.email
+        if datos.telefono: socio.telefono = datos.telefono
+        if datos.cedula: socio.cedula = datos.cedula
+        
+        # 3. Actualizar datos de Membresía (si aplica)
+        if datos.puestos_asignados is not None or datos.fecha_expiracion is not None:
+            q_mem = select(Membresia).where(Membresia.socio_id == socio_id).order_by(Membresia.created_at.desc())
+            res_mem = await db.execute(q_mem)
+            membresia = res_mem.scalars().first()
+            if membresia:
+                if datos.puestos_asignados is not None:
+                    membresia.puestos_asignados = max(1, datos.puestos_asignados)
+                if datos.fecha_expiracion:
+                    membresia.fecha_fin = datos.fecha_expiracion
+                    
+        await db.commit()
+        await db.refresh(socio)
+        return socio
 
 socio_service = SocioService()

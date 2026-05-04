@@ -21,6 +21,15 @@ class SocioCrear(SocioBase):
     fecha_expiracion: Optional[date] = None  # Fecha de expiración de la membresía
     puestos_asignados: int = 1  # Número de puestos simultáneos en la zona
 
+class SocioUpdate(BaseModel):
+    cedula: Optional[str] = None
+    nombre: Optional[str] = None
+    apellido: Optional[str] = None
+    email: Optional[EmailStr] = None
+    telefono: Optional[str] = None
+    puestos_asignados: Optional[int] = None
+    fecha_expiracion: Optional[date] = None
+
 class MembresiaProgreso(BaseModel):
     dias_restantes: int
     porcentaje: int

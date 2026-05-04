@@ -8,7 +8,7 @@ from app.core.database import obtener_db
 from app.core.dependencias import obtener_usuario_actual, require_rol
 from app.models.enums import RolTipo, MembresiaEstado
 from app.models.usuario import Usuario
-from app.schemas.socio import SocioCrear, SocioSalida, SocioPortal
+from app.schemas.socio import SocioCrear, SocioSalida, SocioPortal, SocioUpdate
 from app.schemas.vehiculo import VehiculoCrear, VehiculoSalida
 from app.services.socio_service import socio_service
 from app.services.membresia_service import membresia_service
@@ -130,6 +130,32 @@ async def actualizar_membresia_socio(
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Sin permiso sobre este socio")
     try:
         return await socio_service.actualizar_puestos_asignados(db, socio_id, puestos_asignados)
+    except Exception as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+
+@router.patch("/{socio_id}", response_model=SocioSalida)
+async def actualizar_socio(
+    socio_id: UUID,
+    datos: SocioUpdate,
+    db: AsyncSession = Depends(obtener_db),
+    usuario_actual: Usuario = Depends(require_rol(GESTORES_SOCIOS))
+):
+    """
+    Actualiza los datos básicos de un socio.
+    """
+    if usuario_actual.rol == RolTipo.ADMIN_ENTIDAD:
+        query_socio = select(Usuario).where(Usuario.id == socio_id)
+        res = await db.execute(query_socio)
+        socio = res.scalar_one_or_none()
+        if not socio or socio.entidad_id != usuario_actual.entidad_id:
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Sin permiso sobre este socio")
+            
+    try:
+        updated_socio = await socio_service.actualizar_socio(db, socio_id, datos)
+        # Recargar para devolver con la info completa (membresía, etc)
+        # Aunque SocioSalida no requiere todo, el servicio obtener_socios_entidad usa un mapeo complejo.
+        # Por simplicidad, devolvemos el socio y el frontend refrescará la lista.
+        return updated_socio
     except Exception as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
 

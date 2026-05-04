@@ -12,7 +12,8 @@ import {
   Clock,
   ShieldAlert,
   Calendar,
-  Trash2
+  Trash2,
+  Edit2
 } from 'lucide-react';
 
 export const SocioCard = ({ socio, onAction }) => {
@@ -123,6 +124,14 @@ export const SocioCard = ({ socio, onAction }) => {
               title={esExonerado ? 'Quitar exoneración' : 'Exonerar'}
             >
               <ShieldAlert size={14} />
+            </button>
+
+            <button
+              onClick={(e) => { e.stopPropagation(); onAction('editar', socio); }}
+              className="h-8 w-8 rounded-lg bg-white/5 border border-white/10 text-text-muted hover:text-primary hover:border-primary/20 flex items-center justify-center transition-all hover:scale-105 shrink-0"
+              title="Editar socio"
+            >
+              <Edit2 size={13} />
             </button>
 
             <button
