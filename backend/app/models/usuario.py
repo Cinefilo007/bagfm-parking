@@ -44,7 +44,7 @@ class Usuario(Base):
 
     # Relaciones
     entidad_pertenece = relationship("EntidadCivil", foreign_keys=[entidad_id], back_populates="usuarios")
-    zona_asignada = relationship("ZonaEstacionamiento", foreign_keys=[zona_asignada_id], lazy="select")
+    zona_asignada = relationship("ZonaEstacionamiento", foreign_keys=[zona_asignada_id], lazy="selectin")
 
     # Atributos dinámicos (no persistidos, usados por services para enriquecer respuestas)
     @property
