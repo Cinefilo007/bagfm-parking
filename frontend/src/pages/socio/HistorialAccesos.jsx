@@ -1,9 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { RefreshCw, ArrowUpRight, ArrowDownRight, Search } from 'lucide-react';
-import { format } from 'date-fns';
-import { es } from 'date-fns/locale';
 import api from '../../services/api';
-import useAuthStore from '../../store/auth.store';
+import { useAuthStore } from '../../store/auth.store';
 
 const HistorialAccesos = () => {
   const { token } = useAuthStore();
@@ -93,10 +91,10 @@ const HistorialAccesos = () => {
                 
                 <div className="text-right">
                   <p className="text-neutral-300 font-mono text-xs">
-                    {format(new Date(evento.timestamp), "HH:mm")}
+                    {new Date(evento.timestamp).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })}
                   </p>
                   <p className="text-neutral-500 text-[10px] mt-0.5 uppercase tracking-wider">
-                    {format(new Date(evento.timestamp), "dd MMM yy", { locale: es })}
+                    {new Date(evento.timestamp).toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: '2-digit' })}
                   </p>
                 </div>
               </div>
