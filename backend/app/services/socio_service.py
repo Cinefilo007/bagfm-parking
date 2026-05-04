@@ -9,6 +9,8 @@ from app.models.entidad_civil import EntidadCivil
 from app.models.membresia import Membresia
 from app.models.vehiculo import Vehiculo
 from app.models.codigo_qr import CodigoQR
+from app.models.acceso import Acceso
+from app.models.infraccion import Infraccion
 from app.models.enums import RolTipo, MembresiaEstado
 from app.schemas.socio import SocioCrear, SocioUpdate, MembresiaBase
 from app.core.security import hashear_password
@@ -83,7 +85,24 @@ class SocioService:
 
         nombre = socio.nombre_completo
 
-        # Eliminar en orden: QRs -> Membresías -> Vehículos -> Usuario
+        # 0. Obtener IDs de vehículos del socio para limpiar bitácoras
+        query_v_ids = select(Vehiculo.id).where(Vehiculo.socio_id == socio_id)
+        res_v_ids = await db.execute(query_v_ids)
+        vehiculo_ids = res_v_ids.scalars().all()
+
+        # 1. Eliminar registros de Infracción (asociados al usuario o a sus vehículos)
+        where_clause_infr = (Infraccion.usuario_id == socio_id)
+        if vehiculo_ids:
+            where_clause_infr = (Infraccion.usuario_id == socio_id) | (Infraccion.vehiculo_id.in_(vehiculo_ids))
+        await db.execute(delete(Infraccion).where(where_clause_infr))
+
+        # 2. Eliminar registros de Acceso (asociados al usuario o a sus vehículos)
+        where_clause_acc = (Acceso.usuario_id == socio_id)
+        if vehiculo_ids:
+            where_clause_acc = (Acceso.usuario_id == socio_id) | (Acceso.vehiculo_id.in_(vehiculo_ids))
+        await db.execute(delete(Acceso).where(where_clause_acc))
+
+        # 3. Eliminar en orden: QRs -> Membresías -> Vehículos -> Usuario
         await db.execute(delete(CodigoQR).where(CodigoQR.usuario_id == socio_id))
         await db.execute(delete(Membresia).where(Membresia.socio_id == socio_id))
         await db.execute(delete(Vehiculo).where(Vehiculo.socio_id == socio_id))

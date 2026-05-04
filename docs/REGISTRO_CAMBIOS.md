@@ -10,6 +10,9 @@
 - **Nuevos accesos directos**: "Mi QR", "Infracciones" e "Historial de Accesos" añadidos a la navegación principal del Sidebar.
 - **Iconografía**: Integración de `QrCode` y `ArrowRightLeft` en el Sidebar.
 
+### Corregido — Sistema de Socios
+- **Eliminación en Cascada**: Se corrigió el bloqueo que impedía borrar socios con historial de accesos o infracciones. Ahora el sistema limpia recursivamente todos los registros vinculados para permitir la eliminación completa.
+
 ## [2.2.0] — 2026-04-23
 
 ### Añadido — Rediseño Táctico de Personal
