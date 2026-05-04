@@ -4,7 +4,8 @@ import {
   LogOut, Settings, ShieldCheck, Bell,
   LayoutDashboard, UserCircle, Map as MapIcon,
   Camera, Sun, Moon, UserCog, ParkingCircle, Activity, Radio, AlertTriangle, Palette,
-  ClipboardList, CalendarRange, Building2, Users, ParkingSquare, ShieldAlert
+  ClipboardList, CalendarRange, Building2, Users, ParkingSquare, ShieldAlert,
+  QrCode, ArrowRightLeft
 } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import { useAuthStore } from '../../store/auth.store';
@@ -31,12 +32,12 @@ export const Sidebar = () => {
     );
   } else if (user?.rol === 'ADMIN_ENTIDAD') {
     navItems.push(
-       { to: '/entidad/dashboard', label: 'Panel Control', icon: LayoutDashboard },
-       { to: '/entidad/estacionamientos', label: 'Estacionamientos', icon: ParkingSquare },
-       { to: '/entidad/pases-masivos', label: 'Pases Masivos', icon: CalendarRange },
-       { to: '/entidad/socios', label: 'Socios Permanentes', icon: Users },
-       { to: '/entidad/personal', label: 'Personal Interno', icon: UserCog },
-       { to: '/entidad/carnets', label: 'Editor de carnets', icon: Palette },
+      { to: '/entidad/dashboard', label: 'Panel Control', icon: LayoutDashboard },
+      { to: '/entidad/estacionamientos', label: 'Estacionamientos', icon: ParkingSquare },
+      { to: '/entidad/pases-masivos', label: 'Pases Masivos', icon: CalendarRange },
+      { to: '/entidad/socios', label: 'Socios Permanentes', icon: Users },
+      { to: '/entidad/personal', label: 'Personal Interno', icon: UserCog },
+      { to: '/entidad/carnets', label: 'Editor de carnets', icon: Palette },
     );
   } else if (user?.rol === 'ALCABALA') {
     navItems.push(
@@ -55,6 +56,12 @@ export const Sidebar = () => {
       { to: '/parquero/dashboard', label: 'Vista Parquero', icon: ParkingSquare },
       { to: '/parquero/perdidos', label: 'Vehículos Perdidos', icon: ShieldAlert },
       { to: '/parquero/notificaciones', label: 'Historial / Notif.', icon: Bell },
+    );
+  } else if (user?.rol === 'SOCIO') {
+    navItems.push(
+      { to: '/socio/portal', label: 'Mi QR', icon: QrCode },
+      { to: '/socio/infracciones', label: 'Infracciones', icon: AlertTriangle },
+      { to: '/socio/accesos', label: 'Historial de Accesos', icon: ArrowRightLeft },
     );
   }
 

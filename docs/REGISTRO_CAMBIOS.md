@@ -3,6 +3,13 @@
 > Este documento registra todos los cambios significativos al sistema.  
 > Sigue el formato [Keep a Changelog](https://keepachangelog.com/es-ES/1.0.0/).
 
+## [2.3.0] — 2026-05-04
+
+### Modificado — Interfaz de Socio
+- **Sidebar Táctico**: Sincronización del menú lateral con el menú móvil para el rol de `SOCIO`.
+- **Nuevos accesos directos**: "Mi QR", "Infracciones" e "Historial de Accesos" añadidos a la navegación principal del Sidebar.
+- **Iconografía**: Integración de `QrCode` y `ArrowRightLeft` en el Sidebar.
+
 ## [2.2.0] — 2026-04-23
 
 ### Añadido — Rediseño Táctico de Personal
