@@ -489,7 +489,7 @@ const MiembroCard = ({ miembro, userActual, zonas, onUpdate, onToggleActivo, onE
 
         {/* Acciones */}
         <div className="flex items-center gap-1.5 shrink-0">
-          {userActual.rol !== 'ALCABALA' && (
+          {miembro.rol !== 'ALCABALA' && (
             <button
               onClick={() => setModalOpen(true)}
               className="h-8 px-3 rounded-xl flex items-center gap-1.5 bg-primary/10 text-primary hover:bg-primary/20 border border-primary/20 transition-all text-[9px] font-black uppercase tracking-widest"
