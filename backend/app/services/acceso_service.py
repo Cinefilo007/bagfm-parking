@@ -655,6 +655,59 @@ class AccesoService:
             "size": size
         }
 
+    async def obtener_historial_socio(self, db: AsyncSession, usuario_id: UUID, page: int, size: int) -> dict:
+        """Obtiene la bitácora de accesos de un socio específico (y sus vehículos)"""
+        
+        # Obtener todos los vehículos del socio
+        q_vehiculos = select(Vehiculo.id).where(Vehiculo.socio_id == usuario_id)
+        vehiculos_res = await db.execute(q_vehiculos)
+        vehiculo_ids = [v for v in vehiculos_res.scalars().all()]
+        
+        query = select(Acceso).where(
+            or_(
+                Acceso.usuario_id == usuario_id,
+                Acceso.vehiculo_id.in_(vehiculo_ids) if vehiculo_ids else False
+            )
+        )
+
+        # Contar total
+        count_query = select(func.count()).select_from(query.subquery())
+        total = (await db.execute(count_query)).scalar() or 0
+
+        # Obtener página ordenada desc
+        query = query.order_by(Acceso.timestamp.desc()).offset((page - 1) * size).limit(size)
+        result = await db.execute(query)
+        accesos = result.scalars().all()
+
+        items = []
+        for acc in accesos:
+            vehiculo_str = "SIN VEHÍCULO"
+            
+            if acc.vehiculo_id:
+                v = await db.get(Vehiculo, acc.vehiculo_id)
+                if v:
+                    vehiculo_str = f"{v.marca} {v.modelo} [{v.placa}]"
+            elif acc.vehiculo_placa:
+                vehiculo_str = f"VEH. PASE [{acc.vehiculo_placa}]"
+                
+            items.append(EventoTactico(
+                id=acc.id,
+                tipo=acc.tipo,
+                timestamp=acc.timestamp,
+                usuario="", # No hace falta el nombre del socio aquí porque es su propia vista
+                vehiculo=vehiculo_str,
+                punto=acc.punto_acceso,
+                es_manual=acc.es_manual,
+                es_pase_temporal=False
+            ))
+
+        return {
+            "items": items,
+            "total": total,
+            "page": page,
+            "size": size
+        }
+
     async def buscar_por_placa(self, db: AsyncSession, placa: str, tipo: AccesoTipo) -> ResultadoValidacion:
         """
         Busca un vehículo por placa exacta en todos los orígenes posibles.

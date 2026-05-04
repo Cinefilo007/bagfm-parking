@@ -124,4 +124,35 @@ class NotificacionService:
             except Exception as e:
                 logging.error(f"Error enviando push de excepción a {sub.usuario_id}: {e}")
 
+    async def notificar_infraccion_socio(self, db: AsyncSession, socio_id: UUID, vehiculo_placa: str, infraccion_tipo: str, infraccion_gravedad: str):
+        """
+        Alerta Táctica: Notificar a un socio cuando su vehículo ha cometido una infracción.
+        """
+        query_subs = select(PushSubscription).where(
+            PushSubscription.usuario_id == socio_id,
+            PushSubscription.activo == True
+        )
+        result_subs = await db.execute(query_subs)
+        suscripciones = result_subs.scalars().all()
+
+        if not suscripciones:
+            return
+
+        payload = {
+            "title": f"🚨 Infracción Registrada ({infraccion_gravedad.upper()})",
+            "body": f"El vehículo {vehiculo_placa or 'N/A'} ha sido reportado por: {infraccion_tipo.replace('_', ' ').capitalize()}.",
+            "data": {
+                "url": "/socio/infracciones",
+                "tipo": "alerta_infraccion"
+            },
+            "icon": "/icons/ghost-vehiculo.png"
+        }
+
+        for sub in suscripciones:
+            try:
+                sub_info = {"endpoint": sub.endpoint, "keys": {"p256dh": sub.p256dh, "auth": sub.auth}}
+                webpush_service.send_notification(sub_info, payload)
+            except Exception as e:
+                logging.error(f"Error enviando push de infraccion al socio {socio_id}: {e}")
+
 notificacion_service = NotificacionService()

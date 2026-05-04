@@ -256,7 +256,17 @@ export const useAuthStore = create((set) => ({
     const user = localStorage.getItem('user');
 
     if (token && user) {
+      // 1. Iniciar con datos oxidados rápidos para no bloquear UI
       set({ token, user: JSON.parse(user), isAuthenticated: true, isLoading: false });
+      
+      // 2. Refrescar silenciosamente en background
+      api.get('auth/me').then(res => {
+        const freshUser = res.data;
+        localStorage.setItem('user', JSON.stringify(freshUser));
+        set({ user: freshUser });
+      }).catch(err => {
+        console.warn("No se pudo refrescar la sesión silente:", err);
+      });
     } else {
       set({ isAuthenticated: false, isLoading: false });
     }

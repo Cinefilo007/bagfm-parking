@@ -70,3 +70,12 @@ async def actualizar_perfil(
     Nombre/Apellido/Cédula solo editable por Comandante (validado en service).
     """
     return await auth_service.actualizar_perfil(db, usuario_actual, datos)
+
+@router.get("/me", response_model=UsuarioSalida)
+async def obtener_perfil_actual(
+    usuario_actual: Usuario = Depends(obtener_usuario_actual)
+):
+    """
+    Retorna los datos más actualizados del usuario autenticado para refrescar la sesión del frontend.
+    """
+    return usuario_actual

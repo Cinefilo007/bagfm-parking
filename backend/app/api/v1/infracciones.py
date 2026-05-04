@@ -107,11 +107,22 @@ async def registrar_infraccion(
         "fotos_evidencia": urls_evidencia
     }
     
-    # Adaptación rápida para no cambiar la firma del service drásticamente si no es necesario
     from app.schemas.infraccion import InfraccionCrear
     datos = InfraccionCrear(**datos_dict)
     
-    return await infraccion_service.registrar(db, datos, usuario_actual.id)
+    resultado = await infraccion_service.registrar(db, datos, usuario_actual.id)
+    
+    if vehiculo_id and vehiculo and vehiculo.socio_id:
+        from app.services.notificacion_service import notificacion_service
+        try:
+            await notificacion_service.notificar_infraccion_socio(
+                db, vehiculo.socio_id, vehiculo.placa, tipo.value, gravedad.value
+            )
+        except Exception as e:
+            import logging
+            logging.error(f"Error al intentar notificar infracción: {e}")
+            
+    return resultado
 
 @router.post("/{id}/resolver", response_model=InfraccionSalida)
 async def resolver_infraccion(

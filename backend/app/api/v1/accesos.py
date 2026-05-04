@@ -68,3 +68,13 @@ async def historial_tactico(
 ):
     """Obtiene el historial de eventos paginado para monitores tácticos."""
     return await acceso_service.obtener_historial_tactico(db, page, size, punto_nombre)
+
+@router.get("/me", response_model=PaginatedEventos)
+async def historial_socio(
+    page: int = 1,
+    size: int = 20,
+    db: AsyncSession = Depends(obtener_db),
+    usuario_actual: Usuario = Depends(require_rol([RolTipo.SOCIO, RolTipo.ADMIN_BASE, RolTipo.COMANDANTE]))
+):
+    """Obtiene el historial de accesos (entradas/salidas) del socio autenticado."""
+    return await acceso_service.obtener_historial_socio(db, usuario_actual.id, page, size)

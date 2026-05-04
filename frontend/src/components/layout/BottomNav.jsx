@@ -1,6 +1,6 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
-import { ShieldCheck, Users, Menu, ClipboardList, Camera, UserCog, LogOut, ParkingSquare, Radio, Bell, ShieldAlert, QrCode, AlertTriangle, IdCard } from 'lucide-react';
+import { ShieldCheck, Users, Menu, ClipboardList, Camera, UserCog, LogOut, ParkingSquare, Radio, Bell, ShieldAlert, QrCode, AlertTriangle, IdCard, ArrowRightLeft } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import { useAuthStore } from '../../store/auth.store';
 
@@ -49,8 +49,8 @@ export const BottomNav = () => {
     navItems.push(
       { to: '/socio/portal',       label: 'Mi QR',        icon: QrCode },
       { to: '/socio/infracciones', label: 'Infracciones', icon: AlertTriangle },
-      { to: '/ajustes',            label: 'Perfil',       icon: IdCard },
-      { label: 'Salir',            icon: LogOut,          action: 'logout' }
+      { to: '/socio/accesos',      label: 'Accesos',      icon: ArrowRightLeft },
+      { to: '/ajustes',            label: 'Perfil',       icon: IdCard }
     );
   } else {
     navItems.push(

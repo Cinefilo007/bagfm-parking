@@ -23,6 +23,7 @@ import PortalSocio from '../pages/socio/Portal';
 import InfraccionesSocio from '../pages/socio/Infracciones';
 import PortalEvento from '../pages/PortalEvento';
 import PortalPase from '../pages/PortalPase';
+import HistorialAccesos from '../pages/socio/HistorialAccesos';
 import DashboardParquero from '../pages/parquero/Dashboard';
 import VistaRecibir from '../pages/parquero/VistaRecibir';
 import VistaDespachar from '../pages/parquero/VistaDespachar';
@@ -132,7 +133,8 @@ export const router = createBrowserRouter([
             element: <RutaProtegida rolesPermitidos={['SOCIO']} />,
             children: [
               { path: 'portal',       element: <PortalSocio /> },
-              { path: 'infracciones', element: <InfraccionesSocio /> }
+              { path: 'infracciones', element: <InfraccionesSocio /> },
+              { path: 'accesos',      element: <HistorialAccesos /> }
             ]
           },
           // AJUSTES
