@@ -226,7 +226,7 @@ async def registrar_infraccion(
             
     return resultado
 
-@router.post("/{id}/resolver", response_model=InfraccionSalida)
+@router.put("/{id}/resolver", response_model=InfraccionSalida)
 async def resolver_infraccion(
     id: UUID,
     datos: InfraccionResolver,

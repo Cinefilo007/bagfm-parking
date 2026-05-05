@@ -278,8 +278,8 @@ export default function DashboardInfracciones() {
         );
     };
 
-    const cargarDatos = useCallback(async () => {
-        setCargando(true);
+    const cargarDatos = useCallback(async (isBackground = false) => {
+        if (!isBackground) setCargando(true);
         try {
             const [infData, lnData, zonasData] = await Promise.allSettled([
                 api.get('/infracciones/').then(r => r.data),
@@ -302,14 +302,14 @@ export default function DashboardInfracciones() {
                 { id: 'ln1', nombre: 'CARLOS DÍAZ', cedula: 'V-14567890', placa: 'RST-111', motivo: 'Acceso no autorizado reiterado', bloqueado_at: new Date().toISOString() },
             ]);
         } finally {
-            setCargando(false);
+            if (!isBackground) setCargando(false);
         }
     }, []);
 
     useEffect(() => {
         cargarDatos();
         // El polling de 30s queda como respaldo, pero el WS es prioridad
-        const iv = setInterval(cargarDatos, 30000);
+        const iv = setInterval(() => cargarDatos(true), 30000);
         return () => clearInterval(iv);
     }, [cargarDatos]);
 
@@ -318,7 +318,7 @@ export default function DashboardInfracciones() {
         if (lastNotification?.evento === 'INFRACCION_REGISTRADA' || 
             lastNotification?.evento === 'INFRACCION_RESUELTA' ||
             lastNotification?.evento === 'INFRACCION_ESCALADA') {
-            cargarDatos();
+            cargarDatos(true);
             setLastNotification(null); // Limpiar para no disparar de nuevo
         }
     }, [lastNotification, cargarDatos, setLastNotification]);
@@ -685,7 +685,7 @@ export default function DashboardInfracciones() {
                                 {vehiculoInfo && (
                                     <div className="animate-in fade-in slide-in-from-top-2 duration-300">
                                         {vehiculoInfo.encontrado ? (
-                                            <div className="p-3 bg-primary/10 border border-primary/20 rounded-xl relative overflow-hidden">
+                                            <div className="p-3 pr-20 bg-primary/10 border border-primary/20 rounded-xl relative overflow-hidden">
                                                 <div className="absolute top-0 right-0 bg-primary/20 px-2 py-1 rounded-bl-lg">
                                                     <span className="text-[8px] font-black text-primary tracking-widest uppercase">{vehiculoInfo.tipo}</span>
                                                 </div>

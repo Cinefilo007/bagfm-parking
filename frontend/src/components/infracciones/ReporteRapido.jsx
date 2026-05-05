@@ -272,7 +272,7 @@ export default function ReporteInfraccionRapido({ placa = '', vehiculoId = null,
                     {vehiculoInfo && (
                         <div className="animate-in fade-in slide-in-from-top-2 duration-300">
                             {vehiculoInfo.encontrado ? (
-                                <div className="p-3 bg-primary/10 border border-primary/20 rounded-xl relative overflow-hidden">
+                                <div className="p-3 pr-20 bg-primary/10 border border-primary/20 rounded-xl relative overflow-hidden">
                                     <div className="absolute top-0 right-0 bg-primary/20 px-2 py-1 rounded-bl-lg">
                                         <span className="text-[8px] font-black text-primary tracking-widest uppercase">
                                             {vehiculoInfo.tipo}
