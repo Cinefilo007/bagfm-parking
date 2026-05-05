@@ -50,7 +50,9 @@ async def listar_infracciones(
     from sqlalchemy.orm import selectinload
     query = select(Infraccion).options(selectinload(Infraccion.vehiculo), selectinload(Infraccion.infractor)).order_by(Infraccion.created_at.desc())
     result = await db.execute(query)
-    return result.scalars().all()
+    infracciones = result.scalars().all()
+    
+    return await enrich_infracciones_temporales(db, infracciones)
 
 @router.get("/activas", response_model=List[InfraccionSalida])
 async def listar_infracciones_activas(
@@ -60,7 +62,34 @@ async def listar_infracciones_activas(
     """
     Lista las infracciones que aún no han sido resueltas.
     """
-    return await infraccion_service.obtener_activas(db)
+    infracciones = await infraccion_service.obtener_activas(db)
+    return await enrich_infracciones_temporales(db, infracciones)
+
+async def enrich_infracciones_temporales(db: AsyncSession, infracciones: List[Infraccion]) -> List[InfraccionSalida]:
+    from app.models.codigo_qr import CodigoQR
+    from app.schemas.infraccion import UsuarioBasico
+    
+    salida = []
+    for inf in infracciones:
+        inf_dto = InfraccionSalida.model_validate(inf)
+        if not inf_dto.infractor and inf.vehiculo:
+            # Buscar el QR más reciente asociado a la placa
+            qr_temp = await db.execute(
+                select(CodigoQR)
+                .where(CodigoQR.vehiculo_placa == inf.vehiculo.placa)
+                .order_by(CodigoQR.created_at.desc())
+                .limit(1)
+            )
+            qr = qr_temp.scalar_one_or_none()
+            if qr:
+                inf_dto.infractor = UsuarioBasico(
+                    nombre=qr.nombre_portador or "Visitante Temporal",
+                    apellido="",
+                    telefono=qr.telefono_portador,
+                    rol="VISITANTE TEMPORAL"
+                )
+        salida.append(inf_dto)
+    return salida
 
 @router.post("/analizar-evidencias", status_code=status.HTTP_200_OK)
 async def analizar_evidencias_endpoint(
