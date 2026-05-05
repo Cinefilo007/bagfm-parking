@@ -94,7 +94,8 @@ class InfraccionService:
 
     async def obtener_activas(self, db: AsyncSession):
         """Lista todas las infracciones que siguen activas."""
-        query = select(Infraccion).where(Infraccion.estado == InfraccionEstado.activa)
+        from sqlalchemy.orm import selectinload
+        query = select(Infraccion).options(selectinload(Infraccion.vehiculo), selectinload(Infraccion.infractor)).where(Infraccion.estado == InfraccionEstado.activa).order_by(Infraccion.created_at.desc())
         result = await db.execute(query)
         return result.scalars().all()
 

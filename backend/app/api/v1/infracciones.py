@@ -47,7 +47,8 @@ async def listar_infracciones(
     """
     Lista todas las infracciones (historial completo).
     """
-    query = select(Infraccion)
+    from sqlalchemy.orm import selectinload
+    query = select(Infraccion).options(selectinload(Infraccion.vehiculo), selectinload(Infraccion.infractor)).order_by(Infraccion.created_at.desc())
     result = await db.execute(query)
     return result.scalars().all()
 

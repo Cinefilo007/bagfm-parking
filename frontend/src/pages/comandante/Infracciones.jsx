@@ -75,9 +75,10 @@ const InfraccionCard = ({ infraccion, userRol, onResolver, onEscalar, onDetalle 
                         <span className={cn("text-[8px] font-bold ml-auto", ecfg.color)}>{ecfg.label}</span>
                     </div>
                     <div className="flex items-center gap-3 mt-1.5 flex-wrap">
-                        {infraccion.vehiculo_placa && (
+                        {(infraccion.vehiculo?.placa || infraccion.vehiculo_placa) && (
                             <span className="text-[9px] text-text-muted flex items-center gap-1">
-                                <Car size={9} /> {infraccion.vehiculo_placa}
+                                <Car size={9} /> {infraccion.vehiculo?.placa || infraccion.vehiculo_placa}
+                                {infraccion.vehiculo?.marca && infraccion.vehiculo.marca !== 'DESCONOCIDA' && ` · ${infraccion.vehiculo.marca} ${infraccion.vehiculo.modelo}`}
                             </span>
                         )}
                         {infraccion.zona_nombre && (
@@ -96,6 +97,23 @@ const InfraccionCard = ({ infraccion, userRol, onResolver, onEscalar, onDetalle 
                     </div>
                     {infraccion.descripcion && (
                         <p className="text-[9px] text-text-muted/70 mt-1 line-clamp-1">{infraccion.descripcion}</p>
+                    )}
+                    {infraccion.infractor && (
+                        <div className="flex items-center gap-2 mt-2 pt-2 border-t border-white/5">
+                            <User size={10} className="text-primary" />
+                            <span className="text-[9px] font-bold text-text-main uppercase">
+                                {infraccion.infractor.nombre} {infraccion.infractor.apellido}
+                            </span>
+                            <span className="text-[8px] text-text-muted px-1.5 border-l border-white/10 uppercase">
+                                {infraccion.infractor.rol.replace(/_/g, ' ')}
+                            </span>
+                            {infraccion.infractor.telefono && (
+                                <a href={`tel:${infraccion.infractor.telefono}`} className="ml-auto inline-flex items-center gap-1 bg-success/15 hover:bg-success/25 text-success px-2 py-0.5 rounded-md transition-colors">
+                                    <Phone size={9} />
+                                    <span className="text-[8px] font-black uppercase tracking-wider">Llamar</span>
+                                </a>
+                            )}
+                        </div>
                     )}
                 </div>
             </div>

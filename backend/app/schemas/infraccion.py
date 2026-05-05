@@ -28,6 +28,19 @@ class InfraccionResolver(BaseModel):
     estado: InfraccionEstado
     observaciones_resolucion: str
 
+class VehiculoBasico(BaseModel):
+    placa: str
+    marca: str
+    modelo: str
+    model_config = ConfigDict(from_attributes=True)
+
+class UsuarioBasico(BaseModel):
+    nombre: str
+    apellido: str
+    telefono: Optional[str] = None
+    rol: str
+    model_config = ConfigDict(from_attributes=True)
+
 class InfraccionSalida(InfraccionBase):
     id: UUID
     reportado_por: UUID
@@ -36,5 +49,8 @@ class InfraccionSalida(InfraccionBase):
     resuelta_at: Optional[datetime] = None
     observaciones_resolucion: Optional[str] = None
     created_at: datetime
+    
+    vehiculo: Optional[VehiculoBasico] = None
+    infractor: Optional[UsuarioBasico] = None
     
     model_config = ConfigDict(from_attributes=True)
