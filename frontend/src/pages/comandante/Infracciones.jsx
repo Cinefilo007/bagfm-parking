@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { Card } from '../../components/ui/Card';
 import { Boton } from '../../components/ui/Boton';
 import { Modal } from '../../components/ui/Modal';
+import SelectTactivo from '../../components/ui/SelectTactivo';
 import { cn } from '../../lib/utils';
 import { toast } from 'react-hot-toast';
 import { useAuthStore } from '../../store/auth.store';
@@ -745,33 +746,33 @@ export default function DashboardInfracciones() {
                                     </div>
                                 )}
 
-                                <select 
-                                    className="w-full h-11 bg-white/5 border border-white/10 rounded-xl px-4 text-sm font-bold text-text-main focus:border-primary/50 outline-none"
-                                    value={formReporte.zona_id}
-                                    onChange={e => setFormReporte({...formReporte, zona_id: e.target.value})}
-                                >
-                                    <option value="" className="bg-bg-modal">Seleccionar Zona (Opcional)</option>
-                                    {zonas.map(z => <option key={z.id} value={z.id} className="bg-bg-modal">{z.nombre}</option>)}
-                                </select>
+                                <SelectTactivo
+                                    options={zonas.map(z => ({ value: z.id, label: z.nombre }))}
+                                    value={formReporte.zona_id ? { value: formReporte.zona_id, label: zonas.find(z => z.id === formReporte.zona_id)?.nombre || formReporte.zona_id } : null}
+                                    onChange={opt => setFormReporte({...formReporte, zona_id: opt ? opt.value : ''})}
+                                    placeholder="Seleccionar Zona (Opcional)"
+                                    isClearable
+                                />
                             </div>
                         </div>
 
                         <div>
                             <label className="text-[10px] font-black text-text-muted uppercase tracking-widest block mb-2">Clasificación de Falta</label>
                             <div className="grid grid-cols-1 gap-3">
-                                <select 
-                                    className="w-full h-11 bg-white/5 border border-white/10 rounded-xl px-4 text-sm font-bold text-text-main focus:border-primary/50 outline-none uppercase"
-                                    value={formReporte.tipo}
-                                    onChange={e => setFormReporte({...formReporte, tipo: e.target.value})}
-                                >
-                                    <option value="mal_estacionado">Mal Estacionado</option>
-                                    <option value="exceso_velocidad">Exceso de Velocidad</option>
-                                    <option value="conducta_indebida">Conducta Indebida</option>
-                                    <option value="colision">Colisión</option>
-                                    <option value="zona_prohibida">Zona Prohibida</option>
-                                    <option value="acceso_no_autorizado">Acceso No Autorizado</option>
-                                    <option value="otro">Otro Motivo</option>
-                                </select>
+                                <SelectTactivo
+                                    options={[
+                                        { value: "mal_estacionado", label: "Mal Estacionado" },
+                                        { value: "exceso_velocidad", label: "Exceso de Velocidad" },
+                                        { value: "conducta_indebida", label: "Conducta Indebida" },
+                                        { value: "colision", label: "Colisión" },
+                                        { value: "zona_prohibida", label: "Zona Prohibida" },
+                                        { value: "acceso_no_autorizado", label: "Acceso No Autorizado" },
+                                        { value: "otro", label: "Otro Motivo" }
+                                    ]}
+                                    value={{ value: formReporte.tipo, label: formReporte.tipo.replace(/_/g, ' ').toUpperCase() }}
+                                    onChange={opt => setFormReporte({...formReporte, tipo: opt.value})}
+                                    placeholder="Seleccione la falta"
+                                />
                                 <div className="flex gap-2">
                                     {['leve', 'moderada', 'grave', 'critica'].map(g => (
                                         <button 
