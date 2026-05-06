@@ -4,7 +4,9 @@ import {
   User, LogOut, Shield, Mail, BadgeCheck, Settings, 
   CalendarRange, ChevronRight, Phone, Lock, Save,
   UserCog, Edit3, Key, Fingerprint, AtSign, Smartphone,
-  Trash2, Plus, MonitorSmartphone
+  Trash2, Plus, MonitorSmartphone, LayoutDashboard,
+  AlertTriangle, Palette, Users, Radio, ShieldAlert,
+  ParkingSquare, Building2, ClipboardList
 } from 'lucide-react';
 import { Card, CardContent } from '../components/ui/Card';
 import { Boton } from '../components/ui/Boton';
@@ -223,8 +225,55 @@ export default function Ajustes() {
     }
   };
 
+  // --- Lógica de Navegación Extendida para Móviles ---
+  const extendedNavItems = [];
+  if (user?.rol === 'COMANDANTE' || user?.rol === 'ADMIN_BASE' || user?.rol === 'SUPERVISOR') {
+    extendedNavItems.push(
+      { to: '/comando/eventos', label: 'Eventos Masivos', icon: CalendarRange, color: 'text-orange-400' },
+      { to: '/comando/infracciones', label: 'Infracciones', icon: AlertTriangle, color: 'text-danger' },
+      { to: '/comando/personal', label: 'Gestión Personal', icon: UserCog, color: 'text-primary' },
+      { to: '/comando/carnets', label: 'Editor de Carnets', icon: Palette, color: 'text-indigo-400' },
+    );
+  } else if (user?.rol === 'ADMIN_ENTIDAD') {
+    extendedNavItems.push(
+      { to: '/entidad/personal', label: 'Personal Interno', icon: UserCog, color: 'text-primary' },
+      { to: '/entidad/carnets', label: 'Editor de Carnets', icon: Palette, color: 'text-indigo-400' },
+    );
+  } else if (user?.rol === 'SUPERVISOR_PARQUEROS') {
+    extendedNavItems.push(
+      { to: '/parquero/perdidos', label: 'Vehículos Perdidos', icon: ShieldAlert, color: 'text-danger' },
+      { to: '/parquero/notificaciones', label: 'Historial / Notif.', icon: Bell, color: 'text-primary' },
+    );
+  }
+
   return (
     <div className="p-2 md:p-4 space-y-4 md:space-y-8 pb-32 animate-in fade-in slide-in-from-bottom-4 duration-500">
+      
+      {/* Panel de Navegación Extendida (Solo visible en móviles/tablets si hay items) */}
+      {extendedNavItems.length > 0 && (
+        <section className="lg:hidden max-w-4xl mx-auto px-2 space-y-3">
+          <p className="text-[10px] text-text-muted uppercase font-black tracking-[0.3em] opacity-40 ml-2">Módulos Operativos</p>
+          <div className="grid grid-cols-2 gap-3">
+            {extendedNavItems.map((item) => {
+              const Icon = item.icon;
+              return (
+                <NavLink 
+                  key={item.to} 
+                  to={item.to}
+                  className="flex flex-col items-center justify-center p-5 rounded-2xl bg-bg-low/40 border border-white/5 backdrop-blur-md active:scale-95 transition-all group"
+                >
+                  <div className={cn("mb-3 p-3 rounded-xl bg-white/[0.03] group-hover:bg-white/[0.08] transition-colors", item.color)}>
+                    <Icon size={24} strokeWidth={2.5} />
+                  </div>
+                  <span className="text-[10px] font-black text-white uppercase tracking-tight text-center leading-tight">
+                    {item.label}
+                  </span>
+                </NavLink>
+              );
+            })}
+          </div>
+        </section>
+      )}
       
       {/* Header Visual de Perfil */}
       <section className="relative">
