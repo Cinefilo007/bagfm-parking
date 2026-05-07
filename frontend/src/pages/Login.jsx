@@ -117,22 +117,22 @@ export default function Login() {
       <div className="w-full max-w-sm mx-auto">
         {/* LOGO SIMULADO */}
         <div className="flex flex-col items-center mb-10 text-center animate-in fade-in slide-in-from-top-4 duration-700">
-          <div className="w-16 h-16 bg-gradient-to-br from-primary to-primary-dark rounded-2xl flex flex-col items-center justify-center mb-4 shadow-[0_0_40px_rgba(78,222,163,0.25)] border border-white/10 group">
+          <div className="w-16 h-16 bg-gradient-to-br from-primary to-primary-dark rounded-2xl flex flex-col items-center justify-center mb-4 shadow-[0_0_40px_rgba(78,222,163,0.25)] border border-text-main/10 group">
             <ShieldCheck size={32} color="#003824" strokeWidth={2} className="group-hover:scale-110 transition-transform" />
           </div>
-          <h1 className="font-display font-black text-3xl tracking-tight text-white uppercase italic">BAGFM</h1>
+          <h1 className="font-display font-black text-3xl tracking-tight text-text-main uppercase italic">BAGFM</h1>
           <p className="text-primary tracking-[0.3em] text-[10px] font-black uppercase mt-1 opacity-80">Control Táctico</p>
         </div>
 
         {/* CARTA DE LOGIN */}
-        <div className="bg-bg-modal border border-white/5 rounded-3xl p-8 shadow-2xl relative overflow-hidden backdrop-blur-xl">
+        <div className="bg-bg-modal border border-text-main/10 rounded-3xl p-8 shadow-2xl relative overflow-hidden backdrop-blur-xl">
           {/* Acento decorativo */}
           <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-primary/50 to-transparent"></div>
           
           <div className="relative z-10">
             {step === 1 ? (
               <div className="animate-in fade-in slide-in-from-right-4 duration-500">
-                <h2 className="font-display font-bold text-white text-lg mb-2 text-center uppercase tracking-tight">Identificación</h2>
+                <h2 className="font-display font-bold text-text-main text-lg mb-2 text-center uppercase tracking-tight">Identificación</h2>
                 <p className="text-[10px] text-text-muted text-center uppercase font-bold tracking-widest mb-8 opacity-60">Acceso al Sistema Central</p>
                 
                 <form onSubmit={handleNextStep} className="space-y-6">
@@ -143,7 +143,7 @@ export default function Login() {
                       <input 
                         type="text"
                         placeholder="Ingresa tu cédula"
-                        className="w-full h-14 bg-bg-app/50 border border-white/10 focus:border-primary rounded-xl pl-12 pr-4 text-sm font-bold text-white transition-all placeholder:text-text-muted/30"
+                        className="w-full h-14 bg-bg-low/50 border border-text-main/10 focus:border-primary rounded-xl pl-12 pr-4 text-sm font-bold text-text-main transition-all placeholder:text-text-muted/30"
                         value={cedula}
                         onChange={(e) => setCedula(e.target.value)}
                         disabled={loading}
@@ -185,10 +185,10 @@ export default function Login() {
                 </button>
                 
                 <div className="text-center mb-8">
-                  <div className="w-12 h-12 rounded-full bg-white/5 flex items-center justify-center mx-auto mb-3 border border-white/10">
+                  <div className="w-12 h-12 rounded-full bg-text-main/5 flex items-center justify-center mx-auto mb-3 border border-text-main/10">
                     <UserIcon size={20} className="text-primary/70" />
                   </div>
-                  <h3 className="text-sm font-bold text-white uppercase tracking-tight">{cedula}</h3>
+                  <h3 className="text-sm font-bold text-text-main uppercase tracking-tight">{cedula}</h3>
                   <p className="text-[9px] text-primary font-black uppercase tracking-widest mt-1 opacity-60">Personal Autorizado</p>
                 </div>
 
@@ -220,7 +220,7 @@ export default function Login() {
                         <input 
                           type="password"
                           placeholder="••••••••"
-                          className="w-full h-14 bg-bg-app/50 border border-white/10 focus:border-primary rounded-xl pl-12 pr-4 text-sm font-bold text-white transition-all placeholder:text-text-muted/30"
+                          className="w-full h-14 bg-bg-low/50 border border-text-main/10 focus:border-primary rounded-xl pl-12 pr-4 text-sm font-bold text-text-main transition-all placeholder:text-text-muted/30"
                           value={password}
                           onChange={(e) => setPassword(e.target.value)}
                           disabled={loading}
