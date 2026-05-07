@@ -20,7 +20,7 @@ class Acceso(Base):
     qr_id = Column(UUID(as_uuid=True), ForeignKey("codigos_qr.id", ondelete="SET NULL"), nullable=True) # Permite borrar pases manteniendo la bitácora
     usuario_id = Column(UUID(as_uuid=True), ForeignKey("usuarios.id", ondelete="RESTRICT"), nullable=True, index=True)
     vehiculo_id = Column(UUID(as_uuid=True), ForeignKey("vehiculos.id", ondelete="RESTRICT"), nullable=True)
-    vehiculo_pase_id = Column(UUID(as_uuid=True), ForeignKey("vehiculos_pase.id", ondelete="RESTRICT"), nullable=True)
+    vehiculo_pase_id = Column(UUID(as_uuid=True), ForeignKey("vehiculos_pase.id", ondelete="SET NULL"), nullable=True)
     
     tipo = Column(SQLEnum(AccesoTipo, name="acceso_tipo", native_enum=True), nullable=False)
     
