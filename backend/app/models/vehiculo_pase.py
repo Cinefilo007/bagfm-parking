@@ -32,3 +32,12 @@ class VehiculoPase(Base):
 
     # Relaciones
     puesto_asignado = relationship("PuestoEstacionamiento", foreign_keys=[puesto_asignado_id], lazy="selectin")
+    codigo_qr = relationship("CodigoQR", lazy="selectin", back_populates="vehiculos_adicionales")
+
+    @property
+    def tipo_pase(self):
+        if not self.codigo_qr:
+            return "SOCIO PERMANENTE" if not self.qr_id else "GENERAL"
+        if self.codigo_qr.tipo_acceso_custom:
+            return self.codigo_qr.tipo_acceso_custom.nombre.upper()
+        return self.codigo_qr.tipo_acceso.value.upper() if self.codigo_qr.tipo_acceso else "GENERAL"

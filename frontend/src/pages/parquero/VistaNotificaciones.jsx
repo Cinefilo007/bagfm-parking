@@ -143,6 +143,18 @@ const TarjetaEvento = ({ evento, onEntrada }) => {
                                 {evento.nombre_portador}
                             </span>
                         )}
+                        {evento.tipo_pase && (
+                            <span 
+                                className="text-[9px] font-black uppercase tracking-tighter px-2 py-0.5 rounded-md border"
+                                style={{ 
+                                    color: evento.tipo_pase_color, 
+                                    backgroundColor: `${evento.tipo_pase_color}10`, // 10% opacity
+                                    borderColor: `${evento.tipo_pase_color}30` // 30% opacity
+                                }}
+                            >
+                                {evento.tipo_pase}
+                            </span>
+                        )}
                         <span className="text-[10px] text-text-muted font-medium uppercase tracking-tight">
                             {[evento.color, evento.marca, evento.modelo].filter(Boolean).join(' · ') || 'Sin detalles adicionales'}
                         </span>

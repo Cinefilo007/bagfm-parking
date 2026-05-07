@@ -37,13 +37,27 @@ const FichaVehiculo = ({ datos, onConfirmar, cargando, onReset }) => (
                 </div>
                 <div className="flex-1">
                     <p className="text-xl font-black text-text-main tracking-wider">{datos.placa}</p>
-                    {(datos.marca || datos.modelo) && (
-                        <p className="text-[10px] text-text-muted">
-                            {[datos.color, datos.marca, datos.modelo].filter(Boolean).join(' · ')}
-                        </p>
-                    )}
+                    <div className="flex flex-wrap items-center gap-2 mt-0.5">
+                        {datos.tipo_pase && (
+                            <span 
+                                className="text-[8px] font-black uppercase tracking-tighter px-1.5 py-0.5 rounded border"
+                                style={{
+                                    color: datos.tipo_pase_color,
+                                    backgroundColor: `${datos.tipo_pase_color}10`,
+                                    borderColor: `${datos.tipo_pase_color}30`
+                                }}
+                            >
+                                {datos.tipo_pase}
+                            </span>
+                        )}
+                        {(datos.marca || datos.modelo) && (
+                            <p className="text-[10px] text-text-muted">
+                                {[datos.color, datos.marca, datos.modelo].filter(Boolean).join(' · ')}
+                            </p>
+                        )}
+                    </div>
                     {datos.nombre_portador && (
-                        <p className="text-[9px] font-bold text-success/80 mt-0.5">{datos.nombre_portador}</p>
+                        <p className="text-[9px] font-bold text-success/80 mt-1 uppercase tracking-tighter">{datos.nombre_portador}</p>
                     )}
                 </div>
             </div>
@@ -237,9 +251,23 @@ const ModalRegistroDatos = ({ resultadoSinDatos, zonaId, onRegistrado, onCerrar 
                             <div>
                                 <p className="text-[10px] font-black text-success uppercase tracking-widest">Vehículo Identificado</p>
                                 <p className="text-sm font-black text-text-main">{placa}</p>
-                                {(marca || modelo) && (
-                                    <p className="text-[9px] text-text-muted">{[color, marca, modelo].filter(Boolean).join(' · ')}</p>
-                                )}
+                                <div className="flex flex-wrap items-center gap-2 mt-0.5">
+                                    {resultadoSinDatos?.tipo_pase && (
+                                        <span 
+                                            className="text-[8px] font-black uppercase tracking-tighter px-1.5 py-0.5 rounded border"
+                                            style={{
+                                                color: resultadoSinDatos.tipo_pase_color,
+                                                backgroundColor: `${resultadoSinDatos.tipo_pase_color}10`,
+                                                borderColor: `${resultadoSinDatos.tipo_pase_color}30`
+                                            }}
+                                        >
+                                            {resultadoSinDatos.tipo_pase}
+                                        </span>
+                                    )}
+                                    {(marca || modelo) && (
+                                        <p className="text-[9px] text-text-muted">{[color, marca, modelo].filter(Boolean).join(' · ')}</p>
+                                    )}
+                                </div>
                             </div>
                         </div>
                     </div>

@@ -155,12 +155,15 @@ class ParqueroService:
             if v.puesto_asignado_id and hasattr(v, 'puesto_asignado') and v.puesto_asignado:
                 puesto_codigo = v.puesto_asignado.numero_puesto
 
+            info_v = self._get_tipo_acceso_info(v.codigo_qr) if v.codigo_qr else {"nombre": "GENERAL", "color": "#94a3b8"}
             resultado.append({
                 "id": str(v.id),
                 "placa": v.placa,
                 "marca": v.marca,
                 "modelo": v.modelo,
                 "color": v.color,
+                "tipo_pase": info_v["nombre"],
+                "tipo_pase_color": info_v["color"],
                 "hora_ingreso": v.hora_ingreso.isoformat() if v.hora_ingreso else None,
                 "tiempo_en_zona_min": tiempo_min,
                 "puesto_asignado_id": str(v.puesto_asignado_id) if v.puesto_asignado_id else None,
@@ -217,6 +220,7 @@ class ParqueroService:
             
             await db.commit()
             await db.refresh(vehiculo_pase)
+            info_pase = self._get_tipo_acceso_info(vehiculo_pase.codigo_qr) if vehiculo_pase.codigo_qr else {"nombre": "GENERAL", "color": "#94a3b8"}
             return {
                 "sin_datos": False,
                 "vehiculo_pase_id": str(vehiculo_pase.id),
@@ -224,6 +228,8 @@ class ParqueroService:
                 "marca": vehiculo_pase.marca,
                 "modelo": vehiculo_pase.modelo,
                 "color": vehiculo_pase.color,
+                "tipo_pase": info_pase["nombre"],
+                "tipo_pase_color": info_pase["color"],
                 "puesto_asignado_id": str(vehiculo_pase.puesto_asignado_id) if vehiculo_pase.puesto_asignado_id else None,
             }
 
@@ -264,6 +270,8 @@ class ParqueroService:
                 "marca": nuevo_vp.marca,
                 "modelo": nuevo_vp.modelo,
                 "color": nuevo_vp.color,
+                "tipo_pase": "SOCIO PERMANENTE",
+                "tipo_pase_color": "#3b82f6", # Azul para socios/base
                 "telefono_portador": telefono_socio,
                 "puesto_asignado_id": None,
             }
@@ -300,6 +308,7 @@ class ParqueroService:
             datos_persona_incompletos = not qr_encontrado.datos_completos or not qr_encontrado.nombre_portador
 
             if datos_persona_incompletos:
+                info_pase = self._get_tipo_acceso_info(qr_encontrado)
                 return {
                     "sin_datos": True,
                     "solo_persona": True,  # El vehículo ya tiene datos, solo falta persona
@@ -309,6 +318,8 @@ class ParqueroService:
                     "marca": qr_encontrado.vehiculo_marca,
                     "modelo": qr_encontrado.vehiculo_modelo,
                     "color": qr_encontrado.vehiculo_color,
+                    "tipo_pase": info_pase["nombre"],
+                    "tipo_pase_color": info_pase["color"],
                     "nombre_portador": qr_encontrado.nombre_portador,
                     "cedula_portador": qr_encontrado.cedula_portador,
                     "telefono_portador": qr_encontrado.telefono_portador,
@@ -322,6 +333,7 @@ class ParqueroService:
             
             await db.commit()
             await db.refresh(nuevo_vp)
+            info_pase = self._get_tipo_acceso_info(qr_encontrado)
             return {
                 "sin_datos": False,
                 "vehiculo_pase_id": str(nuevo_vp.id),
@@ -329,6 +341,8 @@ class ParqueroService:
                 "marca": qr_encontrado.vehiculo_marca,
                 "modelo": qr_encontrado.vehiculo_modelo,
                 "color": qr_encontrado.vehiculo_color,
+                "tipo_pase": info_pase["nombre"],
+                "tipo_pase_color": info_pase["color"],
                 "nombre_portador": qr_encontrado.nombre_portador,
                 "puesto_asignado_id": None,
             }
@@ -502,7 +516,7 @@ class ParqueroService:
             color = acceso.vehiculo_color
             portador = acceso.nombre_manual
 
-            # Si faltan datos en el acceso, intentar recuperarlos del QR vinculado
+            info_pase = {"nombre": "GENERAL", "color": "#94a3b8"}
             if acceso.qr_id:
                 qr = await db.get(CodigoQR, acceso.qr_id)
                 if qr:
@@ -511,6 +525,7 @@ class ParqueroService:
                     if not modelo: modelo = qr.vehiculo_modelo
                     if not color: color = qr.vehiculo_color
                     if not portador: portador = qr.nombre_portador
+                    info_pase = self._get_tipo_acceso_info(qr)
 
             eventos.append({
                 "tipo": "alcabala",
@@ -519,6 +534,8 @@ class ParqueroService:
                 "modelo": modelo,
                 "color": color,
                 "nombre_portador": portador,
+                "tipo_pase": info_pase["nombre"],
+                "tipo_pase_color": info_pase["color"],
                 "descripcion": f"Entrada por alcabala: {acceso.punto_acceso}",
                 "timestamp": acceso.timestamp.isoformat() if acceso.timestamp else None,
                 "punto": acceso.punto_acceso,
@@ -547,6 +564,8 @@ class ParqueroService:
                     if u:
                         portador = u.nombre
 
+            info_pase = self._get_tipo_acceso_info(vp.codigo_qr) if vp.codigo_qr else {"nombre": "GENERAL", "color": "#94a3b8"}
+            
             eventos.append({
                 "tipo": "ingreso_zona",
                 "placa": vp.placa,
@@ -554,6 +573,8 @@ class ParqueroService:
                 "modelo": vp.modelo,
                 "color": vp.color,
                 "nombre_portador": portador,
+                "tipo_pase": info_pase["nombre"],
+                "tipo_pase_color": info_pase["color"],
                 "descripcion": "Ingresó a zona",
                 "timestamp": vp.hora_ingreso.isoformat() if vp.hora_ingreso else None,
                 "puesto_asignado_id": str(vp.puesto_asignado_id) if vp.puesto_asignado_id else None,
@@ -569,6 +590,8 @@ class ParqueroService:
                     "modelo": vp.modelo,
                     "color": vp.color,
                     "nombre_portador": portador,
+                    "tipo_pase": info_pase["nombre"],
+                    "tipo_pase_color": info_pase["color"],
                     "descripcion": "Salió de zona",
                     "timestamp": vp.hora_salida.isoformat(),
                     "activo": False,
@@ -809,6 +832,27 @@ class ParqueroService:
         await db.commit()
         await db.refresh(vehiculo_pase)
         return vehiculo_pase
+
+
+    def _get_tipo_acceso_info(self, qr: CodigoQR) -> Dict[str, str]:
+        """Helper para obtener el nombre legible y el color del tipo de acceso."""
+        if not qr: 
+            return {"nombre": "GENERAL", "color": "#94a3b8"}
+            
+        if qr.tipo_acceso_custom:
+            return {
+                "nombre": qr.tipo_acceso_custom.nombre.upper(),
+                "color": qr.tipo_acceso_custom.color_hex or "#94a3b8"
+            }
+            
+        # Tipos estándar
+        nombre = qr.tipo_acceso.value.upper() if qr.tipo_acceso else "GENERAL"
+        color = "#94a3b8"
+        if nombre == "BASE": color = "#3b82f6" # Azul para la base
+        elif nombre == "VIP": color = "#f59e0b" # Ámbar
+        elif nombre == "PRODUCCION": color = "#10b981" # Esmeralda
+        
+        return {"nombre": nombre, "color": color}
 
 
 parquero_service = ParqueroService()
