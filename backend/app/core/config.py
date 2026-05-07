@@ -48,6 +48,7 @@ class Configuracion(BaseSettings):
 
     # Correos
     resend_api_key: str = ""
+    mail_from: str = "BAGFM Access <accesos@bagfm.mil.ve>"
 
     @property
     def cors_lista(self) -> list[str]:

@@ -54,9 +54,9 @@ class CorreoMasivoService:
             print(f"Error: No hay Token de Resend configurado.")
             return
 
-        remitente = f"{config.nombre_remitente} <{config.email_remitente}>" if (config and config.nombre_remitente) else "BAGFM Access <accesos@bagfm.mil.ve>"
-        if config and config.email_remitente and not config.nombre_remitente:
-            remitente = config.email_remitente
+        remitente = config_env.mail_from
+        if config and config.email_remitente:
+            remitente = f"{config.nombre_remitente} <{config.email_remitente}>" if config.nombre_remitente else config.email_remitente
 
         # Procesar lote. Enviamos 1 a 1 mediante httpx asíncrono
         async with httpx.AsyncClient() as client:
@@ -148,7 +148,9 @@ class CorreoMasivoService:
         api_key_to_use = config.api_key_resend if (config and config.api_key_resend) else config_env.resend_api_key
         if not api_key_to_use: return
 
-        remitente = f"{config.nombre_remitente} <{config.email_remitente}>" if (config and config.nombre_remitente) else "BAGFM Access <accesos@bagfm.mil.ve>"
+        remitente = config_env.mail_from
+        if config and config.email_remitente:
+            remitente = f"{config.nombre_remitente} <{config.email_remitente}>" if config.nombre_remitente else config.email_remitente
         
         destinatario = pase.email_portador
         nombre_dest = pase.nombre_portador or "Usuario Invitado"
