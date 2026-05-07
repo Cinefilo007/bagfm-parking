@@ -20,6 +20,7 @@ class LotePaseMasivoCrear(LotePaseMasivoBase):
     puesto_id: Optional[UUID] = None
     puesto_asignado_id: Optional[UUID] = None # Alias para compatibilidad frontend
     multi_vehiculo: bool = False
+    max_vehiculos: Optional[int] = 1
     excel_data: Optional[List[List[Any]]] = None
     distribucion_automatic: Optional[bool] = False # Deprecated but kept for safety
     distribucion_automatica: Optional[bool] = False

@@ -63,6 +63,9 @@ class LotePaseMasivo(Base):
     zip_url = Column(Text, nullable=True) # URL de Supabase Storage
     zip_listo_at = Column(DateTime(timezone=True), nullable=True)
     
+    multi_vehiculo = Column(Boolean, default=False, nullable=False)
+    max_vehiculos = Column(Integer, default=1, nullable=False)
+    
     pdf_url = Column(Text, nullable=True) # URL del PDF masivo (v2.0)
     # Relaciones
     zona_asignada = relationship("ZonaEstacionamiento", foreign_keys=[zona_estacionamiento_id], lazy="selectin")

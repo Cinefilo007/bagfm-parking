@@ -45,6 +45,7 @@ class CodigoQR(Base):
     vehiculo_modelo = Column(String(100), nullable=True)
     vehiculo_color = Column(String(50), nullable=True)
     multi_vehiculo = Column(Boolean, default=False, nullable=False)
+    max_vehiculos = Column(Integer, default=1, nullable=False)
     datos_completos = Column(Boolean, default=False, nullable=False)
     verificado_por_parquero = Column(Boolean, default=False, nullable=False)
     hora_entrada_base = Column(DateTime(timezone=True), nullable=True)

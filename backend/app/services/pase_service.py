@@ -138,6 +138,8 @@ class PaseService:
             tipo_acceso=tipo_acc,
             tipo_acceso_custom_id=datos.get('tipo_acceso_custom_id'),
             zona_estacionamiento_id=zona_id,
+            multi_vehiculo=datos.get('multi_vehiculo', False),
+            max_vehiculos=datos.get('max_vehiculos', 1),
             creado_por=creado_por_id
         )
         db.add(nuevo_lote)
@@ -663,7 +665,8 @@ class PaseService:
                 tipo_acceso_custom_id=extras.get('tipo_acceso_custom_id'),
                 zona_asignada_id=zona_final_id,
                 puesto_asignado_id=extras.get('puesto_id'),
-                multi_vehiculo=extras.get('multi_vehiculo', False)
+                multi_vehiculo=lote.multi_vehiculo,
+                max_vehiculos=lote.max_vehiculos
             )
             db.add(nuevo_qr)
 
@@ -702,7 +705,8 @@ class PaseService:
                 tipo_acceso_custom_id=extras.get('tipo_acceso_custom_id'),
                 zona_asignada_id=zona_final_id,
                 puesto_asignado_id=extras.get('puesto_id'),
-                multi_vehiculo=extras.get('multi_vehiculo', False)
+                multi_vehiculo=lote.multi_vehiculo,
+                max_vehiculos=lote.max_vehiculos
             )
             db.add(nuevo_qr)
             await db.flush()
@@ -779,7 +783,8 @@ class PaseService:
                 tipo_acceso=lote.tipo_acceso,
                 tipo_acceso_custom_id=lote.tipo_acceso_custom_id if hasattr(lote, 'tipo_acceso_custom_id') else None,
                 zona_asignada_id=zona_final_id,
-                multi_vehiculo=bool(v2_data[0] or v3_data[0] or v4_data[0])
+                multi_vehiculo=bool(v2_data[0] or v3_data[0] or v4_data[0]),
+                max_vehiculos=lote.max_vehiculos
             )
             db.add(nuevo_qr)
             await db.flush()

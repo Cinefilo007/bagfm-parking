@@ -1221,7 +1221,8 @@ const ModalNuevoLote = ({ isOpen, onClose, zonas, tiposCustom, onCreated }) => {
                 // Mapeo explícito
                 zona_id: cleanForm.zona_asignada_id,
                 puesto_id: cleanForm.puesto_asignado_id,
-                max_accesos_por_pase: cleanForm.max_accesos_ilimitados ? 0 : cleanForm.max_accesos_por_pase
+                max_accesos_por_pase: cleanForm.max_accesos_ilimitados ? null : cleanForm.max_accesos_por_pase,
+                max_vehiculos: cleanForm.multi_vehiculo ? cleanForm.max_vehiculos : 1
             };
             await pasesService.crearLote(payload);
             toast.success('Lote de pases creado con éxito');
