@@ -52,7 +52,7 @@ export default function Ajustes() {
   });
 
   const isComandante = user?.rol === RolTipo.COMANDANTE;
-  const isAdmin = user?.rol === RolTipo.COMANDANTE || user?.rol === RolTipo.ADMIN_BASE;
+  const isAdmin = user?.rol === RolTipo.COMANDANTE || user?.rol === RolTipo.ADMIN_BASE || user?.rol === RolTipo.ADMIN_ENTIDAD;
   const showEventos = user?.rol === RolTipo.COMANDANTE || user?.rol === RolTipo.ADMIN_BASE || user?.rol === RolTipo.ADMIN_ENTIDAD;
   const eventosLink = user?.rol === RolTipo.ADMIN_ENTIDAD ? '/entidad/eventos' : '/comando/eventos';
 
