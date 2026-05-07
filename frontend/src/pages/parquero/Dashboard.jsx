@@ -71,25 +71,25 @@ const TarjetaPuesto = ({ puesto, vehiculosEnZona = [], onClick }) => {
             )}
         >
             <div className={cn('w-2.5 h-2.5 rounded-full mb-1.5 shadow-sm', dotColor, esOcupado && 'animate-pulse')} />
-            <ParkingSquare size={24} className={cn(iconColor, esOcupado && 'animate-pulse drop-shadow-[0_0_12px_rgba(239,68,68,0.8)]')} />
+            <ParkingSquare size={20} className={cn(iconColor, esOcupado && 'animate-pulse drop-shadow-[0_0_8px_rgba(239,68,68,0.6)]')} />
             
             {/* Si está ocupado y tenemos placa, mostramos la placa como texto principal */}
             {esOcupado && vehiculo?.placa ? (
                 <>
-                    <span className="text-[10px] font-black uppercase tracking-tight mt-1.5 text-red-500 drop-shadow-sm">
+                    <span className="text-[9px] font-black uppercase tracking-tight mt-1.5 text-red-500 drop-shadow-sm">
                         {vehiculo.placa}
                     </span>
-                    <span className="text-[7px] font-bold text-text-muted/60 uppercase leading-none mt-0.5">
+                    <span className="text-[6px] font-bold text-text-muted/60 uppercase leading-none mt-0.5">
                         {puesto.numero_puesto || '—'}
                     </span>
                 </>
             ) : (
                 <>
-                    <span className="text-[10px] font-black uppercase tracking-tight mt-1.5 text-text-main leading-none">
+                    <span className="text-[9px] font-black uppercase tracking-tight mt-1.5 text-text-main leading-none">
                         {puesto.numero_puesto || puesto.codigo || '—'}
                     </span>
                     <span className={cn(
-                        'text-[8px] font-black uppercase tracking-wide leading-none mt-1',
+                        'text-[7px] font-black uppercase tracking-wide leading-none mt-1',
                         !esOcupado && esBase ? 'text-indigo-400' : !esOcupado && esEntidad ? 'text-warning' : iconColor
                     )}>
                         {etiqueta}
@@ -97,7 +97,7 @@ const TarjetaPuesto = ({ puesto, vehiculosEnZona = [], onClick }) => {
                 </>
             )}
             
-            {esBase && <Lock size={10} className="absolute top-1.5 right-1.5 text-indigo-400/60" />}
+            {esBase && <Lock size={8} className="absolute top-1.5 right-1.5 text-indigo-400/60" />}
         </button>
     );
 };

@@ -535,13 +535,23 @@ class ParqueroService:
             .limit(fetch_limit)
         )
         for vp in res_vp_in.scalars().all():
+            # Intentar resolver nombre del portador
+            portador = "DESCONOCIDO"
+            if vp.codigo_qr:
+                portador = vp.codigo_qr.nombre_portador
+                if not portador and vp.codigo_qr.usuario_id:
+                    res_u = await db.execute(select(Usuario).where(Usuario.id == vp.codigo_qr.usuario_id))
+                    u = res_u.scalars().first()
+                    if u:
+                        portador = u.nombre
+
             eventos.append({
                 "tipo": "ingreso_zona",
                 "placa": vp.placa,
                 "marca": vp.marca,
                 "modelo": vp.modelo,
                 "color": vp.color,
-                "nombre_portador": vp.nombre_portador,
+                "nombre_portador": portador,
                 "descripcion": "Ingresó a zona",
                 "timestamp": vp.hora_ingreso.isoformat() if vp.hora_ingreso else None,
                 "puesto_asignado_id": str(vp.puesto_asignado_id) if vp.puesto_asignado_id else None,
@@ -556,7 +566,7 @@ class ParqueroService:
                     "marca": vp.marca,
                     "modelo": vp.modelo,
                     "color": vp.color,
-                    "nombre_portador": vp.nombre_portador,
+                    "nombre_portador": portador,
                     "descripcion": "Salió de zona",
                     "timestamp": vp.hora_salida.isoformat(),
                     "activo": False,

@@ -14,7 +14,7 @@ La prioridad visual absoluta es el estado **OCUPADO**. Ningún otro indicador (r
 *   **Reservado Entidad**: Icono naranja (Warning).
 *   **Reservado BASE**: Icono Indigo (Base).
 *   **OCUPADO (Cualquier tipo)**: 
-    *   **Icono P**: Rojo brillante (`text-red-500`), tamaño aumentado (24px), efecto de pulso (`animate-pulse`) y brillo exterior (`drop-shadow`).
+    *   **Icono P**: Rojo brillante (`text-red-500`), tamaño estándar (20px), efecto de pulso (`animate-pulse`) y brillo exterior (`drop-shadow`).
     *   **Borde**: Rojo sólido con sombra interna.
     *   **Texto**: La placa del vehículo reemplaza el número del puesto o la etiqueta de entidad como información primaria.
 
