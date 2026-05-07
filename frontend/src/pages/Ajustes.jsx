@@ -228,17 +228,17 @@ export default function Ajustes() {
       
       {/* Header Visual de Perfil */}
       <section className="relative">
-        <div className="h-28 md:h-48 rounded-3xl bg-gradient-to-br from-primary/30 via-bg-low to-secondary/10 border border-white/5 overflow-hidden shadow-2xl">
+        <div className="h-28 md:h-48 rounded-3xl bg-gradient-to-br from-primary/30 via-bg-low to-secondary/10 border border-text-main/10 overflow-hidden shadow-2xl">
            <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-20" />
         </div>
 
         <div className="max-w-4xl mx-auto px-2 md:px-6 -mt-12 md:-mt-16 relative z-10">
-          <Card className="bg-bg-low/80 backdrop-blur-2xl border-white/10 shadow-2xl overflow-visible">
+          <Card className="bg-bg-low/80 backdrop-blur-2xl border-text-main/10 shadow-2xl overflow-visible">
             <CardContent className="pt-0 pb-6 md:pb-10 px-4 md:px-8">
               <div className="flex flex-col items-center -mt-12 md:mt-[-4rem]">
                 <div className="relative group">
                   <div className="w-24 h-24 md:w-32 md:h-32 rounded-3xl bg-bg-app p-1 md:p-1.5 shadow-2xl group-hover:rotate-3 transition-transform duration-500 ring-4 ring-primary/20">
-                    <div className="w-full h-full rounded-2xl bg-gradient-to-br from-primary/10 to-transparent flex items-center justify-center text-primary overflow-hidden relative border border-white/5">
+                    <div className="w-full h-full rounded-2xl bg-gradient-to-br from-primary/10 to-transparent flex items-center justify-center text-primary overflow-hidden relative border border-text-main/10">
                       <User size={48} className="md:w-16 md:h-16 group-hover:scale-110 transition-transform duration-500 opacity-80" />
                       {/* Badge de Seguridad */}
                       <div className="absolute bottom-2 right-2 w-6 h-6 bg-emerald-500 rounded-full border-2 border-bg-app flex items-center justify-center text-white">
@@ -249,7 +249,7 @@ export default function Ajustes() {
                 </div>
                 
                 <div className="mt-6 text-center">
-                  <h1 className="text-2xl md:text-3xl font-black text-white uppercase tracking-tight italic">
+                  <h1 className="text-2xl md:text-3xl font-black text-text-main uppercase tracking-tight italic">
                     {user.nombre} {user.apellido}
                   </h1>
                   <div className="flex items-center justify-center gap-3 mt-2">
@@ -268,21 +268,21 @@ export default function Ajustes() {
                     <p className="text-[9px] text-text-muted font-black uppercase tracking-widest opacity-60 mb-2">Identificación</p>
                     <div className="flex items-center gap-3">
                        <Fingerprint size={18} className="text-primary opacity-40 group-hover:opacity-100 transition-opacity" />
-                       <span className="text-sm font-mono font-bold text-text-main dark:text-white">{user.cedula}</span>
+                       <span className="text-sm font-mono font-bold text-text-main">{user.cedula}</span>
                     </div>
                  </div>
                  <div className="p-3 md:p-4 rounded-2xl bg-bg-app/50 dark:bg-white/[0.02] border border-bg-high/20 dark:border-white/5 hover:border-primary/40 transition-colors group">
                     <p className="text-[9px] text-text-muted font-black uppercase tracking-widest opacity-60 mb-2">Comunicación</p>
                     <div className="flex items-center gap-3">
                        <AtSign size={18} className="text-primary opacity-40 group-hover:opacity-100 transition-opacity" />
-                       <span className="text-sm font-bold text-text-main dark:text-white truncate">{user.email || 'SIN REGISTRO'}</span>
+                       <span className="text-sm font-bold text-text-main truncate">{user.email || 'SIN REGISTRO'}</span>
                     </div>
                  </div>
                  <div className="p-3 md:p-4 rounded-2xl bg-bg-app/50 dark:bg-white/[0.02] border border-bg-high/20 dark:border-white/5 hover:border-primary/40 transition-colors group">
                     <p className="text-[9px] text-text-muted font-black uppercase tracking-widest opacity-60 mb-2">Contacto Directo</p>
                     <div className="flex items-center gap-3">
                        <Smartphone size={18} className="text-primary opacity-40 group-hover:opacity-100 transition-opacity" />
-                       <span className="text-sm font-bold text-text-main dark:text-white">{user.telefono || 'SIN REGISTRO'}</span>
+                       <span className="text-sm font-bold text-text-main">{user.telefono || 'SIN REGISTRO'}</span>
                     </div>
                  </div>
               </div>
@@ -312,7 +312,7 @@ export default function Ajustes() {
       {/* Seguridad Invisible (Biometría) */}
       <section className="max-w-4xl mx-auto px-2 md:px-6 space-y-4">
         <p className="text-[10px] text-text-muted uppercase font-black tracking-[0.3em] opacity-40 ml-2">Seguridad Invisible</p>
-        <Card className="bg-bg-low/40 border-white/5 backdrop-blur-md">
+        <Card className="bg-bg-low/40 border-text-main/10 backdrop-blur-md">
           <CardContent className="p-6">
             <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mb-6">
               <div className="flex items-center gap-4">
@@ -320,12 +320,12 @@ export default function Ajustes() {
                   <Fingerprint size={24} />
                 </div>
                 <div>
-                  <h4 className="text-sm font-black text-white uppercase tracking-tight italic">Acceso por Biometría</h4>
+                  <h4 className="text-sm font-black text-text-main uppercase tracking-tight italic">Acceso por Biometría</h4>
                   <p className="text-[10px] text-text-muted font-bold uppercase tracking-widest mt-0.5">Dispositivos de Confianza</p>
                 </div>
               </div>
               <Boton 
-                className="h-10 px-6 text-[10px] font-black uppercase tracking-widest bg-primary text-bg-app border border-white/10 hover:bg-primary-dark transition-all shadow-lg shadow-primary/20 w-full sm:w-auto"
+                className="h-10 px-6 text-[10px] font-black uppercase tracking-widest bg-primary text-bg-app border border-text-main/10 hover:bg-primary-dark transition-all shadow-lg shadow-primary/20 w-full sm:w-auto"
                 onClick={() => setActiveModal('biometria')}
               >
                 <Plus size={16} className="mr-2" />
@@ -339,19 +339,19 @@ export default function Ajustes() {
                   <div className="w-6 h-6 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
                 </div>
               ) : dispositivos.length === 0 ? (
-                <div className="py-10 text-center rounded-2xl border border-dashed border-white/5 bg-white/[0.01]">
+                <div className="py-10 text-center rounded-2xl border border-dashed border-text-main/10 bg-white/[0.01]">
                    <MonitorSmartphone size={32} className="mx-auto text-text-muted opacity-20 mb-3" />
                    <p className="text-[10px] text-text-muted font-bold uppercase tracking-widest">Sin dispositivos vinculados</p>
                 </div>
               ) : (
                 dispositivos.map((disp, idx) => (
-                  <div key={disp.id} className="group flex items-center justify-between p-4 rounded-2xl bg-bg-app/50 dark:bg-white/[0.02] border border-white/5 hover:border-primary/20 transition-all hover:translate-x-1">
+                  <div key={disp.id} className="group flex items-center justify-between p-4 rounded-2xl bg-bg-app/50 dark:bg-white/[0.02] border border-text-main/10 hover:border-primary/20 transition-all hover:translate-x-1">
                     <div className="flex items-center gap-4">
-                      <div className="w-10 h-10 rounded-lg bg-bg-app border border-white/10 flex items-center justify-center text-text-muted group-hover:text-primary transition-colors">
+                      <div className="w-10 h-10 rounded-lg bg-bg-app border border-text-main/10 flex items-center justify-center text-text-muted group-hover:text-primary transition-colors">
                         <Smartphone size={18} />
                       </div>
                       <div>
-                        <p className="text-xs font-bold text-white uppercase tracking-tight">{disp.nombre_dispositivo}</p>
+                        <p className="text-xs font-bold text-text-main uppercase tracking-tight">{disp.nombre_dispositivo}</p>
                         <p className="text-[9px] text-text-muted font-bold uppercase tracking-widest">Registrado: {new Date(disp.creado_en).toLocaleDateString()}</p>
                       </div>
                     </div>
@@ -373,7 +373,7 @@ export default function Ajustes() {
       {/* Alertas en Tiempo Real (Push) */}
       <section className="max-w-4xl mx-auto px-2 md:px-6 space-y-4">
         <p className="text-[10px] text-text-muted uppercase font-black tracking-[0.3em] opacity-40 ml-2">Alertas Tácticas</p>
-        <Card className="bg-bg-low/40 border-white/5 backdrop-blur-md group hover:border-primary/20 transition-all">
+        <Card className="bg-bg-low/40 border-text-main/10 backdrop-blur-md group hover:border-primary/20 transition-all">
           <CardContent className="p-6">
             <div className="flex flex-col sm:flex-row items-center justify-between gap-6">
               <div className="flex items-center gap-4">
@@ -386,7 +386,7 @@ export default function Ajustes() {
                   {isSubscribed ? <BellRing size={28} className="animate-pulse" /> : <BellOff size={28} />}
                 </div>
                 <div>
-                  <h4 className="text-sm font-black text-white uppercase tracking-tight italic">
+                  <h4 className="text-sm font-black text-text-main uppercase tracking-tight italic">
                     {isSubscribed ? "Notificaciones Activas" : "Notificaciones Desactivadas"}
                   </h4>
                   <p className="text-[10px] text-text-muted font-bold uppercase tracking-widest mt-0.5">
@@ -425,7 +425,7 @@ export default function Ajustes() {
       {isAdmin && (
         <section className="max-w-4xl mx-auto px-2 md:px-6 space-y-4 mt-6">
           <p className="text-[10px] text-text-muted uppercase font-black tracking-[0.3em] opacity-40 ml-2">Infraestructura Transaccional</p>
-          <Card className="bg-bg-low/40 border-white/5 backdrop-blur-md group hover:border-primary/20 transition-all">
+          <Card className="bg-bg-low/40 border-text-main/10 backdrop-blur-md group hover:border-primary/20 transition-all">
             <CardContent className="p-6">
               <div className="flex flex-col sm:flex-row items-center justify-between gap-6">
                 <div className="flex items-center gap-4">
@@ -433,13 +433,13 @@ export default function Ajustes() {
                     <MailIcon size={28} />
                   </div>
                   <div>
-                    <h4 className="text-sm font-black text-white uppercase tracking-tight italic">Servidor de Correos Lotes</h4>
+                    <h4 className="text-sm font-black text-text-main uppercase tracking-tight italic">Servidor de Correos Lotes</h4>
                     <p className="text-[10px] text-text-muted font-bold uppercase tracking-widest mt-0.5">Gestión de proveedor Resend/SMTP para distribución masiva</p>
                   </div>
                 </div>
 
                 <Boton 
-                  className="h-12 px-8 bg-bg-app border border-white/10 text-white hover:text-primary hover:border-primary/50 font-black uppercase tracking-[0.1em] text-[10px] shadow-lg w-full sm:w-auto transition-all"
+                  className="h-12 px-8 bg-bg-app border border-text-main/10 text-text-main hover:text-primary hover:border-primary/50 font-black uppercase tracking-[0.1em] text-[10px] shadow-lg w-full sm:w-auto transition-all"
                   onClick={handleAbrirConfigCorreo}
                 >
                   <Settings className="mr-2" size={16} />
@@ -458,7 +458,7 @@ export default function Ajustes() {
           <p className="text-[10px] text-text-muted uppercase font-black tracking-[0.3em] opacity-40 ml-2">Logística de Salida Automatizada</p>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {/* Auto-Cierre por Re-entrada (Mandatorio - Solo Info) */}
-            <Card className="bg-bg-low/40 border-white/5 backdrop-blur-md relative overflow-hidden">
+            <Card className="bg-bg-low/40 border-text-main/10 backdrop-blur-md relative overflow-hidden">
                <div className="absolute top-0 right-0 p-2">
                   <div className="flex items-center gap-1.5 px-2 py-0.5 bg-emerald-500/10 border border-emerald-500/20 rounded-full">
                     <Check size={8} className="text-emerald-500" />
@@ -471,7 +471,7 @@ export default function Ajustes() {
                        <ArrowUpRight size={20} />
                     </div>
                     <div>
-                      <h4 className="text-xs font-black text-white uppercase tracking-tight italic">Auto-Cierre Re-entrada</h4>
+                      <h4 className="text-xs font-black text-text-main uppercase tracking-tight italic">Auto-Cierre Re-entrada</h4>
                       <p className="text-[9px] text-text-muted font-bold leading-relaxed mt-1">Cierra automáticamente ciclos previos al detectar el ingreso del mismo vehículo. Mandatorio para integridad táctica.</p>
                     </div>
                   </div>
@@ -480,7 +480,7 @@ export default function Ajustes() {
 
             {/* Sincronización Parquero */}
             <Card className={cn(
-              "bg-bg-low/40 border-white/5 backdrop-blur-md transition-all cursor-pointer hover:border-primary/30",
+              "bg-bg-low/40 border-text-main/10 backdrop-blur-md transition-all cursor-pointer hover:border-primary/30",
               configSalidas.sync_parquero && "border-primary/20 bg-primary/5"
             )}
             onClick={() => handleUpdateConfigSalidas({ sync_parquero: !configSalidas.sync_parquero })}
@@ -490,19 +490,19 @@ export default function Ajustes() {
                     <div className="flex items-start gap-4">
                       <div className={cn(
                         "w-10 h-10 rounded-xl flex items-center justify-center shrink-0 transition-all",
-                        configSalidas.sync_parquero ? "bg-primary text-bg-app" : "bg-white/5 text-text-muted"
+                        configSalidas.sync_parquero ? "bg-primary text-bg-app" : "bg-text-main/5 text-text-muted"
                       )}>
                          <MonitorSmartphone size={20} />
                       </div>
                       <div>
-                        <h4 className="text-xs font-black text-white uppercase tracking-tight italic">Sync Parquero</h4>
+                        <h4 className="text-xs font-black text-text-main uppercase tracking-tight italic">Sync Parquero</h4>
                         <p className="text-[9px] text-text-muted font-bold leading-relaxed mt-1">Marca la salida de la base automáticamente cuando el parquero libera el vehículo de su zona.</p>
                       </div>
                     </div>
                     <div className="flex flex-col items-end gap-2">
                        <div className={cn(
                          "w-12 h-6 rounded-full flex items-center px-1 transition-all duration-300 shadow-inner overflow-hidden",
-                         configSalidas.sync_parquero ? "bg-primary shadow-[0_0_15px_-3px_rgba(34,197,94,0.4)]" : "bg-white/10 border border-white/5"
+                         configSalidas.sync_parquero ? "bg-primary shadow-[0_0_15px_-3px_rgba(34,197,94,0.4)]" : "bg-text-main/10 border border-text-main/5"
                        )}>
                          <div className={cn(
                            "w-4 h-4 rounded-full bg-white transition-all duration-300 shadow-sm flex items-center justify-center",
@@ -526,7 +526,7 @@ export default function Ajustes() {
             </Card>
 
             {/* Expulsión Masiva Programada */}
-            <Card className="bg-bg-low/40 border-white/5 backdrop-blur-md md:col-span-2">
+            <Card className="bg-bg-low/40 border-text-main/10 backdrop-blur-md md:col-span-2">
                <CardContent className="p-5">
                   <div className="flex flex-col md:flex-row items-center justify-between gap-6">
                     <div className="flex items-start gap-4 max-w-md">
@@ -534,7 +534,7 @@ export default function Ajustes() {
                          <Clock size={20} />
                       </div>
                       <div>
-                        <h4 className="text-xs font-black text-white uppercase tracking-tight italic">Expulsión Masiva Programada</h4>
+                        <h4 className="text-xs font-black text-text-main uppercase tracking-tight italic">Expulsión Masiva Programada</h4>
                         <p className="text-[9px] text-text-muted font-bold leading-relaxed mt-1">Cierra todos los registros de ingreso abiertos a una hora específica del día. Útil para resetear ocupación nocturna.</p>
                       </div>
                     </div>
@@ -542,7 +542,7 @@ export default function Ajustes() {
                     <div className="flex items-center gap-3 w-full md:w-auto">
                        <input 
                          type="time"
-                         className="flex-1 md:w-32 h-10 bg-bg-app border border-white/10 rounded-xl px-4 text-xs font-black text-white focus:border-primary transition-all"
+                         className="flex-1 md:w-32 h-10 bg-bg-app border border-text-main/10 rounded-xl px-4 text-xs font-black text-text-main focus:border-primary transition-all"
                          value={configSalidas.mass_time}
                          onChange={(e) => setConfigSalidas({...configSalidas, mass_time: e.target.value})}
                        />
@@ -730,7 +730,7 @@ export default function Ajustes() {
              <div className="flex gap-3">
                 <Shield size={20} className="text-primary shrink-0" />
                 <div>
-                   <p className="text-xs font-bold text-white uppercase mb-1">Protección WebAuthn (Passkeys)</p>
+                   <p className="text-xs font-bold text-text-main uppercase mb-1">Protección WebAuthn (Passkeys)</p>
                    <p className="text-[10px] text-text-muted leading-relaxed font-medium">Al vincular este dispositivo, el sistema solicitará tu huella, rostro o PIN local para acceder sin contraseñas. El proceso es invisible y seguro.</p>
                 </div>
              </div>
@@ -743,7 +743,7 @@ export default function Ajustes() {
                 <input 
                    type="text"
                    placeholder="Ej: Mi iPhone 15, Laptop Oficina"
-                   className="w-full h-12 bg-bg-app border border-white/10 focus:border-primary rounded-xl pl-12 pr-4 text-sm font-bold text-white transition-all"
+                   className="w-full h-12 bg-bg-app border border-text-main/10 focus:border-primary rounded-xl pl-12 pr-4 text-sm font-bold text-text-main transition-all"
                    value={nombreNuevoDispositivo}
                    onChange={(e) => setNombreNuevoDispositivo(e.target.value)}
                    required
@@ -779,7 +779,7 @@ export default function Ajustes() {
                <div className="flex gap-3">
                   <Send size={20} className="text-primary shrink-0" />
                   <div>
-                     <p className="text-xs font-bold text-white uppercase mb-1">Capa de Entrega Garantizada (Resend)</p>
+                     <p className="text-xs font-bold text-text-main uppercase mb-1">Capa de Entrega Garantizada (Resend)</p>
                      <p className="text-[10px] text-text-muted leading-relaxed font-medium">Recomendamos utilizar <b>Resend</b> para garantizar que los correos con QR lleguen a la bandeja de entrada y no sean marcados como SPAM. Debes registrar el dominio oficial adquirido antes de iniciar envíos masivos.</p>
                   </div>
                </div>
@@ -793,7 +793,7 @@ export default function Ajustes() {
                      <input 
                         type="email"
                         placeholder="accesos@miparque.com"
-                        className="w-full h-12 bg-bg-app border border-white/10 focus:border-primary rounded-xl pl-12 pr-4 text-sm font-bold text-white transition-all"
+                        className="w-full h-12 bg-bg-app border border-text-main/10 focus:border-primary rounded-xl pl-12 pr-4 text-sm font-bold text-text-main transition-all"
                         value={configCorreoData.email_remitente || ''}
                         onChange={(e) => setConfigCorreoData({...configCorreoData, email_remitente: e.target.value})}
                         required
@@ -808,7 +808,7 @@ export default function Ajustes() {
                      <input 
                         type="text"
                         placeholder="Ventas Parque"
-                        className="w-full h-12 bg-bg-app border border-white/10 focus:border-primary rounded-xl pl-12 pr-4 text-sm font-bold text-white transition-all"
+                        className="w-full h-12 bg-bg-app border border-text-main/10 focus:border-primary rounded-xl pl-12 pr-4 text-sm font-bold text-text-main transition-all"
                         value={configCorreoData.nombre_remitente || ''}
                         onChange={(e) => setConfigCorreoData({...configCorreoData, nombre_remitente: e.target.value})}
                      />
@@ -823,7 +823,7 @@ export default function Ajustes() {
                        <input 
                           type="password"
                           placeholder="re_xxxxxxxxxxxxxxxxxxx"
-                          className="w-full h-12 bg-bg-app border border-white/10 focus:border-primary rounded-xl pl-12 pr-4 text-sm font-bold text-white transition-all"
+                          className="w-full h-12 bg-bg-app border border-text-main/10 focus:border-primary rounded-xl pl-12 pr-4 text-sm font-bold text-text-main transition-all"
                           value={configCorreoData.api_key_resend || ''}
                           onChange={(e) => setConfigCorreoData({...configCorreoData, api_key_resend: e.target.value})}
                           required
@@ -831,7 +831,7 @@ export default function Ajustes() {
                     </div>
                  </div>
                ) : (
-                 <div className="md:col-span-2 p-3 bg-white/5 border border-white/10 rounded-xl">
+                 <div className="md:col-span-2 p-3 bg-text-main/5 border border-text-main/10 rounded-xl">
                    <p className="text-[10px] text-text-muted text-center font-bold">
                      El Token de Entidad Global se consume desde las variables de entorno de conectividad del servidor (Railway/AWS). Modificar solo correos a utilizar.
                    </p>
