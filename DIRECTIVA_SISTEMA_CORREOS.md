@@ -42,5 +42,6 @@ El monitoreo de entregabilidad depende de la tecnología de envío elegida:
 ## 5. Implementación Progresiva (SOP)
 1. **Fase 1 (Ajustes):** Crear la tabla `configuracion_correo` y sus endpoints REST. Conectar la UI de Configuración de Correo.
 2. **Fase 2 (Envío Core):** Construir la clase utilitaria de Python para despachar y adjuntar archivos via SMTP.
-3. **Fase 3 (Lotes Frontend):** Crear el Modal en Pases Masivos para configurar el asunto y elegir el envío del lote.
-4. **Fase 4 (Monitor):** Construir un subpanel tipo lista en ese lote, que muestre cada persona, el estado de envío de su email con botones para re-intentar en los que fallen.
+3. **Fase 3 (Lotes Frontend):** [COMPLETADO] Modal en Pases Masivos para configurar el asunto y elegir el envío del lote.
+4. **Fase 4 (Monitor y Trazabilidad):** [COMPLETADO] Campos `email_enviado`, `email_ultimo_error` y `fecha_envio_email` integrados en `CodigoQR`. UI actualizada con badges de estado y botones de reintento individual.
+5. **Fase 5 (Webhooks):** [PENDIENTE] Integración de webhooks de Resend para monitorear rebotados (bounced) externos.

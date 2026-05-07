@@ -270,6 +270,29 @@ async def enviar_correos_lote_endpoint(
     
     return {"status": "accepted", "message": "Proceso de despacho de correos iniciado en segundo plano."}
 
+@router.post("/lotes/{lote_id}/pases/{pase_id}/enviar-correo", status_code=status.HTTP_202_ACCEPTED)
+async def enviar_correo_individual_endpoint(
+    lote_id: UUID,
+    pase_id: UUID,
+    datos: LotePaseMasivoEnvioCorreo,
+    background_tasks: BackgroundTasks,
+    db: AsyncSession = Depends(obtener_db),
+    usuario_actual: Usuario = Depends(require_rol(ADMIN_ROLES))
+):
+    """Encola el envío individual de correo para un pase específico."""
+    background_tasks.add_task(
+        correo_masivo_service.enviar_correo_individual,
+        db,
+        pase_id,
+        datos.asunto,
+        datos.cuerpo,
+        datos.adjuntar_pdf,
+        datos.tipo_envio,
+        datos.estilo_carnet,
+        datos.formato_carnet
+    )
+    return {"status": "accepted", "message": "Re-envío de correo individual iniciado."}
+
 @router.get("/template", status_code=status.HTTP_200_OK)
 async def descargar_plantilla_pases(
     usuario_actual: Usuario = Depends(require_rol(ADMIN_ROLES))

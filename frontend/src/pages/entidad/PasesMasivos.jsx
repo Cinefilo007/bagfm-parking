@@ -16,7 +16,7 @@ import {
     Upload, CheckCircle2, MapPin, MoreVertical, Copy,
     Shield, Camera, Star, AlertTriangle, FileSpreadsheet, PlusCircle, Trash2,
     ShieldAlert, XCircle, Zap, ArrowRight, Info, Loader2,
-    MessageCircle, Eye, X, Globe
+    MessageCircle, Eye, X, Globe, AlertCircle
 } from 'lucide-react';
 import { eventosService } from '../../services/eventos.service';
 import { pasesService } from '../../services/pasesService';
@@ -427,6 +427,17 @@ const PaseRow = ({ pase, zonas, onCompartir, onEmail, onEditar, onVerQR }) => {
                         )}>
                             {pase.activo ? 'ACTIVO' : 'INACTIVO'}
                         </span>
+
+                        {pase.email_enviado && (
+                            <span className="text-[7px] font-black text-sky-400 flex items-center gap-1 bg-sky-500/10 px-2 py-0.5 rounded-lg border border-sky-500/20 shrink-0 animate-in fade-in zoom-in-95 duration-500" title={`Enviado el ${new Date(pase.fecha_envio_email).toLocaleString()}`}>
+                                <CheckCircle2 size={9} /> ENVIADO
+                            </span>
+                        )}
+                        {pase.email_ultimo_error && (
+                            <span className="text-[7px] font-black text-danger flex items-center gap-1 bg-danger/10 px-2 py-0.5 rounded-lg border border-danger/20 shrink-0" title={pase.email_ultimo_error}>
+                                <AlertTriangle size={9} /> ERROR
+                            </span>
+                        )}
                     </div>
                 </div>
             </div>
@@ -527,7 +538,7 @@ const ModalEditarPase = ({ pase, isOpen, onClose, onRefresh }) => {
     );
 };
 
-const ModalEnvioCorreosMasivos = ({ isOpen, onClose, lote }) => {
+const ModalEnvioCorreosMasivos = ({ isOpen, onClose, lote, pase = null }) => {
     const [asunto, setAsunto] = useState('');
     const [cuerpo, setCuerpo] = useState('Estimado {{nombre}},\n\nNos complace informarle que su pase de acceso para el evento ya ha sido generado exitosamente.\n\nUsted puede visualizar y gestionar su pase táctico haciendo clic en el siguiente enlace:\n{{qr_url}}\n\nLe sugerimos tener su código QR a la mano al momento de llegar a la alcabala para agilizar su ingreso.\n\nSaludos cordiales,\nComando de Base');
     const [tipoEnvio, setTipoEnvio] = useState('solo_qr'); // 'solo_qr' o 'carnet_pdf'
@@ -537,17 +548,23 @@ const ModalEnvioCorreosMasivos = ({ isOpen, onClose, lote }) => {
     const [optimizando, setOptimizando] = useState(false);
 
     useEffect(() => {
-        if (lote) {
+        if (pase) {
+            setAsunto(`Pase de Acceso - ${lote?.nombre_evento || 'Evento'}`);
+        } else if (lote) {
             setAsunto(`Pases de Acceso - ${lote.nombre_evento}`);
         }
-    }, [lote]);
+    }, [lote, pase]);
 
     const handleEnviar = async (e) => {
         e.preventDefault();
         setEnviando(true);
         try {
             const estilo = PRESETS_COLOR.find(p => p.id === presetId);
-            await api.post(`/pases/lotes/${lote.id}/enviar-correos`, {
+            const endpoint = pase 
+                ? `/pases/lotes/${lote.id}/pases/${pase.id}/enviar-correo`
+                : `/pases/lotes/${lote.id}/enviar-correos`;
+
+            await api.post(endpoint, {
                 asunto,
                 cuerpo,
                 adjuntar_pdf: tipoEnvio === 'carnet_pdf',
@@ -555,7 +572,7 @@ const ModalEnvioCorreosMasivos = ({ isOpen, onClose, lote }) => {
                 estilo_carnet: estilo,
                 formato_carnet: formato
             });
-            toast.success('Protocolo de difusión iniciado en segundo plano.');
+            toast.success(pase ? 'Re-envío individual iniciado.' : 'Protocolo de difusión iniciado en segundo plano.');
             onClose();
         } catch (e) {
             toast.error('Error al despachar los correos.');
@@ -583,7 +600,7 @@ const ModalEnvioCorreosMasivos = ({ isOpen, onClose, lote }) => {
     };
 
     return (
-        <Modal isOpen={isOpen} onClose={onClose} title="DIFUSIÓN MASIVA POR CORREO" className="max-w-4xl">
+        <Modal isOpen={isOpen} onClose={onClose} title={pase ? "RE-ENVIAR PASE INDIVIDUAL" : "DIFUSIÓN MASIVA POR CORREO"} className="max-w-4xl">
             <form onSubmit={handleEnviar} className="space-y-6">
                 
                 <div className="p-4 rounded-xl border border-sky-500/20 bg-sky-500/5 text-sky-400 text-[11px] font-bold flex gap-3 items-center">
@@ -725,7 +742,7 @@ const ModalEnvioCorreosMasivos = ({ isOpen, onClose, lote }) => {
                         CANCELAR
                     </Boton>
                     <Boton type="submit" isLoading={enviando} className="bg-primary text-bg-app px-10 h-12 shadow-tactica">
-                        CONFIRMAR Y ENVIAR AL COMANDO
+                        {pase ? 'ENVIAR AHORA' : 'CONFIRMAR Y ENVIAR AL COMANDO'}
                     </Boton>
                 </div>
             </form>
@@ -740,7 +757,7 @@ const ModalListaPases = ({ isOpen, onClose, lote, zonas }) => {
     const [busqueda, setBusqueda] = useState('');
     const [paseEdicion, setPaseEdicion] = useState(null);
     const [paseQR, setPaseQR] = useState(null); 
-    const [isEmailModalOpen, setIsEmailModalOpen] = useState(false);
+    const [paseParaEmail, setPaseParaEmail] = useState(null);
 
     const fetchPases = useCallback(async () => {
         if (!lote?.id) return;
@@ -804,7 +821,7 @@ const ModalListaPases = ({ isOpen, onClose, lote, zonas }) => {
                                     onCompartir={handleCompartirWhatsApp}
                                     onVerQR={setPaseQR}
                                     onEditar={setPaseEdicion}
-                                    onEmail={(p) => toast('Envío de email en desarrollo táctico...', { icon: '📧' })}
+                                    onEmail={(p) => setPaseParaEmail(p)}
                                 />
                             ))
                         ) : (
@@ -820,6 +837,16 @@ const ModalListaPases = ({ isOpen, onClose, lote, zonas }) => {
                     onClose={() => setPaseEdicion(null)} 
                     pase={paseEdicion} 
                     onRefresh={fetchPases}
+                />
+
+                <ModalEnvioCorreosMasivos 
+                    isOpen={!!paseParaEmail}
+                    onClose={() => {
+                        setPaseParaEmail(null);
+                        fetchPases(); // Recargar para ver el nuevo estado
+                    }}
+                    lote={lote}
+                    pase={paseParaEmail}
                 />
             </Modal>
 

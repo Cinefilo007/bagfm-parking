@@ -55,6 +55,11 @@ class CodigoQR(Base):
     accesos_usados = Column(Integer, default=0, nullable=False)
     max_accesos = Column(Integer, nullable=True) # Si es NULL, es ilimitado
     
+    # Trazabilidad de Correo
+    email_enviado = Column(Boolean, default=False, nullable=False)
+    email_ultimo_error = Column(Text, nullable=True)
+    fecha_envio_email = Column(DateTime(timezone=True), nullable=True)
+
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     created_by = Column(UUID(as_uuid=True), ForeignKey("usuarios.id", ondelete="RESTRICT"), nullable=True)
 

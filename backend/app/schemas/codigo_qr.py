@@ -49,6 +49,9 @@ class CodigoQRSalida(CodigoQRBase):
     puesto_asignado_codigo: Optional[str] = None
     hora_entrada_base: Optional[datetime] = None
     hora_llegada_zona: Optional[datetime] = None
+    email_enviado: bool = False
+    email_ultimo_error: Optional[str] = None
+    fecha_envio_email: Optional[datetime] = None
     created_at: datetime
     
     model_config = ConfigDict(from_attributes=True)

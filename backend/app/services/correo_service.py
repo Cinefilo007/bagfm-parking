@@ -1,5 +1,6 @@
 import httpx
 import base64
+from datetime import datetime
 from typing import List, Optional
 from uuid import UUID
 from fastapi import BackgroundTasks
@@ -65,21 +66,19 @@ class CorreoMasivoService:
             }
             
             for pase in pases:
-                destinatario = None
-                nombre_dest = "Usuario Invitado"
-                
-                if pase.extra_datos:
-                    destinatario = pase.extra_datos.get("email") or pase.extra_datos.get("correo")
-                    nombre_dest = pase.extra_datos.get("nombre", nombre_dest)
+                # Si ya fue enviado, saltamos (evita duplicados en reintentos masivos)
+                if pase.email_enviado:
+                    continue
 
+                destinatario = pase.email_portador
+                nombre_dest = pase.nombre_portador or "Usuario Invitado"
+                
                 if not destinatario:
                     continue
 
                 # Compilar plantilla
-                # La URL de QR es para ver/descargar el pase en el navegador
                 qr_link = f"{config_env.frontend_url}/pase/{pase.token}"
                 
-                # Formateo automático de saltos de línea (nl2br)
                 cuerpo_html = cuerpo_plantilla.replace("\n", "<br>")
                 cuerpo_html = cuerpo_html.replace("{{nombre}}", f"<strong>{nombre_dest}</strong>")
                 cuerpo_html = cuerpo_html.replace("{{qr_url}}", f"<a href='{qr_link}' style='color: #4ade80; font-weight: bold;'>VER MI PASE AQUÍ</a>")
@@ -91,7 +90,6 @@ class CorreoMasivoService:
                     "html": f"<div style='font-family: sans-serif; color: #f8fafc; background-color: #0c0f17; padding: 40px; border-radius: 16px;'>{cuerpo_html}</div>"
                 }
 
-                # Si es tipo carnet_pdf, generamos el PDF INDIVIDUAL
                 if tipo_envio == "carnet_pdf" and estilo_carnet:
                     try:
                         pdf_buf = await pdf_service.generar_pdf_individual(pase, lote, estilo_carnet, formato_carnet)
@@ -107,9 +105,83 @@ class CorreoMasivoService:
 
                 try:
                     response = await client.post("https://api.resend.com/emails", json=payload, headers=headers)
-                    if response.status_code >= 400:
-                        print(f"Error Resend ({response.status_code}): {response.text}")
+                    if response.status_code < 400:
+                        pase.email_enviado = True
+                        pase.email_ultimo_error = None
+                        pase.fecha_envio_email = datetime.now()
+                    else:
+                        pase.email_enviado = False
+                        pase.email_ultimo_error = f"Resend Error {response.status_code}: {response.text}"
                 except Exception as e:
+                    pase.email_enviado = False
+                    pase.email_ultimo_error = str(e)
                     print(f"Exception al enviar correo a {destinatario}: {str(e)}")
+            
+            # Guardamos todos los estados
+            await db.commit()
+
+    async def enviar_correo_individual(
+        self,
+        db: AsyncSession,
+        pase_id: UUID,
+        asunto: str,
+        cuerpo_plantilla: str,
+        adjuntar_pdf: bool,
+        tipo_envio: str = "solo_qr",
+        estilo_carnet: Optional[dict] = None,
+        formato_carnet: Optional[str] = "colgante"
+    ):
+        """Envía un correo a un solo pase específico."""
+        pase = await db.get(CodigoQR, pase_id)
+        if not pase: return
+        
+        lote = await db.get(LotePaseMasivo, pase.lote_id)
+        if not lote: return
+
+        # Obtener Configuración
+        config = None
+        if lote.entidad_id:
+            config = await configuracion_correo_service.obtener_por_entidad(db, lote.entidad_id)
+        if not config:
+           config = await configuracion_correo_service.obtener_general(db)
+           
+        api_key_to_use = config.api_key_resend if (config and config.api_key_resend) else config_env.resend_api_key
+        if not api_key_to_use: return
+
+        remitente = f"{config.nombre_remitente} <{config.email_remitente}>" if (config and config.nombre_remitente) else "BAGFM Access <accesos@bagfm.mil.ve>"
+        
+        destinatario = pase.email_portador
+        nombre_dest = pase.nombre_portador or "Usuario Invitado"
+        if not destinatario: return
+
+        qr_link = f"{config_env.frontend_url}/pase/{pase.token}"
+        cuerpo_html = cuerpo_plantilla.replace("\n", "<br>").replace("{{nombre}}", f"<strong>{nombre_dest}</strong>").replace("{{qr_url}}", f"<a href='{qr_link}'>VER MI PASE</a>")
+
+        payload = {
+            "from": remitente,
+            "to": [destinatario],
+            "subject": asunto,
+            "html": f"<div style='font-family: sans-serif; color: #f8fafc; background-color: #0c0f17; padding: 40px;'>{cuerpo_html}</div>"
+        }
+
+        if tipo_envio == "carnet_pdf" and estilo_carnet:
+            pdf_buf = await pdf_service.generar_pdf_individual(pase, lote, estilo_carnet, formato_carnet)
+            payload["attachments"] = [{"filename": f"CARNET_{pase.serial_legible}.pdf", "content": base64.b64encode(pdf_buf.getvalue()).decode('utf-8')}]
+
+        async with httpx.AsyncClient() as client:
+            headers = {"Authorization": f"Bearer {api_key_to_use}", "Content-Type": "application/json"}
+            try:
+                response = await client.post("https://api.resend.com/emails", json=payload, headers=headers)
+                if response.status_code < 400:
+                    pase.email_enviado = True
+                    pase.email_ultimo_error = None
+                    pase.fecha_envio_email = datetime.now()
+                else:
+                    pase.email_ultimo_error = response.text
+                await db.commit()
+            except Exception as e:
+                pase.email_ultimo_error = str(e)
+                await db.commit()
 
 correo_masivo_service = CorreoMasivoService()
+
