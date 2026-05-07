@@ -43,7 +43,7 @@ const TIPO_INFO = {
 };
 
 const badgeTipo = (tipo, labelCustom) => {
-    const info = TIPO_INFO[tipo] || TIPO_INFO.simple;
+    const info = TIPO_INFO[tipo] || TIPO_INFO.general;
     const Icon = info.icon;
     return (
         <span className={cn('px-2 py-0.5 rounded-md text-[8px] font-black uppercase tracking-widest border border-text-main/5 flex items-center gap-1', info.color, info.bg)}>
