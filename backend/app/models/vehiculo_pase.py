@@ -22,7 +22,7 @@ class VehiculoPase(Base):
     color = Column(String(50), nullable=True)
     
     zona_asignada_id = Column(UUID(as_uuid=True), ForeignKey("zonas_estacionamiento.id", ondelete="RESTRICT"), nullable=True)
-    puesto_asignado_id = Column(UUID(as_uuid=True), ForeignKey("puestos_estacionamiento.id", ondelete="RESTRICT"), nullable=True)
+    puesto_asignado_id = Column(UUID(as_uuid=True), ForeignKey("puestos_estacionamiento.id", ondelete="SET NULL"), nullable=True)
     
     ingresado = Column(Boolean, default=False, nullable=False)
     hora_ingreso = Column(DateTime(timezone=True), nullable=True)

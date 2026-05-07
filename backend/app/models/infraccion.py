@@ -32,7 +32,7 @@ class Infraccion(Base):
     suspendido_hasta = Column(DateTime(timezone=True), nullable=True)
     
     zona_id = Column(UUID(as_uuid=True), ForeignKey("zonas_estacionamiento.id", ondelete="RESTRICT"), nullable=True)
-    puesto_id = Column(UUID(as_uuid=True), ForeignKey("puestos_estacionamiento.id", ondelete="RESTRICT"), nullable=True)
+    puesto_id = Column(UUID(as_uuid=True), ForeignKey("puestos_estacionamiento.id", ondelete="SET NULL"), nullable=True)
     entidad_id = Column(UUID(as_uuid=True), ForeignKey("entidades_civiles.id", ondelete="RESTRICT"), nullable=True)
     
     latitud_infraccion = Column(Numeric(10, 8), nullable=True)

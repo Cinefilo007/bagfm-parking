@@ -337,6 +337,25 @@ class ZonaEstacionamientoService:
         if not puesto:
             return False
         
+        # SOP: Aegis v2.5 - Desvincular referencias antes de eliminar (Evitar RESTRICT)
+        from sqlalchemy import update
+        from app.models.vehiculo_pase import VehiculoPase
+        from app.models.infraccion import Infraccion
+        
+        # 1. Limpiar asignaciones en vehículos
+        await db.execute(
+            update(VehiculoPase)
+            .where(VehiculoPase.puesto_asignado_id == puesto_id)
+            .values(puesto_asignado_id=None)
+        )
+        
+        # 2. Limpiar referencias en infracciones
+        await db.execute(
+            update(Infraccion)
+            .where(Infraccion.puesto_id == puesto_id)
+            .values(puesto_id=None)
+        )
+
         await db.delete(puesto)
         await db.commit()
         return True
