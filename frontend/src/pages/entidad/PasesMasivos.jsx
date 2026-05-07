@@ -867,7 +867,7 @@ const LoteCardV2 = ({ lote, zonas, tiposCustom, onRefresh, onVerPases, onElimina
     const [progreso, setProgreso] = useState(0);
     const [modalExportOpen, setModalExportOpen] = useState(false);
 
-    const info = TIPO_INFO[lote.tipo_pase] || TIPO_INFO.simple;
+    const info = TIPO_INFO[lote.tipo_pase] || TIPO_INFO.general;
     const Icon = info.icon;
 
     const handleGenerarZip = async () => {
