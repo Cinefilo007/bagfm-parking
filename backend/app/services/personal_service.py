@@ -39,6 +39,7 @@ class PersonalService:
                 joinedload(Usuario.entidad_pertenece),
                 joinedload(Usuario.zona_asignada)
             )
+            .where(Usuario.is_deleted == False)
             .order_by(Usuario.nombre.asc())
         )
 
@@ -195,7 +196,20 @@ class PersonalService:
         if usuario.rol == RolTipo.COMANDANTE:
             raise AccesoDenegado("No se puede eliminar al Comandante")
 
-        await db.delete(usuario)
+        # BORRADO LÓGICO TÁCTICO:
+        # 1. Marcamos como eliminado y desactivamos
+        usuario.is_deleted = True
+        usuario.activo = False
+        
+        # 2. Liberamos Cédula y Email para futuros re-registros
+        ts = int(datetime.now().timestamp())
+        usuario.cedula = f"{usuario.cedula}_DEL_{ts}"
+        if usuario.email:
+            usuario.email = f"DEL_{ts}_{usuario.email}"
+        
+        # 3. Desasignamos zona si tenía una
+        usuario.zona_asignada_id = None
+
         await db.commit()
         return True
 

@@ -29,6 +29,7 @@ class Usuario(Base):
     # Para PARQUERO
     zona_asignada_id = Column(UUID(as_uuid=True), ForeignKey("zonas_estacionamiento.id", ondelete="RESTRICT"), nullable=True)
     
+    is_deleted = Column(Boolean, default=False, nullable=False)
     activo = Column(Boolean, default=True, nullable=False)
     foto_url = Column(Text, nullable=True)
     password_hash = Column(Text, nullable=False)
