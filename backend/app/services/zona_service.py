@@ -332,4 +332,13 @@ class ZonaEstacionamientoService:
         await db.commit()
         return True
 
+    async def eliminar_puesto_fisico(self, db: AsyncSession, puesto_id: UUID) -> bool:
+        puesto = await self.get_puesto(db, puesto_id)
+        if not puesto:
+            return False
+        
+        await db.delete(puesto)
+        await db.commit()
+        return True
+
 zona_service = ZonaEstacionamientoService()

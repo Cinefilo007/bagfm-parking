@@ -103,6 +103,17 @@ async def actualizar_puesto(
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
 
+@router.delete("/puestos/{puesto_id}")
+async def eliminar_puesto(
+    puesto_id: UUID,
+    db: AsyncSession = Depends(obtener_db),
+    current_user: Usuario = Depends(require_rol(["COMANDANTE", "ADMIN_BASE"]))
+):
+    """Elimina permanentemente un puesto físico."""
+    if not await zona_service.eliminar_puesto_fisico(db, puesto_id):
+        raise HTTPException(status_code=404, detail="Puesto no encontrado")
+    return {"mensaje": "Puesto eliminado correctamente"}
+
 @router.post("/asignaciones", response_model=AsignacionZonaSalida)
 async def asignar_zona_entidad(
     datos: AsignacionZonaCrear,
