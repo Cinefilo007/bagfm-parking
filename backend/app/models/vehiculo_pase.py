@@ -32,4 +32,3 @@ class VehiculoPase(Base):
 
     # Relaciones
     puesto_asignado = relationship("PuestoEstacionamiento", foreign_keys=[puesto_asignado_id], lazy="selectin")
-    codigo_qr = relationship("CodigoQR", lazy="selectin")

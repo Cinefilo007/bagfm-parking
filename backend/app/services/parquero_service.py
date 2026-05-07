@@ -3,7 +3,7 @@ from uuid import UUID
 from datetime import datetime, timezone, timedelta
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import and_, select, func as sql_func
-from sqlalchemy.orm import joinedload
+from sqlalchemy.orm import joinedload, selectinload
 
 from app.models.acceso import Acceso
 from app.models.codigo_qr import CodigoQR
@@ -527,7 +527,9 @@ class ParqueroService:
 
         # --- VehiculoPase — ingreso a zona ---
         res_vp_in = await db.execute(
-            select(VehiculoPase).where(
+            select(VehiculoPase)
+            .options(selectinload(VehiculoPase.codigo_qr))
+            .where(
                 VehiculoPase.zona_asignada_id == zona_id,
                 and_(VehiculoPase.hora_ingreso.isnot(None))
             )
