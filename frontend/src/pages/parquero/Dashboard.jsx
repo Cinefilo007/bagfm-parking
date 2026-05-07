@@ -51,45 +51,45 @@ const TarjetaPuesto = ({ puesto, vehiculosEnZona = [], onClick }) => {
         ? { border: 'border-white/10', bg: 'bg-white/3', dot: 'bg-text-muted', icon: 'text-text-muted/50' }
         : { border: 'border-white/10', bg: 'bg-white/5', dot: 'bg-text-muted', icon: 'text-text-muted' };
 
-    const iconColor = esOcupado ? 'text-danger' : config.icon;
-    const dotColor = esOcupado ? 'bg-danger' : config.dot;
+    const iconColor = esOcupado ? 'text-red-500' : config.icon;
+    const dotColor = esOcupado ? 'bg-red-500' : config.dot;
 
     const etiqueta = esBase ? 'BASE'
         : esEntidad ? (puesto.tipo_acceso_nombre || 'VIP')
         : puesto.estado === 'libre' ? 'Libre'
-        : esOcupado ? 'Ocup.'
-        : puesto.estado === 'mantenimiento' ? 'Mant.'
+        : esOcupado ? 'Ocupado'
+        : puesto.estado === 'mantenimiento' ? 'Mantenim.'
         : puesto.estado || '—';
 
     return (
         <button
             onClick={onClick}
             className={cn(
-                'relative flex flex-col items-center justify-center p-3 rounded-xl border-2 transition-all active:scale-95 hover:brightness-110',
+                'relative flex flex-col items-center justify-center p-3 rounded-2xl border-2 transition-all active:scale-95 hover:brightness-125 hover:shadow-lg',
                 config.border, config.bg,
-                esOcupado && 'border-danger/20 bg-danger/5'
+                esOcupado && 'border-red-500/40 bg-red-500/10 shadow-[0_0_20px_rgba(239,68,68,0.15)]'
             )}
         >
-            <div className={cn('w-2.5 h-2.5 rounded-full mb-1.5', dotColor)} />
-            <ParkingSquare size={18} className={cn(iconColor, esOcupado && 'animate-pulse')} />
+            <div className={cn('w-2.5 h-2.5 rounded-full mb-1.5 shadow-sm', dotColor, esOcupado && 'animate-pulse')} />
+            <ParkingSquare size={20} className={cn(iconColor, esOcupado && 'animate-pulse drop-shadow-[0_0_8px_rgba(239,68,68,0.6)]')} />
             
             {/* Si está ocupado y tenemos placa, mostramos la placa como texto principal */}
             {esOcupado && vehiculo?.placa ? (
                 <>
-                    <span className="text-[8px] font-black uppercase tracking-tight mt-1 text-danger animate-pulse">
+                    <span className="text-[9px] font-black uppercase tracking-tight mt-1.5 text-red-500 drop-shadow-sm">
                         {vehiculo.placa}
                     </span>
-                    <span className="text-[5px] font-bold text-text-muted/60 uppercase leading-none mt-0.5">
+                    <span className="text-[6px] font-bold text-text-muted/60 uppercase leading-none mt-0.5">
                         {puesto.numero_puesto || '—'}
                     </span>
                 </>
             ) : (
                 <>
-                    <span className="text-[8px] font-black uppercase tracking-tight mt-1 text-text-main leading-none">
+                    <span className="text-[9px] font-black uppercase tracking-tight mt-1.5 text-text-main leading-none">
                         {puesto.numero_puesto || puesto.codigo || '—'}
                     </span>
                     <span className={cn(
-                        'text-[6px] font-black uppercase tracking-wide leading-none mt-0.5',
+                        'text-[7px] font-black uppercase tracking-wide leading-none mt-1',
                         !esOcupado && esBase ? 'text-indigo-400' : !esOcupado && esEntidad ? 'text-warning' : iconColor
                     )}>
                         {etiqueta}
@@ -97,7 +97,7 @@ const TarjetaPuesto = ({ puesto, vehiculosEnZona = [], onClick }) => {
                 </>
             )}
             
-            {esBase && <Lock size={8} className="absolute top-1 right-1 text-indigo-400/60" />}
+            {esBase && <Lock size={8} className="absolute top-1.5 right-1.5 text-indigo-400/60" />}
         </button>
     );
 };

@@ -495,15 +495,30 @@ class ParqueroService:
             .limit(fetch_limit)
         )
         for acceso in res_accesos.scalars().all():
-            # Intentar resolver la placa: primero desde el acceso, luego desde el QR
+            # Intentar resolver datos del vehículo y portador
             placa = acceso.vehiculo_placa
-            if not placa and acceso.qr_id:
+            marca = acceso.vehiculo_marca
+            modelo = acceso.vehiculo_modelo
+            color = acceso.vehiculo_color
+            portador = acceso.nombre_manual
+
+            # Si faltan datos en el acceso, intentar recuperarlos del QR vinculado
+            if acceso.qr_id:
                 qr = await db.get(CodigoQR, acceso.qr_id)
                 if qr:
-                    placa = qr.vehiculo_placa
+                    if not placa: placa = qr.vehiculo_placa
+                    if not marca: marca = qr.vehiculo_marca
+                    if not modelo: modelo = qr.vehiculo_modelo
+                    if not color: color = qr.vehiculo_color
+                    if not portador: portador = qr.nombre_portador
+
             eventos.append({
                 "tipo": "alcabala",
                 "placa": placa,
+                "marca": marca,
+                "modelo": modelo,
+                "color": color,
+                "nombre_portador": portador,
                 "descripcion": f"Entrada por alcabala: {acceso.punto_acceso}",
                 "timestamp": acceso.timestamp.isoformat() if acceso.timestamp else None,
                 "punto": acceso.punto_acceso,
@@ -523,6 +538,10 @@ class ParqueroService:
             eventos.append({
                 "tipo": "ingreso_zona",
                 "placa": vp.placa,
+                "marca": vp.marca,
+                "modelo": vp.modelo,
+                "color": vp.color,
+                "nombre_portador": vp.nombre_portador,
                 "descripcion": "Ingresó a zona",
                 "timestamp": vp.hora_ingreso.isoformat() if vp.hora_ingreso else None,
                 "puesto_asignado_id": str(vp.puesto_asignado_id) if vp.puesto_asignado_id else None,
@@ -534,6 +553,10 @@ class ParqueroService:
                 eventos.append({
                     "tipo": "salida_zona",
                     "placa": vp.placa,
+                    "marca": vp.marca,
+                    "modelo": vp.modelo,
+                    "color": vp.color,
+                    "nombre_portador": vp.nombre_portador,
                     "descripcion": "Salió de zona",
                     "timestamp": vp.hora_salida.isoformat(),
                     "activo": False,

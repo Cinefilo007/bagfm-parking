@@ -130,27 +130,42 @@ const TarjetaEvento = ({ evento, onEntrada }) => {
                 )}
             </div>
 
-            <div className="flex items-center justify-between">
-                <div>
-                    <h3 className="text-base font-black text-text-main tracking-widest">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div className="flex-1 min-w-0">
+                    <h3 className="text-base font-black text-text-main tracking-widest uppercase">
                         {evento.placa || <span className="text-text-muted/40 italic">SIN PLACA</span>}
                     </h3>
+                    
+                    {/* Detalles del vehículo y portador */}
+                    <div className="flex flex-wrap items-center gap-x-2 gap-y-1 mt-1">
+                        {evento.nombre_portador && (
+                            <span className="text-[10px] font-black text-primary uppercase tracking-tighter bg-primary/5 px-2 py-0.5 rounded-md border border-primary/10">
+                                {evento.nombre_portador}
+                            </span>
+                        )}
+                        <span className="text-[10px] text-text-muted font-medium uppercase tracking-tight">
+                            {[evento.color, evento.marca, evento.modelo].filter(Boolean).join(' · ') || 'Sin detalles adicionales'}
+                        </span>
+                    </div>
+
                     {evento.descripcion && (
-                        <p className="text-[10px] text-text-muted mt-0.5 font-medium">{evento.descripcion}</p>
+                        <p className="text-[9px] text-text-muted/60 mt-1 font-bold uppercase tracking-tighter italic">
+                            {evento.descripcion}
+                        </p>
                     )}
                 </div>
                 
                 {evento.tipo === 'ingreso_zona' && (
-                    <div className="text-right">
+                    <div className="shrink-0">
                         {evento.puesto_asignado_id ? (
-                            <div className="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-success/10 text-success border border-success/20">
-                                <ParkingSquare size={10} />
-                                <span className="text-[9px] font-black uppercase">PUESTO OK</span>
+                            <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-success/10 text-success border border-success/20 shadow-[0_0_15px_rgba(34,197,94,0.1)]">
+                                <ParkingSquare size={12} className="animate-pulse" />
+                                <span className="text-[10px] font-black uppercase tracking-widest">PUESTO OK</span>
                             </div>
                         ) : (
-                            <div className="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-white/5 text-text-muted border border-white/5">
-                                <AlertCircle size={10} />
-                                <span className="text-[9px] font-black uppercase">SIN PUESTO</span>
+                            <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-primary/10 text-primary border border-primary/20 shadow-[0_0_15px_rgba(234,179,8,0.1)]">
+                                <Car size={12} className="animate-bounce" />
+                                <span className="text-[10px] font-black uppercase tracking-widest">APARCADO</span>
                             </div>
                         )}
                     </div>

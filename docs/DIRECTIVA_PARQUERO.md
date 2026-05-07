@@ -58,8 +58,17 @@ El dashboard es un **hub central** que no concentra todas las operaciones en una
 | 🔵 Índigo | Reservado Base | Personal de la base |
 | 🟡 Ámbar | Entidad/VIP | Tipo acceso especial |
 | 🟢 Verde | Libre | Disponible |
-| 🔴 Rojo | Ocupado | Vehículo estacionado |
+| 🔴 Rojo Brillante | Ocupado | Vehículo estacionado (Icono P rojo + pulso) |
 | ⚫ Gris | Mantenimiento | No disponible |
+
+### Especificidad en Notificaciones y Trazabilidad (v3.1):
+Para garantizar una identificación inequívoca, las tarjetas de historial y notificaciones deben mostrar:
+- **Datos del Portador**: Nombre y apellido resaltados en badge primario.
+- **Detalles del Vehículo**: Marca, Modelo y Color (concatenados).
+- **Indicadores de Estado**:
+  - `PUESTO OK`: Vehículo con puesto físico asignado (verde).
+  - `APARCADO`: Vehículo ingresado en zona pero sin puesto físico asignado aún (ámbar/primario). Sustituye al antiguo "Sin Puesto".
+
 
 ### Puestos Virtuales vs Físicos:
 - Si `usa_puestos_identificados = true`: usar puestos reales de la BD (nombres reales)
