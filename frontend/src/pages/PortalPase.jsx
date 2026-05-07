@@ -396,13 +396,38 @@ const PortalPase = () => {
                                 </button>
                             </div>
 
-                            <div className="bg-white/5 border border-white/5 rounded-2xl p-4 flex items-center gap-4">
-                                <div className={`p-2 ${style.bg}/10 rounded-lg`}>
-                                    <Info className={`w-4 h-4 ${style.accent}`} />
+                            <div className="bg-white/5 border border-white/5 rounded-2xl p-4 space-y-4">
+                                {lote.zona_nombre && (
+                                    <div className="flex items-center gap-3 pb-3 border-b border-white/5">
+                                        <div className="p-2 bg-blue-500/10 rounded-lg">
+                                            <MapPin className="w-4 h-4 text-blue-400" />
+                                        </div>
+                                        <div>
+                                            <p className="text-[9px] font-black text-gray-500 uppercase tracking-widest">Estacionamiento Asignado</p>
+                                            <p className="text-xs font-bold text-white uppercase">{lote.zona_nombre}</p>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {lote.latitud && lote.longitud && (
+                                    <a 
+                                        href={`https://www.google.com/maps/search/?api=1&query=${lote.latitud},${lote.longitud}`}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold uppercase tracking-widest text-[10px] transition-all flex items-center justify-center gap-2 shadow-lg shadow-blue-600/20"
+                                    >
+                                        <MapPin className="w-3.5 h-3.5" /> Cómo llegar con Google Maps
+                                    </a>
+                                )}
+
+                                <div className="flex items-center gap-4">
+                                    <div className={`p-2 ${style.bg}/10 rounded-lg`}>
+                                        <Info className={`w-4 h-4 ${style.accent}`} />
+                                    </div>
+                                    <p className="text-[10px] leading-relaxed text-gray-400 uppercase font-medium">
+                                        Presente este código en la alcabala de acceso. Se recomienda descargar la imagen para acceso sin conexión.
+                                    </p>
                                 </div>
-                                <p className="text-[10px] leading-relaxed text-gray-400 uppercase font-medium">
-                                    Presente este código en la alcabala de acceso. Se recomienda descargar la imagen para acceso sin conexión.
-                                </p>
                             </div>
                         </div>
                     )}

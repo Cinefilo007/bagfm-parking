@@ -226,8 +226,12 @@ const ModalVerQR = ({ pase, lote, isOpen, onClose }) => {
             const urlPortal = `${window.location.origin}/portal/pase/${pase.token}`;
             
             const zona = lote?.zona_asignada;
-            const mapsUrl = (zona?.latitud && zona?.longitud) 
-                ? `https://www.google.com/maps/search/?api=1&query=${zona.latitud},${zona.longitud}`
+            const nombreEstacionamiento = zona?.nombre || lote?.zona_nombre;
+            const lat = zona?.latitud;
+            const lon = zona?.longitud;
+            
+            const mapsUrl = (lat && lon) 
+                ? `https://www.google.com/maps/search/?api=1&query=${lat},${lon}`
                 : null;
 
             const mensaje = [
@@ -235,7 +239,7 @@ const ModalVerQR = ({ pase, lote, isOpen, onClose }) => {
                 `📋 Serial: \`${serialDisplay}\``,
                 pase.nombre_portador ? `👤 Portador: ${pase.nombre_portador}` : '',
                 pase.vehiculo_placa ? `🚗 Vehículo: ${pase.vehiculo_placa}` : '',
-                zona?.nombre ? `📍 Estacionamiento: *${zona.nombre}*` : '',
+                nombreEstacionamiento ? `📍 Estacionamiento: *${nombreEstacionamiento}*` : '',
                 mapsUrl ? `🗺️ Ubicación: ${mapsUrl}` : '',
                 ``,
                 `🔗 Accede a tu pase aquí: ${urlPortal}`,

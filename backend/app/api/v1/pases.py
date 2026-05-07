@@ -351,7 +351,10 @@ async def obtener_pase_publico(token: str, db: AsyncSession = Depends(obtener_db
     lote = await db.scalar(
         select(LotePaseMasivo)
         .where(LotePaseMasivo.id == pase.lote_id)
-        .options(joinedload(LotePaseMasivo.entidad))
+        .options(
+            joinedload(LotePaseMasivo.entidad),
+            joinedload(LotePaseMasivo.zona_asignada)
+        )
     )
     
     entidad_nombre = lote.entidad.nombre if lote and lote.entidad else "BAGFM ACCESS"
@@ -417,7 +420,10 @@ async def obtener_pase_publico(token: str, db: AsyncSession = Depends(obtener_db
             "nombre_evento": lote.nombre_evento,
             "fecha_inicio": lote.fecha_inicio,
             "fecha_fin": lote.fecha_fin,
-            "tipo_pase": lote.tipo_pase
+            "tipo_pase": lote.tipo_pase,
+            "zona_nombre": lote.zona_asignada.nombre if lote.zona_asignada else lote.zona_nombre,
+            "latitud": lote.zona_asignada.latitud if lote.zona_asignada else None,
+            "longitud": lote.zona_asignada.longitud if lote.zona_asignada else None
         }
     }
 
