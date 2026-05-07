@@ -1039,17 +1039,18 @@ class PaseService:
         # Solo borramos si el usuario NO tiene más registros en CodigoQR (usuarios huérfanos de este lote)
         if user_ids:
             from app.models.usuario import Usuario
-            from sqlalchemy import delete
+            from sqlalchemy import update
             
-            # Subconsulta para usuarios que aún tienen pases en otros lotes
+            # Marcamos como eliminados los usuarios que NO tienen pases en otros lotes
             usuarios_con_pases = select(CodigoQR.usuario_id).where(CodigoQR.usuario_id != None)
             
-            query_del_users = delete(Usuario).where(
+            query_soft_del = update(Usuario).where(
                 Usuario.id.in_(user_ids),
                 Usuario.rol == RolTipo.SOCIO,
                 ~Usuario.id.in_(usuarios_con_pases)
-            )
-            await db.execute(query_del_users)
+            ).values(is_deleted=True, activo=False)
+            
+            await db.execute(query_soft_del)
             
         await db.commit()
         return True

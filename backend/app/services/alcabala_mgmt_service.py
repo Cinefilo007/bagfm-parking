@@ -116,7 +116,7 @@ class AlcabalaService:
         u_id = punto.usuario_id
         await db.execute(delete(PuntoAcceso).where(PuntoAcceso.id == id))
         if u_id:
-            await db.execute(delete(Usuario).where(Usuario.id == u_id))
+            await db.execute(update(Usuario).where(Usuario.id == u_id).values(is_deleted=True, activo=False))
             
         await db.commit()
         return True

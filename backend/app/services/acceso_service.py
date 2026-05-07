@@ -435,53 +435,86 @@ class AccesoService:
 
         # 1. Registro Ligero de Usuario/Vehículo si se proveen datos manuales
         if datos.cedula_manual:
-
-            # Buscar si ya existe por cédula
-            q_u = select(Usuario).where(Usuario.cedula == datos.cedula_manual)
-            res_u = await db.execute(q_u)
-            usuario_existente = res_u.scalar_one_or_none()
-
-            if not usuario_existente:
-                # Crear usuario temporal ligero
-                usuario_existente = Usuario(
-                    cedula=datos.cedula_manual,
-                    nombre=datos.nombre_manual or "VISITANTE",
-                    apellido="TEMPORAL",
-                    telefono=datos.telefono_manual, # Nuevo campo de contacto
-                    rol=RolTipo.SOCIO,
-                    password_hash="MANUAL_REG", # No podrá loguearse sin reset
-                    activo=True
-                )
-                db.add(usuario_existente)
-                await db.flush()
-            elif datos.telefono_manual:
-                # Si el usuario ya existe, actualizar su teléfono para futuras comunicaciones
-                usuario_existente.telefono = datos.telefono_manual
-
+            # Buscar si es un pase masivo para evitar crear un Usuario permanente
+            qr_db = None
+            if datos.qr_id:
+                qr_db = await db.get(CodigoQR, datos.qr_id)
             
-            final_usuario_id = usuario_existente.id
+            es_pase_masivo = False
+            if qr_db and qr_db.tipo in [QRTipo.evento_simple, QRTipo.evento_identificado, QRTipo.temporal]:
+                es_pase_masivo = True
+                # Actualizar datos en el QR directamente (Bitácora rápida)
+                if datos.nombre_manual: qr_db.nombre_portador = datos.nombre_manual.upper()
+                qr_db.cedula_portador = datos.cedula_manual
+                if datos.telefono_manual: qr_db.telefono_portador = datos.telefono_manual
+                
+                # Vehículo en el QR (si no es multi-vehículo, guardamos los datos base)
+                if not qr_db.multi_vehiculo:
+                    if datos.vehiculo_placa: qr_db.vehiculo_placa = datos.vehiculo_placa.upper()
+                    if datos.vehiculo_marca: qr_db.vehiculo_marca = datos.vehiculo_marca.upper()
+                    if datos.vehiculo_modelo: qr_db.vehiculo_modelo = datos.vehiculo_modelo.upper()
+                    if datos.vehiculo_color: qr_db.vehiculo_color = datos.vehiculo_color.upper()
+                else:
+                    # Lógica para multi-vehículo (VehiculoPase)
+                    if datos.vehiculo_placa:
+                        q_vp = select(VehiculoPase).where(VehiculoPase.qr_id == qr_db.id, VehiculoPase.placa == datos.vehiculo_placa.upper())
+                        vp_existente = (await db.execute(q_vp)).scalar_one_or_none()
+                        if not vp_existente:
+                            vp_existente = VehiculoPase(
+                                qr_id=qr_db.id,
+                                placa=datos.vehiculo_placa.upper(),
+                                marca=datos.vehiculo_marca.upper() if datos.vehiculo_marca else "GENÉRICO",
+                                modelo=datos.vehiculo_modelo.upper() if datos.vehiculo_modelo else "GENÉRICO",
+                                color=datos.vehiculo_color.upper() if datos.vehiculo_color else "SIN COLOR"
+                            )
+                            db.add(vp_existente)
+                            await db.flush()
+                        final_vehiculo_pase_id = vp_existente.id
+                
+                qr_db.datos_completos = True
+                await db.flush()
 
-            # Si hay datos de vehículo manual (al menos la placa es requerida si se envía algo)
-            if datos.vehiculo_placa:
-                # Buscar vehículo por placa
-                q_v = select(Vehiculo).where(Vehiculo.placa == datos.vehiculo_placa)
-                res_v = await db.execute(q_v)
-                v_existente = res_v.scalar_one_or_none()
+            if not es_pase_masivo:
+                # Lógica original para usuarios permanentes
+                q_u = select(Usuario).where(Usuario.cedula == datos.cedula_manual)
+                res_u = await db.execute(q_u)
+                usuario_existente = res_u.scalar_one_or_none()
 
-                if not v_existente:
-                    # Crear vehículo con campos desglosados
-                    v_existente = Vehiculo(
-                        placa=datos.vehiculo_placa,
-                        marca=datos.vehiculo_marca or "GENÉRICO",
-                        modelo=datos.vehiculo_modelo or "GENÉRICO",
-                        color=datos.vehiculo_color or "SIN COLOR", # Evita NotNullViolation
-                        socio_id=final_usuario_id,
+                if not usuario_existente:
+                    usuario_existente = Usuario(
+                        cedula=datos.cedula_manual,
+                        nombre=datos.nombre_manual or "VISITANTE",
+                        apellido="TEMPORAL",
+                        telefono=datos.telefono_manual,
+                        rol=RolTipo.SOCIO,
+                        password_hash="MANUAL_REG",
                         activo=True
                     )
-                    db.add(v_existente)
+                    db.add(usuario_existente)
                     await db.flush()
+                elif datos.telefono_manual:
+                    usuario_existente.telefono = datos.telefono_manual
                 
-                final_vehiculo_id = v_existente.id
+                final_usuario_id = usuario_existente.id
+
+                # Vehículo permanente si aplica
+                if datos.vehiculo_placa:
+                    q_v = select(Vehiculo).where(Vehiculo.placa == datos.vehiculo_placa.upper())
+                    res_v = await db.execute(q_v)
+                    v_existente = res_v.scalar_one_or_none()
+
+                    if not v_existente:
+                        v_existente = Vehiculo(
+                            placa=datos.vehiculo_placa.upper(),
+                            marca=datos.vehiculo_marca or "GENÉRICO",
+                            modelo=datos.vehiculo_modelo or "GENÉRICO",
+                            color=datos.vehiculo_color or "SIN COLOR",
+                            socio_id=final_usuario_id,
+                            activo=True
+                        )
+                        db.add(v_existente)
+                        await db.flush()
+                    final_vehiculo_id = v_existente.id
 
         # 2. Si todavía no tenemos usuario_id, el registro de acceso quedará sin usuario asociado
         # logueando la entrada exclusivamente por el medio temporal (qr_id).

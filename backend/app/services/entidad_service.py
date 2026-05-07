@@ -249,10 +249,10 @@ class EntidadCivilService:
                 await db.execute(delete(Membresia).where(Membresia.entidad_id == entidad_id))
                 # Borrar Eventos
                 await db.execute(delete(SolicitudEvento).where(SolicitudEvento.entidad_id == entidad_id))
-                # Borrar Vehículos asociados a esos usuarios
-                await db.execute(delete(Vehiculo).where(Vehiculo.socio_id.in_(user_ids)))
-                # Borrar Usuarios definidos para esta entidad
-                await db.execute(delete(Usuario).where(Usuario.entidad_id == entidad_id))
+                # Borrar Vehículos asociados a esos usuarios (SOFT DELETE)
+                await db.execute(update(Vehiculo).where(Vehiculo.socio_id.in_(user_ids)).values(activo=False))
+                # Borrar Usuarios definidos para esta entidad (SOFT DELETE)
+                await db.execute(update(Usuario).where(Usuario.entidad_id == entidad_id).values(is_deleted=True, activo=False))
             
             # 4. Finalmente, borrar la entidad
             await db.execute(delete(EntidadCivil).where(EntidadCivil.id == entidad_id))
