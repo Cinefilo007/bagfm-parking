@@ -77,17 +77,28 @@ class CorreoMasivoService:
                     continue
 
                 # Compilar plantilla
-                qr_link = f"{config_env.frontend_url}/pase/{pase.token}"
+                qr_link = f"{config_env.frontend_url}/portal/pase/{pase.token}"
                 
                 cuerpo_html = cuerpo_plantilla.replace("\n", "<br>")
                 cuerpo_html = cuerpo_html.replace("{{nombre}}", f"<strong>{nombre_dest}</strong>")
                 cuerpo_html = cuerpo_html.replace("{{qr_url}}", f"<a href='{qr_link}' style='color: #4ade80; font-weight: bold;'>VER MI PASE AQUÍ</a>")
 
+                # Generar imagen del QR para adjuntar
+                from app.services.pase_service import pase_service
+                qr_img_buffer = pase_service.generar_qr_image(pase.token, lote.nombre_evento, "ACCESO TÁCTICO", pase.serial_legible)
+                qr_b64 = base64.b64encode(qr_img_buffer.getvalue()).decode('utf-8')
+
                 payload = {
                     "from": remitente,
                     "to": [destinatario],
                     "subject": asunto,
-                    "html": f"<div style='font-family: sans-serif; color: #f8fafc; background-color: #0c0f17; padding: 40px; border-radius: 16px;'>{cuerpo_html}</div>"
+                    "html": f"<div style='font-family: sans-serif; color: #f8fafc; background-color: #0c0f17; padding: 40px; border-radius: 16px;'>{cuerpo_html}</div>",
+                    "attachments": [
+                        {
+                            "filename": f"QR_ACCESO_{pase.serial_legible}.png",
+                            "content": qr_b64
+                        }
+                    ]
                 }
 
                 if tipo_envio == "carnet_pdf" and estilo_carnet:
@@ -156,14 +167,25 @@ class CorreoMasivoService:
         nombre_dest = pase.nombre_portador or "Usuario Invitado"
         if not destinatario: return
 
-        qr_link = f"{config_env.frontend_url}/pase/{pase.token}"
+        qr_link = f"{config_env.frontend_url}/portal/pase/{pase.token}"
         cuerpo_html = cuerpo_plantilla.replace("\n", "<br>").replace("{{nombre}}", f"<strong>{nombre_dest}</strong>").replace("{{qr_url}}", f"<a href='{qr_link}'>VER MI PASE</a>")
+
+        # Generar imagen del QR para adjuntar
+        from app.services.pase_service import pase_service
+        qr_img_buffer = pase_service.generar_qr_image(pase.token, lote.nombre_evento, "ACCESO TÁCTICO", pase.serial_legible)
+        qr_b64 = base64.b64encode(qr_img_buffer.getvalue()).decode('utf-8')
 
         payload = {
             "from": remitente,
             "to": [destinatario],
             "subject": asunto,
-            "html": f"<div style='font-family: sans-serif; color: #f8fafc; background-color: #0c0f17; padding: 40px;'>{cuerpo_html}</div>"
+            "html": f"<div style='font-family: sans-serif; color: #f8fafc; background-color: #0c0f17; padding: 40px;'>{cuerpo_html}</div>",
+            "attachments": [
+                {
+                    "filename": f"QR_ACCESO_{pase.serial_legible}.png",
+                    "content": qr_b64
+                }
+            ]
         }
 
         if tipo_envio == "carnet_pdf" and estilo_carnet:
