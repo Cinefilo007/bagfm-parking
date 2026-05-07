@@ -76,6 +76,24 @@ const ModalInfoPuesto = ({ puesto, vehiculosEnZona = [], onClose, onActualizar }
         }
     };
 
+    // ── Acción: asignar vehículo ───────────────────────────────────────────
+    const handleAsignarVehiculo = async (vehiculoPaseId) => {
+        setCargando(true);
+        try {
+            await parqueroService.asignarPuesto(vehiculoPaseId, puesto.id);
+            toast.success(`Vehículo asignado al puesto ${puesto.numero_puesto}`);
+            onActualizar?.();
+            onClose();
+        } catch (e) {
+            toast.error(e.response?.data?.detail || 'No se pudo asignar el vehículo');
+        } finally {
+            setCargando(false);
+        }
+    };
+
+    // Filtrar vehículos en zona que NO tienen puesto asignado
+    const vehiculosDisponibles = vehiculosEnZona.filter(v => !v.puesto_asignado_id);
+
     return (
         <div
             className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
@@ -178,6 +196,42 @@ const ModalInfoPuesto = ({ puesto, vehiculosEnZona = [], onClose, onActualizar }
                             <p className="text-[10px] text-indigo-400 font-bold uppercase tracking-wide">
                                 Apartado para personal de la base
                             </p>
+                        </div>
+                    </div>
+                )}
+
+                {/* ── SECCIÓN ASIGNAR VEHÍCULO ── */}
+                {puesto.estado !== 'ocupado' && puesto.estado !== 'mantenimiento' && (
+                    <div className="px-4 pt-4">
+                        <div className="p-3 bg-bg-low rounded-xl border border-white/5">
+                            <p className="text-[9px] font-black text-text-muted uppercase tracking-widest mb-2 flex items-center gap-1.5">
+                                <Car size={10} className="text-primary" /> Asignar Vehículo Aparcado
+                            </p>
+                            
+                            <div className="space-y-1.5 max-h-[120px] overflow-y-auto custom-scrollbar pr-1">
+                                {vehiculosDisponibles.length > 0 ? (
+                                    vehiculosDisponibles.map(v => (
+                                        <button
+                                            key={v.id}
+                                            onClick={() => handleAsignarVehiculo(v.id)}
+                                            disabled={cargando}
+                                            className="w-full flex items-center justify-between p-2.5 bg-white/5 hover:bg-primary/10 hover:border-primary/30 border border-transparent rounded-lg transition-all group"
+                                        >
+                                            <div className="text-left">
+                                                <p className="text-[10px] font-black text-text-main uppercase leading-none">{v.placa}</p>
+                                                <p className="text-[8px] text-text-muted mt-0.5 uppercase tracking-tighter">
+                                                    {v.marca} {v.color}
+                                                </p>
+                                            </div>
+                                            <CheckCircle2 size={14} className="text-primary opacity-0 group-hover:opacity-100 transition-opacity" />
+                                        </button>
+                                    ))
+                                ) : (
+                                    <p className="text-[8px] text-text-muted/50 italic py-2 text-center">
+                                        No hay vehículos sin puesto en la zona
+                                    </p>
+                                )}
+                            </div>
                         </div>
                     </div>
                 )}
