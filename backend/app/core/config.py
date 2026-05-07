@@ -58,6 +58,11 @@ class Configuracion(BaseSettings):
     def en_produccion(self) -> bool:
         return self.app_env == "production"
 
+    @property
+    def frontend_url(self) -> str:
+        """Retorna la URL base del frontend para enlaces en correos."""
+        return self.cors_lista[0] if self.cors_lista else "http://localhost:5173"
+
 
 @lru_cache
 def obtener_config() -> Configuracion:
