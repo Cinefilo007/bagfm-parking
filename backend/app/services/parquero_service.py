@@ -650,12 +650,13 @@ class ParqueroService:
 
         perdidos = []
         for acceso, qr in accesos:
-            # 3. Verificar si este QR ya tiene un VehiculoPase 'ingresado' para esta zona
+            # 3. Verificar si este QR ya reportó llegada a la zona DESPUÉS de este acceso por alcabala
+            # SOP: Aegis v2.3 - Si ya ingresó (aunque ya haya salido), no está perdido.
             res_vp = await db.execute(
                 select(VehiculoPase).where(
                     VehiculoPase.qr_id == qr.id,
                     VehiculoPase.zona_asignada_id == zona_id,
-                    VehiculoPase.ingresado == True
+                    VehiculoPase.hora_ingreso >= acceso.timestamp
                 )
             )
             vp = res_vp.scalars().first()
@@ -676,6 +677,7 @@ class ParqueroService:
                         "minutos_transcurridos": transcurrido_min,
                         "tiempo_limite": tiempo_limite,
                         "nombre_conductor": qr.nombre_portador,
+                        "telefono_conductor": qr.telefono_portador,
                         "qr_id": str(qr.id)
                     })
         

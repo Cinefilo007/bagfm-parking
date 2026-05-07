@@ -55,12 +55,18 @@ const TarjetaVehiculoPerdido = ({ vehiculo }) => {
                     </div>
                     
                     <div className="mt-4 flex gap-2">
-                         <button className="flex-1 py-2 rounded-lg bg-white/5 border border-white/10 text-white text-[10px] font-black uppercase tracking-widest hover:bg-white/10 transition-all">
-                             Notificar Centro
-                         </button>
-                         <button className="px-4 py-2 rounded-lg bg-danger/20 border border-danger/30 text-danger text-[10px] font-black uppercase tracking-widest hover:bg-danger/30 transition-all flex items-center gap-2">
-                             <Search size={12} /> Rastrear
-                         </button>
+                         {vehiculo.telefono_conductor ? (
+                             <a 
+                                 href={`tel:${vehiculo.telefono_conductor}`}
+                                 className="flex-1 h-10 rounded-lg bg-success/20 border border-success/30 text-success text-[10px] font-black uppercase tracking-widest hover:bg-success/30 transition-all flex items-center justify-center gap-2"
+                             >
+                                 <Phone size={12} /> Llamar
+                             </a>
+                         ) : (
+                             <div className="flex-1 h-10 rounded-lg bg-white/5 border border-white/10 text-text-muted text-[10px] font-black uppercase tracking-widest flex items-center justify-center">
+                                 Sin Teléfono
+                             </div>
+                         )}
                     </div>
                 </div>
             </div>

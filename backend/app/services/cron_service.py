@@ -36,30 +36,45 @@ class CronService:
         ahora = datetime.now(timezone.utc)
         contador = 0
 
-        # Buscamos QRs activos que entraron pero no llegaron a zona
-        stmt = select(CodigoQR).where(
-            and_(
-                CodigoQR.activo == True,
-                CodigoQR.hora_entrada_base != None,
-                CodigoQR.hora_llegada_zona == None
+        # Buscamos accesos de entrada recientes (últimas 12h) con destino a zonas
+        hace_12h = ahora - timedelta(hours=12)
+        from app.models.acceso import Acceso, AccesoTipo
+        from app.models.vehiculo_pase import VehiculoPase
+        from app.services.notificacion_service import notificacion_service
+
+        stmt = (
+            select(Acceso, CodigoQR)
+            .join(CodigoQR, Acceso.qr_id == CodigoQR.id)
+            .where(
+                Acceso.tipo == AccesoTipo.entrada,
+                Acceso.timestamp >= hace_12h,
+                CodigoQR.zona_asignada_id != None
             )
         )
         result = await db.execute(stmt)
-        qrs_pendientes = result.scalars().all()
+        accesos_pendientes = result.all()
 
-        for qr in qrs_pendientes:
-            # Tiempo transcurrido en minutos
-            delta = (ahora - qr.hora_entrada_base).total_seconds() / 60
+        for acceso, qr in accesos_pendientes:
+            # 1. Verificar si ya llegó a la zona asignada después del acceso
+            stmt_vp = select(VehiculoPase).where(
+                VehiculoPase.qr_id == qr.id,
+                VehiculoPase.zona_asignada_id == qr.zona_asignada_id,
+                VehiculoPase.hora_ingreso >= acceso.timestamp
+            )
+            res_vp = await db.execute(stmt_vp)
+            if res_vp.scalars().first():
+                continue # Ya llegó, ignorar
+
+            # 2. Validar tiempo transcurrido
+            delta = (ahora - acceso.timestamp.replace(tzinfo=timezone.utc) if acceso.timestamp.tzinfo is None else acceso.timestamp).total_seconds() / 60
             
-            # Tiempo límite (por defecto 15, o el de la zona si está asignada)
             tiempo_limite = 15
-            if qr.zona_asignada_id:
-                res_zona = await db.get(ZonaEstacionamiento, qr.zona_asignada_id)
-                if res_zona:
-                    tiempo_limite = res_zona.tiempo_limite_llegada_min
+            res_zona = await db.get(ZonaEstacionamiento, qr.zona_asignada_id)
+            if res_zona:
+                tiempo_limite = res_zona.tiempo_limite_llegada_min or 15
 
             if delta > tiempo_limite:
-                # Verificar si ya tiene una infracción de este tipo abierta
+                # 3. Verificar si ya tiene una infracción abierta
                 stmt_inf = select(Infraccion).where(
                     and_(
                         Infraccion.vehiculo_id == qr.vehiculo_id,
@@ -72,25 +87,36 @@ class CronService:
                     # Crear Infracción Automática
                     nueva_inf = Infraccion(
                         vehiculo_id=qr.vehiculo_id,
-                        usuario_id=qr.usuario_id or qr.created_by, # Fallback al emisor si es pase temporal sin ID usuario
-                        reportado_por=qr.created_by, # Sistema / Quien generó el QR
+                        usuario_id=qr.usuario_id or qr.created_by,
+                        reportado_por=qr.created_by,
                         tipo=InfraccionTipo.vehiculo_fantasma,
                         gravedad=GravedadInfraccion.moderada,
-                        descripcion=f"ALERTA FANTASMA: Se detectó un retraso de {int(delta)} min desde el ingreso a base sin reporte en zona asignada.",
+                        descripcion=f"ALERTA FANTASMA: Retraso de {int(delta)} min desde ingreso en {acceso.punto_acceso}.",
                         bloquea_salida=True,
                         estado=InfraccionEstado.activa,
-                        notas_internas=f"Detectado por CronService. Entrada: {qr.hora_entrada_base}"
+                        zona_id=qr.zona_asignada_id
                     )
                     db.add(nueva_inf)
                     contador += 1
                     
-                    # Notificar vía WebSocket
+                    # 4. Notificar vía WebSocket (Comandancia)
                     await notify_manager.broadcast({
                         "evento": "ALERTA_SEGURIDAD",
                         "tipo": "VEHICULO_FANTASMA",
                         "mensaje": f"Vehículo placa {qr.vehiculo_placa} excedió tiempo de ruta.",
                         "gravedad": "ALTA"
                     }, roles=["COMANDANTE", "ADMIN_BASE", "SUPERVISOR"])
+
+                    # 5. Notificar vía PUSH (Parquero de la zona)
+                    try:
+                        await notificacion_service.notificar_vehiculo_perdido(
+                            db,
+                            zona_id=qr.zona_asignada_id,
+                            placa=qr.vehiculo_placa or "SIN PLACA",
+                            minutos=int(delta)
+                        )
+                    except Exception as e_push:
+                        print(f"[CRON] Error push perdido: {e_push}")
 
         if contador > 0:
             await db.commit()

@@ -650,13 +650,8 @@ class AccesoService:
                 # Recargar QR para asegurar que tenemos los datos frescos post-commit
                 qr_db = await db.get(CodigoQR, datos.qr_id)
                 if qr_db:
-                    # Resolver Zona: Priorizar zona individual del QR, luego zona del lote
-                    zona_id = qr_db.zona_asignada_id
-                    
-                    if not zona_id and qr_db.lote_id:
-                        lote = await db.get(LotePaseMasivo, qr_db.lote_id)
-                        if lote:
-                            zona_id = lote.zona_estacionamiento_id
+                    # Resolver Zona: Usar la zona persistida en el registro de acceso (Aegis v2.4)
+                    zona_id = nuevo_acceso.zona_id
                     
                     if zona_id:
                         # Datos para la notificación - Priorizar datos manuales de la captura actual

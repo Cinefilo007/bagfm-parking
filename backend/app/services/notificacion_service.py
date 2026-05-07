@@ -155,4 +155,45 @@ class NotificacionService:
             except Exception as e:
                 logging.error(f"Error enviando push de infraccion al socio {socio_id}: {e}")
 
+    async def notificar_vehiculo_perdido(self, db: AsyncSession, zona_id: UUID, placa: str, minutos: int):
+        """
+        Alerta Táctica: Notifica que un vehículo ha excedido el tiempo de llegada.
+        """
+        query_destinatarios = select(Usuario).where(
+            Usuario.activo == True,
+            (Usuario.rol == RolTipo.PARQUERO) & (Usuario.zona_asignada_id == zona_id) |
+            (Usuario.rol == RolTipo.SUPERVISOR_PARQUEROS)
+        )
+        
+        result = await db.execute(query_destinatarios)
+        usuarios = result.scalars().all()
+        ids_usuarios = [u.id for u in usuarios]
+        
+        if not ids_usuarios: return
+
+        query_subs = select(PushSubscription).where(
+            PushSubscription.usuario_id.in_(ids_usuarios),
+            PushSubscription.activo == True
+        )
+        result_subs = await db.execute(query_subs)
+        suscripciones = result_subs.scalars().all()
+
+        payload = {
+            "title": "🚨 VEHÍCULO PERDIDO",
+            "body": f"El vehículo {placa} tiene +{minutos} min en ruta. Verifique su ubicación.",
+            "data": {
+                "url": "/parquero/perdidos",
+                "zona_id": str(zona_id),
+                "tipo": "vehiculo_perdido"
+            },
+            "icon": "/icons/shield-alert.png"
+        }
+
+        for sub in suscripciones:
+            try:
+                sub_info = {"endpoint": sub.endpoint, "keys": {"p256dh": sub.p256dh, "auth": sub.auth}}
+                webpush_service.send_notification(sub_info, payload)
+            except Exception:
+                pass
+
 notificacion_service = NotificacionService()
