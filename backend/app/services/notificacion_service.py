@@ -76,8 +76,18 @@ class NotificacionService:
                     "auth": sub.auth
                 }
             }
-            # Esto es síncrono en el service base, pero aquí lo llamamos
-            webpush_service.send_notification(sub_info, payload)
+            try:
+                webpush_service.send_notification(sub_info, payload)
+            except Exception as e:
+                # Si la suscripción ha expirado o es inválida (410 Gone), la desactivamos
+                error_msg = str(e)
+                if "410 Gone" in error_msg or "404 Not Found" in error_msg:
+                    logging.warning(f"Desactivando suscripción inválida {sub.id} para usuario {sub.usuario_id}")
+                    sub.activo = False
+                    # No hacemos commit aquí, el commit vendrá del flujo principal (acceso_service)
+                    # o si es un flujo independiente, el session lo manejará al finalizar si está configurado.
+                    # Sin embargo, para asegurar que se guarde el cambio de estado 'activo', 
+                    # lo ideal es que el session que se pasa sea el mismo que el del commit.
 
     async def notificar_excepcion_alcabala(self, db: AsyncSession, acceso):
         """
@@ -122,7 +132,12 @@ class NotificacionService:
                 sub_info = {"endpoint": sub.endpoint, "keys": {"p256dh": sub.p256dh, "auth": sub.auth}}
                 webpush_service.send_notification(sub_info, payload)
             except Exception as e:
-                logging.error(f"Error enviando push de excepción a {sub.usuario_id}: {e}")
+                error_msg = str(e)
+                if "410 Gone" in error_msg or "404 Not Found" in error_msg:
+                    logging.warning(f"Desactivando suscripción inválida {sub.id} para usuario {sub.usuario_id}")
+                    sub.activo = False
+                else:
+                    logging.error(f"Error enviando push de excepción a {sub.usuario_id}: {e}")
 
     async def notificar_infraccion_socio(self, db: AsyncSession, socio_id: UUID, vehiculo_placa: str, infraccion_tipo: str, infraccion_gravedad: str):
         """
@@ -153,7 +168,12 @@ class NotificacionService:
                 sub_info = {"endpoint": sub.endpoint, "keys": {"p256dh": sub.p256dh, "auth": sub.auth}}
                 webpush_service.send_notification(sub_info, payload)
             except Exception as e:
-                logging.error(f"Error enviando push de infraccion al socio {socio_id}: {e}")
+                error_msg = str(e)
+                if "410 Gone" in error_msg or "404 Not Found" in error_msg:
+                    logging.warning(f"Desactivando suscripción inválida {sub.id} para usuario {sub.usuario_id}")
+                    sub.activo = False
+                else:
+                    logging.error(f"Error enviando push de infraccion al socio {socio_id}: {e}")
 
     async def notificar_vehiculo_perdido(self, db: AsyncSession, zona_id: UUID, placa: str, minutos: int):
         """
@@ -193,7 +213,11 @@ class NotificacionService:
             try:
                 sub_info = {"endpoint": sub.endpoint, "keys": {"p256dh": sub.p256dh, "auth": sub.auth}}
                 webpush_service.send_notification(sub_info, payload)
-            except Exception:
-                pass
+            except Exception as e:
+                error_msg = str(e)
+                if "410 Gone" in error_msg or "404 Not Found" in error_msg:
+                    sub.activo = False
+                else:
+                    logging.error(f"Error enviando push de vehiculo perdido: {error_msg}")
 
 notificacion_service = NotificacionService()
