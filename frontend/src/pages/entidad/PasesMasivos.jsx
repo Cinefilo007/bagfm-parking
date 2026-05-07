@@ -16,7 +16,7 @@ import {
     Upload, CheckCircle2, MapPin, MoreVertical, Copy,
     Shield, Camera, Star, AlertTriangle, FileSpreadsheet, PlusCircle, Trash2,
     ShieldAlert, XCircle, Zap, ArrowRight, Info, Loader2,
-    MessageCircle, Eye, X
+    MessageCircle, Eye, X, Globe
 } from 'lucide-react';
 import { eventosService } from '../../services/eventos.service';
 import { pasesService } from '../../services/pasesService';
