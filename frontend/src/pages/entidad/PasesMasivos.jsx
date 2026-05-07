@@ -30,24 +30,23 @@ import PlantillaPreview from '../../components/carnets/PlantillaPreview';
 // ──── Helpers ─────────────────────────────────────────────────────────────────
 
 const TIPO_INFO = {
-    simple: { label: 'Pase Simple', icon: Ticket, color: 'text-primary', bg: 'bg-primary/10' },
-    identificado: { label: 'Identificado', icon: UserCheck, color: 'text-success', bg: 'bg-success/10' },
-    portal: { label: 'Auto-Registro', icon: ExternalLink, color: 'text-warning', bg: 'bg-warning/10' },
-    general: { label: 'Público General', icon: Users, color: 'text-text-muted', bg: 'bg-white/5' },
-    vip: { label: 'VIP', icon: Shield, color: 'text-yellow-400', bg: 'bg-yellow-400/10' },
+    general: { label: 'Público General', icon: Users, color: 'text-text-muted', bg: 'bg-bg-app/50' },
+    invitado: { label: 'Invitado Especial', icon: Star, color: 'text-warning', bg: 'bg-warning/10' },
+    identificado: { label: 'Participante Identificado', icon: UserCheck, color: 'text-primary', bg: 'bg-primary/10' },
+    portal: { label: 'Auto-Registro (Portal)', icon: Globe, color: 'text-sky-400', bg: 'bg-sky-400/10' },
+    custom: { label: 'Personalizado', icon: Tag, color: 'text-text-main', bg: 'bg-bg-high/40' },
     staff: { label: 'Staff', icon: Shield, color: 'text-sky-400', bg: 'bg-sky-400/10' },
     produccion: { label: 'Producción', icon: LayoutGrid, color: 'text-purple-400', bg: 'bg-purple-400/10' },
     logistica: { label: 'Logística', icon: Car, color: 'text-orange-400', bg: 'bg-orange-400/10' },
     prensa: { label: 'Prensa', icon: Camera, color: 'text-pink-400', bg: 'bg-pink-400/10' },
     artista: { label: 'Artista', icon: Star, color: 'text-cyan-400', bg: 'bg-cyan-400/10' },
-    custom: { label: 'Personalizado', icon: Tag, color: 'text-white', bg: 'bg-white/10' },
 };
 
 const badgeTipo = (tipo, labelCustom) => {
     const info = TIPO_INFO[tipo] || TIPO_INFO.simple;
     const Icon = info.icon;
     return (
-        <span className={cn('px-2 py-0.5 rounded-md text-[8px] font-black uppercase tracking-widest border border-white/5 flex items-center gap-1', info.color, info.bg)}>
+        <span className={cn('px-2 py-0.5 rounded-md text-[8px] font-black uppercase tracking-widest border border-text-main/5 flex items-center gap-1', info.color, info.bg)}>
             <Icon size={9} /> {labelCustom || info.label}
         </span>
     );
@@ -226,11 +225,18 @@ const ModalVerQR = ({ pase, lote, isOpen, onClose }) => {
             const eventoNombre = lote?.nombre_evento || 'Evento';
             const urlPortal = `${window.location.origin}/portal/pase/${pase.token}`;
             
+            const zona = lote?.zona_asignada;
+            const mapsUrl = (zona?.latitud && zona?.longitud) 
+                ? `https://www.google.com/maps/search/?api=1&query=${zona.latitud},${zona.longitud}`
+                : null;
+
             const mensaje = [
                 `🎫 *PASE DE ACCESO — ${eventoNombre.toUpperCase()}*`,
                 `📋 Serial: \`${serialDisplay}\``,
                 pase.nombre_portador ? `👤 Portador: ${pase.nombre_portador}` : '',
                 pase.vehiculo_placa ? `🚗 Vehículo: ${pase.vehiculo_placa}` : '',
+                zona?.nombre ? `📍 Estacionamiento: *${zona.nombre}*` : '',
+                mapsUrl ? `🗺️ Ubicación: ${mapsUrl}` : '',
                 ``,
                 `🔗 Accede a tu pase aquí: ${urlPortal}`,
                 ``,
@@ -239,7 +245,6 @@ const ModalVerQR = ({ pase, lote, isOpen, onClose }) => {
 
             const isMobile = /mobile|android|iphone|ipad/i.test(navigator.userAgent);
             
-            // Intentamos enviar directo la imagen si el OS lo soporta (móviles Android/iOS)
             if (isMobile && navigator.share && navigator.canShare) {
                 try {
                     const blob = await generarImagen();
@@ -257,8 +262,6 @@ const ModalVerQR = ({ pase, lote, isOpen, onClose }) => {
                 }
             }
 
-            // Fallback: Si no estamos en móvil o el share API falló, no podemos meter una foto vía wa.me
-            // Podríamos descargar la imagen auto y luego mandarlo a la URL con el caption
             const urlWhatsApp = pase.telefono_portador
                 ? `https://wa.me/${pase.telefono_portador.replace(/[^0-9]/g, '')}?text=${encodeURIComponent(mensaje)}`
                 : `https://wa.me/?text=${encodeURIComponent(mensaje)}`;
@@ -266,7 +269,6 @@ const ModalVerQR = ({ pase, lote, isOpen, onClose }) => {
             window.open(urlWhatsApp, '_blank');
             toast.dismiss('wa-share');
             
-            // Sugerimos descargar si está en Desktop para adjuntarla manualmente
             if (!isMobile) {
                 toast("En PC debes descargar el archivo y adjuntarlo", { icon: '💡' });
             }
@@ -282,24 +284,18 @@ const ModalVerQR = ({ pase, lote, isOpen, onClose }) => {
             style={{ backgroundColor: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(8px)' }}
             onClick={onClose}
         >
-            <div
-                className="relative bg-bg-card border border-white/10 rounded-3xl p-6 flex flex-col items-center gap-5 w-full max-w-sm shadow-2xl overflow-y-auto max-h-[95vh] no-scrollbar"
-                onClick={e => e.stopPropagation()}
-                style={{ animation: 'modalQrIn 0.2s ease-out' }}
-            >
-                <button onClick={onClose} className="absolute top-4 right-4 p-2 rounded-xl hover:bg-white/10 text-text-muted hover:text-white transition-all z-10">
-                    <X size={16} />
+            <div className="relative w-full max-w-sm bg-bg-card border border-text-main/10 rounded-[2rem] p-6 shadow-2xl animate-in fade-in zoom-in-95 duration-300" onClick={e => e.stopPropagation()}>
+                <button onClick={onClose} className="absolute top-4 right-4 p-2 rounded-xl hover:bg-bg-app/80 text-text-muted hover:text-text-main transition-all z-10">
+                    <X size={18} />
                 </button>
 
-                {/* Header Compacto */}
                 <div className="text-center w-full mt-2">
                     <h3 className="text-sm font-black text-text-main uppercase">{tituloPortador}</h3>
                     <span className="text-[9px] font-mono text-primary/70">{serialDisplay}</span>
                 </div>
 
-                {/* Body Visualizable */}
                 <div 
-                    className="w-full relative rounded-2xl bg-black/20 border border-white/5 overflow-hidden transition-all duration-300 ease-in-out" 
+                    className="w-full relative rounded-2xl bg-black/20 border border-text-main/5 overflow-hidden transition-all duration-300 ease-in-out mt-4" 
                     style={{ height: layout.h }}
                 >
                     {capturando && (
@@ -319,7 +315,6 @@ const ModalVerQR = ({ pase, lote, isOpen, onClose }) => {
                             className="absolute left-1/2 top-1/2 origin-center flex justify-center items-center transition-transform duration-300 ease-in-out"
                             style={{ transform: `translate(-50%, -50%) scale(${layout.s})` }}
                         >
-                            {/* Inner wrapper strictly for the generator node */}
                             <div ref={carnetRef} className="shrink-0 w-max h-max bg-transparent inline-block p-1">
                                 <PlantillaPreview 
                                     plantilla={modoExport} 
@@ -331,8 +326,7 @@ const ModalVerQR = ({ pase, lote, isOpen, onClose }) => {
                     )}
                 </div>
 
-                {/* Selectors */}
-                <div className="w-full flex gap-3">
+                <div className="w-full flex gap-3 mt-5">
                     <div className={modoExport === 'qr' ? 'w-full' : 'w-1/2'}>
                         <label className="block text-[9px] font-black tracking-widest text-text-muted uppercase px-1 mb-1">Formato</label>
                         <SelectTactivo 
@@ -367,9 +361,8 @@ const ModalVerQR = ({ pase, lote, isOpen, onClose }) => {
                     )}
                 </div>
 
-                {/* Botones de acción */}
-                <div className="w-full grid grid-cols-2 gap-3">
-                    <button onClick={handleDescargar} disabled={capturando} className="flex items-center justify-center gap-2 h-10 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl text-[10px] font-black text-text-muted hover:text-text-main transition-all disabled:opacity-50">
+                <div className="w-full grid grid-cols-2 gap-3 mt-4">
+                    <button onClick={handleDescargar} disabled={capturando} className="flex items-center justify-center gap-2 h-10 bg-bg-app/50 hover:bg-bg-app/80 border border-text-main/10 rounded-xl text-[10px] font-black text-text-muted hover:text-text-main transition-all disabled:opacity-50">
                         <Download size={14} /> DESCARGAR
                     </button>
                     <button onClick={handleCopyLink} className="flex items-center justify-center gap-2 h-10 bg-primary/10 hover:bg-primary/20 border border-primary/20 rounded-xl text-[10px] font-black text-primary transition-all">
@@ -380,13 +373,6 @@ const ModalVerQR = ({ pase, lote, isOpen, onClose }) => {
                     </button>
                 </div>
             </div>
-
-            <style>{`
-                @keyframes modalQrIn {
-                    from { opacity: 0; transform: scale(0.92) translateY(10px); }
-                    to { opacity: 1; transform: scale(1) translateY(0); }
-                }
-            `}</style>
         </div>
     );
 };
@@ -395,10 +381,8 @@ const ModalVerQR = ({ pase, lote, isOpen, onClose }) => {
 
 const PaseRow = ({ pase, zonas, onCompartir, onEmail, onEditar, onVerQR }) => {
     return (
-        <div className="flex flex-col sm:flex-row sm:items-center gap-3 p-3 bg-white/3 rounded-xl border border-white/5 hover:bg-white/5 transition-all group overflow-hidden">
-            {/* Contenedor Superior/Izquierdo (QR + Info) */}
+        <div className="flex flex-col sm:flex-row sm:items-center gap-3 p-3 bg-bg-app/50 rounded-xl border border-text-main/10 hover:bg-bg-app/80 transition-all group overflow-hidden">
             <div className="flex items-start sm:items-center gap-3 flex-1 min-w-0">
-                {/* Ícono QR — clicable para ver el QR */}
                 <button
                     onClick={() => onVerQR(pase)}
                     className="w-8 h-8 mt-1 sm:mt-0 bg-primary/10 hover:bg-primary/25 rounded-lg flex items-center justify-center border border-primary/15 hover:border-primary/40 shrink-0 transition-all"
@@ -407,30 +391,27 @@ const PaseRow = ({ pase, zonas, onCompartir, onEmail, onEditar, onVerQR }) => {
                     <QrCode size={15} className="text-primary" />
                 </button>
                 
-                {/* Info Principal y Metadatos */}
                 <div className="flex-1 min-w-0 flex flex-col md:flex-row md:items-center justify-between gap-2 md:gap-4">
-                    {/* Bloque Identidad */}
                     <div className="flex flex-wrap items-center gap-2 min-w-0 shrink-0">
-                        <span className="text-[10px] font-mono text-text-muted/60 tracking-tighter bg-white/5 px-1.5 py-0.5 rounded border border-white/5 shrink-0">
+                        <span className="text-[10px] font-mono text-text-muted tracking-tight bg-bg-low px-1.5 py-0.5 rounded border border-text-main/10 shrink-0">
                             {pase.serial_legible}
                         </span>
                         {pase.nombre_portador ? (
                             <p className="text-[10px] font-black text-text-main uppercase truncate max-w-[200px]">{pase.nombre_portador}</p>
                         ) : (
-                            <p className="text-[9px] text-text-muted/50 italic shrink-0">Sin asignar</p>
+                            <p className="text-[9px] text-text-muted/70 italic shrink-0">Sin asignar</p>
                         )}
                     </div>
 
-                    {/* Bloque Extra Info (Placa, Zona, Estado) */}
                     <div className="flex flex-wrap items-center gap-2 min-w-0">
                         {pase.vehiculo_placa && (
-                            <div className="flex items-center gap-1 px-2 py-0.5 bg-white/5 rounded-lg border border-white/5 text-[8px] font-black text-primary shrink-0">
+                            <div className="flex items-center gap-1 px-2 py-0.5 bg-primary/5 rounded-lg border border-primary/10 text-[8px] font-black text-primary shrink-0">
                                 <Car size={9} /> {pase.vehiculo_placa}
                             </div>
                         )}
                         
                         {(pase.puesto_asignado_codigo || pase.zona_asignada_nombre) && (
-                            <span className="text-[8px] font-bold text-success/80 flex items-center gap-1 bg-success/5 px-2 py-0.5 rounded-lg border border-success/10 shrink-0">
+                            <span className="text-[8px] font-bold text-success flex items-center gap-1 bg-success/15 px-2 py-0.5 rounded-lg border border-success/20 shrink-0">
                                 <ParkingSquare size={9} /> 
                                 {pase.puesto_asignado_codigo ? `PUESTO ${pase.puesto_asignado_codigo}` : (pase.zona_asignada_nombre || 'ZONA')}
                             </span>
@@ -438,7 +419,7 @@ const PaseRow = ({ pase, zonas, onCompartir, onEmail, onEditar, onVerQR }) => {
 
                         <span className={cn(
                             "text-[7px] font-black uppercase px-2 py-0.5 rounded-full shrink-0 ml-auto md:ml-0",
-                            pase.activo ? 'bg-success/15 text-success' : 'bg-text-muted/10 text-text-muted/50'
+                            pase.activo ? 'bg-success/15 text-success' : 'bg-text-muted/15 text-text-muted/70'
                         )}>
                             {pase.activo ? 'ACTIVO' : 'INACTIVO'}
                         </span>
@@ -446,9 +427,8 @@ const PaseRow = ({ pase, zonas, onCompartir, onEmail, onEditar, onVerQR }) => {
                 </div>
             </div>
 
-            {/* Acciones */}
-            <div className="flex items-center justify-end gap-1 shrink-0 opacity-100 sm:opacity-40 group-hover:opacity-100 transition-opacity border-t sm:border-t-0 border-white/5 pt-2 sm:pt-0 mt-1 sm:mt-0 w-full sm:w-auto">
-                <button onClick={() => onEditar(pase)} className="p-2 rounded-lg hover:bg-white/10 text-text-muted hover:text-text-main transition-all" title="Editar Pase">
+            <div className="flex items-center justify-end gap-1 shrink-0 opacity-100 sm:opacity-40 group-hover:opacity-100 transition-opacity border-t sm:border-t-0 border-text-main/10 pt-2 sm:pt-0 mt-1 sm:mt-0 w-full sm:w-auto">
+                <button onClick={() => onEditar(pase)} className="p-2 rounded-lg hover:bg-bg-app/80 text-text-muted hover:text-text-main transition-all" title="Editar Pase">
                     <Edit3 size={13} />
                 </button>
                 <button 
@@ -470,8 +450,6 @@ const PaseRow = ({ pase, zonas, onCompartir, onEmail, onEditar, onVerQR }) => {
         </div>
     );
 };
-
-// ──── Evolución del LoteCard: Formato Horizontal Táctico ──────────────────────
 
 const ModalEditarPase = ({ pase, isOpen, onClose, onRefresh }) => {
     const [form, setForm] = useState({
@@ -536,7 +514,7 @@ const ModalEditarPase = ({ pase, isOpen, onClose, onRefresh }) => {
                     </div>
                 </section>
 
-                <div className="flex justify-end gap-3 pt-4 border-t border-white/5">
+                <div className="flex justify-end gap-3 pt-4 border-t border-text-main/5">
                     <Boton variant="ghost" onClick={onClose}>Cancelar</Boton>
                     <Boton onClick={handleSave} isLoading={loading}>Guardar Cambios</Boton>
                 </div>
@@ -554,7 +532,6 @@ const ModalEnvioCorreosMasivos = ({ isOpen, onClose, lote }) => {
     const [enviando, setEnviando] = useState(false);
     const [optimizando, setOptimizando] = useState(false);
 
-    // Precargar datos del lote en asunto
     useEffect(() => {
         if (lote) {
             setAsunto(`Pases de Acceso - ${lote.nombre_evento}`);
@@ -609,19 +586,18 @@ const ModalEnvioCorreosMasivos = ({ isOpen, onClose, lote }) => {
                     <Info size={18} className="shrink-0" />
                     <div>
                         <strong>Manual de Operaciones:</strong> Esta herramienta envía un correo electrónico individual y personalizado a cada portador. 
-                        La variable <code className="text-white bg-white/10 px-1 rounded">{'{{qr_url}}'}</code> permite al usuario descargar o ver su pase en tiempo real desde el portal.
+                        La variable <code className="text-primary bg-primary/10 px-1 rounded">{'{{qr_url}}'}</code> permite al usuario descargar o ver su pase en tiempo real desde el portal.
                     </div>
                 </div>
 
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                    {/* Panel Izquierdo: Configuración del Mensaje */}
                     <div className="space-y-4">
                         <Input 
                             label="ASUNTO DEL CORREO" 
                             value={asunto} 
                             onChange={e => setAsunto(e.target.value)} 
                             required 
-                            className="bg-bg-app border-white/10"
+                            className="bg-bg-app border-text-main/10"
                         />
                         
                         <div className="space-y-2">
@@ -640,7 +616,7 @@ const ModalEnvioCorreosMasivos = ({ isOpen, onClose, lote }) => {
                             <textarea 
                                 value={cuerpo} 
                                 onChange={e => setCuerpo(e.target.value)}
-                                className="w-full h-48 bg-bg-app border border-white/10 focus:border-primary rounded-xl p-4 text-[13px] font-medium text-white transition-all resize-none shadow-inner"
+                                className="w-full h-48 bg-bg-app border border-text-main/10 focus:border-primary rounded-xl p-4 text-[13px] font-medium text-white transition-all resize-none shadow-inner"
                                 required
                             />
                             <div className="flex justify-between items-center px-1">
@@ -652,7 +628,6 @@ const ModalEnvioCorreosMasivos = ({ isOpen, onClose, lote }) => {
                         </div>
                     </div>
 
-                    {/* Panel Derecho: Configuración del Adjunto y Visualización */}
                     <div className="space-y-6">
                         <section className="space-y-3">
                             <label className="text-[10px] font-black tracking-widest text-text-muted uppercase px-1">TIPO DE ENTREGA</label>
@@ -662,7 +637,7 @@ const ModalEnvioCorreosMasivos = ({ isOpen, onClose, lote }) => {
                                     onClick={() => setTipoEnvio('solo_qr')}
                                     className={cn(
                                         "flex flex-col items-center gap-2 p-4 rounded-2xl border-2 transition-all",
-                                        tipoEnvio === 'solo_qr' ? 'bg-primary/10 border-primary text-primary' : 'bg-white/5 border-white/5 text-text-muted hover:border-white/10'
+                                        tipoEnvio === 'solo_qr' ? 'bg-primary/10 border-primary text-primary' : 'bg-bg-app/50 border-text-main/10 text-text-muted hover:border-text-main/30'
                                     )}
                                 >
                                     <QrCode size={20} />
@@ -674,7 +649,7 @@ const ModalEnvioCorreosMasivos = ({ isOpen, onClose, lote }) => {
                                     onClick={() => setTipoEnvio('carnet_pdf')}
                                     className={cn(
                                         "flex flex-col items-center gap-2 p-4 rounded-2xl border-2 transition-all",
-                                        tipoEnvio === 'carnet_pdf' ? 'bg-sky-500/10 border-sky-500 text-sky-400 shadow-lg shadow-sky-500/10' : 'bg-white/5 border-white/5 text-text-muted hover:border-white/10'
+                                        tipoEnvio === 'carnet_pdf' ? 'bg-sky-500/10 border-sky-500 text-sky-400 shadow-lg shadow-sky-500/10' : 'bg-bg-app/50 border-text-main/10 text-text-muted hover:border-text-main/30'
                                     )}
                                 >
                                     <Download size={20} />
@@ -701,7 +676,7 @@ const ModalEnvioCorreosMasivos = ({ isOpen, onClose, lote }) => {
                                                 onClick={() => setFormato(f.id)}
                                                 className={cn(
                                                     "flex items-center justify-between px-4 h-10 rounded-xl border transition-all",
-                                                    formato === f.id ? "bg-primary/10 border-primary text-primary" : "bg-white/5 border-white/10 text-text-muted hover:border-white/20"
+                                                    formato === f.id ? "bg-primary/10 border-primary text-primary" : "bg-bg-app/50 border-text-main/10 text-text-muted hover:border-text-main/20"
                                                 )}
                                             >
                                                 <span className="text-[10px] font-black uppercase">{f.label}</span>
@@ -721,7 +696,7 @@ const ModalEnvioCorreosMasivos = ({ isOpen, onClose, lote }) => {
                                                 onClick={() => setPresetId(p.id)}
                                                 className={cn(
                                                     "group relative h-10 rounded-xl border flex items-center justify-center transition-all overflow-hidden",
-                                                    presetId === p.id ? "border-white ring-2 ring-white/20" : "border-white/10 hover:border-white/30"
+                                                    presetId === p.id ? "border-text-main ring-2 ring-text-main/20" : "border-text-main/10 hover:border-text-main/30"
                                                 )}
                                                 style={{ backgroundColor: p.fondo }}
                                             >
@@ -729,7 +704,7 @@ const ModalEnvioCorreosMasivos = ({ isOpen, onClose, lote }) => {
                                                 <span className="relative text-[9px] font-black uppercase tracking-tighter" style={{ color: p.primario }}>{p.nombre}</span>
                                                 {presetId === p.id && (
                                                     <div className="absolute top-1 right-1">
-                                                        <CheckCircle2 size={8} className="text-white" />
+                                                        <CheckCircle2 size={8} className="text-text-main" />
                                                     </div>
                                                 )}
                                             </button>
@@ -741,7 +716,7 @@ const ModalEnvioCorreosMasivos = ({ isOpen, onClose, lote }) => {
                     </div>
                 </div>
 
-                <div className="flex justify-end gap-3 pt-6 border-t border-white/5">
+                <div className="flex justify-end gap-3 pt-6 border-t border-text-main/5">
                     <Boton variant="ghost" type="button" onClick={onClose} disabled={enviando}>
                         CANCELAR
                     </Boton>
@@ -760,7 +735,7 @@ const ModalListaPases = ({ isOpen, onClose, lote, zonas }) => {
     const [loading, setLoading] = useState(true);
     const [busqueda, setBusqueda] = useState('');
     const [paseEdicion, setPaseEdicion] = useState(null);
-    const [paseQR, setPaseQR] = useState(null); // Pase seleccionado para ver QR
+    const [paseQR, setPaseQR] = useState(null); 
     const [isEmailModalOpen, setIsEmailModalOpen] = useState(false);
 
     const fetchPases = useCallback(async () => {
@@ -778,7 +753,6 @@ const ModalListaPases = ({ isOpen, onClose, lote, zonas }) => {
 
     useEffect(() => { if (isOpen) fetchPases(); }, [isOpen, fetchPases]);
 
-    // Resetear estado QR al cerrar el modal principal
     const handleClose = () => { setPaseQR(null); onClose(); };
 
     const filtrados = useMemo(() => {
@@ -792,9 +766,8 @@ const ModalListaPases = ({ isOpen, onClose, lote, zonas }) => {
         );
     }, [pases, busqueda]);
 
-    // Compartir QR por WhatsApp (abre el modal QR para usar su lógica)
     const handleCompartirWhatsApp = (pase) => {
-        setPaseQR(pase); // Abre el modal QR donde está el botón de WhatsApp
+        setPaseQR(pase); 
     };
 
     return (
@@ -809,14 +782,14 @@ const ModalListaPases = ({ isOpen, onClose, lote, zonas }) => {
                                 onChange={e => setBusqueda(e.target.value)}
                                 className="pl-10"
                             />
-                            <LayoutGrid size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted opacity-40" />
+                            <LayoutGrid size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted opacity-70" />
                         </div>
                     </div>
 
                     <div className="grid grid-cols-1 gap-3 max-h-[60vh] overflow-y-auto pr-2 scrollbar-thin">
                         {loading ? (
                             Array(5).fill(0).map((_, i) => (
-                                <div key={i} className="h-16 w-full animate-pulse bg-white/5 rounded-xl border border-white/5" />
+                                <div key={i} className="h-16 w-full animate-pulse bg-bg-app/50 rounded-xl border border-text-main/10" />
                             ))
                         ) : filtrados.length > 0 ? (
                             filtrados.map(pase => (
@@ -846,7 +819,6 @@ const ModalListaPases = ({ isOpen, onClose, lote, zonas }) => {
                 />
             </Modal>
 
-            {/* Modal QR — Renderizado fuera del Modal principal para evitar z-index conflictos */}
             <ModalVerQR
                 pase={paseQR}
                 lote={lote}
@@ -875,8 +847,8 @@ const TacticalKPIs = ({ lotes }) => {
     return (
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
             {stats.map((s, i) => (
-                <div key={i} className="p-4 bg-bg-card/40 border border-white/5 rounded-2xl flex items-center gap-4 group hover:bg-bg-high/80 transition-all border-b-2 border-b-transparent hover:border-b-primary/50">
-                    <div className={cn("w-12 h-12 rounded-2xl flex items-center justify-center bg-black/40 border border-white/5", s.color)}>
+                <div key={i} className="p-4 bg-bg-card border border-text-main/10 rounded-2xl flex items-center gap-4 group hover:bg-bg-high transition-all border-b-2 border-b-transparent hover:border-b-primary/50">
+                    <div className={cn("w-12 h-12 rounded-2xl flex items-center justify-center bg-bg-app border border-text-main/10 shadow-inner", s.color)}>
                         <s.icon size={22} />
                     </div>
                     <div>
@@ -925,12 +897,11 @@ const LoteCardV2 = ({ lote, zonas, tiposCustom, onRefresh, onVerPases, onElimina
     };
 
     return (
-        <div className="flex flex-col xl:flex-row items-stretch xl:items-center gap-2 p-3 bg-bg-card/40 border border-white/5 rounded-2xl group hover:border-white/10 hover:bg-bg-high/60 transition-all">
+        <div className="flex flex-col xl:flex-row items-stretch xl:items-center gap-2 p-3 bg-bg-card border border-text-main/10 rounded-2xl group hover:border-primary/20 hover:bg-bg-high/60 transition-all">
             
-            {/* FILA 1: Identidad + Datos + Contadores */}
             <div className="flex items-center justify-between gap-3 w-full xl:w-auto xl:flex-1">
                 <div className="flex items-center gap-3">
-                    <div className={cn("p-2.5 rounded-xl border border-white/5 shadow-inner shrink-0", info.bg)}>
+                    <div className={cn("p-2.5 rounded-xl border border-text-main/5 shadow-inner shrink-0", info.bg)}>
                         <Icon className={info.color} size={20} />
                     </div>
                     <div className="min-w-0">
@@ -939,7 +910,7 @@ const LoteCardV2 = ({ lote, zonas, tiposCustom, onRefresh, onVerPases, onElimina
                             {lote.tipo_acceso && lote.tipo_acceso !== 'general' && badgeTipo(lote.tipo_acceso, lote.tipo_custom_label)}
                         </div>
                         <div className="flex items-center gap-2 mt-0.5">
-                            <span className="text-[9px] font-mono text-text-muted opacity-60 font-bold bg-white/5 px-1.5 py-0.5 rounded border border-white/5">
+                            <span className="text-[9px] font-mono text-text-muted font-bold bg-bg-low/40 px-1.5 py-0.5 rounded border border-text-main/10">
                                 {lote.codigo_serial}
                             </span>
                             <div className="flex items-center gap-3 text-text-muted text-[9px] font-bold uppercase tracking-wider">
@@ -950,10 +921,9 @@ const LoteCardV2 = ({ lote, zonas, tiposCustom, onRefresh, onVerPases, onElimina
                     </div>
                 </div>
 
-                {/* Contadores (Fila 1) */}
-                <div className="flex items-center gap-4 px-3 border-l border-white/5 shrink-0">
+                <div className="flex items-center gap-4 px-3 border-l border-text-main/10 shrink-0">
                     <div className="text-center">
-                        <div className="text-sm font-black text-white leading-none">{lote.cantidad_pases}</div>
+                        <div className="text-sm font-black text-text-main leading-none">{lote.cantidad_pases}</div>
                         <div className="text-[7px] font-black text-text-muted uppercase">Pases</div>
                     </div>
                     <div className="text-center">
@@ -963,9 +933,7 @@ const LoteCardV2 = ({ lote, zonas, tiposCustom, onRefresh, onVerPases, onElimina
                 </div>
             </div>
 
-            {/* FILA 2: Estado (Progreso) + Acciones */}
-            <div className="flex items-center gap-3 w-full xl:w-auto pt-2 xl:pt-0 border-t xl:border-t-0 xl:border-l border-white/5 xl:pl-4">
-                {/* Barra de Estado (Correr a la izquierda/acortar) */}
+            <div className="flex items-center gap-3 w-full xl:w-auto pt-2 xl:pt-0 border-t xl:border-t-0 xl:border-l border-text-main/5 xl:pl-4">
                 <div className="flex-1 xl:w-24 shrink-0 space-y-1">
                     <div className="flex justify-between items-center text-[7px] font-black tracking-widest uppercase mb-1">
                         <span className="text-text-muted">Estado</span>
@@ -973,12 +941,11 @@ const LoteCardV2 = ({ lote, zonas, tiposCustom, onRefresh, onVerPases, onElimina
                             {lote.zip_generado || progreso >= 100 ? 'LISTO' : generando ? `${progreso}%` : 'PENDIENTE'}
                         </span>
                     </div>
-                    <div className="h-1 w-full bg-white/5 rounded-full overflow-hidden">
-                        <div className={cn("h-full rounded-full transition-all duration-500", lote.zip_generado || progreso >= 100 ? 'bg-success' : generando ? 'bg-primary' : 'bg-white/10')} style={{ width: lote.zip_generado || progreso >= 100 ? '100%' : generando ? `${progreso}%` : '0%' }} />
+                    <div className="h-1 w-full bg-bg-app/50 rounded-full overflow-hidden">
+                        <div className={cn("h-full rounded-full transition-all duration-500", lote.zip_generado || progreso >= 100 ? 'bg-success' : generando ? 'bg-primary' : 'bg-bg-low/20')} style={{ width: lote.zip_generado || progreso >= 100 ? '100%' : generando ? `${progreso}%` : '0%' }} />
                     </div>
                 </div>
 
-                {/* Botones de Acción */}
                 <div className="flex items-center gap-1.5 shrink-0">
                     {lote.zip_generado || progreso >= 100 ? (
                         <>
@@ -1028,8 +995,6 @@ const LoteCardV2 = ({ lote, zonas, tiposCustom, onRefresh, onVerPases, onElimina
 };
 
 
-// ──── Modal: Crear lote con asignación zona/puesto + multi-vehículo ─────────
-
 const TIPOS_PASE_OPTIONS = [
     { id: 'simple', label: 'Simple', icon: Ticket, desc: 'Sin datos previos' },
     { id: 'identificado', label: 'Identificado', icon: UserCheck, desc: 'Carga vía Excel' },
@@ -1053,8 +1018,8 @@ const ModalNuevoLote = ({ isOpen, onClose, zonas, tiposCustom, onCreated }) => {
         fecha_fin: '',
         cantidad_pases: 10,
         tipo_pase: 'simple',
-        tipo_acceso: 'general',         // Siempre empieza en general
-        tipo_acceso_custom_id: null,     // null = Público General
+        tipo_acceso: 'general',
+        tipo_acceso_custom_id: null,
         multi_vehiculo: false,
         max_vehiculos: 1,
         zona_asignada_id: null,
@@ -1065,17 +1030,15 @@ const ModalNuevoLote = ({ isOpen, onClose, zonas, tiposCustom, onCreated }) => {
     const [guardando, setGuardando] = useState(false);
     const [excelPases, setExcelPases] = useState(null);
     
-    // ── Sistema de Validación Inteligente de Capacidad v3.0 ──────────────
     const [validacion, setValidacion] = useState(null);
     const [validando, setValidando] = useState(false);
 
-    // Opciones de acceso: 'Público General' fijo + tipos custom de la entidad
     const OPCION_GENERAL = { id: 'general', label: 'Público General', icon: Users, color: null };
     const opcionesAcceso = useMemo(() => {
         const customs = tiposCustom
             .filter(tc => tc.activo !== false)
             .map(tc => ({
-                id: tc.id,           // UUID directo
+                id: tc.id,
                 label: tc.nombre,
                 icon: Tag,
                 color: tc.color_hex || tc.color,
@@ -1084,12 +1047,6 @@ const ModalNuevoLote = ({ isOpen, onClose, zonas, tiposCustom, onCreated }) => {
         return [OPCION_GENERAL, ...customs];
     }, [tiposCustom]);
 
-    // Capacidad total de la entidad en todas sus zonas asignadas
-    const totalCapacidadEntidad = useMemo(() => {
-        return zonas.reduce((acc, z) => acc + (z.cupo_asignado || 0) - (z.cupo_reservado_base || 0), 0);
-    }, [zonas]);
-
-    // ── Validación en Tiempo Real (3 niveles) ────────────────────────────
     useEffect(() => {
         const validarCapacidad = async () => {
             if (!form.fecha_inicio || !form.fecha_fin || form.cantidad_pases < 1) {
@@ -1115,11 +1072,10 @@ const ModalNuevoLote = ({ isOpen, onClose, zonas, tiposCustom, onCreated }) => {
             }
         };
 
-        const timer = setTimeout(validarCapacidad, 600); // Debounce táctico
+        const timer = setTimeout(validarCapacidad, 600);
         return () => clearTimeout(timer);
     }, [form.zona_asignada_id, form.fecha_inicio, form.fecha_fin, form.cantidad_pases, form.tipo_acceso, form.tipo_acceso_custom_id]);
 
-    // Helpers derivados de la validación
     const tieneAlertas = validacion?.alertas?.length > 0;
     const bloqueado = validacion?.puede_crear === false;
     const alertasNivel1 = validacion?.alertas?.filter(a => a.nivel === 1) || [];
@@ -1132,11 +1088,39 @@ const ModalNuevoLote = ({ isOpen, onClose, zonas, tiposCustom, onCreated }) => {
         } else if (sugerencia.accion === 'tomar_general_zona' && sugerencia.cantidad_sugerida !== undefined) {
             setForm(prev => ({ ...prev, cantidad_pases: sugerencia.cantidad_sugerida }));
         } else if (sugerencia.accion === 'usar_otra_zona' || sugerencia.accion === 'distribuir_otra_zona') {
-            // Cambiar la zona seleccionada
             setForm(prev => ({ ...prev, zona_asignada_id: sugerencia.zona_id }));
             toast.success(`Zona cambiada a: ${sugerencia.zona_nombre}`);
         }
     };
+    
+    // ── Validación en Tiempo Real (3 niveles) ────────────────────────────
+    useEffect(() => {
+        const validarCapacidad = async () => {
+            if (!form.fecha_inicio || !form.fecha_fin || form.cantidad_pases < 1) {
+                setValidacion(null);
+                return;
+            }
+            setValidando(true);
+            try {
+                const res = await pasesService.validarCapacidad({
+                    zona_id: form.zona_asignada_id,
+                    tipo_acceso: form.tipo_acceso,
+                    tipo_acceso_custom_id: form.tipo_acceso_custom_id,
+                    cantidad: form.cantidad_pases,
+                    inicio: form.fecha_inicio,
+                    fin: form.fecha_fin
+                });
+                setValidacion(res);
+            } catch (e) {
+                console.error("Error en validación táctica:", e);
+            } finally {
+                setValidando(false);
+            }
+        };
+
+        const timer = setTimeout(validarCapacidad, 600);
+        return () => clearTimeout(timer);
+    }, [form.zona_asignada_id, form.fecha_inicio, form.fecha_fin, form.cantidad_pases, form.tipo_acceso, form.tipo_acceso_custom_id]);
 
     const handleDescargarPlantilla = () => {
         const headers = [
@@ -1197,7 +1181,6 @@ const ModalNuevoLote = ({ isOpen, onClose, zonas, tiposCustom, onCreated }) => {
             return;
         }
 
-        // BLOQUEO TÁCTICO NIVEL 3: No permitir si supera la capacidad total de la entidad
         if (bloqueado) {
             const msg = alertasNivel3[0]?.mensaje || 'Capacidad total de la entidad superada';
             toast.error(`🚨 BLOQUEADO: ${msg}`, { duration: 6000 });
@@ -1206,7 +1189,6 @@ const ModalNuevoLote = ({ isOpen, onClose, zonas, tiposCustom, onCreated }) => {
 
         setGuardando(true);
         try {
-            // Limpieza táctica del payload: convertir strings vacíos de IDs en null
             const cleanForm = { ...form };
             ['zona_asignada_id', 'puesto_asignado_id', 'tipo_acceso_custom_id'].forEach(key => {
                 if (cleanForm[key] === '') cleanForm[key] = null;
@@ -1218,7 +1200,6 @@ const ModalNuevoLote = ({ isOpen, onClose, zonas, tiposCustom, onCreated }) => {
                 excel_data: excelPases, 
                 distribucion_automatica: tieneAlertas,
                 
-                // Mapeo explícito
                 zona_id: cleanForm.zona_asignada_id,
                 puesto_id: cleanForm.puesto_asignado_id,
                 max_accesos_por_pase: cleanForm.max_accesos_ilimitados ? null : cleanForm.max_accesos_por_pase,
@@ -1231,7 +1212,6 @@ const ModalNuevoLote = ({ isOpen, onClose, zonas, tiposCustom, onCreated }) => {
         } catch (e) {
             const errorData = e.response?.data?.detail;
             if (Array.isArray(errorData)) {
-                // Error de validación de FastAPI (422)
                 const msg = errorData.map(err => `${err.loc[err.loc.length-1]}: ${err.msg}`).join(', ');
                 toast.error(`ERROR TÁCTICO: ${msg.toUpperCase()}`);
             } else {
@@ -1246,9 +1226,7 @@ const ModalNuevoLote = ({ isOpen, onClose, zonas, tiposCustom, onCreated }) => {
         <Modal isOpen={isOpen} onClose={onClose} title="NUEVO LOTE DE PASES" className="max-w-3xl">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-x-8 gap-y-6">
                 
-                {/* ══ COLUMNA IZQUIERDA ══ */}
                 <div className="space-y-6">
-                    {/* Tipo de pase */}
                 <div>
                     <label className="text-[10px] font-black text-text-muted/60 uppercase tracking-widest block mb-3">1. Selecciona el Tipo de Pase</label>
                     <div className="grid grid-cols-3 gap-2">
@@ -1259,7 +1237,7 @@ const ModalNuevoLote = ({ isOpen, onClose, zonas, tiposCustom, onCreated }) => {
                                 <button key={t.id} onClick={() => setForm({ ...form, tipo_pase: t.id })}
                                     className={cn(
                                         "flex flex-col items-center gap-1.5 p-3 rounded-xl border-2 transition-all",
-                                        sel ? 'bg-primary/10 border-primary text-primary shadow-[0_0_15px_rgba(78,222,163,0.1)]' : 'bg-white/5 border-white/10 text-text-muted hover:border-white/20'
+                                        sel ? 'bg-primary/10 border-primary text-primary shadow-[0_0_15px_rgba(78,222,163,0.1)]' : 'bg-bg-app/50 border-text-main/10 text-text-muted hover:border-text-main/20'
                                     )}>
                                     <Icon size={18} />
                                     <span className="text-[10px] font-black uppercase">{t.label}</span>
@@ -1343,7 +1321,7 @@ const ModalNuevoLote = ({ isOpen, onClose, zonas, tiposCustom, onCreated }) => {
                                     type="checkbox" 
                                     checked={form.max_accesos_ilimitados}
                                     onChange={(e) => setForm({ ...form, max_accesos_ilimitados: e.target.checked })}
-                                    className="w-3 h-3 rounded border-white/20 bg-white/5 text-primary focus:ring-offset-0 focus:ring-primary"
+                                    className="w-3 h-3 rounded border-text-main/20 bg-bg-app/50 text-primary focus:ring-offset-0 focus:ring-primary"
                                 />
                                 <span className="text-[8px] font-black uppercase text-text-muted group-hover:text-primary transition-colors">Accesos Ilimitados</span>
                             </label>
@@ -1486,7 +1464,7 @@ const ModalNuevoLote = ({ isOpen, onClose, zonas, tiposCustom, onCreated }) => {
 
                                 {/* Resumen compacto */}
                                 {validacion?.resumen && (
-                                    <div className="bg-white/3 border border-white/5 rounded-lg p-2.5 flex items-center justify-between">
+                                    <div className="bg-bg-app/30 border border-text-main/10 rounded-lg p-2.5 flex items-center justify-between">
                                         <span className="text-[7px] font-black text-text-muted uppercase tracking-widest flex items-center gap-1">
                                             <Info size={9} /> Capacidad Entidad
                                         </span>
@@ -1526,7 +1504,7 @@ const ModalNuevoLote = ({ isOpen, onClose, zonas, tiposCustom, onCreated }) => {
                                 />
                                 <div className={cn(
                                     "p-6 border-2 border-dashed rounded-xl flex flex-col items-center gap-2 transition-all",
-                                    excelPases ? 'bg-success/5 border-success/30 text-success' : 'bg-black/20 border-white/10 text-text-muted group-hover:border-primary/40'
+                                    excelPases ? 'bg-success/5 border-success/30 text-success' : 'bg-bg-app/50 border-text-main/10 text-text-muted group-hover:border-primary/40'
                                 )}>
                                     {excelPases ? <CheckCircle2 size={24} /> : <Upload size={24} />}
                                     <span className="text-[10px] font-black uppercase">
@@ -1539,7 +1517,7 @@ const ModalNuevoLote = ({ isOpen, onClose, zonas, tiposCustom, onCreated }) => {
 
                     {/* Multi-vehículo */}
                     <button onClick={() => setForm({ ...form, multi_vehiculo: !form.multi_vehiculo })}
-                        className="w-full flex items-center justify-between p-3 rounded-xl bg-white/5 border border-white/5 hover:bg-white/8 transition-all">
+                        className="w-full flex items-center justify-between p-3 rounded-xl bg-bg-app/50 border border-text-main/10 hover:bg-bg-app/80 transition-all">
                         <div className="flex items-center gap-2">
                             <Car size={15} className="text-text-muted" />
                             <span className="text-[10px] font-black uppercase tracking-wider text-text-main">Acceso Multi-Vehículo</span>
@@ -1558,7 +1536,7 @@ const ModalNuevoLote = ({ isOpen, onClose, zonas, tiposCustom, onCreated }) => {
                                 {[1, 2, 3, 4].map(n => (
                                     <button key={n} onClick={() => setForm({ ...form, max_vehiculos: n })}
                                         className={cn("flex-1 h-10 rounded-xl border-2 text-sm font-black transition-all",
-                                            form.max_vehiculos === n ? 'bg-primary/10 border-primary text-primary' : 'bg-white/5 border-white/10 text-text-muted')}>
+                                            form.max_vehiculos === n ? 'bg-primary/10 border-primary text-primary' : 'bg-bg-app/50 border-text-main/10 text-text-muted')}>
                                         {n}
                                     </button>
                                 ))}
@@ -1566,8 +1544,8 @@ const ModalNuevoLote = ({ isOpen, onClose, zonas, tiposCustom, onCreated }) => {
                         </div>
                     )}
                     {/* Botones de acción al final de la columna derecha */}
-                    <div className="flex items-center gap-3 pt-6 mt-auto border-t border-white/5">
-                        <Boton variant="ghost" className="flex-1 h-14 bg-white/5 border-white/5 hover:bg-white/10 text-[11px] font-black uppercase rounded-xl transition-all" onClick={onClose}>Cancelar</Boton>
+                    <div className="flex items-center gap-3 pt-6 mt-auto border-t border-text-main/10">
+                        <Boton variant="ghost" className="flex-1 h-14 bg-bg-app/50 border-text-main/10 hover:bg-bg-app/80 text-[11px] font-black uppercase rounded-xl transition-all" onClick={onClose}>Cancelar</Boton>
                         <Boton onClick={handleSubmit} disabled={guardando || bloqueado}
                             className={cn(
                                 "flex-[2] h-14 font-black uppercase tracking-widest text-[11px] rounded-xl transition-all",
@@ -1753,14 +1731,14 @@ export default function EventosV2() {
                         >
                             <Clock size={11} /> Solicitar Evento
                         </button>
-                        <button onClick={fetchData} className="p-1.5 rounded-lg bg-white/5 hover:bg-white/10 transition-all">
+                        <button onClick={fetchData} className="p-1.5 rounded-lg bg-bg-app/50 hover:bg-bg-app/80 transition-all">
                             <RefreshCw size={13} className={cn("text-text-muted", loading && 'animate-spin')} />
                         </button>
                     </div>
                 </div>
                 {loading ? (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                        {Array(3).fill(0).map((_, i) => <div key={i} className="h-52 rounded-2xl bg-white/5 animate-pulse border border-white/5" />)}
+                        {Array(3).fill(0).map((_, i) => <div key={i} className="h-52 rounded-2xl bg-bg-app/50 animate-pulse border border-text-main/10" />)}
                     </div>
                 ) : lotes.length > 0 ? (
                     <div className="flex flex-col gap-3">
@@ -1781,7 +1759,7 @@ export default function EventosV2() {
                     <div className="relative group py-24 flex flex-col items-center gap-6 bg-bg-card/10 rounded-2xl border border-dashed border-white/10 overflow-hidden">
                         <div className="absolute inset-0 bg-gradient-to-b from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
                         
-                        <div className="relative w-20 h-20 bg-white/5 rounded-2xl flex items-center justify-center border border-white/5 shadow-inner">
+                        <div className="relative w-20 h-20 bg-bg-app/50 rounded-2xl flex items-center justify-center border border-text-main/10 shadow-inner">
                             <PackageOpen className="text-text-muted/20" size={40} />
                         </div>
                         
@@ -1833,7 +1811,7 @@ export default function EventosV2() {
                         <h3 className="text-lg font-black text-white uppercase tracking-tighter leading-tight">¿Anular y Eliminar Lote?</h3>
                         <p className="text-xs text-text-muted leading-relaxed font-bold">
                             Esta acción es <span className="text-danger font-black uppercase underline">irreversible</span>. 
-                            Se anularán todos los accesos del lote <span className="text-white font-mono bg-white/5 px-1.5 rounded">{loteEliminar?.codigo_serial}</span> y se borrarán sus archivos de la nube.
+                            Se anularán todos los accesos del lote <span className="text-text-main font-mono bg-bg-app/50 px-1.5 rounded border border-text-main/10">{loteEliminar?.codigo_serial}</span> y se borrarán sus archivos de la nube.
                         </p>
                     </div>
 
@@ -1864,7 +1842,7 @@ export default function EventosV2() {
                         <textarea required value={formSolicitud.motivo}
                             onChange={e => setFormSolicitud({ ...formSolicitud, motivo: e.target.value })}
                             rows={3} placeholder="Describe la finalidad del evento..."
-                            className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-xs font-bold text-text-main focus:border-primary/50 outline-none resize-none placeholder:text-white/20" />
+                            className="w-full bg-bg-app/50 border border-text-main/10 rounded-xl px-3 py-2 text-xs font-bold text-text-main focus:border-primary/50 outline-none resize-none placeholder:text-text-muted/20" />
                     </div>
                     <div className="flex gap-3 pt-2 border-t border-white/5">
                         <Boton type="button" variant="ghost" className="flex-1" onClick={() => setShowSolicitudModal(false)}>Cancelar</Boton>

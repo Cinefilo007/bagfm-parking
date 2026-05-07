@@ -3,6 +3,7 @@ from uuid import UUID
 from datetime import datetime, date
 from typing import Optional, List, Any
 from app.models.enums import PasseTipo
+from app.schemas.zona_estacionamiento import ZonaEstacionamientoSalida
 
 class LotePaseMasivoBase(BaseModel):
     nombre_evento: str
@@ -45,6 +46,7 @@ class LotePaseMasivoSalida(LotePaseMasivoBase):
     zona_nombre: Optional[str] = None
     tipo_custom_label: Optional[str] = None
     pases_usados: Optional[int] = 0
+    zona_asignada: Optional[ZonaEstacionamientoSalida] = None
 
     
     model_config = ConfigDict(from_attributes=True)

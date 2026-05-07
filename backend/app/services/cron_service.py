@@ -65,6 +65,16 @@ class CronService:
             if res_vp.scalars().first():
                 continue # Ya llegó, ignorar
 
+            # 1.b Verificar si ya salió por alcabala (Aegis v2.4 Fix)
+            stmt_salida = select(Acceso).where(
+                Acceso.qr_id == qr.id,
+                Acceso.tipo == AccesoTipo.salida,
+                Acceso.timestamp >= acceso.timestamp
+            )
+            res_salida = await db.execute(stmt_salida)
+            if res_salida.scalars().first():
+                continue # Ya salió, no está perdido
+
             # 2. Validar tiempo transcurrido
             delta = (ahora - acceso.timestamp.replace(tzinfo=timezone.utc) if acceso.timestamp.tzinfo is None else acceso.timestamp).total_seconds() / 60
             

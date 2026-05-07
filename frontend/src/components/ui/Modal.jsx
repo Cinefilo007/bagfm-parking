@@ -38,7 +38,7 @@ export const Modal = ({ isOpen, onClose, title, children, className, balanced = 
           )}
         >
           {/* Header Táctico */}
-          <div className="flex-none flex items-center justify-between px-6 py-4 border-b border-white/5 bg-white/5">
+          <div className="flex-none flex items-center justify-between px-6 py-4 border-b border-text-main/10 bg-text-main/5">
             <h3 className="font-display font-bold text-sm tracking-widest text-text-main uppercase">
               {title}
             </h3>

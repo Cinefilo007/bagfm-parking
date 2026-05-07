@@ -156,7 +156,7 @@ export default function Login() {
                     <input 
                       id="remember"
                       type="checkbox" 
-                      className="w-4 h-4 rounded border-white/10 bg-bg-app text-primary focus:ring-primary accent-primary"
+                      className="w-4 h-4 rounded border-text-main/10 bg-bg-app text-primary focus:ring-primary accent-primary"
                       checked={rememberAccount}
                       onChange={(e) => setRememberAccount(e.target.checked)}
                     />
@@ -179,7 +179,7 @@ export default function Login() {
               <div className="animate-in fade-in slide-in-from-left-4 duration-500">
                 <button 
                   onClick={() => setStep(1)}
-                  className="absolute -top-2 -left-2 p-2 text-text-muted hover:text-white transition-colors"
+                  className="absolute -top-2 -left-2 p-2 text-text-muted hover:text-text-main transition-colors"
                 >
                   <ChevronLeft size={20} />
                 </button>
@@ -206,7 +206,7 @@ export default function Login() {
                     
                     <button 
                       onClick={() => setAuthMethod('password')}
-                      className="w-full py-2 text-[10px] font-black text-text-muted hover:text-white uppercase tracking-[0.2em] transition-colors"
+                      className="w-full py-2 text-[10px] font-black text-text-muted hover:text-text-main uppercase tracking-[0.2em] transition-colors"
                     >
                       O usar mi contraseña
                     </button>

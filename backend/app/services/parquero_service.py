@@ -661,7 +661,18 @@ class ParqueroService:
             )
             vp = res_vp.scalars().first()
 
-            if not vp:
+            # 4. Verificar si ya salió por alcabala (Aegis v2.4 Fix)
+            # Si ya salió del estacionamiento, no puede estar "perdido" en tránsito a la zona.
+            res_salida = await db.execute(
+                select(Acceso).where(
+                    Acceso.qr_id == qr.id,
+                    Acceso.tipo == AccesoTipo.salida,
+                    Acceso.timestamp >= acceso.timestamp
+                )
+            )
+            ya_salio = res_salida.scalars().first()
+
+            if not vp and not ya_salio:
                 # Validar tiempo transcurrido
                 ts_acceso = acceso.timestamp.replace(tzinfo=timezone.utc) if acceso.timestamp.tzinfo is None else acceso.timestamp
                 transcurrido_min = int((ahora - ts_acceso).total_seconds() / 60)

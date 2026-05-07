@@ -597,7 +597,7 @@ export default function Ajustes() {
                    <input 
                       type="text"
                       disabled={!isComandante}
-                      className="w-full h-12 bg-bg-app border border-white/10 focus:border-primary rounded-xl pl-12 pr-4 text-sm font-bold text-white transition-all disabled:opacity-50"
+                      className="w-full h-12 bg-bg-app border border-text-main/10 focus:border-primary rounded-xl pl-12 pr-4 text-sm font-bold text-text-main transition-all disabled:opacity-50"
                       value={perfilData.cedula}
                       onChange={(e) => setPerfilData({...perfilData, cedula: e.target.value})}
                    />
@@ -610,7 +610,7 @@ export default function Ajustes() {
                    <input 
                       type="text"
                       disabled={!isComandante}
-                      className="w-full h-12 bg-bg-app border border-white/10 focus:border-primary rounded-xl pl-12 pr-4 text-sm font-bold text-white transition-all disabled:opacity-50"
+                      className="w-full h-12 bg-bg-app border border-text-main/10 focus:border-primary rounded-xl pl-12 pr-4 text-sm font-bold text-text-main transition-all disabled:opacity-50"
                       value={perfilData.nombre}
                       onChange={(e) => setPerfilData({...perfilData, nombre: e.target.value})}
                    />
@@ -623,7 +623,7 @@ export default function Ajustes() {
                    <input 
                       type="text"
                       disabled={!isComandante}
-                      className="w-full h-12 bg-bg-app border border-white/10 focus:border-primary rounded-xl pl-12 pr-4 text-sm font-bold text-white transition-all disabled:opacity-50"
+                      className="w-full h-12 bg-bg-app border border-text-main/10 focus:border-primary rounded-xl pl-12 pr-4 text-sm font-bold text-text-main transition-all disabled:opacity-50"
                       value={perfilData.apellido}
                       onChange={(e) => setPerfilData({...perfilData, apellido: e.target.value})}
                    />
@@ -637,7 +637,7 @@ export default function Ajustes() {
                    <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-text-muted" size={16} />
                    <input 
                       type="email"
-                      className="w-full h-12 bg-bg-app border border-white/10 focus:border-emerald-500 rounded-xl pl-12 pr-4 text-sm font-bold text-white transition-all"
+                      className="w-full h-12 bg-bg-app border border-text-main/10 focus:border-emerald-500 rounded-xl pl-12 pr-4 text-sm font-bold text-text-main transition-all"
                       value={perfilData.email}
                       onChange={(e) => setPerfilData({...perfilData, email: e.target.value})}
                    />
@@ -649,7 +649,7 @@ export default function Ajustes() {
                    <Phone className="absolute left-4 top-1/2 -translate-y-1/2 text-text-muted" size={16} />
                    <input 
                       type="tel"
-                      className="w-full h-12 bg-bg-app border border-white/10 focus:border-emerald-500 rounded-xl pl-12 pr-4 text-sm font-bold text-white transition-all"
+                      className="w-full h-12 bg-bg-app border border-text-main/10 focus:border-emerald-500 rounded-xl pl-12 pr-4 text-sm font-bold text-text-main transition-all"
                       value={perfilData.telefono}
                       onChange={(e) => setPerfilData({...perfilData, telefono: e.target.value})}
                    />
@@ -657,7 +657,7 @@ export default function Ajustes() {
              </div>
           </div>
 
-          <div className="flex gap-4 pt-4 border-t border-white/5">
+          <div className="flex gap-4 pt-4 border-t border-text-main/10">
              <Boton type="button" variant="ghost" className="flex-1" onClick={closeModals}>Cancelar</Boton>
              <Boton 
                 type="submit" 
@@ -686,7 +686,7 @@ export default function Ajustes() {
                 <input 
                    type="password"
                    placeholder="Mínimo 4 caracteres"
-                   className="w-full h-12 bg-bg-app border border-white/10 focus:border-danger rounded-xl pl-12 pr-4 text-sm font-bold text-white transition-all"
+                   className="w-full h-12 bg-bg-app border border-text-main/10 focus:border-danger rounded-xl pl-12 pr-4 text-sm font-bold text-text-main transition-all"
                    value={passwordData.nuevaPassword}
                    onChange={(e) => setPasswordData({...passwordData, nuevaPassword: e.target.value})}
                    required
@@ -700,7 +700,7 @@ export default function Ajustes() {
                 <input 
                    type="password"
                    placeholder="Repita la clave"
-                   className="w-full h-12 bg-bg-app border border-white/10 focus:border-danger rounded-xl pl-12 pr-4 text-sm font-bold text-white transition-all"
+                   className="w-full h-12 bg-bg-app border border-text-main/10 focus:border-danger rounded-xl pl-12 pr-4 text-sm font-bold text-text-main transition-all"
                    value={passwordData.confirmarPassword}
                    onChange={(e) => setPasswordData({...passwordData, confirmarPassword: e.target.value})}
                    required

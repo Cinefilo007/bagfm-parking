@@ -565,6 +565,13 @@ class AccesoService:
             qr_para_zona = await db.get(CodigoQR, datos.qr_id)
             if qr_para_zona:
                 zona_id_acceso = qr_para_zona.zona_asignada_id
+                
+                # Fallback: Si no tiene zona pero tiene puesto, obtener la zona del puesto (v2.4 Fix)
+                if not zona_id_acceso and qr_para_zona.puesto_asignado_id:
+                    p_db = await db.get(PuestoEstacionamiento, qr_para_zona.puesto_asignado_id)
+                    if p_db:
+                        zona_id_acceso = p_db.zona_id
+                
                 if not zona_id_acceso and qr_para_zona.lote_id:
                     lote_para_zona = await db.get(LotePaseMasivo, qr_para_zona.lote_id)
                     if lote_para_zona:
