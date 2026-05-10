@@ -220,7 +220,7 @@ class ParqueroService:
 
         # ── 2. VehiculoPase inactivo para esta zona (tiene pase pero no ha llegado) ──
         res_vp2 = await db.execute(
-            select(VehiculoPase).where(
+            select(VehiculoPase).options(selectinload(VehiculoPase.codigo_qr).selectinload(CodigoQR.usuario)).where(
                 VehiculoPase.placa == placa_norm,
                 VehiculoPase.zona_asignada_id == zona_id,
                 VehiculoPase.ingresado == False
@@ -239,6 +239,17 @@ class ParqueroService:
             await db.commit()
             await db.refresh(vehiculo_pase)
             info_pase = self._get_tipo_acceso_info(vehiculo_pase.codigo_qr) if vehiculo_pase.codigo_qr else {"nombre": "GENERAL", "color": "#94a3b8"}
+            
+            portador = "DESCONOCIDO"
+            telefono = None
+            if vehiculo_pase.codigo_qr:
+                if vehiculo_pase.codigo_qr.nombre_portador:
+                    portador = vehiculo_pase.codigo_qr.nombre_portador
+                    telefono = vehiculo_pase.codigo_qr.telefono_portador
+                elif vehiculo_pase.codigo_qr.usuario:
+                    portador = f"{vehiculo_pase.codigo_qr.usuario.nombre} {vehiculo_pase.codigo_qr.usuario.apellido}".strip()
+                    telefono = vehiculo_pase.codigo_qr.usuario.telefono
+
             return {
                 "sin_datos": False,
                 "vehiculo_pase_id": str(vehiculo_pase.id),
@@ -248,6 +259,8 @@ class ParqueroService:
                 "color": vehiculo_pase.color,
                 "tipo_pase": info_pase["nombre"],
                 "tipo_pase_color": info_pase["color"],
+                "nombre_portador": portador,
+                "telefono_portador": telefono,
                 "puesto_asignado_id": str(vehiculo_pase.puesto_asignado_id) if vehiculo_pase.puesto_asignado_id else None,
             }
 
@@ -260,10 +273,13 @@ class ParqueroService:
         if vehiculo_db:
             # Intentar obtener teléfono de la tabla Usuario si el vehículo es de un socio
             telefono_socio = None
+            nombre_socio = "SOCIO PERMANENTE"
             if vehiculo_db.usuario_id:
                 res_u = await db.execute(select(Usuario).where(Usuario.id == vehiculo_db.usuario_id))
                 usr = res_u.scalars().first()
-                if usr: telefono_socio = usr.telefono
+                if usr: 
+                    telefono_socio = usr.telefono
+                    nombre_socio = f"{usr.nombre} {usr.apellido}".strip()
 
             nuevo_vp = VehiculoPase(
                 placa=placa_norm,
@@ -290,6 +306,7 @@ class ParqueroService:
                 "color": nuevo_vp.color,
                 "tipo_pase": "SOCIO PERMANENTE",
                 "tipo_pase_color": "#3b82f6", # Azul para socios/base
+                "nombre_portador": nombre_socio,
                 "telefono_portador": telefono_socio,
                 "puesto_asignado_id": None,
             }

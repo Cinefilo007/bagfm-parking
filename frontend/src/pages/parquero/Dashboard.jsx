@@ -133,10 +133,17 @@ const TarjetaVehiculo = ({ vehiculo, onSalida }) => {
             </div>
             <div className="flex-1 min-w-0">
                 <p className="text-xs font-black text-text-main uppercase tracking-tight">{vehiculo.placa}</p>
-                <p className="text-[9px] text-text-muted uppercase tracking-wide">
-                    {[vehiculo.color, vehiculo.marca, vehiculo.modelo].filter(Boolean).join(' · ') || 'Sin datos'}
-                </p>
-                <div className="flex items-center gap-2 mt-1 flex-wrap">
+                <div className="flex flex-col gap-0.5 mt-0.5">
+                    <p className="text-[9px] text-text-muted uppercase tracking-wide leading-none">
+                        {[vehiculo.color, vehiculo.marca, vehiculo.modelo].filter(Boolean).join(' · ') || 'Sin datos de vehículo'}
+                    </p>
+                    {vehiculo.nombre_portador && (
+                        <p className="text-[9px] font-bold text-success/80 uppercase tracking-tighter leading-none mt-0.5">
+                            {vehiculo.nombre_portador}
+                        </p>
+                    )}
+                </div>
+                <div className="flex items-center gap-2 mt-1.5 flex-wrap">
                     {vehiculo.puesto_codigo && (
                         <span className="inline-flex items-center gap-1 text-[8px] font-black text-success bg-success/10 px-2 py-0.5 rounded-full">
                             <ParkingSquare size={8} /> {vehiculo.puesto_codigo}
