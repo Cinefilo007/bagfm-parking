@@ -557,64 +557,106 @@ export const ModalPaseBase = ({ isOpen, onClose, zona, onGenerated }) => {
                 )} {/* Fin !modoPortal formulario datos */}
 
                 {/* ── Vigencia (siempre visible en ambos modos) ── */}
-                <div className="p-3 bg-white/3 rounded-xl border border-white/5 space-y-3">
-                    <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                            <Calendar size={12} className="text-primary" />
-                            <span className="text-[9px] font-black text-text-main uppercase tracking-widest">Vigencia</span>
-                        </div>
-                        <div className="flex bg-black/40 p-0.5 rounded-lg">
-                            <button onClick={() => setForm({...form, es_permanente: false})}
-                                className={cn("px-2 py-1 rounded-md text-[8px] font-black uppercase transition-all",
-                                    !form.es_permanente ? 'bg-primary text-bg-app shadow-lg' : 'text-text-muted hover:text-text-main')}>
-                                Temporal
-                            </button>
-                            <button onClick={() => setForm({...form, es_permanente: true})}
-                                className={cn("px-2 py-1 rounded-md text-[8px] font-black uppercase transition-all",
-                                    form.es_permanente ? 'bg-primary text-bg-app shadow-lg' : 'text-text-muted hover:text-text-main')}>
-                                Permanente
-                            </button>
-                        </div>
+                <div className="rounded-2xl border border-white/8 overflow-hidden">
+                    {/* Header tipo tab */}
+                    <div className="flex">
+                        <button
+                            onClick={() => setForm({...form, es_permanente: false})}
+                            className={cn(
+                                'flex-1 py-3 text-[9px] font-black uppercase tracking-widest flex items-center justify-center gap-1.5 transition-all border-b-2',
+                                !form.es_permanente
+                                    ? 'bg-primary/10 text-primary border-primary'
+                                    : 'bg-white/3 text-text-muted border-transparent hover:text-text-main hover:bg-white/5'
+                            )}
+                        >
+                            <Calendar size={11} />
+                            Temporal
+                        </button>
+                        <button
+                            onClick={() => setForm({...form, es_permanente: true})}
+                            className={cn(
+                                'flex-1 py-3 text-[9px] font-black uppercase tracking-widest flex items-center justify-center gap-1.5 transition-all border-b-2',
+                                form.es_permanente
+                                    ? 'bg-primary/10 text-primary border-primary'
+                                    : 'bg-white/3 text-text-muted border-transparent hover:text-text-main hover:bg-white/5'
+                            )}
+                        >
+                            <Shield size={11} />
+                            Permanente
+                        </button>
                     </div>
 
-                    {!form.es_permanente && (
-                        <div className="space-y-3 pt-1">
-                            <div className="flex items-center gap-2">
-                                <span className="text-[8px] text-text-muted font-black uppercase w-16 shrink-0">Desde:</span>
-                                <input type="date" value={form.fecha_inicio}
-                                    onChange={e => cambiarFechaInicio(e.target.value)}
-                                    className="flex-1 bg-black/40 border border-white/10 rounded-md px-2 py-1 text-[10px] text-text-main focus:border-primary outline-none"
-                                    min={hoy()} />
+                    {form.es_permanente ? (
+                        <div className="p-4 flex flex-col items-center gap-2">
+                            <div className="w-10 h-10 rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center">
+                                <Shield size={18} className="text-primary" />
                             </div>
-                            <div className="flex items-center gap-2">
-                                <span className="text-[8px] text-text-muted font-black uppercase w-16 shrink-0">Rápido:</span>
-                                <div className="flex flex-1 gap-1">
-                                    {[1, 3, 7, 15, 30].map(d => (
-                                        <button key={d} onClick={() => seleccionarDias(d)}
-                                            className={cn("flex-1 py-1 rounded-md border text-[8px] font-black transition-all",
-                                            form.dias_vigencia === d ? 'border-primary bg-primary/10 text-primary' : 'border-white/5 text-text-muted hover:border-white/10')}>
-                                            {d}D
-                                        </button>
-                                    ))}
+                            <p className="text-[9px] text-text-muted uppercase font-black tracking-widest">Sin fecha de expiración</p>
+                        </div>
+                    ) : (
+                        <div className="p-4 space-y-4">
+                            {/* Chips de duración rápida */}
+                            <div className="grid grid-cols-5 gap-1.5">
+                                {[
+                                    { d: 1, label: '1D', sub: 'día' },
+                                    { d: 3, label: '3D', sub: 'días' },
+                                    { d: 7, label: '1S', sub: 'semana' },
+                                    { d: 15, label: '15D', sub: 'días' },
+                                    { d: 30, label: '1M', sub: 'mes' },
+                                ].map(({ d, label, sub }) => (
+                                    <button key={d} onClick={() => seleccionarDias(d)}
+                                        className={cn(
+                                            'flex flex-col items-center py-2.5 rounded-xl border transition-all',
+                                            form.dias_vigencia === d
+                                                ? 'border-primary bg-primary/15 text-primary shadow-lg shadow-primary/10'
+                                                : 'border-white/8 bg-white/3 text-text-muted hover:border-white/15 hover:text-text-main'
+                                        )}>
+                                        <span className="text-[11px] font-black leading-none">{label}</span>
+                                        <span className="text-[7px] opacity-60 mt-0.5 leading-none">{sub}</span>
+                                    </button>
+                                ))}
+                            </div>
+
+                            {/* Fechas */}
+                            <div className="grid grid-cols-2 gap-3">
+                                <div>
+                                    <label className="block text-[8px] text-text-muted font-black uppercase tracking-widest mb-1.5">Desde</label>
+                                    <input type="date" value={form.fecha_inicio}
+                                        onChange={e => cambiarFechaInicio(e.target.value)}
+                                        className="w-full bg-black/30 border border-white/10 rounded-lg px-2.5 py-2 text-[10px] text-text-main focus:border-primary outline-none transition-colors"
+                                        min={hoy()} />
+                                </div>
+                                <div>
+                                    <label className="block text-[8px] text-text-muted font-black uppercase tracking-widest mb-1.5">Hasta</label>
+                                    <input type="date" value={form.fecha_fin_custom}
+                                        onChange={e => setForm({...form, fecha_fin_custom: e.target.value, dias_vigencia: 0})}
+                                        className="w-full bg-black/30 border border-white/10 rounded-lg px-2.5 py-2 text-[10px] text-text-main focus:border-primary outline-none transition-colors"
+                                        min={form.fecha_inicio || hoy()} />
                                 </div>
                             </div>
-                            <div className="flex items-center gap-2">
-                                <span className="text-[8px] text-text-muted font-black uppercase w-16 shrink-0">Hasta:</span>
-                                <input type="date" value={form.fecha_fin_custom}
-                                    onChange={e => setForm({...form, fecha_fin_custom: e.target.value, dias_vigencia: 0})}
-                                    className="flex-1 bg-black/40 border border-white/10 rounded-md px-2 py-1 text-[10px] text-text-main focus:border-primary outline-none"
-                                    min={form.fecha_inicio || hoy()} />
-                            </div>
+
+                            {/* Resumen visual */}
                             {form.fecha_inicio && form.fecha_fin_custom && (
-                                <div className="flex items-center justify-center gap-2 p-2 bg-primary/5 rounded-lg border border-primary/10">
-                                    <span className="text-[8px] text-text-muted uppercase font-bold">Válido:</span>
-                                    <span className="text-[9px] text-primary font-black">
-                                        {new Date(form.fecha_inicio + 'T00:00:00').toLocaleDateString('es-VE', { day: '2-digit', month: 'short' })}
-                                    </span>
-                                    <span className="text-text-muted text-[8px]">→</span>
-                                    <span className="text-[9px] text-warning font-black">
-                                        {new Date(form.fecha_fin_custom + 'T00:00:00').toLocaleDateString('es-VE', { day: '2-digit', month: 'short', year: 'numeric' })}
-                                    </span>
+                                <div className="flex items-center gap-2 p-2.5 bg-gradient-to-r from-primary/5 to-warning/5 rounded-xl border border-white/8">
+                                    <div className="flex-1 text-center">
+                                        <p className="text-[7px] text-text-muted uppercase font-black mb-0.5">Inicio</p>
+                                        <p className="text-[11px] text-primary font-black">
+                                            {new Date(form.fecha_inicio + 'T00:00:00').toLocaleDateString('es-VE', { day: '2-digit', month: 'short' })}
+                                        </p>
+                                    </div>
+                                    <div className="text-text-muted text-[10px]">→</div>
+                                    <div className="flex-1 text-center">
+                                        <p className="text-[7px] text-text-muted uppercase font-black mb-0.5">Vence</p>
+                                        <p className="text-[11px] text-warning font-black">
+                                            {new Date(form.fecha_fin_custom + 'T00:00:00').toLocaleDateString('es-VE', { day: '2-digit', month: 'short', year: 'numeric' })}
+                                        </p>
+                                    </div>
+                                    <div className="text-center border-l border-white/10 pl-2">
+                                        <p className="text-[7px] text-text-muted uppercase font-black mb-0.5">Días</p>
+                                        <p className="text-[11px] text-text-main font-black">
+                                            {Math.ceil((new Date(form.fecha_fin_custom) - new Date(form.fecha_inicio)) / 86400000)}
+                                        </p>
+                                    </div>
                                 </div>
                             )}
                         </div>

@@ -11,7 +11,8 @@ import {
     MapPin, Clock, Users, Shield, ChevronRight,
     ChevronDown, Settings, LayoutGrid, Building2, Layers,
     AlertTriangle, CheckCircle2, Timer, Hash,
-    Lock, Unlock, Zap, Activity, MessageCircle, UserCheck, QrCode, Download, Loader2, Scissors, Target, Sparkles, Check, Car
+    Lock, Unlock, Zap, Activity, MessageCircle, UserCheck, QrCode, Download, Loader2, Scissors, Target, Sparkles, Check, Car,
+    Send, Mail, Smartphone, Copy, Share2
 } from 'lucide-react';
 import { toPng } from 'html-to-image';
 import PlantillaPreview from '../../components/carnets/PlantillaPreview';
@@ -74,9 +75,15 @@ const StatBadge = ({ valor, label, color = 'text-text-muted', subLabel }) => (
 );
 
 const PuestoCuadro = ({ puesto, onClick }) => {
+    const ocupado = puesto.estado === 'ocupado';
     const config = puesto.reservado_base 
         ? { border: 'border-indigo-500/30', bg: 'bg-indigo-500/8', dot: 'bg-indigo-400', icon: 'text-indigo-400' }
         : { border: 'border-white/10', bg: 'bg-white/5', dot: 'bg-text-muted', icon: 'text-text-muted' };
+
+    // Etiqueta principal: si está ocupado y tiene placa, mostrarla; si no, el código
+    const etiquetaPrincipal = ocupado && puesto.vehiculo_placa
+        ? puesto.vehiculo_placa
+        : (puesto.numero_puesto || puesto.codigo || '—');
 
     return (
         <button
@@ -86,16 +93,16 @@ const PuestoCuadro = ({ puesto, onClick }) => {
                 config.border, config.bg
             )}
         >
-            <div className={cn('w-2 h-2 rounded-full mb-1', config.dot, puesto.estado === 'ocupado' ? 'animate-pulse bg-danger' : config.dot)} />
-            <ParkingSquare size={16} className={puesto.estado === 'ocupado' ? 'text-danger' : config.icon} />
+            <div className={cn('w-2 h-2 rounded-full mb-1', ocupado ? 'animate-pulse bg-danger' : config.dot)} />
+            <ParkingSquare size={16} className={ocupado ? 'text-danger' : config.icon} />
             <span className="text-[7px] font-black uppercase tracking-tight mt-1 text-text-main leading-none">
-                {puesto.numero_puesto || puesto.codigo || '—'}
+                {etiquetaPrincipal}
             </span>
             <span className={cn(
                 'text-[5px] font-black uppercase tracking-wide leading-none mt-0.5',
-                puesto.reservado_base ? 'text-indigo-400' : 'text-text-muted'
+                ocupado ? 'text-danger' : puesto.reservado_base ? 'text-indigo-400' : 'text-text-muted'
             )}>
-                {puesto.estado === 'ocupado' ? 'OCUPADO' : 'BASE'}
+                {ocupado ? 'OCUPADO' : 'BASE'}
             </span>
             {puesto.reservado_base && <Lock size={7} className="absolute top-1 right-1 text-indigo-400/60" />}
         </button>
@@ -171,7 +178,9 @@ const ZonaRow = ({
         const listaFinal = puestosBaseServidor.map(p => ({
             ...p,
             reservado_base: true,
-            estado: p.estado || 'ocupado'
+            estado: p.estado || 'ocupado',
+            // Subir la placa al nivel raíz para que PuestoCuadro la muestre directamente
+            vehiculo_placa: p.detalle_pase?.vehiculo_placa || null,
         }));
         
         // 2. Calculamos cuántas cajas libres faltan según el cupo reservado de la base
@@ -578,6 +587,8 @@ export default function GestionZonas() {
     const [modoExport, setModoExport] = useState('qr');
     const [presetId, setPresetId] = useState('militar');
     const [capturando, setCapturando] = useState(false);
+    const [modalCompartirBase, setModalCompartirBase] = useState(false);
+    const [copiadoLink, setCopiadoLink] = useState(false);
     const carnetRef = useRef(null);
 
 
@@ -1021,6 +1032,54 @@ export default function GestionZonas() {
             console.error(err);
             toast.error('Error enviando a WhatsApp', { id: 'wa-share' });
         }
+    };
+
+    // ── Compartir multicanal (WhatsApp, Telegram, Email, SMS, PWA) ──
+    const handleCompartirCanal = async (canal) => {
+        if (!puestoDetalle?.detalle_pase) return;
+        const pase = puestoDetalle.detalle_pase;
+        const mensaje = [
+            `🎫 *PASE DE BASE — ${zonaActiva?.nombre?.toUpperCase() || 'BAGFM'}*`,
+            `📋 Serial: \`${pase.serial_legible}\``,
+            `👤 Portador: ${pase.nombre_portador || 'PENDIENTE'}`,
+            `🚗 Vehículo: ${pase.vehiculo_placa || '—'} ${pase.vehiculo_marca ? '(' + pase.vehiculo_marca + ')' : ''}`.trim(),
+            ``,
+            `_Sistema BAGFM Access_`,
+        ].join('\n');
+
+        // Canal PWA (navigator.share nativo)
+        if (canal === 'pwa') {
+            if (!navigator.share) {
+                toast.error('Tu navegador no soporta compartir nativo');
+                return;
+            }
+            try {
+                toast.loading('Preparando imagen...', { id: 'pwa-share' });
+                const blob = await generarImagenCarnetOQR();
+                const file = new File([blob], `${pase.serial_legible}.png`, { type: 'image/png' });
+                const canShareFiles = navigator.canShare?.({ files: [file] });
+                if (canShareFiles) {
+                    await navigator.share({ files: [file], title: 'Pase Oficial Base', text: mensaje });
+                } else {
+                    await navigator.share({ title: 'Pase Oficial Base', text: mensaje });
+                }
+                toast.dismiss('pwa-share');
+            } catch (e) {
+                toast.dismiss('pwa-share');
+                if (e.name !== 'AbortError') toast.error('Error al compartir');
+            }
+            return;
+        }
+
+        const urls = {
+            whatsapp: pase.telefono_portador
+                ? `https://wa.me/${pase.telefono_portador.replace(/\D/g,'')}?text=${encodeURIComponent(mensaje)}`
+                : `https://wa.me/?text=${encodeURIComponent(mensaje)}`,
+            telegram: `https://t.me/share/url?url=${encodeURIComponent('https://bagfm.app')}&text=${encodeURIComponent(mensaje)}`,
+            email: `mailto:?subject=PASE OFICIAL BAGFM&body=${encodeURIComponent(mensaje)}`,
+            sms: `sms:?body=${encodeURIComponent(mensaje)}`,
+        };
+        window.open(urls[canal], '_blank');
     };
 
     const handleLiberarPuestoBase = async () => {
@@ -1503,10 +1562,10 @@ export default function GestionZonas() {
                                         <Download size={15} /> Descargar
                                     </button>
                                     <button
-                                        onClick={handleWhatsAppBase}
-                                        className="flex-[1.5] h-11 bg-[#25D366]/10 hover:bg-[#25D366] text-[#25D366] hover:text-white border border-[#25D366]/20 hover:border-transparent rounded-xl flex items-center justify-center gap-2 transition-all text-[10px] font-black uppercase cursor-pointer shadow-lg shadow-[#25D366]/5"
+                                        onClick={() => setModalCompartirBase(true)}
+                                        className="flex-[1.5] h-11 bg-indigo-500/10 hover:bg-indigo-500 text-indigo-400 hover:text-white border border-indigo-500/20 hover:border-transparent rounded-xl flex items-center justify-center gap-2 transition-all text-[10px] font-black uppercase cursor-pointer shadow-lg shadow-indigo-500/5"
                                     >
-                                        <MessageCircle size={15} /> Compartir por WhatsApp
+                                        <Share2 size={15} /> Compartir
                                     </button>
                                 </div>
                                 <div className="flex gap-3">
@@ -1620,6 +1679,66 @@ export default function GestionZonas() {
                                 </div>
                             </div>
                         )}
+                    </div>
+                )}
+            </Modal>
+
+            {/* ── MODAL: Compartir Pase ── */}
+            <Modal
+                isOpen={modalCompartirBase}
+                onClose={() => setModalCompartirBase(false)}
+                title="COMPARTIR PASE"
+                balanced
+                className="max-w-sm"
+            >
+                {puestoDetalle?.detalle_pase && (
+                    <div className="space-y-4 pb-2">
+                        {/* Info del pase */}
+                        <div className="flex items-center gap-3 p-3 bg-primary/5 border border-primary/20 rounded-xl">
+                            <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center shrink-0">
+                                <Shield size={18} className="text-primary" />
+                            </div>
+                            <div>
+                                <p className="text-[10px] font-black text-text-main uppercase">{puestoDetalle.detalle_pase.nombre_portador || 'SIN REGISTRO'}</p>
+                                <p className="text-[9px] text-text-muted font-mono">{puestoDetalle.detalle_pase.serial_legible}</p>
+                                <p className="text-[9px] text-primary font-black">{puestoDetalle.detalle_pase.vehiculo_placa || '—'}</p>
+                            </div>
+                        </div>
+
+                        {/* Canales de compartición */}
+                        <div className="grid grid-cols-2 gap-2">
+                            <button onClick={() => handleCompartirCanal('whatsapp')}
+                                className="py-3.5 bg-[#25D366]/10 hover:bg-[#25D366] text-[#25D366] hover:text-white border border-[#25D366]/20 hover:border-transparent rounded-xl flex flex-col items-center justify-center gap-1.5 transition-all text-[10px] font-black uppercase">
+                                <MessageCircle size={18} />
+                                <span>WhatsApp</span>
+                            </button>
+                            <button onClick={() => handleCompartirCanal('telegram')}
+                                className="py-3.5 bg-[#229ED9]/10 hover:bg-[#229ED9] text-[#229ED9] hover:text-white border border-[#229ED9]/20 hover:border-transparent rounded-xl flex flex-col items-center justify-center gap-1.5 transition-all text-[10px] font-black uppercase">
+                                <Send size={18} />
+                                <span>Telegram</span>
+                            </button>
+                            <button onClick={() => handleCompartirCanal('email')}
+                                className="py-3.5 bg-white/5 hover:bg-white/10 text-text-muted hover:text-white border border-white/10 rounded-xl flex flex-col items-center justify-center gap-1.5 transition-all text-[10px] font-black uppercase">
+                                <Mail size={18} />
+                                <span>Email</span>
+                            </button>
+                            <button onClick={() => handleCompartirCanal('sms')}
+                                className="py-3.5 bg-white/5 hover:bg-white/10 text-text-muted hover:text-white border border-white/10 rounded-xl flex flex-col items-center justify-center gap-1.5 transition-all text-[10px] font-black uppercase">
+                                <Smartphone size={18} />
+                                <span>SMS</span>
+                            </button>
+                        </div>
+
+                        {/* Botón PWA nativo (siempre visible, destaca en mobile) */}
+                        <button onClick={() => handleCompartirCanal('pwa')}
+                            className="w-full py-3 bg-gradient-to-r from-indigo-500/20 to-purple-500/20 hover:from-indigo-500 hover:to-purple-500 text-indigo-300 hover:text-white border border-indigo-500/30 hover:border-transparent rounded-xl flex items-center justify-center gap-2 transition-all text-[10px] font-black uppercase shadow-lg shadow-indigo-500/10">
+                            <Share2 size={15} /> Compartir imagen (App / PWA)
+                        </button>
+
+                        <button onClick={() => setModalCompartirBase(false)}
+                            className="w-full h-9 text-text-muted hover:text-white transition-all text-[10px] font-black uppercase cursor-pointer">
+                            Cerrar
+                        </button>
                     </div>
                 )}
             </Modal>
