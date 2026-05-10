@@ -157,9 +157,28 @@ const ModalInfoPuesto = ({ puesto, vehiculosEnZona = [], onClose, onActualizar }
                             </div>
                             <div className="flex-1 min-w-0">
                                 <p className="text-xs font-black text-text-main uppercase">{vehiculoEnPuesto.placa}</p>
-                                <p className="text-[10px] text-text-muted mt-0.5">
-                                    {vehiculoEnPuesto.marca} {vehiculoEnPuesto.modelo} {vehiculoEnPuesto.color ? `· ${vehiculoEnPuesto.color}` : ''}
-                                </p>
+                                <div className="flex flex-wrap items-center gap-2 mt-0.5 mb-1">
+                                    {vehiculoEnPuesto.tipo_pase && (
+                                        <span 
+                                            className="text-[8px] font-black uppercase tracking-tighter px-1.5 py-0.5 rounded border"
+                                            style={{
+                                                color: vehiculoEnPuesto.tipo_pase_color,
+                                                backgroundColor: `${vehiculoEnPuesto.tipo_pase_color}10`,
+                                                borderColor: `${vehiculoEnPuesto.tipo_pase_color}30`
+                                            }}
+                                        >
+                                            {vehiculoEnPuesto.tipo_pase}
+                                        </span>
+                                    )}
+                                    <p className="text-[10px] text-text-muted">
+                                        {[vehiculoEnPuesto.color, vehiculoEnPuesto.marca, vehiculoEnPuesto.modelo].filter(Boolean).join(' · ')}
+                                    </p>
+                                </div>
+                                {vehiculoEnPuesto.nombre_portador && (
+                                    <p className="text-[10px] font-bold text-success/80 uppercase tracking-tighter mb-1">
+                                        {vehiculoEnPuesto.nombre_portador} {vehiculoEnPuesto.telefono_portador ? `· ${vehiculoEnPuesto.telefono_portador}` : ''}
+                                    </p>
+                                )}
                                 {vehiculoEnPuesto.tiempo_en_zona_min != null && (
                                     <div className="flex items-center gap-1 mt-1">
                                         <Clock size={10} className="text-text-muted" />

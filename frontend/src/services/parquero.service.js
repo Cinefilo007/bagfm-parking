@@ -46,10 +46,11 @@ export const parqueroService = {
      * Registra la llegada de un vehículo ingresando la placa manualmente.
      * @param {string} placa Placa del vehículo.
      * @param {string} zonaId UUID de la zona del parquero.
+     * @param {object} extras Datos adicionales opcionales (nombre, cedula, telefono, marca, modelo, color)
      * @returns {{ sin_datos: boolean, placa, vehiculo_pase_id?, marca?, modelo?, color? }}
      */
-    async registrarLlegadaPlaca(placa, zonaId) {
-        const { data } = await api.post('/parqueros/llegada-placa', { placa, zona_id: zonaId });
+    async registrarLlegadaPlaca(placa, zonaId, extras = {}) {
+        const { data } = await api.post('/parqueros/llegada-placa', { placa, zona_id: zonaId, ...extras });
         return data;
     },
 

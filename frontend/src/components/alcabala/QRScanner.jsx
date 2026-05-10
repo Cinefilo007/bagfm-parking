@@ -130,9 +130,17 @@ export const QRScanner = forwardRef(({ onScanSuccess, autoStart = false, status 
   useEffect(() => {
     return () => {
       if (html5QrCode.current) {
-          html5QrCode.current.stop().catch(() => {}).finally(() => {
-              html5QrCode.current.clear().catch(() => {});
-          });
+          try {
+              if (html5QrCode.current.isScanning) {
+                  html5QrCode.current.stop().catch(() => {}).finally(() => {
+                      try { html5QrCode.current.clear().catch(() => {}); } catch(e){}
+                  });
+              } else {
+                  try { html5QrCode.current.clear().catch(() => {}); } catch(e){}
+              }
+          } catch (e) {
+              console.warn("Error en cleanup de scanner", e);
+          }
       }
     };
   }, []);

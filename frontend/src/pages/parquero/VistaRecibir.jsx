@@ -160,7 +160,14 @@ const ModalRegistroDatos = ({ resultadoSinDatos, zonaId, onRegistrado, onCerrar 
             } else {
                 // CASO 2: Sin QR — vehículo completamente desconocido
                 if (!placa.trim()) { toast.error('La placa es obligatoria'); return; }
-                const res = await parqueroService.registrarLlegadaPlaca(placa.trim().toUpperCase(), zonaId);
+                const res = await parqueroService.registrarLlegadaPlaca(placa.trim().toUpperCase(), zonaId, {
+                    nombre: nombre || null,
+                    cedula: cedula || null,
+                    telefono: telefono ? (telefono.startsWith('+58') ? telefono : `+58${telefono}`) : null,
+                    marca: marca || null,
+                    modelo: modelo || null,
+                    color: color || null
+                });
                 toast.success(`${placa} registrado en zona`);
                 onRegistrado?.(res);
             }

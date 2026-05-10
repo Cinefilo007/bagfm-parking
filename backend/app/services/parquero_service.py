@@ -135,7 +135,10 @@ class ParqueroService:
         """
         res = await db.execute(
             select(VehiculoPase)
-            .options(joinedload(VehiculoPase.puesto_asignado))
+            .options(
+                joinedload(VehiculoPase.puesto_asignado),
+                selectinload(VehiculoPase.codigo_qr).selectinload(CodigoQR.usuario)
+            )
             .where(
                 VehiculoPase.zona_asignada_id == zona_id,
                 VehiculoPase.ingresado == True
@@ -156,6 +159,17 @@ class ParqueroService:
                 puesto_codigo = v.puesto_asignado.numero_puesto
 
             info_v = self._get_tipo_acceso_info(v.codigo_qr) if v.codigo_qr else {"nombre": "GENERAL", "color": "#94a3b8"}
+            
+            portador = "DESCONOCIDO"
+            telefono = None
+            if v.codigo_qr:
+                if v.codigo_qr.nombre_portador:
+                    portador = v.codigo_qr.nombre_portador
+                    telefono = v.codigo_qr.telefono_portador
+                elif v.codigo_qr.usuario:
+                    portador = f"{v.codigo_qr.usuario.nombre} {v.codigo_qr.usuario.apellido}".strip()
+                    telefono = v.codigo_qr.usuario.telefono
+            
             resultado.append({
                 "id": str(v.id),
                 "placa": v.placa,
@@ -164,6 +178,8 @@ class ParqueroService:
                 "color": v.color,
                 "tipo_pase": info_v["nombre"],
                 "tipo_pase_color": info_v["color"],
+                "nombre_portador": portador,
+                "telefono_portador": telefono,
                 "hora_ingreso": v.hora_ingreso.isoformat() if v.hora_ingreso else None,
                 "tiempo_en_zona_min": tiempo_min,
                 "puesto_asignado_id": str(v.puesto_asignado_id) if v.puesto_asignado_id else None,
@@ -176,7 +192,9 @@ class ParqueroService:
     # ──────────────────────────────────────────────────────────────────────────
 
     async def registrar_llegada_placa(
-        self, db: AsyncSession, placa: str, zona_id: UUID, parquero_id: UUID
+        self, db: AsyncSession, placa: str, zona_id: UUID, parquero_id: UUID,
+        nombre: str = None, cedula: str = None, telefono: str = None,
+        marca: str = None, modelo: str = None, color: str = None
     ) -> Dict[str, Any]:
         """
         Busca un vehículo por placa siguiendo esta cadena de búsqueda:
@@ -348,6 +366,54 @@ class ParqueroService:
             }
 
         # ── 5. Sin datos en ninguna fuente ──
+        if nombre or cedula or marca or modelo or color:
+            import string, secrets
+            token_qr = "".join(secrets.choice(string.ascii_uppercase + string.digits) for _ in range(8))
+            nuevo_qr = CodigoQR(
+                token=token_qr,
+                activo=True,
+                vehiculo_placa=placa_norm,
+                vehiculo_marca=marca,
+                vehiculo_modelo=modelo,
+                vehiculo_color=color,
+                nombre_portador=nombre,
+                cedula_portador=cedula,
+                telefono_portador=telefono,
+                zona_asignada_id=zona_id,
+                creado_por_id=parquero_id,
+                datos_completos=True
+            )
+            db.add(nuevo_qr)
+            await db.flush()
+            
+            nuevo_vp = VehiculoPase(
+                qr_id=nuevo_qr.id,
+                placa=placa_norm,
+                marca=marca,
+                modelo=modelo,
+                color=color,
+                zona_asignada_id=zona_id,
+                ingresado=True,
+                hora_ingreso=datetime.now(timezone.utc)
+            )
+            db.add(nuevo_vp)
+            await self._actualizar_ocupacion_zona(db, zona_id, 1)
+            await db.commit()
+            await db.refresh(nuevo_vp)
+            
+            return {
+                "sin_datos": False,
+                "vehiculo_pase_id": str(nuevo_vp.id),
+                "placa": placa_norm,
+                "marca": marca,
+                "modelo": modelo,
+                "color": color,
+                "tipo_pase": "GENERAL",
+                "tipo_pase_color": "#94a3b8",
+                "nombre_portador": nombre,
+                "puesto_asignado_id": None,
+            }
+
         return {
             "sin_datos": True,
             "solo_persona": False,
@@ -702,13 +768,13 @@ class ParqueroService:
 
     async def registrar_llegada_qr(
         self, db: AsyncSession, qr_token: str, zona_id: UUID, parquero_id: UUID
-    ) -> VehiculoPase:
+    ) -> Dict[str, Any]:
         """
         El parquero escanea un QR para recibir un vehículo en su zona.
         Utiliza el token directamente para garantizar compatibilidad con IDs no-UUID (Base pases).
         """
         # Buscar el QR por su token JWT (es único e indexado)
-        resultado = await db.execute(select(CodigoQR).filter(CodigoQR.token == qr_token))
+        resultado = await db.execute(select(CodigoQR).options(selectinload(CodigoQR.usuario)).filter(CodigoQR.token == qr_token))
         qr = resultado.scalars().first()
         
         # Si no se encuentra por token, intentamos buscar por ID directo (caso UUID puro legado)
@@ -716,13 +782,20 @@ class ParqueroService:
             try:
                 # Verificar si qr_token es un UUID válido antes de consultar
                 UUID(qr_token)
-                resultado = await db.execute(select(CodigoQR).filter(CodigoQR.id == qr_token))
+                resultado = await db.execute(select(CodigoQR).options(selectinload(CodigoQR.usuario)).filter(CodigoQR.id == qr_token))
                 qr = resultado.scalars().first()
             except ValueError:
                 pass
 
         if not qr:
             raise ValueError("QR no encontrado o no reconocido en el sistema")
+
+        # Validar zona asignada (SOP: Control estricto de destino)
+        if qr.zona_asignada_id and qr.zona_asignada_id != zona_id:
+            res_zona = await db.execute(select(ZonaEstacionamiento).where(ZonaEstacionamiento.id == qr.zona_asignada_id))
+            zona_qr = res_zona.scalars().first()
+            nombre_zona = zona_qr.nombre if zona_qr else "otra zona"
+            raise ValueError(f"Pase Inválido. Este pase pertenece a la zona '{nombre_zona}'. Indique al conductor que debe dirigirse a esa zona.")
 
         resultado_vp = await db.execute(select(VehiculoPase).filter(VehiculoPase.qr_id == qr.id))
         vehiculo_pase = resultado_vp.scalars().first()
@@ -731,6 +804,9 @@ class ParqueroService:
             vehiculo_pase = VehiculoPase(
                 qr_id=qr.id,
                 placa=qr.vehiculo_placa or "DESCONOCIDO",
+                marca=qr.vehiculo_marca,
+                modelo=qr.vehiculo_modelo,
+                color=qr.vehiculo_color,
                 zona_asignada_id=zona_id,
                 ingresado=True,
                 hora_ingreso=datetime.now(timezone.utc)
@@ -741,17 +817,61 @@ class ParqueroService:
             vehiculo_pase.hora_ingreso = datetime.now(timezone.utc)
             vehiculo_pase.zona_asignada_id = zona_id
 
+        # Si el QR no tiene datos de la persona (o le falta la placa en caso de ser requerido), pedir al parquero
+        datos_incompletos = not qr.datos_completos or (not qr.nombre_portador and not qr.usuario_id) or not qr.vehiculo_placa
+
+        info_pase = self._get_tipo_acceso_info(qr)
+
+        if datos_incompletos:
+            portador = qr.nombre_portador
+            if not portador and qr.usuario:
+                portador = f"{qr.usuario.nombre} {qr.usuario.apellido}".strip()
+
+            return {
+                "sin_datos": True,
+                "solo_persona": bool(qr.vehiculo_placa), # Si tiene placa, solo falta la persona
+                "vehiculo_pase_id": str(vehiculo_pase.id),
+                "qr_id": str(qr.id),
+                "placa": qr.vehiculo_placa or "",
+                "marca": qr.vehiculo_marca,
+                "modelo": qr.vehiculo_modelo,
+                "color": qr.vehiculo_color,
+                "tipo_pase": info_pase["nombre"],
+                "tipo_pase_color": info_pase["color"],
+                "nombre_portador": portador,
+                "cedula_portador": qr.cedula_portador or (qr.usuario.cedula if qr.usuario else None),
+                "telefono_portador": qr.telefono_portador or (qr.usuario.telefono if qr.usuario else None),
+                "zona_id": str(zona_id),
+                "mensaje": "El pase tiene datos incompletos. Complete los campos requeridos.",
+            }
+
         if hasattr(qr, 'verificado_por_parquero'):
             qr.verificado_por_parquero = True
         if hasattr(qr, 'hora_llegada_zona'):
             qr.hora_llegada_zona = datetime.now(timezone.utc)
 
-        # Incrementar ocupación
+        # Incrementar ocupación solo si no faltan datos (se completa ocupación al guardar)
         await self._actualizar_ocupacion_zona(db, zona_id, 1)
 
         await db.commit()
         await db.refresh(vehiculo_pase)
-        return vehiculo_pase
+
+        portador = qr.nombre_portador
+        if not portador and qr.usuario:
+            portador = f"{qr.usuario.nombre} {qr.usuario.apellido}".strip()
+
+        return {
+            "sin_datos": False,
+            "vehiculo_pase_id": str(vehiculo_pase.id),
+            "placa": vehiculo_pase.placa,
+            "marca": vehiculo_pase.marca,
+            "modelo": vehiculo_pase.modelo,
+            "color": vehiculo_pase.color,
+            "tipo_pase": info_pase["nombre"],
+            "tipo_pase_color": info_pase["color"],
+            "nombre_portador": portador,
+            "puesto_asignado_id": str(vehiculo_pase.puesto_asignado_id) if vehiculo_pase.puesto_asignado_id else None,
+        }
 
     async def asignar_puesto(
         self, db: AsyncSession, vehiculo_pase_id: UUID, puesto_id: UUID

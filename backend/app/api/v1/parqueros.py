@@ -48,7 +48,7 @@ async def obtener_vehiculos_activos_zona(
 # LLEGADA / SALIDA POR QR
 # ──────────────────────────────────────────────────────────────────────────────
 
-@router.post("/llegada-qr/{qr_token}/zona/{zona_id}", response_model=VehiculoPaseSalida)
+@router.post("/llegada-qr/{qr_token}/zona/{zona_id}")
 async def registrar_llegada_qr(
     qr_token: str,
     zona_id: UUID,
@@ -89,6 +89,12 @@ async def registrar_salida_zona(
 async def registrar_llegada_por_placa(
     placa: str = Body(..., embed=True),
     zona_id: UUID = Body(..., embed=True),
+    nombre: Optional[str] = Body(None, embed=True),
+    cedula: Optional[str] = Body(None, embed=True),
+    telefono: Optional[str] = Body(None, embed=True),
+    marca: Optional[str] = Body(None, embed=True),
+    modelo: Optional[str] = Body(None, embed=True),
+    color: Optional[str] = Body(None, embed=True),
     db: AsyncSession = Depends(obtener_db),
     current_user: Usuario = Depends(require_rol(["SUPERVISOR_PARQUEROS", "PARQUERO", "ADMIN_BASE", "COMANDANTE"]))
 ):
@@ -99,7 +105,11 @@ async def registrar_llegada_por_placa(
       - sin_datos=True si no existe (el frontend debe mostrar formulario de registro)
     """
     try:
-        return await parquero_service.registrar_llegada_placa(db, placa, zona_id, current_user.id)
+        return await parquero_service.registrar_llegada_placa(
+            db, placa, zona_id, current_user.id,
+            nombre=nombre, cedula=cedula, telefono=telefono,
+            marca=marca, modelo=modelo, color=color
+        )
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
 
