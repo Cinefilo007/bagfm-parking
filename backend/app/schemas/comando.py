@@ -5,11 +5,13 @@ from pydantic import BaseModel, ConfigDict
 
 class PaseBaseCrear(BaseModel):
     zona_id: UUID
-    nombre_portador: str
+    # Si modo_portal=True el comandante no llena estos campos; los completa el portador desde el link
+    modo_portal: bool = False
+    nombre_portador: Optional[str] = None   # Requerido cuando modo_portal=False (validado en servicio)
     cedula_portador: Optional[str] = None
     telefono_portador: Optional[str] = None
     email_portador: Optional[str] = None
-    vehiculo_placa: str
+    vehiculo_placa: Optional[str] = None    # Requerido cuando modo_portal=False (validado en servicio)
     vehiculo_marca: Optional[str] = None
     vehiculo_modelo: Optional[str] = None
     vehiculo_color: Optional[str] = None

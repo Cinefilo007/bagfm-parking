@@ -160,9 +160,10 @@ const PortalPase = () => {
     }
 
     // Lógica de visualización:
-    // Si es tipo PORTAL y NO tiene nombre -> Mostrar Formulario
-    // De lo contrario -> Mostrar QR
-    const mostrarForm = lote.tipo_pase === 'portal' && !pase.nombre;
+    // Si el pase no tiene datos completos (cualquier tipo, incluye pases de base en modo portal)
+    // mostrar el formulario de autoregistro. De lo contrario mostrar el QR.
+    const esBaseSinDatos = !pase.nombre && !pase.cedula;
+    const mostrarForm = (lote?.tipo_pase === 'portal' || !lote?.tipo_pase || esBaseSinDatos) && esBaseSinDatos;
 
     // Configuración de visualización dinámica (v2.4.1)
     const visual = pase?.visual || { layout: 'qr', color_preset: 'aegis' };
@@ -201,11 +202,15 @@ const PortalPase = () => {
                     EMITIDO POR: {pase?.entidad_nombre || 'BAGFM ACCESS'}
                 </h2>
                 <h1 className="text-4xl font-black tracking-tighter uppercase leading-none mb-2 break-words">
-                    {lote.nombre_evento}
+                    {lote?.nombre_evento || 'PASE DE COMANDO'}
                 </h1>
                 <div className="flex items-center gap-2 text-[10px] font-bold text-gray-400 uppercase tracking-widest">
                     <Calendar className="w-3 h-3" style={style.dynamicAccent} />
-                    <span>{new Date(lote.fecha_inicio).toLocaleDateString()} — {new Date(lote.fecha_fin).toLocaleDateString()}</span>
+                    <span>
+                        {lote?.fecha_inicio ? new Date(lote.fecha_inicio).toLocaleDateString() : '—'}
+                        {' — '}
+                        {lote?.fecha_fin ? new Date(lote.fecha_fin).toLocaleDateString() : '—'}
+                    </span>
                 </div>
             </div>
 
@@ -397,7 +402,7 @@ const PortalPase = () => {
                             </div>
 
                             <div className="bg-white/5 border border-white/5 rounded-2xl p-4 space-y-4">
-                                {lote.zona_nombre && (
+                                {lote?.zona_nombre && (
                                     <div className="flex items-center gap-3 pb-3 border-b border-white/5">
                                         <div className="p-2 bg-blue-500/10 rounded-lg">
                                             <MapPin className="w-4 h-4 text-blue-400" />
@@ -409,7 +414,7 @@ const PortalPase = () => {
                                     </div>
                                 )}
 
-                                {lote.latitud && lote.longitud && (
+                                {lote?.latitud && lote?.longitud && (
                                     <a 
                                         href={`https://www.google.com/maps/search/?api=1&query=${lote.latitud},${lote.longitud}`}
                                         target="_blank"

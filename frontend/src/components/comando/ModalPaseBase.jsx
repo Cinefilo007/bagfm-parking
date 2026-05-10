@@ -7,7 +7,8 @@ import { cn } from '../../lib/utils';
 import {
     Shield, User, CreditCard, Phone,
     Car, Hash, Palette, Calendar, CheckCircle2,
-    RefreshCw, LayoutGrid, MessageCircle, Download, Loader2
+    RefreshCw, LayoutGrid, MessageCircle, Download, Loader2,
+    Link2, Copy, Send, Mail, Smartphone
 } from 'lucide-react';
 import api from '../../services/api';
 import { QRCode } from 'react-qr-code';
@@ -70,6 +71,8 @@ export const ModalPaseBase = ({ isOpen, onClose, zona, onGenerated }) => {
     });
     const [loading, setLoading] = useState(false);
     const [resultado, setResultado] = useState(null);
+    const [modoPortal, setModoPortal] = useState(false); // false=llenar datos, true=generar link
+    const [copiado, setCopiado] = useState(false);
 
     const [modoExport, setModoExport] = useState('qr');
     const [presetId, setPresetId] = useState('militar');
@@ -89,8 +92,33 @@ export const ModalPaseBase = ({ isOpen, onClose, zona, onGenerated }) => {
         setForm(f => ({ ...f, fecha_inicio: nuevaFecha, fecha_fin_custom: fin }));
     };
 
+    const portalLink = resultado ? `${window.location.origin}/portal/pase/${resultado.token}` : '';
+
+    const copiarLink = () => {
+        navigator.clipboard.writeText(portalLink);
+        setCopiado(true);
+        toast.success('Link copiado al portapapeles');
+        setTimeout(() => setCopiado(false), 2500);
+    };
+
+    const compartirPortal = (canal) => {
+        const msg = `🎫 *PASE OFICIAL BAGFM — ${zona?.nombre || 'BASE'}*\n\nAccede al portal para completar tu registro y obtener tu QR de acceso:\n${portalLink}\n\n_Válido hasta: ${resultado?.fecha_expiracion ? new Date(resultado.fecha_expiracion).toLocaleDateString('es-VE') : '—'}_`;
+        const urls = {
+            whatsapp: `https://wa.me/?text=${encodeURIComponent(msg)}`,
+            telegram: `https://t.me/share/url?url=${encodeURIComponent(portalLink)}&text=${encodeURIComponent(msg)}`,
+            email: `mailto:?subject=PASE OFICIAL BAGFM&body=${encodeURIComponent(msg)}`,
+            sms: `sms:?body=${encodeURIComponent(msg)}`,
+        };
+        if (canal === 'whatsapp' && form.telefono_portador) {
+            const tel = form.telefono_portador.replace(/\D/g, '');
+            window.open(`https://wa.me/${tel}?text=${encodeURIComponent(msg)}`, '_blank');
+        } else {
+            window.open(urls[canal], '_blank');
+        }
+    };
+
     const handleSubmit = async () => {
-        if (!form.nombre_portador || !form.vehiculo_placa) {
+        if (!modoPortal && (!form.nombre_portador || !form.vehiculo_placa)) {
             return toast.error('Nombre y Placa son mandatorios');
         }
         if (!form.es_permanente && form.fecha_inicio && form.fecha_fin_custom) {
@@ -103,6 +131,7 @@ export const ModalPaseBase = ({ isOpen, onClose, zona, onGenerated }) => {
             const payload = {
                 ...form,
                 zona_id: zona?.id,
+                modo_portal: modoPortal,
                 fecha_inicio: form.fecha_inicio
                     ? new Date(form.fecha_inicio + 'T00:00:00').toISOString()
                     : undefined,
@@ -114,7 +143,7 @@ export const ModalPaseBase = ({ isOpen, onClose, zona, onGenerated }) => {
 
             const res = await api.post('/comando/pases-reservados', payload);
             setResultado(res.data);
-            toast.success('Pase de Comando generado con éxito');
+            toast.success(modoPortal ? 'Link de portal generado' : 'Pase de Comando generado con éxito');
             if (onGenerated) onGenerated();
         } catch (e) {
             const errorDetail = e.response?.data?.detail;
@@ -129,6 +158,8 @@ export const ModalPaseBase = ({ isOpen, onClose, zona, onGenerated }) => {
         setResultado(null);
         setModoExport('qr');
         setPresetId('militar');
+        setModoPortal(false);
+        setCopiado(false);
         setForm({
             nombre_portador: '',
             cedula_portador: '',
@@ -293,6 +324,62 @@ export const ModalPaseBase = ({ isOpen, onClose, zona, onGenerated }) => {
     };
 
     if (resultado) {
+        // ── Modo Portal: Pantalla de Link Compartible ──────────────────────
+        if (modoPortal) {
+            return (
+                <Modal isOpen={isOpen} onClose={handleReset} title="LINK DE ACCESO GENERADO" balanced className="max-w-md">
+                    <div className="space-y-5 pb-2">
+                        <div className="flex flex-col items-center gap-2 text-center">
+                            <div className="w-14 h-14 bg-indigo-500/10 rounded-full flex items-center justify-center border border-indigo-500/20">
+                                <Link2 size={28} className="text-indigo-400" />
+                            </div>
+                            <p className="text-[9px] font-black text-text-muted uppercase tracking-widest">Serial: {resultado.serial_legible}</p>
+                            <p className="text-[9px] text-text-muted">
+                                Válido hasta: <span className="text-warning font-black">
+                                    {resultado.fecha_expiracion ? new Date(resultado.fecha_expiracion).toLocaleDateString('es-VE') : 'PERMANENTE'}
+                                </span>
+                            </p>
+                        </div>
+
+                        {/* Link del portal */}
+                        <div className="bg-white/5 border border-white/10 rounded-xl p-3 flex items-center gap-2">
+                            <p className="flex-1 text-[9px] text-indigo-300 font-mono break-all select-all">{portalLink}</p>
+                            <button onClick={copiarLink}
+                                className="shrink-0 p-2 rounded-lg bg-indigo-500/10 hover:bg-indigo-500/20 border border-indigo-500/20 transition-all">
+                                {copiado ? <CheckCircle2 size={14} className="text-success" /> : <Copy size={14} className="text-indigo-400" />}
+                            </button>
+                        </div>
+
+                        {/* Botones de compartir */}
+                        <div className="grid grid-cols-2 gap-2">
+                            <button onClick={() => compartirPortal('whatsapp')}
+                                className="py-3 bg-[#25D366]/10 hover:bg-[#25D366] text-[#25D366] hover:text-white border border-[#25D366]/20 hover:border-transparent rounded-xl flex items-center justify-center gap-2 transition-all text-[10px] font-black uppercase">
+                                <MessageCircle size={14} /> WhatsApp
+                            </button>
+                            <button onClick={() => compartirPortal('telegram')}
+                                className="py-3 bg-[#229ED9]/10 hover:bg-[#229ED9] text-[#229ED9] hover:text-white border border-[#229ED9]/20 hover:border-transparent rounded-xl flex items-center justify-center gap-2 transition-all text-[10px] font-black uppercase">
+                                <Send size={14} /> Telegram
+                            </button>
+                            <button onClick={() => compartirPortal('email')}
+                                className="py-3 bg-white/5 hover:bg-white/10 text-text-muted hover:text-white border border-white/10 rounded-xl flex items-center justify-center gap-2 transition-all text-[10px] font-black uppercase">
+                                <Mail size={14} /> Email
+                            </button>
+                            <button onClick={() => compartirPortal('sms')}
+                                className="py-3 bg-white/5 hover:bg-white/10 text-text-muted hover:text-white border border-white/10 rounded-xl flex items-center justify-center gap-2 transition-all text-[10px] font-black uppercase">
+                                <Smartphone size={14} /> SMS
+                            </button>
+                        </div>
+
+                        <button onClick={handleReset}
+                            className="w-full h-9 text-text-muted hover:text-white transition-all text-[10px] font-black uppercase cursor-pointer">
+                            Generar Otro Pase
+                        </button>
+                    </div>
+                </Modal>
+            );
+        }
+
+        // ── Modo Completo: QR / Carnet (flujo actual) ──────────────────────
         return (
             <Modal isOpen={isOpen} onClose={handleReset} title="PASE GENERADO CON ÉXITO" balanced className="max-w-md">
                 <div className="space-y-6 text-center w-full px-2 pb-2">
@@ -407,14 +494,40 @@ export const ModalPaseBase = ({ isOpen, onClose, zona, onGenerated }) => {
     return (
         <Modal isOpen={isOpen} onClose={onClose} title={`PASE DE COMANDO — ${zona?.nombre}`} balanced className="max-w-2xl">
             <div className="space-y-5">
-                <div className="p-3 bg-primary/5 border border-primary/20 rounded-xl flex items-start gap-3">
-                    <Shield size={16} className="text-primary shrink-0 mt-0.5" />
-                    <p className="text-[9px] text-text-muted leading-relaxed uppercase tracking-tighter font-bold">
-                        Estás generando un pase oficial para un cupo reservado de la base.
-                        Este pase tendrá prioridad en los puntos de control.
-                    </p>
+
+                {/* ── Toggle de Modo ── */}
+                <div className="flex bg-black/40 border border-white/5 p-1 rounded-xl gap-1">
+                    <button onClick={() => setModoPortal(false)}
+                        className={cn('flex-1 py-2.5 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all flex items-center justify-center gap-1.5',
+                            !modoPortal ? 'bg-primary text-bg-app shadow-lg shadow-primary/20' : 'text-text-muted hover:text-text-main')}>
+                        <Shield size={11} /> Llenar Datos
+                    </button>
+                    <button onClick={() => setModoPortal(true)}
+                        className={cn('flex-1 py-2.5 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all flex items-center justify-center gap-1.5',
+                            modoPortal ? 'bg-indigo-500 text-white shadow-lg shadow-indigo-500/20' : 'text-text-muted hover:text-text-main')}>
+                        <Link2 size={11} /> Generar Link
+                    </button>
                 </div>
 
+                {modoPortal ? (
+                    <div className="p-3 bg-indigo-500/5 border border-indigo-500/20 rounded-xl flex items-start gap-3">
+                        <Link2 size={16} className="text-indigo-400 shrink-0 mt-0.5" />
+                        <p className="text-[9px] text-text-muted leading-relaxed uppercase tracking-tighter font-bold">
+                            Se generará un link de acceso para que el portador complete sus propios datos (nombre, cédula, vehículo) desde su dispositivo. Solo configura la vigencia.
+                        </p>
+                    </div>
+                ) : (
+                    <div className="p-3 bg-primary/5 border border-primary/20 rounded-xl flex items-start gap-3">
+                        <Shield size={16} className="text-primary shrink-0 mt-0.5" />
+                        <p className="text-[9px] text-text-muted leading-relaxed uppercase tracking-tighter font-bold">
+                            Estás generando un pase oficial para un cupo reservado de la base.
+                            Este pase tendrá prioridad en los puntos de control.
+                        </p>
+                    </div>
+                )}
+
+                {/* ── Formulario de Datos (solo modo completo) ── */}
+                {!modoPortal && (
                 <div className="space-y-4">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-0.5">
                         <Input label="Nombre Completo *" icon={<User size={12}/>} value={form.nombre_portador}
@@ -440,84 +553,72 @@ export const ModalPaseBase = ({ isOpen, onClose, zona, onGenerated }) => {
                         <Input label="Color" icon={<Palette size={12}/>} value={form.vehiculo_color}
                                onChange={e => setForm({...form, vehiculo_color: e.target.value.toUpperCase()})} />
                     </div>
+                </div>
+                )} {/* Fin !modoPortal formulario datos */}
 
-                    {/* ── Vigencia ── */}
-                    <div className="p-3 bg-white/3 rounded-xl border border-white/5 space-y-3">
-                        <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-2">
-                                <Calendar size={12} className="text-primary" />
-                                <span className="text-[9px] font-black text-text-main uppercase tracking-widest">Vigencia</span>
-                            </div>
-                            <div className="flex bg-black/40 p-0.5 rounded-lg">
-                                <button onClick={() => setForm({...form, es_permanente: false})}
-                                    className={cn("px-2 py-1 rounded-md text-[8px] font-black uppercase transition-all",
-                                        !form.es_permanente ? 'bg-primary text-bg-app shadow-lg' : 'text-text-muted hover:text-text-main')}>
-                                    Temporal
-                                </button>
-                                <button onClick={() => setForm({...form, es_permanente: true})}
-                                    className={cn("px-2 py-1 rounded-md text-[8px] font-black uppercase transition-all",
-                                        form.es_permanente ? 'bg-primary text-bg-app shadow-lg' : 'text-text-muted hover:text-text-main')}>
-                                    Permanente
-                                </button>
-                            </div>
+                {/* ── Vigencia (siempre visible en ambos modos) ── */}
+                <div className="p-3 bg-white/3 rounded-xl border border-white/5 space-y-3">
+                    <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                            <Calendar size={12} className="text-primary" />
+                            <span className="text-[9px] font-black text-text-main uppercase tracking-widest">Vigencia</span>
                         </div>
-
-                        {!form.es_permanente && (
-                            <div className="space-y-3 pt-1">
-                                {/* Fecha Inicio */}
-                                <div className="flex items-center gap-2">
-                                    <span className="text-[8px] text-text-muted font-black uppercase w-16 shrink-0">Desde:</span>
-                                    <input
-                                        type="date"
-                                        value={form.fecha_inicio}
-                                        onChange={e => cambiarFechaInicio(e.target.value)}
-                                        className="flex-1 bg-black/40 border border-white/10 rounded-md px-2 py-1 text-[10px] text-text-main focus:border-primary outline-none"
-                                        min={hoy()}
-                                    />
-                                </div>
-
-                                {/* Selector rápido de duración */}
-                                <div className="flex items-center gap-2">
-                                    <span className="text-[8px] text-text-muted font-black uppercase w-16 shrink-0">Rápido:</span>
-                                    <div className="flex flex-1 gap-1">
-                                        {[1, 3, 7, 15, 30].map(d => (
-                                            <button key={d} onClick={() => seleccionarDias(d)}
-                                                className={cn("flex-1 py-1 rounded-md border text-[8px] font-black transition-all",
-                                                form.dias_vigencia === d ? 'border-primary bg-primary/10 text-primary' : 'border-white/5 text-text-muted hover:border-white/10')}>
-                                                {d}D
-                                            </button>
-                                        ))}
-                                    </div>
-                                </div>
-
-                                {/* Fecha Fin */}
-                                <div className="flex items-center gap-2">
-                                    <span className="text-[8px] text-text-muted font-black uppercase w-16 shrink-0">Hasta:</span>
-                                    <input
-                                        type="date"
-                                        value={form.fecha_fin_custom}
-                                        onChange={e => setForm({...form, fecha_fin_custom: e.target.value, dias_vigencia: 0})}
-                                        className="flex-1 bg-black/40 border border-white/10 rounded-md px-2 py-1 text-[10px] text-text-main focus:border-primary outline-none"
-                                        min={form.fecha_inicio || hoy()}
-                                    />
-                                </div>
-
-                                {/* Resumen de vigencia */}
-                                {form.fecha_inicio && form.fecha_fin_custom && (
-                                    <div className="flex items-center justify-center gap-2 p-2 bg-primary/5 rounded-lg border border-primary/10">
-                                        <span className="text-[8px] text-text-muted uppercase font-bold">Válido:</span>
-                                        <span className="text-[9px] text-primary font-black">
-                                            {new Date(form.fecha_inicio + 'T00:00:00').toLocaleDateString('es-VE', { day: '2-digit', month: 'short' })}
-                                        </span>
-                                        <span className="text-text-muted text-[8px]">→</span>
-                                        <span className="text-[9px] text-warning font-black">
-                                            {new Date(form.fecha_fin_custom + 'T00:00:00').toLocaleDateString('es-VE', { day: '2-digit', month: 'short', year: 'numeric' })}
-                                        </span>
-                                    </div>
-                                )}
-                            </div>
-                        )}
+                        <div className="flex bg-black/40 p-0.5 rounded-lg">
+                            <button onClick={() => setForm({...form, es_permanente: false})}
+                                className={cn("px-2 py-1 rounded-md text-[8px] font-black uppercase transition-all",
+                                    !form.es_permanente ? 'bg-primary text-bg-app shadow-lg' : 'text-text-muted hover:text-text-main')}>
+                                Temporal
+                            </button>
+                            <button onClick={() => setForm({...form, es_permanente: true})}
+                                className={cn("px-2 py-1 rounded-md text-[8px] font-black uppercase transition-all",
+                                    form.es_permanente ? 'bg-primary text-bg-app shadow-lg' : 'text-text-muted hover:text-text-main')}>
+                                Permanente
+                            </button>
+                        </div>
                     </div>
+
+                    {!form.es_permanente && (
+                        <div className="space-y-3 pt-1">
+                            <div className="flex items-center gap-2">
+                                <span className="text-[8px] text-text-muted font-black uppercase w-16 shrink-0">Desde:</span>
+                                <input type="date" value={form.fecha_inicio}
+                                    onChange={e => cambiarFechaInicio(e.target.value)}
+                                    className="flex-1 bg-black/40 border border-white/10 rounded-md px-2 py-1 text-[10px] text-text-main focus:border-primary outline-none"
+                                    min={hoy()} />
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <span className="text-[8px] text-text-muted font-black uppercase w-16 shrink-0">Rápido:</span>
+                                <div className="flex flex-1 gap-1">
+                                    {[1, 3, 7, 15, 30].map(d => (
+                                        <button key={d} onClick={() => seleccionarDias(d)}
+                                            className={cn("flex-1 py-1 rounded-md border text-[8px] font-black transition-all",
+                                            form.dias_vigencia === d ? 'border-primary bg-primary/10 text-primary' : 'border-white/5 text-text-muted hover:border-white/10')}>
+                                            {d}D
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <span className="text-[8px] text-text-muted font-black uppercase w-16 shrink-0">Hasta:</span>
+                                <input type="date" value={form.fecha_fin_custom}
+                                    onChange={e => setForm({...form, fecha_fin_custom: e.target.value, dias_vigencia: 0})}
+                                    className="flex-1 bg-black/40 border border-white/10 rounded-md px-2 py-1 text-[10px] text-text-main focus:border-primary outline-none"
+                                    min={form.fecha_inicio || hoy()} />
+                            </div>
+                            {form.fecha_inicio && form.fecha_fin_custom && (
+                                <div className="flex items-center justify-center gap-2 p-2 bg-primary/5 rounded-lg border border-primary/10">
+                                    <span className="text-[8px] text-text-muted uppercase font-bold">Válido:</span>
+                                    <span className="text-[9px] text-primary font-black">
+                                        {new Date(form.fecha_inicio + 'T00:00:00').toLocaleDateString('es-VE', { day: '2-digit', month: 'short' })}
+                                    </span>
+                                    <span className="text-text-muted text-[8px]">→</span>
+                                    <span className="text-[9px] text-warning font-black">
+                                        {new Date(form.fecha_fin_custom + 'T00:00:00').toLocaleDateString('es-VE', { day: '2-digit', month: 'short', year: 'numeric' })}
+                                    </span>
+                                </div>
+                            )}
+                        </div>
+                    )}
                 </div>
 
                 <div className="flex gap-2 pt-2">
@@ -528,10 +629,11 @@ export const ModalPaseBase = ({ isOpen, onClose, zona, onGenerated }) => {
                     >
                         Cancelar
                     </button>
-                    <Boton className="flex-[2] bg-primary text-bg-app h-10 font-black uppercase gap-2 shadow-xl shadow-primary/20 text-[10px]"
+                    <Boton className={cn('flex-[2] h-10 font-black uppercase gap-2 shadow-xl text-[10px]',
+                        modoPortal ? 'bg-indigo-500 text-white shadow-indigo-500/20' : 'bg-primary text-bg-app shadow-primary/20')}
                            onClick={handleSubmit} disabled={loading}>
-                        {loading ? <RefreshCw size={14} className="animate-spin" /> : <Shield size={14} />}
-                        {loading ? 'PROCESANDO...' : 'GENERAR PASE OFICIAL'}
+                        {loading ? <RefreshCw size={14} className="animate-spin" /> : modoPortal ? <Link2 size={14} /> : <Shield size={14} />}
+                        {loading ? 'PROCESANDO...' : modoPortal ? 'GENERAR LINK DE PORTAL' : 'GENERAR PASE OFICIAL'}
                     </Boton>
                 </div>
             </div>

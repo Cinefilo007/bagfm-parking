@@ -361,26 +361,58 @@ async def obtener_lote_publico(serial: str, db: AsyncSession = Depends(obtener_d
 
 @router.get("/portal/pase/{token}")
 async def obtener_pase_publico(token: str, db: AsyncSession = Depends(obtener_db)):
-    """Obtiene los datos de un pase específico por su token (PÚBLICO)."""
+    """Obtiene los datos de un pase específico por su token (PÚBLICO).
+    Soporta tanto pases de lotes masivos como pases de comando (sin lote).
+    """
     from sqlalchemy.orm import joinedload
-    query = select(CodigoQR).where(CodigoQR.token == token).options(joinedload(CodigoQR.tipo_acceso_custom))
+    query = select(CodigoQR).where(CodigoQR.token == token).options(
+        joinedload(CodigoQR.tipo_acceso_custom),
+        joinedload(CodigoQR.zona_asignada)
+    )
     res = await db.execute(query)
     pase = res.unique().scalar_one_or_none()
     
     if not pase:
         raise HTTPException(status_code=404, detail="Token de acceso inválido")
     
-    # Cargar el lote para ver permisos y entidad
-    lote = await db.scalar(
-        select(LotePaseMasivo)
-        .where(LotePaseMasivo.id == pase.lote_id)
-        .options(
-            joinedload(LotePaseMasivo.entidad),
-            joinedload(LotePaseMasivo.zona_asignada)
+    # ─────────────────────────────────────────────────────────────────────
+    # Caso A: Pase con lote (pases masivos, eventos, portal de entidad)
+    # ─────────────────────────────────────────────────────────────────────
+    if pase.lote_id:
+        lote = await db.scalar(
+            select(LotePaseMasivo)
+            .where(LotePaseMasivo.id == pase.lote_id)
+            .options(
+                joinedload(LotePaseMasivo.entidad),
+                joinedload(LotePaseMasivo.zona_asignada)
+            )
         )
-    )
-    
-    entidad_nombre = lote.entidad.nombre if lote and lote.entidad else "BAGFM ACCESS"
+        entidad_nombre = lote.entidad.nombre if lote and lote.entidad else "BAGFM ACCESS"
+        lote_data = {
+            "nombre_evento": lote.nombre_evento if lote else "BAGFM ACCESS",
+            "fecha_inicio": lote.fecha_inicio if lote else None,
+            "fecha_fin": lote.fecha_fin if lote else None,
+            "tipo_pase": lote.tipo_pase if lote else "portal",
+            "zona_nombre": lote.zona_asignada.nombre if (lote and lote.zona_asignada) else (lote.zona_nombre if lote else None),
+            "latitud": lote.zona_asignada.latitud if (lote and lote.zona_asignada) else None,
+            "longitud": lote.zona_asignada.longitud if (lote and lote.zona_asignada) else None,
+        }
+    # ─────────────────────────────────────────────────────────────────────
+    # Caso B: Pase de base/comando (sin lote) — datos del propio QR
+    # ─────────────────────────────────────────────────────────────────────
+    else:
+        lote = None
+        entidad_nombre = "COMANDO BAGFM"
+        zona_nombre = pase.zona_asignada.nombre if pase.zona_asignada else "BASE BAGFM"
+        lote_data = {
+            "nombre_evento": f"PASE DE COMANDO — {zona_nombre}",
+            "fecha_inicio": pase.created_at.date() if pase.created_at else None,
+            "fecha_fin": pase.fecha_expiracion.date() if pase.fecha_expiracion else None,
+            "tipo_pase": "portal",  # Tratar como portal para habilitar el autoregistro
+            "zona_nombre": zona_nombre,
+            "latitud": pase.zona_asignada.latitud if pase.zona_asignada else None,
+            "longitud": pase.zona_asignada.longitud if pase.zona_asignada else None,
+        }
     
     # Mapeo de estilos para tipos base (si no hay custom)
     PRESETS_BASE = {
@@ -389,6 +421,7 @@ async def obtener_pase_publico(token: str, db: AsyncSession = Depends(obtener_db
         "produccion": {"layout": "qr", "color_preset": "alfa", "color_hex": "#EB5757"},
         "logistica":  {"layout": "qr", "color_preset": "civil", "color_hex": "#3B82F6"},
         "vip":        {"layout": "qr", "color_preset": "vip", "color_hex": "#F2C94C"},
+        "base":       {"layout": "qr", "color_preset": "militar", "color_hex": "#6366F1"},
     }
     
     # Cargar Branding de la Entidad si existe
@@ -439,15 +472,7 @@ async def obtener_pase_publico(token: str, db: AsyncSession = Depends(obtener_db
             },
             "visual": visual
         },
-        "lote": {
-            "nombre_evento": lote.nombre_evento,
-            "fecha_inicio": lote.fecha_inicio,
-            "fecha_fin": lote.fecha_fin,
-            "tipo_pase": lote.tipo_pase,
-            "zona_nombre": lote.zona_asignada.nombre if lote.zona_asignada else lote.zona_nombre,
-            "latitud": lote.zona_asignada.latitud if lote.zona_asignada else None,
-            "longitud": lote.zona_asignada.longitud if lote.zona_asignada else None
-        }
+        "lote": lote_data
     }
 
 @router.post("/portal/{serial}/registrar")
@@ -480,17 +505,31 @@ async def completar_pase_publico(
     datos: dict,
     db: AsyncSession = Depends(obtener_db)
 ):
-    """Permite al usuario completar sus datos si el lote es de autoregistro."""
+    """Permite al usuario completar sus datos en el portal.
+    Soporta pases de lotes (tipo portal) y pases de base (sin lote, datos_completos=False).
+    """
+    from app.models.enums import TipoAccesoPase as TAP
     query = select(CodigoQR).where(CodigoQR.token == token)
     res = await db.execute(query)
     pase = res.scalar_one_or_none()
     
     if not pase:
         raise HTTPException(status_code=404, detail="Pase no encontrado")
-        
-    lote = await db.get(LotePaseMasivo, pase.lote_id)
-    from app.models.enums import PasseTipo
-    if lote.tipo_pase != PasseTipo.portal:
-        raise HTTPException(status_code=403, detail="Solo se pueden completar pases de tipo autorregistro")
+    
+    # Verificar que el pase aún no tiene datos completos (evitar suplantación post-registro)
+    if pase.datos_completos:
+        raise HTTPException(status_code=403, detail="Este pase ya fue completado. No se permite modificación.")
+
+    # Caso A: Pase con lote — validar que sea tipo portal
+    if pase.lote_id:
+        lote = await db.get(LotePaseMasivo, pase.lote_id)
+        from app.models.enums import PasseTipo
+        if not lote or lote.tipo_pase != PasseTipo.portal:
+            raise HTTPException(status_code=403, detail="Solo se pueden completar pases de tipo autorregistro")
+    # Caso B: Pase de base/comando sin lote — permitir completar
+    else:
+        from app.models.enums import TipoAccesoPase
+        if pase.tipo_acceso != TipoAccesoPase.base:
+            raise HTTPException(status_code=403, detail="Tipo de pase no autorizado para completar desde el portal")
         
     return await pase_service.actualizar_pase_publico(db, pase.id, datos)

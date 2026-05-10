@@ -22,8 +22,20 @@ class ComandoService:
     ) -> CodigoQR:
         """
         SOP: Genera un pase 'base' consumiendo un cupo reservado de la zona.
-        Si la zona tiene puestos físicos, asigna uno con estado 'reservado_base'.
+        - modo_portal=False (default): el comandante llena todos los datos; pase queda completo.
+        - modo_portal=True: se genera el pase vacío y se comparte el link del portal para
+          que el portador final complete sus datos.
+        Roles permitidos: COMANDANTE, ADMIN_BASE.
         """
+        modo_portal = datos.get('modo_portal', False)
+
+        # Validación de campos obligatorios según el modo
+        if not modo_portal:
+            if not datos.get('nombre_portador', '').strip():
+                raise ValueError("El nombre del portador es obligatorio en modo de carga directa.")
+            if not datos.get('vehiculo_placa', '').strip():
+                raise ValueError("La placa del vehículo es obligatoria en modo de carga directa.")
+
         # 1. Verificar disponibilidad de cupo base en la zona
         query_asig = select(AsignacionZona).where(
             and_(
@@ -90,27 +102,29 @@ class ComandoService:
             token=token,
             tipo=tipo_qr,
             serial_legible=serial,
-            nombre_portador=datos.get('nombre_portador', '').upper(),
-            cedula_portador=datos.get('cedula_portador'),
-            telefono_portador=datos.get('telefono_portador'),
-            email_portador=datos.get('email_portador'),
-            vehiculo_placa=datos.get('vehiculo_placa', '').upper(),
-            vehiculo_marca=datos.get('vehiculo_marca', '').upper() if datos.get('vehiculo_marca') else None,
-            vehiculo_modelo=datos.get('vehiculo_modelo', '').upper() if datos.get('vehiculo_modelo') else None,
-            vehiculo_color=datos.get('vehiculo_color', '').upper() if datos.get('vehiculo_color') else None,
+            # En modo portal los campos de portador se dejan vacíos para que los llene el usuario
+            nombre_portador=datos.get('nombre_portador', '').upper() if not modo_portal else None,
+            cedula_portador=datos.get('cedula_portador') if not modo_portal else None,
+            telefono_portador=datos.get('telefono_portador') if not modo_portal else None,
+            email_portador=datos.get('email_portador') if not modo_portal else None,
+            vehiculo_placa=datos.get('vehiculo_placa', '').upper() if not modo_portal else None,
+            vehiculo_marca=datos.get('vehiculo_marca', '').upper() if (not modo_portal and datos.get('vehiculo_marca')) else None,
+            vehiculo_modelo=datos.get('vehiculo_modelo', '').upper() if (not modo_portal and datos.get('vehiculo_modelo')) else None,
+            vehiculo_color=datos.get('vehiculo_color', '').upper() if (not modo_portal and datos.get('vehiculo_color')) else None,
             tipo_acceso=TipoAccesoPase.base,
             zona_asignada_id=zona_id,
             puesto_asignado_id=puesto_libre.id if puesto_libre else None,
             fecha_expiracion=expira_at,
             created_by=creado_por_id,
             activo=True,
-            datos_completos=True
+            datos_completos=not modo_portal  # False en modo portal, True cuando el comandante llena los datos
         )
         
         db.add(nuevo_qr)
         await db.commit()
         await db.refresh(nuevo_qr)
         return nuevo_qr
+
 
     async def obtener_puestos_reservados_base(self, db: AsyncSession, zona_id: Optional[uuid.UUID] = None) -> List[Dict[str, Any]]:
         """SOP: Lista el estado de los puestos reservados para la base con detalles de ocupación."""
