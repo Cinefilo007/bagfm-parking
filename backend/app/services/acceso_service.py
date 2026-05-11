@@ -542,8 +542,18 @@ class AccesoService:
         # Prioridad 1: Si hay entidad explícita provista por Alcabala
         if datos.entidad_id:
             entidad_db = await db.get(EntidadCivil, datos.entidad_id)
-            if entidad_db and entidad_db.zona_id:
-                zona_id_acceso = entidad_db.zona_id
+            if entidad_db:
+                if entidad_db.zona_id:
+                    zona_id_acceso = entidad_db.zona_id
+                else:
+                    from app.models.asignacion_zona import AsignacionZona
+                    res_asig = await db.execute(select(AsignacionZona).where(
+                        AsignacionZona.entidad_id == datos.entidad_id,
+                        AsignacionZona.activa == True
+                    ).limit(1))
+                    asig_db = res_asig.scalar_one_or_none()
+                    if asig_db:
+                        zona_id_acceso = asig_db.zona_id
                 
         # Prioridad 2: Buscar zona en el QR
         if not zona_id_acceso and datos.qr_id:

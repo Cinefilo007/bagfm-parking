@@ -128,12 +128,19 @@ class EntidadCivilService:
         resultado = await db.execute(query)
         rows = resultado.all()
         
+        # Obtener zonas asignadas
+        q_zonas = select(AsignacionZona.entidad_id, AsignacionZona.zona_id).where(AsignacionZona.activa == True)
+        res_zonas = await db.execute(q_zonas)
+        entidad_zonas = {row.entidad_id: row.zona_id for row in res_zonas.all()}
+
         entidades = []
         for row in rows:
             ent = row.EntidadCivil
             ent.total_usuarios = row.total_usuarios
             ent.total_vehiculos = row.total_vehiculos
             ent.total_capacidad = row.total_capacidad
+            if not ent.zona_id and ent.id in entidad_zonas:
+                ent.zona_id = entidad_zonas[ent.id]
             entidades.append(ent)
             
         return entidades
