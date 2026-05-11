@@ -208,7 +208,8 @@ class ParqueroService:
     async def registrar_llegada_placa(
         self, db: AsyncSession, placa: str, zona_id: UUID, parquero_id: UUID,
         nombre: str = None, cedula: str = None, telefono: str = None,
-        marca: str = None, modelo: str = None, color: str = None
+        marca: str = None, modelo: str = None, color: str = None,
+        confirmar: bool = True
     ) -> Dict[str, Any]:
         """
         Busca un vehículo por placa siguiendo esta cadena de búsqueda:
@@ -246,15 +247,17 @@ class ParqueroService:
         vehiculo_pase = res_vp2.scalars().first()
 
         if vehiculo_pase:
-            vehiculo_pase.ingresado = True
-            vehiculo_pase.hora_ingreso = datetime.now(timezone.utc)
-            vehiculo_pase.hora_salida = None  # Limpiar salida previa — evita evento fantasma en historial
-            
-            # Incrementar ocupación
-            await self._actualizar_ocupacion_zona(db, zona_id, 1)
-            
-            await db.commit()
-            await db.refresh(vehiculo_pase)
+            if confirmar:
+                vehiculo_pase.ingresado = True
+                vehiculo_pase.hora_ingreso = datetime.now(timezone.utc)
+                vehiculo_pase.hora_salida = None  # Limpiar salida previa — evita evento fantasma en historial
+                
+                # Incrementar ocupación
+                await self._actualizar_ocupacion_zona(db, zona_id, 1)
+                
+                await db.commit()
+                await db.refresh(vehiculo_pase)
+                
             info_pase = self._get_tipo_acceso_info(vehiculo_pase.codigo_qr) if vehiculo_pase.codigo_qr else {"nombre": "GENERAL", "color": "#94a3b8"}
             
             portador = "DESCONOCIDO"
@@ -317,13 +320,14 @@ class ParqueroService:
                 modelo=vehiculo_db.modelo,
                 color=vehiculo_db.color,
                 zona_asignada_id=zona_id,
-                ingresado=True,
-                hora_ingreso=datetime.now(timezone.utc)
+                ingresado=confirmar,
+                hora_ingreso=datetime.now(timezone.utc) if confirmar else None
             )
             db.add(nuevo_vp)
             
-            # Incrementar ocupación
-            await self._actualizar_ocupacion_zona(db, zona_id, 1)
+            if confirmar:
+                # Incrementar ocupación
+                await self._actualizar_ocupacion_zona(db, zona_id, 1)
             
             await db.commit()
             await db.refresh(nuevo_vp)
@@ -361,8 +365,8 @@ class ParqueroService:
                 modelo=qr_encontrado.vehiculo_modelo,
                 color=qr_encontrado.vehiculo_color,
                 zona_asignada_id=zona_id,
-                ingresado=True,
-                hora_ingreso=datetime.now(timezone.utc)
+                ingresado=confirmar,
+                hora_ingreso=datetime.now(timezone.utc) if confirmar else None
             )
             db.add(nuevo_vp)
             await db.commit()
@@ -393,11 +397,11 @@ class ParqueroService:
                 }
 
             # QR tiene datos completos → registrar directamente
-            # Incrementar ocupación
-            await self._actualizar_ocupacion_zona(db, zona_id, 1)
-            
-            await db.commit()
-            await db.refresh(nuevo_vp)
+            if confirmar:
+                # Incrementar ocupación
+                await self._actualizar_ocupacion_zona(db, zona_id, 1)
+                await db.commit()
+                await db.refresh(nuevo_vp)
             info_pase = self._get_tipo_acceso_info(qr_encontrado)
             return {
                 "sin_datos": False,
@@ -440,11 +444,12 @@ class ParqueroService:
                 modelo=modelo,
                 color=color,
                 zona_asignada_id=zona_id,
-                ingresado=True,
-                hora_ingreso=datetime.now(timezone.utc)
+                ingresado=confirmar,
+                hora_ingreso=datetime.now(timezone.utc) if confirmar else None
             )
             db.add(nuevo_vp)
-            await self._actualizar_ocupacion_zona(db, zona_id, 1)
+            if confirmar:
+                await self._actualizar_ocupacion_zona(db, zona_id, 1)
             await db.commit()
             await db.refresh(nuevo_vp)
             
@@ -814,7 +819,8 @@ class ParqueroService:
     # ──────────────────────────────────────────────────────────────────────────
 
     async def registrar_llegada_qr(
-        self, db: AsyncSession, qr_token: str, zona_id: UUID, parquero_id: UUID
+        self, db: AsyncSession, qr_token: str, zona_id: UUID, parquero_id: UUID,
+        confirmar: bool = True
     ) -> Dict[str, Any]:
         """
         El parquero escanea un QR para recibir un vehículo en su zona.
@@ -864,14 +870,15 @@ class ParqueroService:
                 modelo=modelo,
                 color=color,
                 zona_asignada_id=zona_id,
-                ingresado=True,
-                hora_ingreso=datetime.now(timezone.utc)
+                ingresado=confirmar,
+                hora_ingreso=datetime.now(timezone.utc) if confirmar else None
             )
             db.add(vehiculo_pase)
         else:
-            vehiculo_pase.ingresado = True
-            vehiculo_pase.hora_ingreso = datetime.now(timezone.utc)
-            vehiculo_pase.zona_asignada_id = zona_id
+            if confirmar:
+                vehiculo_pase.ingresado = True
+                vehiculo_pase.hora_ingreso = datetime.now(timezone.utc)
+                vehiculo_pase.zona_asignada_id = zona_id
 
         # Si el QR no tiene datos de la persona (o le falta la placa en caso de ser requerido), pedir al parquero
         datos_incompletos = not qr.datos_completos or (not qr.nombre_portador and not qr.usuario_id) or not qr.vehiculo_placa
@@ -906,8 +913,9 @@ class ParqueroService:
         if hasattr(qr, 'hora_llegada_zona'):
             qr.hora_llegada_zona = datetime.now(timezone.utc)
 
-        # Incrementar ocupación solo si no faltan datos (se completa ocupación al guardar)
-        await self._actualizar_ocupacion_zona(db, zona_id, 1)
+        # Incrementar ocupación solo si no faltan datos y confirmar es True
+        if not datos_incompletos and confirmar:
+            await self._actualizar_ocupacion_zona(db, zona_id, 1)
 
         await db.commit()
         await db.refresh(vehiculo_pase)
@@ -1044,4 +1052,28 @@ class ParqueroService:
         return {"nombre": nombre, "color": color}
 
 
+    async def confirmar_ingreso_zona(
+        self, db: AsyncSession, vehiculo_pase_id: UUID, zona_id: UUID
+    ) -> Dict[str, Any]:
+        """
+        Confirma la recepción de un vehículo en la zona, marcándolo como ingresado y aumentando la ocupación.
+        """
+        res = await db.execute(select(VehiculoPase).where(VehiculoPase.id == vehiculo_pase_id))
+        vp = res.scalars().first()
+        if not vp:
+            raise ValueError("Vehículo no encontrado")
+            
+        if vp.ingresado:
+            return {"status": "ok", "mensaje": "Ya estaba ingresado."}
+            
+        vp.ingresado = True
+        vp.hora_ingreso = datetime.now(timezone.utc)
+        vp.zona_asignada_id = zona_id
+        vp.hora_salida = None
+        
+        await self._actualizar_ocupacion_zona(db, zona_id, 1)
+        await db.commit()
+        return {"status": "ok", "mensaje": "Ingreso confirmado correctamente."}
+
 parquero_service = ParqueroService()
+

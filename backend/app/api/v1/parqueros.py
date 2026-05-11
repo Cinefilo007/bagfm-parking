@@ -52,6 +52,7 @@ async def obtener_vehiculos_activos_zona(
 async def registrar_llegada_qr(
     qr_token: str,
     zona_id: UUID,
+    confirmar: bool = True,
     db: AsyncSession = Depends(obtener_db),
     current_user: Usuario = Depends(require_rol(["SUPERVISOR_PARQUEROS", "PARQUERO", "ADMIN_BASE", "COMANDANTE"]))
 ):
@@ -59,7 +60,7 @@ async def registrar_llegada_qr(
     El parquero registra la llegada de un vehículo a su zona leyendo un QR de pase (Token JWT).
     """
     try:
-        vp = await parquero_service.registrar_llegada_qr(db, qr_token, zona_id, current_user.id)
+        vp = await parquero_service.registrar_llegada_qr(db, qr_token, zona_id, current_user.id, confirmar=confirmar)
         return vp
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
@@ -95,6 +96,7 @@ async def registrar_llegada_por_placa(
     marca: Optional[str] = Body(None, embed=True),
     modelo: Optional[str] = Body(None, embed=True),
     color: Optional[str] = Body(None, embed=True),
+    confirmar: bool = Body(True, embed=True),
     db: AsyncSession = Depends(obtener_db),
     current_user: Usuario = Depends(require_rol(["SUPERVISOR_PARQUEROS", "PARQUERO", "ADMIN_BASE", "COMANDANTE"]))
 ):
@@ -108,11 +110,26 @@ async def registrar_llegada_por_placa(
         return await parquero_service.registrar_llegada_placa(
             db, placa, zona_id, current_user.id,
             nombre=nombre, cedula=cedula, telefono=telefono,
-            marca=marca, modelo=modelo, color=color
+            marca=marca, modelo=modelo, color=color,
+            confirmar=confirmar
         )
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
 
+@router.post("/confirmar-ingreso")
+async def confirmar_ingreso_zona(
+    vehiculo_pase_id: UUID = Body(..., embed=True),
+    zona_id: UUID = Body(..., embed=True),
+    db: AsyncSession = Depends(obtener_db),
+    current_user: Usuario = Depends(require_rol(["SUPERVISOR_PARQUEROS", "PARQUERO", "ADMIN_BASE", "COMANDANTE"]))
+):
+    """
+    Confirma físicamente el ingreso de un vehículo que fue consultado previamente.
+    """
+    try:
+        return await parquero_service.confirmar_ingreso_zona(db, vehiculo_pase_id, zona_id)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
 
 @router.post("/salida-placa")
 async def registrar_salida_por_placa(

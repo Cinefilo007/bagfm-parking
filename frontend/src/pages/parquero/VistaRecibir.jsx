@@ -377,7 +377,7 @@ const VistaRecibir = () => {
         if (!placa || !zonaId) { toast.error('Ingrese una placa válida'); return; }
         setBuscando(true);
         try {
-            const res = await parqueroService.registrarLlegadaPlaca(placa, zonaId);
+            const res = await parqueroService.registrarLlegadaPlaca(placa, zonaId, {}, false);
             if (res.sin_datos) {
                 // La placa no existe en ninguna fuente; mostrar modal de registro
                 setSinDatos(res);
@@ -397,7 +397,7 @@ const VistaRecibir = () => {
         if (escaneando || !zonaId) return;
         setEscaneando(true);
         try {
-            const res = await parqueroService.registrarLlegadaQR(qrToken, zonaId);
+            const res = await parqueroService.registrarLlegadaQR(qrToken, zonaId, false);
             if (res.sin_datos) {
                 setSinDatos(res);
             } else {
@@ -413,10 +413,17 @@ const VistaRecibir = () => {
 
     // ── Confirmar ingreso (solo cuando hubo sin_datos=false y se mostró ficha) ──
     const handleConfirmarIngreso = async () => {
-        // El VehiculoPase ya fue creado en el backend al buscar la placa.
-        // Solo notificamos al usuario y reseteamos.
-        toast.success(`${resultado.placa} ingresó a la zona`);
-        resetear();
+        if (!resultado?.vehiculo_pase_id) return;
+        setConfirmando(true);
+        try {
+            await parqueroService.confirmarIngreso(resultado.vehiculo_pase_id, zonaId);
+            toast.success(`${resultado.placa} ingresó a la zona`);
+            resetear();
+        } catch (e) {
+            toast.error(e.response?.data?.detail || 'Error al confirmar ingreso');
+        } finally {
+            setConfirmando(false);
+        }
     };
 
     return (

@@ -37,8 +37,8 @@ export const parqueroService = {
      * @param {string} qrId UUID del QR escaneado.
      * @param {string} zonaId UUID de la zona del parquero.
      */
-    async registrarLlegadaQR(qrId, zonaId) {
-        const { data } = await api.post(`/parqueros/llegada-qr/${qrId}/zona/${zonaId}`);
+    async registrarLlegadaQR(qrId, zonaId, confirmar = true) {
+        const { data } = await api.post(`/parqueros/llegada-qr/${qrId}/zona/${zonaId}?confirmar=${confirmar}`);
         return data;
     },
 
@@ -49,8 +49,18 @@ export const parqueroService = {
      * @param {object} extras Datos adicionales opcionales (nombre, cedula, telefono, marca, modelo, color)
      * @returns {{ sin_datos: boolean, placa, vehiculo_pase_id?, marca?, modelo?, color? }}
      */
-    async registrarLlegadaPlaca(placa, zonaId, extras = {}) {
-        const { data } = await api.post('/parqueros/llegada-placa', { placa, zona_id: zonaId, ...extras });
+    async registrarLlegadaPlaca(placa, zonaId, extras = {}, confirmar = true) {
+        const { data } = await api.post('/parqueros/llegada-placa', { placa, zona_id: zonaId, confirmar, ...extras });
+        return data;
+    },
+    
+    /**
+     * Confirma el ingreso de un vehículo previamente consultado.
+     * @param {string} vehiculoPaseId UUID del VehiculoPase
+     * @param {string} zonaId UUID de la zona
+     */
+    async confirmarIngreso(vehiculoPaseId, zonaId) {
+        const { data } = await api.post('/parqueros/confirmar-ingreso', { vehiculo_pase_id: vehiculoPaseId, zona_id: zonaId });
         return data;
     },
 
