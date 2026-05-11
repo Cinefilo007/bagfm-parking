@@ -259,16 +259,15 @@ const ScannerAlcabala = () => {
     useEffect(() => {
         if (selectedEntidad && entidadesActivas.length > 0) {
             const entidad = entidadesActivas.find(e => e.id === selectedEntidad);
-            if (entidad && entidad.zona_id && situacionZonas[entidad.zona_id]) {
-                const z = situacionZonas[entidad.zona_id];
-                setAlertaCupo(z.ocupacion >= z.capacidad);
+            if (entidad && entidad.cupo_capacidad > 0) {
+                setAlertaCupo(entidad.cupo_ocupacion >= entidad.cupo_capacidad);
             } else {
                 setAlertaCupo(false);
             }
         } else {
             setAlertaCupo(false);
         }
-    }, [selectedEntidad, entidadesActivas, situacionZonas]);
+    }, [selectedEntidad, entidadesActivas]);
 
     const [iaLoading, setIaLoading] = useState(null);
     const [modoEscaneoIA, setModoEscaneoIA] = useState(null);
@@ -881,8 +880,9 @@ const ScannerAlcabala = () => {
                                         >
                                             <option value="">Seleccione Entidad Autorizada</option>
                                             {entidadesActivas.map((ent) => {
-                                                const zona = ent.zona_id ? situacionZonas[String(ent.zona_id)] : null;
-                                                const cupoStr = zona ? ` (${zona.ocupacion}/${zona.capacidad})` : '';
+                                                const cupoStr = ent.cupo_capacidad > 0
+                                                    ? ` (${ent.cupo_ocupacion}/${ent.cupo_capacidad})`
+                                                    : '';
                                                 return (
                                                     <option key={ent.id} value={ent.id}>
                                                         {ent.nombre}{cupoStr}
@@ -895,10 +895,9 @@ const ScannerAlcabala = () => {
                                     {/* Indicador de cupo de la entidad seleccionada */}
                                     {selectedEntidad && (() => {
                                         const entSel = entidadesActivas.find(e => e.id === selectedEntidad);
-                                        const zonaInfo = entSel?.zona_id ? situacionZonas[String(entSel.zona_id)] : null;
-                                        if (!zonaInfo) return null;
-                                        const pct = zonaInfo.capacidad > 0 ? Math.round((zonaInfo.ocupacion / zonaInfo.capacidad) * 100) : 0;
-                                        const lleno = zonaInfo.ocupacion >= zonaInfo.capacidad;
+                                        if (!entSel || entSel.cupo_capacidad === 0) return null;
+                                        const pct = Math.round((entSel.cupo_ocupacion / entSel.cupo_capacidad) * 100);
+                                        const lleno = entSel.cupo_ocupacion >= entSel.cupo_capacidad;
                                         return (
                                             <div className={`flex items-center gap-2 px-3 py-2 rounded-lg border mt-1 ${
                                                 lleno ? 'bg-danger/10 border-danger/30' : 'bg-success/10 border-success/30'
@@ -913,12 +912,12 @@ const ScannerAlcabala = () => {
                                                         {lleno ? '⚠ ZONA AL LÍMITE' : '✓ HAY CUPO DISPONIBLE'}
                                                     </p>
                                                     <p className="text-[8px] text-text-muted">
-                                                        {zonaInfo.ocupacion} ocupados / {zonaInfo.capacidad} cupo total ({pct}%)
+                                                        {entSel.cupo_ocupacion} ocupados / {entSel.cupo_capacidad} cupo total ({pct}%)
                                                     </p>
                                                 </div>
                                             </div>
                                         );
-                                    })()} 
+                                    })()}
 
                                 </div>
 

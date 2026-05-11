@@ -32,5 +32,10 @@ class EntidadCivilSalida(EntidadCivilBase):
     total_usuarios: Optional[int] = 0
     total_vehiculos: Optional[int] = 0
     total_capacidad: Optional[int] = 0
+
+    # Capacidad en tiempo real (calculada desde AsignacionZona + ZonaEstacionamiento)
+    cupo_ocupacion: Optional[int] = 0
+    cupo_capacidad: Optional[int] = 0
     
     model_config = ConfigDict(from_attributes=True)
+

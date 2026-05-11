@@ -128,10 +128,25 @@ class EntidadCivilService:
         resultado = await db.execute(query)
         rows = resultado.all()
         
-        # Obtener zonas asignadas
-        q_zonas = select(AsignacionZona.entidad_id, AsignacionZona.zona_id).where(AsignacionZona.activa == True)
+        # Obtener zonas asignadas con su ocupación actual
+        from app.models.zona_estacionamiento import ZonaEstacionamiento
+        q_zonas = select(
+            AsignacionZona.entidad_id,
+            AsignacionZona.zona_id,
+            AsignacionZona.cupo_asignado,
+            ZonaEstacionamiento.ocupacion_actual,
+            ZonaEstacionamiento.capacidad_total
+        ).outerjoin(
+            ZonaEstacionamiento, ZonaEstacionamiento.id == AsignacionZona.zona_id
+        ).where(AsignacionZona.activa == True)
         res_zonas = await db.execute(q_zonas)
-        entidad_zonas = {row.entidad_id: row.zona_id for row in res_zonas.all()}
+        entidad_zonas_data = {}
+        for r in res_zonas.all():
+            entidad_zonas_data[r.entidad_id] = {
+                "zona_id": r.zona_id,
+                "ocupacion": r.ocupacion_actual or 0,
+                "capacidad": r.cupo_asignado or r.capacidad_total or 0
+            }
 
         entidades = []
         for row in rows:
@@ -139,11 +154,19 @@ class EntidadCivilService:
             ent.total_usuarios = row.total_usuarios
             ent.total_vehiculos = row.total_vehiculos
             ent.total_capacidad = row.total_capacidad
-            if not ent.zona_id and ent.id in entidad_zonas:
-                ent.zona_id = entidad_zonas[ent.id]
+            zona_data = entidad_zonas_data.get(ent.id)
+            if zona_data:
+                if not ent.zona_id:
+                    ent.zona_id = zona_data["zona_id"]
+                ent.cupo_ocupacion = zona_data["ocupacion"]
+                ent.cupo_capacidad = zona_data["capacidad"]
+            else:
+                ent.cupo_ocupacion = 0
+                ent.cupo_capacidad = 0
             entidades.append(ent)
             
         return entidades
+
 
     async def obtener_por_id(self, db: AsyncSession, entidad_id: UUID) -> EntidadCivil:
         """SOP: Obtiene entidad específica con sus métricas actualizadas."""
