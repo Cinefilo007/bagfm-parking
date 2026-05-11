@@ -142,11 +142,14 @@ class EntidadCivilService:
         res_zonas = await db.execute(q_zonas)
         entidad_zonas_data = {}
         for r in res_zonas.all():
-            entidad_zonas_data[r.entidad_id] = {
-                "zona_id": r.zona_id,
-                "ocupacion": r.ocupacion_actual or 0,
-                "capacidad": r.cupo_asignado or r.capacidad_total or 0
-            }
+            if r.entidad_id not in entidad_zonas_data:
+                entidad_zonas_data[r.entidad_id] = {
+                    "zona_id": r.zona_id, # Se usa la primera como referencia si no hay en la raíz
+                    "ocupacion": 0,
+                    "capacidad": 0
+                }
+            entidad_zonas_data[r.entidad_id]["ocupacion"] += r.ocupacion_actual or 0
+            entidad_zonas_data[r.entidad_id]["capacidad"] += r.cupo_asignado or r.capacidad_total or 0
 
         entidades = []
         for row in rows:
