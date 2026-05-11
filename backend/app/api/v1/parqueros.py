@@ -174,6 +174,11 @@ async def completar_datos_portador(
     nombre: Optional[str] = Body(None, embed=True),
     cedula: Optional[str] = Body(None, embed=True),
     telefono: Optional[str] = Body(None, embed=True),
+    zona_id: Optional[UUID] = Body(None, embed=True),
+    placa: Optional[str] = Body(None, embed=True),
+    marca: Optional[str] = Body(None, embed=True),
+    modelo: Optional[str] = Body(None, embed=True),
+    color: Optional[str] = Body(None, embed=True),
     db: AsyncSession = Depends(obtener_db),
     current_user: Usuario = Depends(require_rol(["SUPERVISOR_PARQUEROS", "PARQUERO", "ADMIN_BASE", "COMANDANTE"]))
 ):
@@ -184,7 +189,8 @@ async def completar_datos_portador(
     """
     try:
         return await parquero_service.completar_datos_portador(
-            db, qr_id, vehiculo_pase_id, nombre, cedula, telefono
+            db, qr_id, vehiculo_pase_id, nombre, cedula, telefono, zona_id,
+            placa=placa, marca=marca, modelo=modelo, color=color
         )
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))

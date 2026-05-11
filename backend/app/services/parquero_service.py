@@ -478,7 +478,9 @@ class ParqueroService:
     async def completar_datos_portador(
         self, db: AsyncSession, qr_id: UUID, vehiculo_pase_id: UUID,
         nombre: str | None, cedula: str | None, telefono: str | None,
-        zona_id: UUID | None = None
+        zona_id: UUID | None = None,
+        placa: str | None = None, marca: str | None = None,
+        modelo: str | None = None, color: str | None = None
     ) -> Dict[str, Any]:
         """Completa los datos y activa el ingreso (ocupación)."""
         res_qr = await db.execute(select(CodigoQR).where(CodigoQR.id == qr_id))
@@ -492,12 +494,24 @@ class ParqueroService:
         if nombre: qr.nombre_portador = nombre.strip().upper()
         if cedula: qr.cedula_portador = cedula.strip().upper()
         if telefono: qr.telefono_portador = telefono.strip()
+        
+        if placa: qr.vehiculo_placa = placa.strip().upper()
+        if marca: qr.vehiculo_marca = marca.strip().upper()
+        if modelo: qr.vehiculo_modelo = modelo.strip().upper()
+        if color: qr.vehiculo_color = color.strip().upper()
+        
         qr.datos_completos = True
 
         if vp:
             vp.nombre_portador = qr.nombre_portador
             vp.cedula_portador = qr.cedula_portador
             vp.telefono_portador = qr.telefono_portador
+            
+            if placa: vp.placa = qr.vehiculo_placa
+            if marca: vp.marca = qr.vehiculo_marca
+            if modelo: vp.modelo = qr.vehiculo_modelo
+            if color: vp.color = qr.vehiculo_color
+            
             vp.ingresado = True
             vp.hora_ingreso = datetime.now(timezone.utc)
             

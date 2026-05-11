@@ -107,11 +107,11 @@ export const parqueroService = {
     },
 
     /**
-     * Guarda los datos del portador en el CodigoQR (NO en la tabla usuarios).
-     * Se llama cuando el vehículo tiene QR pero le faltan datos de la persona.
+     * Guarda los datos faltantes en el CodigoQR (persona y/o vehículo).
+     * Se llama cuando el vehículo tiene QR pero le faltan datos.
      * @param {string} qrId UUID del CodigoQR a actualizar.
      * @param {string} vehiculoPaseId UUID del VehiculoPase ya creado.
-     * @param {{ nombre?, cedula?, telefono? }} datos Datos del portador.
+     * @param {object} datos Datos del portador y del vehículo.
      */
     async completarDatosPortador(qrId, vehiculoPaseId, datos) {
         const { data } = await api.post('/parqueros/completar-datos-portador', {
@@ -121,6 +121,10 @@ export const parqueroService = {
             cedula: datos.cedula || null,
             telefono: datos.telefono || null,
             zona_id: datos.zona_id || null,
+            placa: datos.placa || null,
+            marca: datos.marca || null,
+            modelo: datos.modelo || null,
+            color: datos.color || null,
         });
         return data;
     },

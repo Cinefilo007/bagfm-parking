@@ -147,15 +147,20 @@ const ModalRegistroDatos = ({ resultadoSinDatos, zonaId, onRegistrado, onCerrar 
     const handleConfirmar = async () => {
         setCargando(true);
         try {
-            if (soloPersona && qrId && vehiculoPaseId) {
-                // CASO 1: Vehículo ya identificado por QR — guardar portador en codigos_qr e ingresar
+            if (qrId && vehiculoPaseId) {
+                // CASO 1: Vehículo ya identificado por QR — guardar datos (portador y/o vehículo) en codigos_qr e ingresar
+                if (!soloPersona && !placa.trim()) { toast.error('La placa es obligatoria'); return; }
                 await parqueroService.completarDatosPortador(qrId, vehiculoPaseId, {
                     nombre:   nombre   || null,
                     cedula:   cedula   || null,
                     telefono: telefono ? (telefono.startsWith('+58') ? telefono : `+58${telefono}`) : null,
-                    zona_id:  zonaId   // Envía la zona para activar ocupación
+                    zona_id:  zonaId,  // Envía la zona para activar ocupación
+                    placa:    placa.trim().toUpperCase(),
+                    marca:    marca || null,
+                    modelo:   modelo || null,
+                    color:    color || null
                 });
-                toast.success(`Portador registrado ✔ ${placa}`);
+                toast.success(`Datos registrados ✔ ${placa}`);
                 onRegistrado?.({ placa, vehiculoPaseId });
             } else {
                 // CASO 2: Sin QR — vehículo completamente desconocido
