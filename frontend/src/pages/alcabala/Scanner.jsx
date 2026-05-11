@@ -239,7 +239,11 @@ const ScannerAlcabala = () => {
                     const mapaZonas = {};
                     if (situacionRes.data?.zonas) {
                         situacionRes.data.zonas.forEach(z => {
-                            mapaZonas[z.id] = { ocupacion: z.ocupacion, capacidad: z.capacidad };
+                            // La API devuelve capacidad_total y ocupacion_actual
+                            mapaZonas[String(z.id)] = {
+                                ocupacion: z.ocupacion_actual || 0,
+                                capacidad: z.capacidad_total || 0
+                            };
                         });
                     }
                     setSituacionZonas(mapaZonas);
@@ -876,21 +880,45 @@ const ScannerAlcabala = () => {
                                             className="w-full bg-bg-low border border-bg-high rounded-xl px-3 py-3 text-xs font-bold text-text-main focus:border-primary/60 outline-none uppercase transition-all appearance-none cursor-pointer"
                                         >
                                             <option value="">Seleccione Entidad Autorizada</option>
-                                            {entidadesActivas.map((ent) => (
-                                                <option key={ent.id} value={ent.id}>
-                                                    {ent.nombre} {ent.zona_id && situacionZonas[ent.zona_id] ? `(${situacionZonas[ent.zona_id].ocupacion}/${situacionZonas[ent.zona_id].capacidad})` : ''}
-                                                </option>
-                                            ))}
+                                            {entidadesActivas.map((ent) => {
+                                                const zona = ent.zona_id ? situacionZonas[String(ent.zona_id)] : null;
+                                                const cupoStr = zona ? ` (${zona.ocupacion}/${zona.capacidad})` : '';
+                                                return (
+                                                    <option key={ent.id} value={ent.id}>
+                                                        {ent.nombre}{cupoStr}
+                                                    </option>
+                                                );
+                                            })}
                                         </select>
                                     </div>
-                                    {alertaCupo && (
-                                        <div className="flex items-start gap-2 bg-danger/10 text-danger border border-danger/20 p-2.5 rounded-lg mt-1">
-                                            <AlertTriangle size={14} className="shrink-0 mt-0.5" />
-                                            <p className="text-[9px] font-bold uppercase tracking-wide leading-tight">
-                                                Zona de estacionamiento asignada en su capacidad máxima. Se requiere confirmación excepcional para autorizar acceso.
-                                            </p>
-                                        </div>
-                                    )}
+
+                                    {/* Indicador de cupo de la entidad seleccionada */}
+                                    {selectedEntidad && (() => {
+                                        const entSel = entidadesActivas.find(e => e.id === selectedEntidad);
+                                        const zonaInfo = entSel?.zona_id ? situacionZonas[String(entSel.zona_id)] : null;
+                                        if (!zonaInfo) return null;
+                                        const pct = zonaInfo.capacidad > 0 ? Math.round((zonaInfo.ocupacion / zonaInfo.capacidad) * 100) : 0;
+                                        const lleno = zonaInfo.ocupacion >= zonaInfo.capacidad;
+                                        return (
+                                            <div className={`flex items-center gap-2 px-3 py-2 rounded-lg border mt-1 ${
+                                                lleno ? 'bg-danger/10 border-danger/30' : 'bg-success/10 border-success/30'
+                                            }`}>
+                                                <div className={`w-2 h-2 rounded-full shrink-0 ${
+                                                    lleno ? 'bg-danger animate-pulse' : 'bg-success'
+                                                }`} />
+                                                <div className="flex-1">
+                                                    <p className={`text-[9px] font-black uppercase tracking-wide ${
+                                                        lleno ? 'text-danger' : 'text-success'
+                                                    }`}>
+                                                        {lleno ? '⚠ ZONA AL LÍMITE' : '✓ HAY CUPO DISPONIBLE'}
+                                                    </p>
+                                                    <p className="text-[8px] text-text-muted">
+                                                        {zonaInfo.ocupacion} ocupados / {zonaInfo.capacidad} cupo total ({pct}%)
+                                                    </p>
+                                                </div>
+                                            </div>
+                                        );
+                                    })()}}
                                 </div>
 
                                 {/* Datos del ciudadano */}
