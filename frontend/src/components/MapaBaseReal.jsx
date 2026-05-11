@@ -284,7 +284,18 @@ const MapaBaseReal = ({
                           SquareParking
                         )}
                         eventHandlers={{ click: () => !assignmentMode && onSelectEntity(zona) }}
-                      />
+                      >
+                          <Popup className="tactical-popup">
+                             <div className="p-2 min-w-[130px]">
+                                 <div className="text-[9px] font-black uppercase tracking-widest text-warning mb-0.5">Área Delimitada</div>
+                                 <div className="text-[11px] font-bold uppercase text-text-main mb-1 leading-tight">{zona.nombre}</div>
+                                 <div className="flex justify-between items-center text-[9px] font-mono border-t border-white/10 pt-2 mb-2">
+                                     <span className="text-text-sec uppercase font-bold">Uso:</span>
+                                     <span className="text-primary font-black text-[11px]">{zona.ocupacion_actual || 0} / {zona.capacidad_total || 0}</span>
+                                  </div>
+                              </div>
+                           </Popup>
+                      </Marker>
                     )}
                   </React.Fragment>
                 ))}
