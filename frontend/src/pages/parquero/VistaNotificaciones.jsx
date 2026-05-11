@@ -257,11 +257,13 @@ const VistaNotificaciones = () => {
     const [hasMore, setHasMore] = useState(true);
     const LIMITE = 20;
 
-    const cargarHistorial = useCallback(async (isLoadMore = false) => {
+    const cargarHistorial = useCallback(async (isLoadMore = false, isSilent = false) => {
         let targetId = zonaId;
         
-        if (isLoadMore) setCargandoMas(true);
-        else setCargando(true);
+        if (!isSilent) {
+            if (isLoadMore) setCargandoMas(true);
+            else setCargando(true);
+        }
 
         try {
             // Si no tenemos zonaId (ej: refresh), intentamos recuperarla
@@ -272,7 +274,7 @@ const VistaNotificaciones = () => {
                     targetId = z.id;
                 } else {
                     // Si aún no hay zona, no podemos cargar historial
-                    setCargando(false);
+                    if (!isSilent) setCargando(false);
                     return;
                 }
             }
@@ -293,10 +295,12 @@ const VistaNotificaciones = () => {
 
         } catch (err) {
             console.error("Error cargando trazabilidad:", err);
-            toast.error("Error al cargar historial");
+            if (!isSilent) toast.error("Error al cargar historial");
         } finally {
-            setCargando(false);
-            setCargandoMas(false);
+            if (!isSilent) {
+                setCargando(false);
+                setCargandoMas(false);
+            }
         }
     }, [zonaId, skip]);
 
@@ -304,7 +308,7 @@ const VistaNotificaciones = () => {
     useEffect(() => {
         cargarHistorial();
         const interval = setInterval(() => {
-            if (skip === 0) cargarHistorial();
+            if (skip === 0) cargarHistorial(false, true); // Silent update
         }, 30000);
         return () => clearInterval(interval);
     }, [zonaId]); // Solo re-cargar si cambia la zona
