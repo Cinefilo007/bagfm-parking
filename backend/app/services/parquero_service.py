@@ -377,6 +377,10 @@ class ParqueroService:
             datos_persona_incompletos = not qr_encontrado.datos_completos or not qr_encontrado.nombre_portador
 
             if datos_persona_incompletos:
+                # Guardar el VP incompleto para poder referenciarlo
+                await db.commit()
+                await db.refresh(nuevo_vp)
+                
                 info_pase = self._get_tipo_acceso_info(qr_encontrado)
                 return {
                     "sin_datos": True,
@@ -400,8 +404,9 @@ class ParqueroService:
             if confirmar:
                 # Incrementar ocupación
                 await self._actualizar_ocupacion_zona(db, zona_id, 1)
-                await db.commit()
-                await db.refresh(nuevo_vp)
+            
+            await db.commit()
+            await db.refresh(nuevo_vp)
             info_pase = self._get_tipo_acceso_info(qr_encontrado)
             return {
                 "sin_datos": False,
@@ -905,6 +910,10 @@ class ParqueroService:
             portador = qr.nombre_portador
             if not portador and qr.usuario:
                 portador = f"{qr.usuario.nombre} {qr.usuario.apellido}".strip()
+
+            # Guardar el VP para referenciarlo
+            await db.commit()
+            await db.refresh(vehiculo_pase)
 
             return {
                 "sin_datos": True,
