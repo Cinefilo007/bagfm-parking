@@ -419,9 +419,11 @@ class ParqueroService:
         # ── 5. Sin datos en ninguna fuente ──
         if nombre or cedula or marca or modelo or color:
             import string, secrets
+            from app.models.enums import QRTipo
             token_qr = "".join(secrets.choice(string.ascii_uppercase + string.digits) for _ in range(8))
             nuevo_qr = CodigoQR(
                 token=token_qr,
+                tipo=QRTipo.temporal,
                 activo=True,
                 vehiculo_placa=placa_norm,
                 vehiculo_marca=marca,
@@ -431,7 +433,7 @@ class ParqueroService:
                 cedula_portador=cedula,
                 telefono_portador=telefono,
                 zona_asignada_id=zona_id,
-                creado_por_id=parquero_id,
+                created_by=parquero_id,
                 datos_completos=True
             )
             db.add(nuevo_qr)
