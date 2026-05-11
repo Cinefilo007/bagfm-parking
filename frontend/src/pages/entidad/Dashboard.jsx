@@ -15,10 +15,10 @@ import api from '../../services/api';
 // ── Íconos de evento en el historial ──
 const IconoEvento = ({ tipo, tipo_evento }) => {
   if (tipo_evento === 'ingreso_zona' || (tipo === 'entrada' && tipo_evento === 'ingreso_zona')) {
-    return <CheckCircle2 size={14} className="text-primary" />;
+    return <LogIn size={14} className="text-success" />;
   }
   if (tipo_evento === 'salida_zona' || (tipo === 'salida' && tipo_evento === 'salida_zona')) {
-    return <XCircle size={14} className="text-secondary" />;
+    return <LogOut size={14} className="text-warning" />;
   }
   if (tipo === 'entrada') {
     return <LogIn size={14} className="text-primary" />;
@@ -32,10 +32,10 @@ const IconoEvento = ({ tipo, tipo_evento }) => {
 // ── Etiqueta de tipo de evento ──
 const EtiquetaEvento = ({ tipo, tipo_evento }) => {
   const config = {
-    alcabala_entrada: { label: 'ALCABALA', color: 'text-primary border-primary/20 bg-primary/5' },
-    alcabala_salida: { label: 'EGRESO', color: 'text-warning border-warning/20 bg-warning/5' },
-    ingreso_zona: { label: 'ZONA ↓', color: 'text-success border-success/20 bg-success/5' },
-    salida_zona: { label: 'ZONA ↑', color: 'text-secondary border-secondary/20 bg-secondary/5' },
+    alcabala_entrada: { label: 'ALCABALA IN', color: 'text-primary border-primary/20 bg-primary/5' },
+    alcabala_salida: { label: 'ALCABALA OUT', color: 'text-warning border-warning/20 bg-warning/5' },
+    ingreso_zona: { label: 'INGRESO ZONA', color: 'text-success border-success/20 bg-success/5' },
+    salida_zona: { label: 'SALIDA BASE', color: 'text-warning border-warning/20 bg-warning/5' },
   };
 
   const key = tipo_evento === 'alcabala'
@@ -53,6 +53,19 @@ const EtiquetaEvento = ({ tipo, tipo_evento }) => {
     </span>
   );
 };
+
+function formatTimeAgo(dateString) {
+  if (!dateString) return '--:--';
+  const date = new Date(dateString);
+  const seconds = Math.floor((new Date() - date) / 1000);
+  if (seconds < 60) return 'Hace unos seg';
+  const minutes = Math.floor(seconds / 60);
+  if (minutes < 60) return `Hace ${minutes} min`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `Hace ${hours} hr${hours > 1 ? 's' : ''}`;
+  const days = Math.floor(hours / 24);
+  return `Hace ${days} d`;
+}
 
 // ── Barra de ocupación ──
 const BarraOcupacion = ({ pct }) => {
@@ -98,7 +111,7 @@ export default function DashboardEntidad() {
     return () => clearInterval(interval);
   }, [cargarDashboard]);
 
-  const entidadNombre = user?.entidad_nombre || 'PANEL DE ENTIDAD';
+  const entidadNombre = data?.entidad_nombre || user?.entidad_nombre || 'PANEL DE ENTIDAD';
   const kpis = data?.kpis || {};
   const zonas = data?.zonas || [];
   const historial = data?.historial || [];
@@ -163,7 +176,7 @@ export default function DashboardEntidad() {
               highlight: false
             },
             {
-              label: 'Vehículos Activos',
+              label: 'Vehículos Dentro',
               valor: kpis.vehiculos_activos ?? 0,
               icon: CarFront,
               highlight: kpis.vehiculos_activos > 0 ? false : false
@@ -320,7 +333,7 @@ export default function DashboardEntidad() {
                         <div className="flex items-center gap-1 text-[9px] font-mono text-text-muted shrink-0">
                           <Clock size={9} />
                           {ev.timestamp
-                            ? new Date(ev.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                            ? formatTimeAgo(ev.timestamp)
                             : '--:--'
                           }
                         </div>

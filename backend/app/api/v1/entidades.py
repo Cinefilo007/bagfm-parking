@@ -444,7 +444,13 @@ async def dashboard_entidad(
                 "activo": pq.activo,
             })
 
+    from app.models.entidad_civil import EntidadCivil
+    rs_ent = await db.execute(select(EntidadCivil).where(EntidadCivil.id == entidad_id))
+    entidad_civil = rs_ent.scalar_one_or_none()
+    entidad_nombre = entidad_civil.nombre if entidad_civil else "PANEL DE ENTIDAD"
+
     return {
+        "entidad_nombre": entidad_nombre,
         "kpis": {
             "capacidad_total": capacidad_total,
             "vehiculos_activos": vehiculos_activos,
