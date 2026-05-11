@@ -7,7 +7,7 @@ import {
   TrendingUp, Activity, UserCog, Clock,
   LogIn, LogOut, Navigation, RefreshCw,
   ChevronRight, Phone, Gauge, CheckCircle2,
-  XCircle, Wifi, WifiOff
+  XCircle, Wifi, WifiOff, TriangleAlert
 } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import api from '../../services/api';
@@ -87,6 +87,7 @@ export default function DashboardEntidad() {
   const [syncing, setSyncing] = useState(false);
   const [error, setError] = useState(null);
   const [lastSync, setLastSync] = useState(null);
+  const [vistaHistorial, setVistaHistorial] = useState('flujo'); // 'flujo' | 'en_camino' | 'perdidos'
 
   const cargarDashboard = useCallback(async (mostrarSyncing = false) => {
     if (!user?.entidad_id) return;
@@ -116,6 +117,7 @@ export default function DashboardEntidad() {
   const zonas = data?.zonas || [];
   const historial = data?.historial || [];
   const perdidos = data?.vehiculos_perdidos || [];
+  const enCamino = data?.vehiculos_en_camino || [];
   const parqueros = data?.parqueros || [];
 
   // ── Pantalla de carga ──
@@ -280,72 +282,215 @@ export default function DashboardEntidad() {
               <div className="flex items-center gap-2">
                 <Activity size={14} className="text-primary" />
                 <h3 className="text-xs font-black text-text-main uppercase tracking-[0.2em] opacity-60 italic">
-                  Historial de Flujo Vehicular
+                  Monitor Vehicular
                 </h3>
               </div>
-              <span className="text-[9px] font-bold text-primary animate-pulse tracking-widest uppercase font-mono">
-                Alcabala → Zona → Egreso
-              </span>
             </div>
 
-            <div className="bg-bg-low/40 border border-white/5 backdrop-blur-md rounded-2xl overflow-hidden shadow-[0_4px_20px_rgba(0,0,0,0.3)]" style={{ height: '460px' }}>
-              <div className="h-full overflow-y-auto p-4 space-y-2 custom-scrollbar">
-                {historial.length === 0 ? (
-                  <div className="h-full flex items-center justify-center flex-col opacity-20">
-                    <Activity size={48} className="mb-4" />
-                    <span className="text-xs font-black uppercase tracking-widest">Sin actividad operativa</span>
-                  </div>
-                ) : historial.map((ev, i) => (
-                  <div
-                    key={ev.id || i}
-                    className="flex items-start gap-3 p-3 bg-white/[0.02] rounded-xl border border-white/5 hover:bg-white/5 transition-all group cursor-default"
+            {/* Pestañas de navegación */}
+            <div className="flex items-center gap-1 bg-bg-low/60 p-1 rounded-xl border border-white/5">
+              {[
+                { id: 'flujo', label: 'Flujo', icon: Activity, count: historial.length, color: 'primary' },
+                { id: 'en_camino', label: 'En Camino', icon: Navigation, count: enCamino.length, color: 'warning' },
+                { id: 'perdidos', label: 'Perdidos', icon: TriangleAlert, count: perdidos.length, color: 'danger' },
+              ].map((tab) => {
+                const TabIcon = tab.icon;
+                const isActive = vistaHistorial === tab.id;
+                return (
+                  <button
+                    key={tab.id}
+                    onClick={() => setVistaHistorial(tab.id)}
+                    className={cn(
+                      "flex-1 flex items-center justify-center gap-1.5 py-2 px-3 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all",
+                      isActive
+                        ? tab.id === 'perdidos'
+                          ? 'bg-danger/15 text-danger border border-danger/20'
+                          : tab.id === 'en_camino'
+                            ? 'bg-warning/10 text-warning border border-warning/20'
+                            : 'bg-primary/10 text-primary border border-primary/20'
+                        : 'text-text-muted hover:bg-white/5'
+                    )}
                   >
-                    {/* Indicador visual de flujo */}
-                    <div className={cn(
-                      "w-1 rounded-full mt-1 shrink-0",
-                      ev.tipo_evento === 'alcabala' && ev.tipo === 'entrada' ? 'bg-primary h-10' :
-                      ev.tipo_evento === 'alcabala' && ev.tipo === 'salida' ? 'bg-warning h-10' :
-                      ev.tipo_evento === 'ingreso_zona' ? 'bg-success h-10' :
-                      ev.tipo_evento === 'salida_zona' ? 'bg-secondary h-10' :
-                      'bg-text-muted/30 h-10'
-                    )} />
+                    <TabIcon size={10} />
+                    {tab.label}
+                    {tab.count > 0 && (
+                      <span className={cn(
+                        "ml-0.5 px-1.5 py-0.5 rounded-full text-[8px] font-black",
+                        tab.id === 'perdidos' ? 'bg-danger/20 text-danger' :
+                        tab.id === 'en_camino' ? 'bg-warning/20 text-warning' :
+                        'bg-primary/20 text-primary'
+                      )}>
+                        {tab.count}
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
 
-                    <div className="w-6 h-6 rounded-lg bg-white/5 flex items-center justify-center shrink-0 mt-1">
-                      <IconoEvento tipo={ev.tipo} tipo_evento={ev.tipo_evento} />
-                    </div>
+            <div className="bg-bg-low/40 border border-white/5 backdrop-blur-md rounded-2xl overflow-hidden shadow-[0_4px_20px_rgba(0,0,0,0.3)]" style={{ height: '420px' }}>
+              <div className="h-full overflow-y-auto p-4 space-y-2 custom-scrollbar">
 
-                    <div className="flex-1 min-w-0">
-                      <div className="flex flex-wrap items-center gap-2 mb-1">
-                        <EtiquetaEvento tipo={ev.tipo} tipo_evento={ev.tipo_evento} />
-                        <span className="font-mono text-xs font-black text-text-main tracking-wider">
-                          {ev.placa}
-                        </span>
-                        {ev.marca && (
-                          <span className="text-[10px] text-text-muted truncate">
-                            {[ev.marca, ev.modelo].filter(Boolean).join(' ')}
-                          </span>
-                        )}
+                {/* ── VISTA: FLUJO ── */}
+                {vistaHistorial === 'flujo' && (
+                  historial.length === 0 ? (
+                    <div className="h-full flex items-center justify-center flex-col opacity-20">
+                      <Activity size={48} className="mb-4" />
+                      <span className="text-xs font-black uppercase tracking-widest">Sin actividad operativa</span>
+                    </div>
+                  ) : historial.map((ev, i) => (
+                    <div
+                      key={ev.id || i}
+                      className="flex items-start gap-3 p-3 bg-white/[0.02] rounded-xl border border-white/5 hover:bg-white/5 transition-all group cursor-default"
+                    >
+                      <div className={cn(
+                        "w-1 rounded-full mt-1 shrink-0",
+                        ev.tipo_evento === 'alcabala' && ev.tipo === 'entrada' ? 'bg-primary h-10' :
+                        ev.tipo_evento === 'alcabala' && ev.tipo === 'salida' ? 'bg-warning h-10' :
+                        ev.tipo_evento === 'ingreso_zona' ? 'bg-success h-10' :
+                        ev.tipo_evento === 'salida_zona' ? 'bg-secondary h-10' :
+                        'bg-text-muted/30 h-10'
+                      )} />
+                      <div className="w-6 h-6 rounded-lg bg-white/5 flex items-center justify-center shrink-0 mt-1">
+                        <IconoEvento tipo={ev.tipo} tipo_evento={ev.tipo_evento} />
                       </div>
-                      <div className="flex items-start justify-between">
-                        <div className="flex flex-col">
-                          <span className="text-[10px] text-text-muted truncate max-w-[180px] font-medium leading-tight">
-                            {ev.portador !== 'DESCONOCIDO' ? ev.portador : 'Vehículo no registrado'}
-                          </span>
-                          <span className="text-[8.5px] font-mono text-text-muted/70 truncate max-w-[180px] mt-0.5 leading-tight uppercase">
-                            {ev.punto_acceso}
-                          </span>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex flex-wrap items-center gap-2 mb-1">
+                          <EtiquetaEvento tipo={ev.tipo} tipo_evento={ev.tipo_evento} />
+                          <span className="font-mono text-xs font-black text-text-main tracking-wider">{ev.placa}</span>
+                          {ev.marca && (
+                            <span className="text-[10px] text-text-muted truncate">
+                              {[ev.marca, ev.modelo].filter(Boolean).join(' ')}
+                            </span>
+                          )}
                         </div>
-                        <div className="flex items-center gap-1 text-[9px] font-mono text-text-muted shrink-0 pt-0.5">
-                          <Clock size={9} />
-                          {ev.timestamp
-                            ? formatTimeAgo(ev.timestamp)
-                            : '--:--'
-                          }
+                        <div className="flex items-start justify-between">
+                          <div className="flex flex-col">
+                            <span className="text-[10px] text-text-muted truncate max-w-[180px] font-medium leading-tight">
+                              {ev.portador !== 'DESCONOCIDO' ? ev.portador : 'Vehículo no registrado'}
+                            </span>
+                            <span className="text-[8.5px] font-mono text-text-muted/70 truncate max-w-[180px] mt-0.5 leading-tight uppercase">
+                              {ev.punto_acceso}
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-1 text-[9px] font-mono text-text-muted shrink-0 pt-0.5">
+                            <Clock size={9} />
+                            {ev.timestamp ? formatTimeAgo(ev.timestamp) : '--:--'}
+                          </div>
                         </div>
                       </div>
                     </div>
-                  </div>
-                ))}
+                  ))
+                )}
+
+                {/* ── VISTA: EN CAMINO ── */}
+                {vistaHistorial === 'en_camino' && (
+                  enCamino.length === 0 ? (
+                    <div className="h-full flex items-center justify-center flex-col opacity-20">
+                      <Navigation size={48} className="mb-4" />
+                      <span className="text-xs font-black uppercase tracking-widest">Ningún vehículo en tránsito</span>
+                    </div>
+                  ) : enCamino.map((v, i) => (
+                    <div
+                      key={i}
+                      className="flex items-start gap-3 p-3 bg-warning/[0.04] rounded-xl border border-warning/15 hover:bg-warning/[0.08] transition-all"
+                    >
+                      <div className="w-1 bg-warning h-12 rounded-full shrink-0 mt-1" />
+                      <div className="w-6 h-6 rounded-lg bg-warning/10 flex items-center justify-center shrink-0 mt-1">
+                        <Navigation size={13} className="text-warning" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex flex-wrap items-center gap-2 mb-1">
+                          <span className="text-[8px] font-black tracking-widest px-2 py-0.5 rounded-full border uppercase text-warning border-warning/20 bg-warning/5">
+                            EN CAMINO
+                          </span>
+                          <span className="font-mono text-xs font-black text-text-main tracking-wider">{v.placa}</span>
+                          {v.marca && (
+                            <span className="text-[10px] text-text-muted truncate">
+                              {[v.marca, v.modelo].filter(Boolean).join(' ')}
+                            </span>
+                          )}
+                        </div>
+                        <div className="flex items-start justify-between">
+                          <div className="flex flex-col gap-0.5">
+                            <span className="text-[10px] text-text-muted font-medium leading-tight">
+                              {v.portador !== 'DESCONOCIDO' ? v.portador : 'Vehículo no registrado'}
+                            </span>
+                            <span className="text-[8.5px] font-mono text-warning/70 uppercase leading-tight">
+                              → {v.zona_nombre}
+                            </span>
+                            <span className="text-[8px] font-mono text-text-muted/60 uppercase leading-tight">
+                              Alcabala: {v.punto_acceso}
+                            </span>
+                          </div>
+                          <div className="text-right shrink-0">
+                            <div className="text-[10px] font-black text-warning">{v.minutos_transcurridos} min</div>
+                            <div className="text-[8px] font-mono text-text-muted">de {v.tiempo_limite} permitidos</div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ))
+                )}
+
+                {/* ── VISTA: PERDIDOS ── */}
+                {vistaHistorial === 'perdidos' && (
+                  perdidos.length === 0 ? (
+                    <div className="h-full flex items-center justify-center flex-col opacity-20">
+                      <CheckCircle2 size={48} className="mb-4 text-success" />
+                      <span className="text-xs font-black uppercase tracking-widest">Sin vehículos perdidos</span>
+                    </div>
+                  ) : perdidos.map((v, i) => (
+                    <div
+                      key={i}
+                      className="flex items-start gap-3 p-3 bg-danger/[0.07] rounded-xl border border-danger/25 hover:bg-danger/[0.12] transition-all"
+                    >
+                      <div className="w-1 bg-danger h-14 rounded-full shrink-0 mt-1 animate-pulse" />
+                      <div className="w-6 h-6 rounded-lg bg-danger/15 flex items-center justify-center shrink-0 mt-1">
+                        <TriangleAlert size={13} className="text-danger" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex flex-wrap items-center gap-2 mb-1">
+                          <span className="text-[8px] font-black tracking-widest px-2 py-0.5 rounded-full border uppercase text-danger border-danger/30 bg-danger/10 animate-pulse">
+                            PERDIDO
+                          </span>
+                          <span className="font-mono text-xs font-black text-danger tracking-wider">{v.placa}</span>
+                          {v.marca && (
+                            <span className="text-[10px] text-text-muted truncate">
+                              {[v.marca, v.modelo].filter(Boolean).join(' ')}
+                            </span>
+                          )}
+                        </div>
+                        <div className="flex items-start justify-between">
+                          <div className="flex flex-col gap-0.5">
+                            <span className="text-[10px] text-text-muted font-medium leading-tight">
+                              {v.portador !== 'DESCONOCIDO' ? v.portador : 'Desconocido'}
+                            </span>
+                            <span className="text-[8.5px] font-mono text-danger/60 uppercase leading-tight">
+                              Destino: {v.zona_nombre || '—'}
+                            </span>
+                            <span className="text-[8px] font-mono text-text-muted/60 uppercase leading-tight">
+                              Por: {v.punto_acceso}
+                            </span>
+                          </div>
+                          <div className="text-right shrink-0">
+                            <div className="text-[11px] font-black text-danger">{v.minutos_transcurridos} min</div>
+                            <div className="text-[8px] font-mono text-danger/50">+{v.minutos_transcurridos - v.tiempo_limite} sobre límite</div>
+                            {v.telefono && (
+                              <a
+                                href={`tel:${v.telefono}`}
+                                className="mt-1 flex items-center gap-0.5 text-[8px] font-mono text-primary hover:underline"
+                              >
+                                <Phone size={8} /> {v.telefono}
+                              </a>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ))
+                )}
+
               </div>
             </div>
           </div>

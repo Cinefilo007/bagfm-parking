@@ -352,8 +352,9 @@ async def dashboard_entidad(
         historial.sort(key=sort_ts, reverse=True)
         historial = historial[:50]
 
-    # ── 5. Vehículos Perdidos (de las zonas de la entidad) ──
+    # ── 5. Vehículos Perdidos y En Camino (de las zonas de la entidad) ──
     vehiculos_perdidos = []
+    vehiculos_en_camino = []
     if zona_ids:
         ahora = datetime.now(timezone.utc)
         hace_12h = ahora - timedelta(hours=12)
@@ -362,6 +363,7 @@ async def dashboard_entidad(
             # Obtener tiempo límite de esta zona
             rs_zona = await db.execute(select(ZonaEstacionamiento).where(ZonaEstacionamiento.id == zona_id_p))
             zona_p = rs_zona.scalars().first()
+            zona_nombre_p = dict_zonas.get(str(zona_id_p), "ZONA")
             tiempo_limite = (zona_p.tiempo_limite_llegada_min or 15) if zona_p else 15
 
             # Accesos con destino a esta zona sin registro de llegada
@@ -400,20 +402,27 @@ async def dashboard_entidad(
                 ts_acc = acc_p.timestamp.replace(tzinfo=timezone.utc) if acc_p.timestamp.tzinfo is None else acc_p.timestamp
                 min_transcurridos = int((ahora - ts_acc).total_seconds() / 60)
 
+                item = {
+                    "placa": qr_p.vehiculo_placa or "SIN PLACA",
+                    "marca": qr_p.vehiculo_marca,
+                    "modelo": qr_p.vehiculo_modelo,
+                    "portador": qr_p.nombre_portador or "DESCONOCIDO",
+                    "telefono": qr_p.telefono_portador,
+                    "hora_alcabala": ts_acc.isoformat(),
+                    "minutos_transcurridos": min_transcurridos,
+                    "tiempo_limite": tiempo_limite,
+                    "zona_id": str(zona_id_p),
+                    "zona_nombre": zona_nombre_p,
+                    "punto_acceso": acc_p.punto_acceso,
+                }
+
                 if min_transcurridos > tiempo_limite:
-                    vehiculos_perdidos.append({
-                        "placa": qr_p.vehiculo_placa or "SIN PLACA",
-                        "marca": qr_p.vehiculo_marca,
-                        "modelo": qr_p.vehiculo_modelo,
-                        "portador": qr_p.nombre_portador or "DESCONOCIDO",
-                        "telefono": qr_p.telefono_portador,
-                        "hora_alcabala": ts_acc.isoformat(),
-                        "minutos_transcurridos": min_transcurridos,
-                        "tiempo_limite": tiempo_limite,
-                        "zona_id": str(zona_id_p),
-                    })
+                    vehiculos_perdidos.append(item)
+                else:
+                    vehiculos_en_camino.append(item)
 
         vehiculos_perdidos.sort(key=lambda x: x["minutos_transcurridos"], reverse=True)
+        vehiculos_en_camino.sort(key=lambda x: x["minutos_transcurridos"], reverse=True)
 
     # ── 6. Rendimiento de Parqueros ──
     parqueros_rendimiento = []
@@ -464,10 +473,12 @@ async def dashboard_entidad(
             "uso_pct": round((vehiculos_activos / max(1, capacidad_total)) * 100),
             "total_socios": total_socios,
             "total_perdidos": len(vehiculos_perdidos),
+            "total_en_camino": len(vehiculos_en_camino),
             "total_parqueros": len(parqueros_rendimiento),
         },
         "zonas": zonas_resumen,
         "historial": historial,
         "vehiculos_perdidos": vehiculos_perdidos,
+        "vehiculos_en_camino": vehiculos_en_camino,
         "parqueros": parqueros_rendimiento,
     }
