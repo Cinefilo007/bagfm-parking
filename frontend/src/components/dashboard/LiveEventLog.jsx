@@ -143,7 +143,15 @@ const LiveEventLog = ({ puntoNombre = null }) => {
                                         {evento.usuario}
                                     </span>
                                     <span className="text-[8px] font-mono text-text-muted mt-0.5 shrink-0">
-                                        {new Date(evento.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+                                        {(() => {
+                                            const d = new Date(evento.timestamp);
+                                            const s = Math.floor((new Date() - d) / 1000);
+                                            if (s < 60) return 'ahora';
+                                            const m = Math.floor(s / 60);
+                                            if (m < 60) return `Hace ${m}m`;
+                                            const h = Math.floor(m / 60);
+                                            return h < 24 ? `Hace ${h}h` : `Hace ${Math.floor(h/24)}d`;
+                                        })()}
                                     </span>
                                 </div>
                                 

@@ -157,15 +157,88 @@ async def get_situacion_actual(db: AsyncSession):
     query_vp_activos = select(func.count(VehiculoPase.id)).filter(VehiculoPase.ingresado == True)
     vehiculos_dentro = (await db.execute(query_vp_activos)).scalar() or 0
 
-    # 6. Bloqueados reales (Socios con activo=False)
+    # 6. Bloqueados reales (Socios con activo=False, no eliminados)
     query_bloqueados = select(func.count(Usuario.id)).filter(
         Usuario.activo == False,
-        Usuario.rol == RolTipo.SOCIO
+        Usuario.rol == RolTipo.SOCIO,
+        Usuario.is_deleted == False
     )
     bloqueados_reales = (await db.execute(query_bloqueados)).scalar() or 0
 
-    # 6. Alertas (Deshabilitado temporalmente - Módulo no disponible)
-    alertas_activas = 0
+    # 7. Infracciones activas (estado: activa, en_revision, o apelada)
+    query_infracciones = select(func.count(Infraccion.id)).filter(
+        Infraccion.estado == InfraccionEstado.activa
+    )
+    alertas_activas = (await db.execute(query_infracciones)).scalar() or 0
+
+    # 8. Vehículos en camino y perdidos (global todas las zonas)
+    from datetime import timedelta, timezone, datetime as dt_dt
+    from app.models.asignacion_zona import AsignacionZona
+    from app.models.vehiculo_pase import VehiculoPase as VP2
+    from app.models.codigo_qr import CodigoQR
+    from app.models.enums import AccesoTipo
+
+    ahora_utc = dt_dt.now(timezone.utc)
+    hace_12h = ahora_utc - timedelta(hours=12)
+    vehiculos_en_camino = []
+    vehiculos_perdidos_mapa = []
+
+    # Obtener todas las zonas activas con su tiempo límite
+    rs_todas_zonas = await db.execute(select(ZonaEstacionamiento).filter(ZonaEstacionamiento.activo == True))
+    todas_zonas = rs_todas_zonas.scalars().all()
+    dict_zona_nombres = {str(z.id): z.nombre for z in todas_zonas}
+
+    for zona_z in todas_zonas:
+        tiempo_limite = zona_z.tiempo_limite_llegada_min or 15
+        rs_acc_z = await db.execute(
+            select(Acceso, CodigoQR)
+            .join(CodigoQR, Acceso.qr_id == CodigoQR.id)
+            .filter(
+                CodigoQR.zona_asignada_id == zona_z.id,
+                Acceso.tipo == AccesoTipo.entrada,
+                Acceso.timestamp >= hace_12h
+            )
+        )
+        for acc_z, qr_z in rs_acc_z.all():
+            rs_vp_z = await db.execute(
+                select(VehiculoPase).filter(
+                    VehiculoPase.qr_id == qr_z.id,
+                    VehiculoPase.zona_asignada_id == zona_z.id,
+                    VehiculoPase.hora_ingreso >= acc_z.timestamp
+                )
+            )
+            if rs_vp_z.scalars().first():
+                continue
+            rs_sal_z = await db.execute(
+                select(Acceso).filter(
+                    Acceso.qr_id == qr_z.id,
+                    Acceso.tipo == AccesoTipo.salida,
+                    Acceso.timestamp >= acc_z.timestamp
+                )
+            )
+            if rs_sal_z.scalars().first():
+                continue
+            ts = acc_z.timestamp.replace(tzinfo=timezone.utc) if acc_z.timestamp.tzinfo is None else acc_z.timestamp
+            min_t = int((ahora_utc - ts).total_seconds() / 60)
+            item_z = {
+                "placa": qr_z.vehiculo_placa or "SIN PLACA",
+                "marca": qr_z.vehiculo_marca,
+                "modelo": qr_z.vehiculo_modelo,
+                "portador": qr_z.nombre_portador or "DESCONOCIDO",
+                "telefono": qr_z.telefono_portador,
+                "hora_alcabala": ts.isoformat(),
+                "minutos_transcurridos": min_t,
+                "tiempo_limite": tiempo_limite,
+                "zona_nombre": zona_z.nombre,
+                "punto_acceso": acc_z.punto_acceso,
+            }
+            if min_t > tiempo_limite:
+                vehiculos_perdidos_mapa.append(item_z)
+            else:
+                vehiculos_en_camino.append(item_z)
+
+    vehiculos_perdidos_mapa.sort(key=lambda x: x["minutos_transcurridos"], reverse=True)
+    vehiculos_en_camino.sort(key=lambda x: x["minutos_transcurridos"], reverse=True)
 
     return {
         "entidades": entidades_data,
@@ -175,6 +248,8 @@ async def get_situacion_actual(db: AsyncSession):
         "total_accesos_hoy": total_entradas,
         "alertas_activas": alertas_activas,
         "bloqueados_total": bloqueados_reales,
+        "vehiculos_en_camino": vehiculos_en_camino,
+        "vehiculos_perdidos": vehiculos_perdidos_mapa,
         "eventos_recientes": eventos_data
     }
 
