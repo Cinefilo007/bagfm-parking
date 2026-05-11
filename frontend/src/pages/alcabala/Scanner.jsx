@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import { toast } from 'react-hot-toast';
+import api from '../../services/api';
 
 /* ── Input para el formulario manual de registrar datos ── */
 const InputManual = ({ label, value, onChange, placeholder, prefix = null, loading = false }) => (
@@ -208,7 +209,7 @@ const ScannerAlcabala = () => {
     // Modal de registro manual (SÓLO visible cuando el guardia lo activa)
     const [mostrarFormulario, setMostrarFormulario] = useState(false);
 
-    // Datos del formulario manual
+    // Estado del formulario manual
     const [nombreManual, setNombreManual] = useState('');
     const [cedulaManual, setCedulaManual] = useState('');
     const [telefonoManual, setTelefonoManual] = useState('');
@@ -216,6 +217,54 @@ const ScannerAlcabala = () => {
     const [marcaManual, setMarcaManual] = useState('');
     const [modeloManual, setModeloManual] = useState('');
     const [colorManual, setColorManual] = useState('');
+    
+    // Estado de entidades y situación táctica
+    const [entidadesActivas, setEntidadesActivas] = useState([]);
+    const [situacionZonas, setSituacionZonas] = useState({});
+    const [selectedEntidad, setSelectedEntidad] = useState('');
+    const [alertaCupo, setAlertaCupo] = useState(false);
+
+    // Cargar entidades y situación al abrir el formulario
+    useEffect(() => {
+        if (mostrarFormulario) {
+            const fetchData = async () => {
+                try {
+                    const [entidadesRes, situacionRes] = await Promise.all([
+                        api.get('/entidades?activas_solo=true'),
+                        api.get('/mapa/situacion')
+                    ]);
+                    setEntidadesActivas(entidadesRes.data || []);
+                    
+                    // Mapear situación de zonas
+                    const mapaZonas = {};
+                    if (situacionRes.data?.zonas) {
+                        situacionRes.data.zonas.forEach(z => {
+                            mapaZonas[z.id] = { ocupacion: z.ocupacion, capacidad: z.capacidad };
+                        });
+                    }
+                    setSituacionZonas(mapaZonas);
+                } catch (error) {
+                    console.error("Error cargando entidades/situación:", error);
+                }
+            };
+            fetchData();
+        }
+    }, [mostrarFormulario]);
+
+    // Verificar cupo cuando se selecciona una entidad
+    useEffect(() => {
+        if (selectedEntidad && entidadesActivas.length > 0) {
+            const entidad = entidadesActivas.find(e => e.id === selectedEntidad);
+            if (entidad && entidad.zona_id && situacionZonas[entidad.zona_id]) {
+                const z = situacionZonas[entidad.zona_id];
+                setAlertaCupo(z.ocupacion >= z.capacidad);
+            } else {
+                setAlertaCupo(false);
+            }
+        } else {
+            setAlertaCupo(false);
+        }
+    }, [selectedEntidad, entidadesActivas, situacionZonas]);
 
     const [iaLoading, setIaLoading] = useState(null);
     const [modoEscaneoIA, setModoEscaneoIA] = useState(null);
@@ -371,7 +420,7 @@ const ScannerAlcabala = () => {
                 vehiculo_id: vehiculoSeleccionadoId || resultado.vehiculo_id,
                 tipo: tipoAcceso,
                 punto_acceso: operador?.punto?.nombre || 'Alcabala Principal',
-                es_manual: !!(nombreManual || cedulaManual || placaManual || observaciones),
+                es_manual: !!(nombreManual || cedulaManual || placaManual || observaciones || selectedEntidad),
                 nombre_manual: nombreManual || null,
                 cedula_manual: cedulaManual || null,
                 telefono_manual: telefonoManual ? `+58${telefonoManual}` : null,
@@ -380,7 +429,8 @@ const ScannerAlcabala = () => {
                 vehiculo_modelo: modeloManual || null,
                 vehiculo_color: colorManual || null,
                 observaciones: observaciones || null,
-                es_excepcion: esExcepcion
+                es_excepcion: esExcepcion,
+                entidad_id: selectedEntidad || null
             });
             toast.success(`Acceso ${tipoAcceso} confirmado`, { position: 'bottom-center' });
             reiniciar();
@@ -436,6 +486,8 @@ const ScannerAlcabala = () => {
         setVehiculoSeleccionadoId(null);
         setNombreManual(''); setCedulaManual(''); setTelefonoManual('');
         setPlacaManual(''); setMarcaManual(''); setModeloManual(''); setColorManual('');
+        setSelectedEntidad('');
+        setAlertaCupo(false);
     };
 
     /* ── Colores de fondo según resultado y modo ── */
@@ -521,14 +573,14 @@ const ScannerAlcabala = () => {
                                         value={placaBusqueda}
                                         onChange={(e) => setPlacaBusqueda(e.target.value.toUpperCase())}
                                         onKeyDown={(e) => e.key === 'Enter' && handleBuscarPlaca()}
-                                        placeholder="BUSCAR VEHÍCULO..."
-                                        maxLength={8}
-                                        className="flex-1 bg-transparent px-3 py-3.5 text-xl font-black text-text-main uppercase tracking-[0.2em] outline-none placeholder:text-text-muted/20 placeholder:normal-case placeholder:font-normal placeholder:tracking-normal placeholder:text-xs"
+                                        placeholder="BUSCAR VEHÍCULO O CEDULA..."
+                                        className="w-full bg-transparent border-none outline-none font-black text-sm text-text-main uppercase placeholder:text-text-muted/40 h-14 pl-2"
+                                        autoComplete="off"
                                     />
                                     <button
                                         onClick={handleBuscarPlaca}
                                         disabled={cargando || !placaBusqueda.trim()}
-                                        className="px-5 py-4 bg-primary text-white hover:bg-primary-dark transition-all disabled:opacity-30 disabled:grayscale flex items-center justify-center shrink-0"
+                                        className="px-5 py-4 bg-primary text-white hover:bg-primary-dark transition-all disabled:opacity-30 disabled:grayscale flex items-center justify-center shrink-0 w-16"
                                     >
                                         {cargando ? <RefreshCw size={22} className="animate-spin" /> : <ArrowRight size={22} />}
                                     </button>
@@ -810,6 +862,35 @@ const ScannerAlcabala = () => {
                                     </button>
                                 </div>
 
+                                {/* Selección de Entidad */}
+                                <div className="space-y-2">
+                                    <span className="text-[8px] font-black text-text-muted uppercase tracking-widest flex items-center gap-1">
+                                        <Building2 size={10} /> Entidad de Destino
+                                    </span>
+                                    <div className="relative">
+                                        <select
+                                            value={selectedEntidad}
+                                            onChange={(e) => setSelectedEntidad(e.target.value)}
+                                            className="w-full bg-bg-low border border-bg-high rounded-xl px-3 py-3 text-xs font-bold text-text-main focus:border-primary/60 outline-none uppercase transition-all appearance-none cursor-pointer"
+                                        >
+                                            <option value="">Seleccione Entidad Autorizada</option>
+                                            {entidadesActivas.map((ent) => (
+                                                <option key={ent.id} value={ent.id}>
+                                                    {ent.nombre} {ent.zona_id && situacionZonas[ent.zona_id] ? `(${situacionZonas[ent.zona_id].ocupacion}/${situacionZonas[ent.zona_id].capacidad})` : ''}
+                                                </option>
+                                            ))}
+                                        </select>
+                                    </div>
+                                    {alertaCupo && (
+                                        <div className="flex items-start gap-2 bg-danger/10 text-danger border border-danger/20 p-2.5 rounded-lg mt-1">
+                                            <AlertTriangle size={14} className="shrink-0 mt-0.5" />
+                                            <p className="text-[9px] font-bold uppercase tracking-wide leading-tight">
+                                                Zona de estacionamiento asignada en su capacidad máxima. Se requiere confirmación excepcional para autorizar acceso.
+                                            </p>
+                                        </div>
+                                    )}
+                                </div>
+
                                 {/* Datos del ciudadano */}
                                 <div className="space-y-2">
                                     <div className="flex items-center justify-between">
@@ -917,7 +998,8 @@ const ScannerAlcabala = () => {
                                 <div className="pt-1 flex flex-col gap-2">
                                     <Boton
                                         onClick={handleGuardarDatosLocales}
-                                        className="h-14 rounded-xl w-full gap-2"
+                                        disabled={!selectedEntidad || !nombreManual || !placaManual}
+                                        className="h-14 rounded-xl w-full gap-2 disabled:opacity-40 disabled:grayscale"
                                         style={{ background: 'var(--primary)', color: 'var(--on-primary)' }}
                                     >
                                         <CheckCircle2 size={18} />

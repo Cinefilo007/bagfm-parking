@@ -220,4 +220,50 @@ class NotificacionService:
                 else:
                     logging.error(f"Error enviando push de vehiculo perdido: {error_msg}")
 
+    async def notificar_acceso_entidad(self, db: AsyncSession, entidad_id: UUID, acceso):
+        """
+        Notifica a los administradores y supervisores de una entidad sobre un nuevo acceso manual registrado.
+        """
+        query_destinatarios = select(Usuario).where(
+            Usuario.activo == True,
+            Usuario.entidad_id == entidad_id,
+            Usuario.rol.in_([RolTipo.ADMIN_ENTIDAD, RolTipo.SUPERVISOR_PARQUEROS])
+        )
+        
+        result = await db.execute(query_destinatarios)
+        usuarios = result.scalars().all()
+        ids_usuarios = [u.id for u in usuarios]
+        
+        if not ids_usuarios: return
+
+        query_subs = select(PushSubscription).where(
+            PushSubscription.usuario_id.in_(ids_usuarios),
+            PushSubscription.activo == True
+        )
+        result_subs = await db.execute(query_subs)
+        suscripciones = result_subs.scalars().all()
+
+        if not suscripciones: return
+
+        payload = {
+            "title": "✅ Nuevo Acceso Autorizado",
+            "body": f"Vehículo {acceso.vehiculo_placa or 'S/P'} - Conductor: {acceso.nombre_manual or 'N/A'}",
+            "data": {
+                "url": "/entidad/dashboard",
+                "tipo": "acceso_autorizado"
+            },
+            "icon": "/icons/icon-192x192.png"
+        }
+
+        for sub in suscripciones:
+            try:
+                sub_info = {"endpoint": sub.endpoint, "keys": {"p256dh": sub.p256dh, "auth": sub.auth}}
+                webpush_service.send_notification(sub_info, payload)
+            except Exception as e:
+                error_msg = str(e)
+                if "410 Gone" in error_msg or "404 Not Found" in error_msg:
+                    sub.activo = False
+                else:
+                    logging.error(f"Error enviando push de acceso a entidad: {error_msg}")
+
 notificacion_service = NotificacionService()

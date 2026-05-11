@@ -434,18 +434,16 @@ class AccesoService:
                 final_vehiculo_id = None
 
         # 1. Registro Ligero de Usuario/Vehículo si se proveen datos manuales
-        if datos.cedula_manual:
-            # Buscar si es un pase masivo para evitar crear un Usuario permanente
+        if datos.es_manual:
+            # Buscar si es un pase masivo o crear uno temporal
             qr_db = None
             if datos.qr_id:
                 qr_db = await db.get(CodigoQR, datos.qr_id)
             
-            es_pase_masivo = False
             if qr_db and qr_db.tipo in [QRTipo.evento_simple, QRTipo.evento_identificado, QRTipo.temporal]:
-                es_pase_masivo = True
                 # Actualizar datos en el QR directamente (Bitácora rápida)
                 if datos.nombre_manual: qr_db.nombre_portador = datos.nombre_manual.upper()
-                qr_db.cedula_portador = datos.cedula_manual
+                if datos.cedula_manual: qr_db.cedula_portador = datos.cedula_manual
                 if datos.telefono_manual: qr_db.telefono_portador = datos.telefono_manual
                 
                 # Vehículo en el QR (si no es multi-vehículo, guardamos los datos base)
@@ -474,47 +472,26 @@ class AccesoService:
                 qr_db.datos_completos = True
                 await db.flush()
 
-            if not es_pase_masivo:
-                # Lógica original para usuarios permanentes
-                q_u = select(Usuario).where(Usuario.cedula == datos.cedula_manual)
-                res_u = await db.execute(q_u)
-                usuario_existente = res_u.scalar_one_or_none()
-
-                if not usuario_existente:
-                    usuario_existente = Usuario(
-                        cedula=datos.cedula_manual,
-                        nombre=datos.nombre_manual or "VISITANTE",
-                        apellido="TEMPORAL",
-                        telefono=datos.telefono_manual,
-                        rol=RolTipo.SOCIO,
-                        password_hash="MANUAL_REG",
-                        activo=True
-                    )
-                    db.add(usuario_existente)
-                    await db.flush()
-                elif datos.telefono_manual:
-                    usuario_existente.telefono = datos.telefono_manual
+            elif not qr_db:
+                # Creación de pase temporal para registro manual/excepcional (sin ensuciar usuarios)
+                import secrets
+                nuevo_token = f"TEMP-{secrets.token_hex(8)}"
                 
-                final_usuario_id = usuario_existente.id
-
-                # Vehículo permanente si aplica
-                if datos.vehiculo_placa:
-                    q_v = select(Vehiculo).where(Vehiculo.placa == datos.vehiculo_placa.upper())
-                    res_v = await db.execute(q_v)
-                    v_existente = res_v.scalar_one_or_none()
-
-                    if not v_existente:
-                        v_existente = Vehiculo(
-                            placa=datos.vehiculo_placa.upper(),
-                            marca=datos.vehiculo_marca or "GENÉRICO",
-                            modelo=datos.vehiculo_modelo or "GENÉRICO",
-                            color=datos.vehiculo_color or "SIN COLOR",
-                            socio_id=final_usuario_id,
-                            activo=True
-                        )
-                        db.add(v_existente)
-                        await db.flush()
-                    final_vehiculo_id = v_existente.id
+                qr_db = CodigoQR(
+                    tipo=QRTipo.temporal,
+                    token=nuevo_token,
+                    nombre_portador=datos.nombre_manual.upper() if datos.nombre_manual else "VISITANTE",
+                    cedula_portador=datos.cedula_manual,
+                    telefono_portador=datos.telefono_manual,
+                    vehiculo_placa=datos.vehiculo_placa.upper() if datos.vehiculo_placa else None,
+                    vehiculo_marca=datos.vehiculo_marca.upper() if datos.vehiculo_marca else "GENÉRICO",
+                    vehiculo_modelo=datos.vehiculo_modelo.upper() if datos.vehiculo_modelo else "GENÉRICO",
+                    vehiculo_color=datos.vehiculo_color.upper() if datos.vehiculo_color else "SIN COLOR",
+                    datos_completos=True
+                )
+                db.add(qr_db)
+                await db.flush()
+                datos.qr_id = qr_db.id  # Asignamos el qr_id generado al DTO para el registro del Acceso
 
         # 2. Si todavía no tenemos usuario_id, el registro de acceso quedará sin usuario asociado
         # logueando la entrada exclusivamente por el medio temporal (qr_id).
@@ -561,7 +538,15 @@ class AccesoService:
         # 3. Resolver zona de destino para persistir en el registro de acceso
         # Para pases masivos: desde QR o lote. Para socios permanentes: desde membresía o entidad.
         zona_id_acceso = None
-        if datos.qr_id:
+        
+        # Prioridad 1: Si hay entidad explícita provista por Alcabala
+        if datos.entidad_id:
+            entidad_db = await db.get(EntidadCivil, datos.entidad_id)
+            if entidad_db and entidad_db.zona_id:
+                zona_id_acceso = entidad_db.zona_id
+                
+        # Prioridad 2: Buscar zona en el QR
+        if not zona_id_acceso and datos.qr_id:
             qr_para_zona = await db.get(CodigoQR, datos.qr_id)
             if qr_para_zona:
                 zona_id_acceso = qr_para_zona.zona_asignada_id
@@ -577,7 +562,7 @@ class AccesoService:
                     if lote_para_zona:
                         zona_id_acceso = lote_para_zona.zona_estacionamiento_id
 
-        # Si aún no tenemos zona y tenemos usuario (socio permanente), buscar en membresía/entidad
+        # Prioridad 3: Buscar en membresía/entidad del socio permanente
         if not zona_id_acceso and final_usuario_id:
             res_mem_zona = await db.execute(
                 select(Membresia)
@@ -647,9 +632,16 @@ class AccesoService:
         if datos.es_excepcion:
             try:
                 # Esta alerta va para supervisores y administradores
-                await notificacion_service.notificar_excepcion_alcabala(nuevo_acceso)
+                await notificacion_service.notificar_excepcion_alcabala(db, nuevo_acceso)
             except Exception as e:
                 print(f"[TACTICAL] Error notificar excepción: {e}")
+                
+        # 5.1.5 Notificación específica de Autorización a Entidad
+        if datos.es_manual and datos.entidad_id:
+            try:
+                await notificacion_service.notificar_acceso_entidad(db, datos.entidad_id, nuevo_acceso)
+            except Exception as e:
+                print(f"[TACTICAL] Error notificar a entidad: {e}")
 
         # 5.2 Notificaciones de flujo normal
         if datos.qr_id and datos.tipo == AccesoTipo.entrada:
