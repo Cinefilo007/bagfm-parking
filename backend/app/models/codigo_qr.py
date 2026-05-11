@@ -67,6 +67,7 @@ class CodigoQR(Base):
 
     # Relaciones
     usuario = relationship("Usuario", foreign_keys=[usuario_id], lazy="selectin")
+    vehiculo = relationship("Vehiculo", foreign_keys=[vehiculo_id], lazy="selectin")
     zona_asignada = relationship("ZonaEstacionamiento", foreign_keys=[zona_asignada_id], lazy="selectin")
     puesto_asignado = relationship("PuestoEstacionamiento", foreign_keys=[puesto_asignado_id], lazy="selectin")
     tipo_acceso_custom = relationship("TipoAccesoCustom", foreign_keys=[tipo_acceso_custom_id], lazy="selectin")

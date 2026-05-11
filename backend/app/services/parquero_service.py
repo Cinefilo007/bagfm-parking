@@ -137,7 +137,8 @@ class ParqueroService:
             select(VehiculoPase)
             .options(
                 joinedload(VehiculoPase.puesto_asignado),
-                selectinload(VehiculoPase.codigo_qr).selectinload(CodigoQR.usuario)
+                selectinload(VehiculoPase.codigo_qr).selectinload(CodigoQR.usuario),
+                selectinload(VehiculoPase.codigo_qr).selectinload(CodigoQR.vehiculo)
             )
             .where(
                 VehiculoPase.zona_asignada_id == zona_id,
@@ -162,7 +163,20 @@ class ParqueroService:
             
             portador = "DESCONOCIDO"
             telefono = None
+            marca = v.marca
+            modelo = v.modelo
+            color = v.color
+            
             if v.codigo_qr:
+                if not marca: marca = v.codigo_qr.vehiculo_marca
+                if not modelo: modelo = v.codigo_qr.vehiculo_modelo
+                if not color: color = v.codigo_qr.vehiculo_color
+                
+                if hasattr(v.codigo_qr, 'vehiculo') and v.codigo_qr.vehiculo:
+                    if not marca: marca = v.codigo_qr.vehiculo.marca
+                    if not modelo: modelo = v.codigo_qr.vehiculo.modelo
+                    if not color: color = v.codigo_qr.vehiculo.color
+                    
                 if v.codigo_qr.nombre_portador:
                     portador = v.codigo_qr.nombre_portador
                     telefono = v.codigo_qr.telefono_portador
@@ -173,9 +187,9 @@ class ParqueroService:
             resultado.append({
                 "id": str(v.id),
                 "placa": v.placa,
-                "marca": v.marca,
-                "modelo": v.modelo,
-                "color": v.color,
+                "marca": marca,
+                "modelo": modelo,
+                "color": color,
                 "tipo_pase": info_v["nombre"],
                 "tipo_pase_color": info_v["color"],
                 "nombre_portador": portador,
@@ -220,7 +234,10 @@ class ParqueroService:
 
         # ── 2. VehiculoPase inactivo para esta zona (tiene pase pero no ha llegado) ──
         res_vp2 = await db.execute(
-            select(VehiculoPase).options(selectinload(VehiculoPase.codigo_qr).selectinload(CodigoQR.usuario)).where(
+            select(VehiculoPase).options(
+                selectinload(VehiculoPase.codigo_qr).selectinload(CodigoQR.usuario),
+                selectinload(VehiculoPase.codigo_qr).selectinload(CodigoQR.vehiculo)
+            ).where(
                 VehiculoPase.placa == placa_norm,
                 VehiculoPase.zona_asignada_id == zona_id,
                 VehiculoPase.ingresado == False
@@ -242,7 +259,20 @@ class ParqueroService:
             
             portador = "DESCONOCIDO"
             telefono = None
+            marca = vehiculo_pase.marca
+            modelo = vehiculo_pase.modelo
+            color = vehiculo_pase.color
+            
             if vehiculo_pase.codigo_qr:
+                if not marca: marca = vehiculo_pase.codigo_qr.vehiculo_marca
+                if not modelo: modelo = vehiculo_pase.codigo_qr.vehiculo_modelo
+                if not color: color = vehiculo_pase.codigo_qr.vehiculo_color
+                
+                if hasattr(vehiculo_pase.codigo_qr, 'vehiculo') and vehiculo_pase.codigo_qr.vehiculo:
+                    if not marca: marca = vehiculo_pase.codigo_qr.vehiculo.marca
+                    if not modelo: modelo = vehiculo_pase.codigo_qr.vehiculo.modelo
+                    if not color: color = vehiculo_pase.codigo_qr.vehiculo.color
+
                 if vehiculo_pase.codigo_qr.nombre_portador:
                     portador = vehiculo_pase.codigo_qr.nombre_portador
                     telefono = vehiculo_pase.codigo_qr.telefono_portador
@@ -254,9 +284,9 @@ class ParqueroService:
                 "sin_datos": False,
                 "vehiculo_pase_id": str(vehiculo_pase.id),
                 "placa": vehiculo_pase.placa,
-                "marca": vehiculo_pase.marca,
-                "modelo": vehiculo_pase.modelo,
-                "color": vehiculo_pase.color,
+                "marca": marca,
+                "modelo": modelo,
+                "color": color,
                 "tipo_pase": info_pase["nombre"],
                 "tipo_pase_color": info_pase["color"],
                 "nombre_portador": portador,
@@ -791,7 +821,7 @@ class ParqueroService:
         Utiliza el token directamente para garantizar compatibilidad con IDs no-UUID (Base pases).
         """
         # Buscar el QR por su token JWT (es único e indexado)
-        resultado = await db.execute(select(CodigoQR).options(selectinload(CodigoQR.usuario)).filter(CodigoQR.token == qr_token))
+        resultado = await db.execute(select(CodigoQR).options(selectinload(CodigoQR.usuario), selectinload(CodigoQR.vehiculo)).filter(CodigoQR.token == qr_token))
         qr = resultado.scalars().first()
         
         # Si no se encuentra por token, intentamos buscar por ID directo (caso UUID puro legado)
@@ -799,7 +829,7 @@ class ParqueroService:
             try:
                 # Verificar si qr_token es un UUID válido antes de consultar
                 UUID(qr_token)
-                resultado = await db.execute(select(CodigoQR).options(selectinload(CodigoQR.usuario)).filter(CodigoQR.id == qr_token))
+                resultado = await db.execute(select(CodigoQR).options(selectinload(CodigoQR.usuario), selectinload(CodigoQR.vehiculo)).filter(CodigoQR.id == qr_token))
                 qr = resultado.scalars().first()
             except ValueError:
                 pass
@@ -814,6 +844,15 @@ class ParqueroService:
             nombre_zona = zona_qr.nombre if zona_qr else "otra zona"
             raise ValueError(f"Pase Inválido. Este pase pertenece a la zona '{nombre_zona}'. Indique al conductor que debe dirigirse a esa zona.")
 
+        marca = qr.vehiculo_marca
+        modelo = qr.vehiculo_modelo
+        color = qr.vehiculo_color
+        
+        if hasattr(qr, 'vehiculo') and qr.vehiculo:
+            if not marca: marca = qr.vehiculo.marca
+            if not modelo: modelo = qr.vehiculo.modelo
+            if not color: color = qr.vehiculo.color
+
         resultado_vp = await db.execute(select(VehiculoPase).filter(VehiculoPase.qr_id == qr.id))
         vehiculo_pase = resultado_vp.scalars().first()
 
@@ -821,9 +860,9 @@ class ParqueroService:
             vehiculo_pase = VehiculoPase(
                 qr_id=qr.id,
                 placa=qr.vehiculo_placa or "DESCONOCIDO",
-                marca=qr.vehiculo_marca,
-                modelo=qr.vehiculo_modelo,
-                color=qr.vehiculo_color,
+                marca=marca,
+                modelo=modelo,
+                color=color,
                 zona_asignada_id=zona_id,
                 ingresado=True,
                 hora_ingreso=datetime.now(timezone.utc)
@@ -850,9 +889,9 @@ class ParqueroService:
                 "vehiculo_pase_id": str(vehiculo_pase.id),
                 "qr_id": str(qr.id),
                 "placa": qr.vehiculo_placa or "",
-                "marca": qr.vehiculo_marca,
-                "modelo": qr.vehiculo_modelo,
-                "color": qr.vehiculo_color,
+                "marca": marca,
+                "modelo": modelo,
+                "color": color,
                 "tipo_pase": info_pase["nombre"],
                 "tipo_pase_color": info_pase["color"],
                 "nombre_portador": portador,
@@ -881,9 +920,9 @@ class ParqueroService:
             "sin_datos": False,
             "vehiculo_pase_id": str(vehiculo_pase.id),
             "placa": vehiculo_pase.placa,
-            "marca": vehiculo_pase.marca,
-            "modelo": vehiculo_pase.modelo,
-            "color": vehiculo_pase.color,
+            "marca": marca,
+            "modelo": modelo,
+            "color": color,
             "tipo_pase": info_pase["nombre"],
             "tipo_pase_color": info_pase["color"],
             "nombre_portador": portador,
