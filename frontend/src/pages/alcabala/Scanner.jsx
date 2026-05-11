@@ -918,7 +918,8 @@ const ScannerAlcabala = () => {
                                                 </div>
                                             </div>
                                         );
-                                    })()}}
+                                    })()} 
+
                                 </div>
 
                                 {/* Datos del ciudadano */}
