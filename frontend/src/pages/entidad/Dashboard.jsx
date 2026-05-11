@@ -326,11 +326,16 @@ export default function DashboardEntidad() {
                           </span>
                         )}
                       </div>
-                      <div className="flex items-center justify-between">
-                        <span className="text-[10px] text-text-muted truncate max-w-[180px]">
-                          {ev.portador !== 'DESCONOCIDO' ? ev.portador : ev.punto_acceso}
-                        </span>
-                        <div className="flex items-center gap-1 text-[9px] font-mono text-text-muted shrink-0">
+                      <div className="flex items-start justify-between">
+                        <div className="flex flex-col">
+                          <span className="text-[10px] text-text-muted truncate max-w-[180px] font-medium leading-tight">
+                            {ev.portador !== 'DESCONOCIDO' ? ev.portador : 'Vehículo no registrado'}
+                          </span>
+                          <span className="text-[8.5px] font-mono text-text-muted/70 truncate max-w-[180px] mt-0.5 leading-tight uppercase">
+                            {ev.punto_acceso}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-1 text-[9px] font-mono text-text-muted shrink-0 pt-0.5">
                           <Clock size={9} />
                           {ev.timestamp
                             ? formatTimeAgo(ev.timestamp)

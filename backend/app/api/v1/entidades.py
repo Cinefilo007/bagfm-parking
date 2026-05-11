@@ -230,6 +230,8 @@ async def dashboard_entidad(
             "parqueros": parqueros_zona,
         })
 
+    dict_zonas = {z["zona_id"]: z["zona_nombre"] for z in zonas_resumen}
+
     libres_total = max(0, capacidad_total - vehiculos_activos)
 
     # ── 3. Socios de la entidad ──
@@ -317,7 +319,7 @@ async def dashboard_entidad(
                 "marca": vp.marca,
                 "modelo": vp.modelo,
                 "portador": portador or "DESCONOCIDO",
-                "punto_acceso": "ZONA ESTACIONAMIENTO",
+                "punto_acceso": dict_zonas.get(str(vp.zona_asignada_id), "ZONA ESTACIONAMIENTO"),
                 "es_manual": False,
                 "zona_id": str(vp.zona_asignada_id) if vp.zona_asignada_id else None,
             })
@@ -332,7 +334,7 @@ async def dashboard_entidad(
                     "marca": vp.marca,
                     "modelo": vp.modelo,
                     "portador": portador or "DESCONOCIDO",
-                    "punto_acceso": "ZONA ESTACIONAMIENTO",
+                    "punto_acceso": dict_zonas.get(str(vp.zona_asignada_id), "ZONA ESTACIONAMIENTO"),
                     "es_manual": False,
                     "zona_id": str(vp.zona_asignada_id) if vp.zona_asignada_id else None,
                 })
