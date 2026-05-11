@@ -1,15 +1,15 @@
 @import "tailwindcss";
 
 :root {
-  --bg-app: #F1F5F9;   /* Slate 100 - Base más oscura */
-  --bg-low: #E2E8F0;   /* Slate 200 */
-  --bg-card: #FFFFFF;  /* Blanco para resaltar sobre bg-app */
-  --bg-high: #CBD5E1;  /* Slate 300 */
+  --bg-app: #E2E8F0;   /* Slate 200 - Base más oscura para destacar las tarjetas blancas */
+  --bg-low: #CBD5E1;   /* Slate 300 */
+  --bg-card: #FFFFFF;  /* Blanco para tarjetas */
+  --bg-high: #94A3B8;  /* Slate 400 - Para bordes más marcados */
   --bg-modal: #FFFFFF;
   --primary: #10B981;
   --primary-dark: #059669;
   --on-primary: #FFFFFF;
-  --text-main: #020617;   /* Slate 950 - Mucho más oscuro */
+  --text-main: #020617;   /* Slate 950 */
   --text-sec: #1E293B;    /* Slate 800 */
   --text-muted: #475569;  /* Slate 600 */
   --success: #059669;     /* Esmeralda 600 - Mejor contraste clara */

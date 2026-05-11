@@ -13,7 +13,7 @@ export const Card = ({ children, className, elevation = 2, hoverable = false, ..
   return (
     <div
       className={cn(
-        "rounded-xl p-4 transition-all duration-200 border border-bg-high/20 shadow-tactica",
+        "rounded-xl p-4 transition-all duration-200 border border-text-main/10 dark:border-bg-high/20 shadow-tactica shadow-text-main/5 dark:shadow-tactica",
         elevaciones[elevation] || elevaciones[2],
         hoverable && "cursor-pointer hover:bg-bg-high/40",
         className
