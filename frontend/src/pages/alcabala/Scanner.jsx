@@ -443,10 +443,12 @@ const ScannerAlcabala = () => {
 
     /* ── Guardar datos localmente (Sin enviar a API) ── */
     const handleGuardarDatosLocales = () => {
-        // Actualizar preview visual con los datos capturados
         setResultado(prev => ({
             ...prev,
-            socio: prev.socio ? {
+            permitido: true, // Forzar a true porque el guardia está autorizando la excepción manualmente
+            tipo_alerta: 'warning', // Cambiar el color de fondo a advertencia en vez de error
+            entidad_nombre: entidadesActivas.find(e => e.id === selectedEntidad)?.nombre || null,
+            socio: prev?.socio ? {
                 ...prev.socio,
                 nombre: nombreManual || prev.socio.nombre,
                 cedula: cedulaManual || prev.socio.cedula,
@@ -456,7 +458,7 @@ const ScannerAlcabala = () => {
                 cedula: cedulaManual,
                 telefono: telefonoManual ? `+58${telefonoManual}` : null
             } : null),
-            vehiculo: prev.vehiculo ? {
+            vehiculo: prev?.vehiculo ? {
                 ...prev.vehiculo,
                 placa: placaManual || prev.vehiculo.placa,
                 marca: marcaManual || prev.vehiculo.marca,
@@ -819,7 +821,7 @@ const ScannerAlcabala = () => {
                                     }}
                                 >
                                     <ShieldAlert size={18} />
-                                    Registro Excepcional (Fantasma)
+                                    AUTORIZAR ACCESO
                                 </Boton>
 
                                 <button
