@@ -1,307 +1,522 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Header } from '../../components/layout/Header';
-import { Card, CardContent } from '../../components/ui/Card';
+import { Card } from '../../components/ui/Card';
 import { useAuthStore } from '../../store/auth.store';
-import { 
-  Users as UsersIcon, CarFront, AlertCircle, ShieldCheck, 
-  ChevronRight, CalendarRange, UserCog, 
-  TrendingUp, Activity, Bell, ParkingSquare,
-  QrCode, Clock, MapPin, Search, CheckCircle2, XCircle
+import {
+  CarFront, Users, MapPin, AlertTriangle,
+  TrendingUp, Activity, UserCog, Clock,
+  LogIn, LogOut, Navigation, RefreshCw,
+  ChevronRight, Phone, Gauge, CheckCircle2,
+  XCircle, Wifi, WifiOff
 } from 'lucide-react';
-import { NavLink } from 'react-router-dom';
 import { cn } from '../../lib/utils';
 import api from '../../services/api';
 
-export default function DashboardEntidad() {
-  const { user } = useAuthStore();
-  const [stats, setStats] = useState({
-    totalSocios: 0,
-    vehiculosActivos: 0,
-    solicitudesPendientes: 0,
-    parking: { asignados: 0, ocupados: 0, libres: 0 },
-    qrs: { activos: 0, expirados: 0, revocado: 0 },
-    parqueros: []
-  });
-  const [eventosRecientes, setEventosRecientes] = useState([]);
-  const [loading, setLoading] = useState(true);
+// ── Íconos de evento en el historial ──
+const IconoEvento = ({ tipo, tipo_evento }) => {
+  if (tipo_evento === 'ingreso_zona' || (tipo === 'entrada' && tipo_evento === 'ingreso_zona')) {
+    return <CheckCircle2 size={14} className="text-primary" />;
+  }
+  if (tipo_evento === 'salida_zona' || (tipo === 'salida' && tipo_evento === 'salida_zona')) {
+    return <XCircle size={14} className="text-secondary" />;
+  }
+  if (tipo === 'entrada') {
+    return <LogIn size={14} className="text-primary" />;
+  }
+  if (tipo === 'salida') {
+    return <LogOut size={14} className="text-warning" />;
+  }
+  return <Activity size={14} className="text-text-muted" />;
+};
 
-  useEffect(() => {
-    const fetchDashboardData = async () => {
-      if (!user?.entidad_id) return;
-      try {
-        const fetchSafe = async (url, fallback = []) => {
-          try {
-            const res = await api.get(url);
-            return res.data;
-          } catch (e) {
-            console.warn(`Error en endpoint ${url}:`, e.response?.status);
-            return fallback;
-          }
-        };
+// ── Etiqueta de tipo de evento ──
+const EtiquetaEvento = ({ tipo, tipo_evento }) => {
+  const config = {
+    alcabala_entrada: { label: 'ALCABALA', color: 'text-primary border-primary/20 bg-primary/5' },
+    alcabala_salida: { label: 'EGRESO', color: 'text-warning border-warning/20 bg-warning/5' },
+    ingreso_zona: { label: 'ZONA ↓', color: 'text-success border-success/20 bg-success/5' },
+    salida_zona: { label: 'ZONA ↑', color: 'text-secondary border-secondary/20 bg-secondary/5' },
+  };
 
-        const [socios, solicitudes, zonas, lotes, statsGlobal, personal] = await Promise.all([
-          fetchSafe(`/socios/entidad/${user.entidad_id}`),
-          fetchSafe(`/eventos/solicitudes?entidad_id=${user.entidad_id}`),
-          fetchSafe('/zonas'), 
-          fetchSafe('/pases/lotes'),
-          fetchSafe('/eventos/stats', {}),
-          fetchSafe('/personal/lista?rol=PARQUERO')
-        ]);
+  const key = tipo_evento === 'alcabala'
+    ? `alcabala_${tipo}`
+    : tipo_evento;
 
-        // Lógica de suma consolidada de puestos
-        let totalAsignados = 0;
-        let totalOcupados = 0;
-
-        if (Array.isArray(zonas)) {
-           zonas.forEach(z => {
-              totalAsignados += z.cupos_totales || z.cupo_asignado || 0;
-              totalOcupados += z.cupos_ocupados || z.cupo_ocupado || 0;
-           });
-        }
-
-        const totalLibres = Math.max(0, totalAsignados - totalOcupados);
-
-        // Stats de QRs
-        const qrStats = Array.isArray(lotes) ? lotes.reduce((acc, lote) => {
-           acc.activos += lote.cantidad_pases || 0;
-           return acc;
-        }, { activos: 0, expirados: 8, revocado: 1 }) : { activos: 0, expirados: 0, revocado: 0 };
-
-        setStats({
-          totalSocios: socios.length,
-          vehiculosActivos: socios.filter(s => s.vehiculos?.length > 0).length,
-          solicitudesPendientes: solicitudes.filter(e => e.estado === 'PENDIENTE').length,
-          parking: { 
-             asignados: totalAsignados, 
-             ocupados: totalOcupados, 
-             libres: totalLibres 
-          },
-          qrs: qrStats,
-          parqueros: personal.map(p => ({
-             id: p.id,
-             nombre: `${p.nombre} ${p.apellido}`,
-             registros: p.ops_completadas || 0,
-             zona: p.zona_asignada || 'STANDBY'
-          }))
-        });
-
-        // Eventos reales
-        if (solicitudes.length > 0) {
-           setEventosRecientes(solicitudes.slice(0, 10).map((s, i) => ({
-              id: i,
-              tipo: 'EVENTO',
-              hora: s.fecha_solicitud ? new Date(s.fecha_solicitud).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '--:--',
-              detalle: `${s.nombre_evento} // ${s.estado}`
-           })));
-        } else {
-           // Fallback demo si no hay solicitudes
-           setEventosRecientes([
-              { id: 1, tipo: 'LOG', hora: 'SISTEMA', detalle: 'PANEL TÁCTICO SINCRONIZADO' },
-              { id: 2, tipo: 'LOG', hora: 'SISTEMA', detalle: 'ESPERANDO ACTIVIDADES...' }
-           ]);
-        }
-
-      } catch (err) {
-        console.error("Error crítico en dashboard de entidad:", err);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchDashboardData();
-  }, [user]);
-
-  const entidadNombre = user?.entidad_nombre || 'PANEL DE ENTIDAD';
+  const cfg = config[key] || { label: tipo.toUpperCase(), color: 'text-text-muted border-white/10 bg-white/5' };
 
   return (
-    <div className="min-h-screen bg-bg-app animate-in fade-in duration-500 p-4 md:p-6 space-y-6 pb-24 max-w-[1400px] mx-auto">
-      
-      {/* Cabecera Técnica Standard (Sección 4.2) */}
-      <header className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-bg-card/30 p-4 md:p-5 rounded-2xl border border-white/5">
-        <div className="min-w-0">
-          <h1 className="text-2xl font-black text-text-main flex items-center gap-3 tracking-tight">
-            <div className="p-2 bg-primary/10 rounded-xl shrink-0">
-              <ParkingSquare className="text-primary" size={24} />
-            </div>
-            <span className="uppercase">{entidadNombre}</span>
-          </h1>
-          <p className="text-text-muted text-sm mt-1 flex items-center gap-1.5 px-1 font-bold">
-            <span className="w-1.5 h-1.5 rounded-full bg-success animate-pulse shrink-0" />
-            Terminal de Gestión Administrativa Aegis v2
-          </p>
+    <span className={cn(
+      "text-[8px] font-black tracking-widest px-2 py-0.5 rounded-full border uppercase",
+      cfg.color
+    )}>
+      {cfg.label}
+    </span>
+  );
+};
+
+// ── Barra de ocupación ──
+const BarraOcupacion = ({ pct }) => {
+  const color = pct > 85 ? 'bg-danger' : pct > 60 ? 'bg-warning' : 'bg-primary';
+  return (
+    <div className="h-1.5 w-full bg-black/30 rounded-full overflow-hidden">
+      <div
+        className={cn("h-full rounded-full transition-all duration-1000", color)}
+        style={{ width: `${Math.min(100, pct)}%` }}
+      />
+    </div>
+  );
+};
+
+export default function DashboardEntidad() {
+  const { user } = useAuthStore();
+  const [data, setData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [syncing, setSyncing] = useState(false);
+  const [error, setError] = useState(null);
+  const [lastSync, setLastSync] = useState(null);
+
+  const cargarDashboard = useCallback(async (mostrarSyncing = false) => {
+    if (!user?.entidad_id) return;
+    if (mostrarSyncing) setSyncing(true);
+    try {
+      const res = await api.get('/entidades/me/dashboard');
+      setData(res.data);
+      setError(null);
+      setLastSync(new Date());
+    } catch (e) {
+      console.error('[Dashboard Entidad] Error:', e);
+      setError(e.response?.data?.detail || 'Error al cargar datos del dashboard');
+    } finally {
+      setLoading(false);
+      setSyncing(false);
+    }
+  }, [user]);
+
+  useEffect(() => {
+    cargarDashboard();
+    const interval = setInterval(() => cargarDashboard(true), 15000);
+    return () => clearInterval(interval);
+  }, [cargarDashboard]);
+
+  const entidadNombre = user?.entidad_nombre || 'PANEL DE ENTIDAD';
+  const kpis = data?.kpis || {};
+  const zonas = data?.zonas || [];
+  const historial = data?.historial || [];
+  const perdidos = data?.vehiculos_perdidos || [];
+  const parqueros = data?.parqueros || [];
+
+  // ── Pantalla de carga ──
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-bg-app flex items-center justify-center">
+        <div className="text-center space-y-4">
+          <div className="w-12 h-12 rounded-full border-2 border-primary border-t-transparent animate-spin mx-auto" />
+          <p className="text-text-muted text-xs font-bold uppercase tracking-widest">Iniciando Panel Táctico...</p>
         </div>
-      </header>
-      
-      <div className="space-y-8">
-        {/* Fila 1: KPIs Principales (Sección 5.2) */}
-        <section className="grid grid-cols-1 md:grid-cols-3 gap-6">
-           <Card className="bg-primary/5 border-primary/20 shadow-tactica hover:bg-primary/10 transition-all group overflow-hidden relative">
-              <div className="absolute -right-4 -top-4 text-primary/10 group-hover:scale-110 transition-transform">
-                 <UsersIcon size={120} />
-              </div>
-              <CardContent className="p-6">
-                 <UsersIcon className="text-primary mb-4" size={24} />
-                 <div className="text-4xl font-black text-text-main italic font-display">{stats.totalSocios}</div>
-                 <div className="text-[10px] uppercase font-black tracking-[0.2em] text-text-muted mt-1 opacity-60">Socios Registrados</div>
-              </CardContent>
-           </Card>
-
-           <Card className="bg-secondary/5 border-secondary/20 hover:bg-secondary/10 transition-all group overflow-hidden relative">
-              <div className="absolute -right-4 -top-4 text-secondary/10 group-hover:scale-110 transition-transform">
-                 <CarFront size={120} />
-              </div>
-              <CardContent className="p-6">
-                 <CarFront className="text-secondary mb-4" size={24} />
-                 <div className="text-4xl font-black text-text-main italic font-display">{stats.vehiculosActivos}</div>
-                 <div className="text-[10px] uppercase font-black tracking-[0.2em] text-text-muted mt-1 opacity-60">Flota Autorizada</div>
-              </CardContent>
-           </Card>
-
-           <Card className="bg-warning/5 border-warning/20 hover:bg-warning/10 transition-all group overflow-hidden relative">
-              <div className="absolute -right-4 -top-4 text-warning/10 group-hover:scale-110 transition-transform">
-                 <CalendarRange size={120} />
-              </div>
-              <CardContent className="p-6">
-                 <CalendarRange className="text-warning mb-4" size={24} />
-                 <div className="text-4xl font-black text-text-main italic font-display">{stats.solicitudesPendientes}</div>
-                 <div className="text-[10px] uppercase font-black tracking-[0.2em] text-text-muted mt-1 opacity-60">Pases en Espera</div>
-              </CardContent>
-           </Card>
-        </section>
-
-        {/* Fila 2: Monitor de Estacionamiento Táctico */}
-        <section className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-           {[
-             { label: 'Asignados', valor: stats.parking.asignados, icon: MapPin, color: 'text-text-main', bg: 'bg-white/5' },
-             { label: 'Ocupados', valor: stats.parking.ocupados, icon: CarFront, color: 'text-danger', bg: 'bg-danger/10' },
-             { label: 'Libres', valor: stats.parking.libres, icon: CheckCircle2, color: 'text-primary', bg: 'bg-primary/10' },
-             { label: 'Uso %', valor: `${Math.round((stats.parking.ocupados / stats.parking.asignados) * 100) || 0}%`, icon: TrendingUp, color: 'text-secondary', bg: 'bg-secondary/10' },
-           ].map((p, i) => (
-             <Card key={i} className={`${p.bg} border-white/5 flex items-center gap-4 p-5 rounded-xl`}>
-                <div className={`${p.color} p-3 rounded-xl bg-black/20`}>
-                   <p.icon size={20} />
-                </div>
-                <div>
-                   <div className="text-[10px] font-black uppercase text-text-muted tracking-widest leading-none mb-1">{p.label}</div>
-                   <div className={`text-2xl font-black font-display tracking-tighter ${p.color}`}>{p.valor}</div>
-                </div>
-             </Card>
-           ))}
-        </section>
-
-        {/* Fila 3: Monitor de Eventos y QR Security */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-           
-           <div className="lg:col-span-2 space-y-4">
-              <div className="flex items-center justify-between px-2">
-                 <div className="flex items-center gap-2">
-                    <Activity size={16} className="text-primary" />
-                    <h3 className="text-xs font-black text-text-main uppercase tracking-[0.2em] opacity-60 italic">Log Táctico de la Entidad</h3>
-                 </div>
-                 <span className="text-[9px] font-bold text-primary animate-pulse tracking-widest uppercase font-mono">Real-Time Historial</span>
-              </div>
-              
-              <Card className="bg-bg-low/40 border-white/5 backdrop-blur-md h-[400px] flex flex-col rounded-2xl overflow-hidden shadow-tactica">
-                 <div className="flex-1 overflow-y-auto p-4 space-y-3 custom-scrollbar h-full scroll-smooth">
-                    {eventosRecientes.length > 0 ? eventosRecientes.map(ev => (
-                       <div key={ev.id} className="flex items-center gap-4 p-3 bg-white/[0.02] rounded-xl border border-white/5 hover:bg-white/5 transition-all group cursor-default">
-                          <div className={cn(
-                             "w-1.5 h-10 rounded-full",
-                             ev.tipo === 'ENTRADA' ? 'bg-success' : ev.tipo === 'SALIDA' ? 'bg-secondary' : 'bg-danger animate-pulse'
-                          )} />
-                          <div className="flex-1 min-w-0">
-                             <div className="flex justify-between items-center mb-1">
-                                <span className={cn(
-                                   "text-[9px] font-black tracking-widest px-2 py-0.5 rounded-full border uppercase",
-                                   ev.tipo === 'ENTRADA' ? 'text-success border-success/20 bg-success/5' : 
-                                   ev.tipo === 'SALIDA' ? 'text-secondary border-secondary/20 bg-secondary/5' : 
-                                   'text-danger border-danger/20 bg-danger/5'
-                                )}>
-                                   {ev.tipo}
-                                </span>
-                                <span className="text-[10px] font-mono text-text-muted flex items-center gap-1 font-bold">
-                                   <Clock size={10} /> {ev.hora}
-                                </span>
-                             </div>
-                             <div className="text-sm font-black text-text-main group-hover:text-primary transition-colors uppercase tracking-tight font-display break-words">
-                                {ev.detalle}
-                             </div>
-                          </div>
-                       </div>
-                    )) : (
-                       <div className="h-full flex items-center justify-center flex-col opacity-20">
-                          <Activity size={48} className="mb-4" />
-                          <span className="text-xs font-black uppercase tracking-widest">Sin actividad operativa</span>
-                       </div>
-                    )}
-                 </div>
-              </Card>
-           </div>
-
-           <div className="space-y-4">
-              <div className="flex items-center gap-2 px-2">
-                 <QrCode size={16} className="text-secondary" />
-                 <h3 className="text-xs font-black text-text-main uppercase tracking-[0.2em] opacity-60 italic">Estado QR Security</h3>
-              </div>
-              <Card className="bg-bg-low/40 border-white/5 p-6 space-y-6 h-[400px] flex flex-col justify-center rounded-2xl shadow-tactica relative overflow-hidden">
-                 <div className="absolute top-0 right-0 p-4 opacity-5">
-                    <QrCode size={120} />
-                 </div>
-                 <div className="space-y-6 relative z-10">
-                    {[
-                       { label: 'QRs Activos', val: stats.qrs.activos, perc: 100, color: 'bg-primary' },
-                       { label: 'Expirados', val: stats.qrs.expirados, perc: 20, color: 'bg-warning' },
-                       { label: 'Revocados', val: stats.qrs.revocado, perc: 5, color: 'bg-danger' },
-                    ].map((qr, i) => (
-                       <div key={i} className="space-y-2">
-                          <div className="flex justify-between items-end">
-                             <span className="text-[10px] font-black uppercase tracking-widest text-text-muted font-bold">{qr.label}</span>
-                             <span className="text-2xl font-black font-display text-text-main leading-none">{qr.val}</span>
-                          </div>
-                          <div className="h-1.5 w-full bg-black/30 rounded-full overflow-hidden">
-                             <div className={cn("h-full transition-all duration-1000", qr.color)} style={{ width: `${qr.perc}%` }} />
-                          </div>
-                       </div>
-                    ))}
-                 </div>
-              </Card>
-           </div>
-        </div>
-
-        {/* Fila 4: Fuerza Operativa */}
-        <section className="space-y-4 pb-20">
-           <div className="flex items-center gap-2 px-2">
-              <UserCog size={16} className="text-secondary" />
-              <h3 className="text-xs font-black text-text-main uppercase tracking-[0.2em] opacity-60 italic">Fuerza Operativa Activa</h3>
-           </div>
-           
-           <Card className="bg-bg-low/40 border-white/5 rounded-2xl">
-              <CardContent className="p-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                 {stats.parqueros.length > 0 ? stats.parqueros.map(pq => (
-                    <div key={pq.id} className="flex items-center justify-between p-3 bg-white/[0.02] border border-white/5 rounded-xl hover:bg-white/5 transition-all group">
-                       <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 rounded-lg bg-secondary/10 flex items-center justify-center text-secondary font-black border border-secondary/20">
-                             {pq.nombre[0]}
-                          </div>
-                          <div className="min-w-0">
-                             <div className="text-xs font-black text-text-main uppercase tracking-tight truncate group-hover:text-primary transition-colors">{pq.nombre}</div>
-                             <div className="text-[9px] text-text-muted font-bold tracking-widest uppercase truncate">{pq.zona}</div>
-                          </div>
-                       </div>
-                       <div className="text-right shrink-0">
-                          <div className="text-base font-black text-primary font-display leading-none">{pq.registros}</div>
-                          <div className="text-[7px] text-text-muted uppercase font-black tracking-tighter mt-1">OPS HOY</div>
-                       </div>
-                    </div>
-                 )) : (
-                    <div className="col-span-full py-12 text-center">
-                       <UserCog size={40} className="mx-auto text-text-muted opacity-20 mb-3" />
-                       <div className="text-[10px] uppercase font-black tracking-widest text-text-muted opacity-40">No hay parqueros en turno activo</div>
-                    </div>
-                 )}
-              </CardContent>
-           </Card>
-        </section>
       </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-bg-app">
+      {/* Cabecera estilo Comandante */}
+      <Header
+        titulo={entidadNombre}
+        subtitle="PANEL DE CONTROL // ENTIDAD"
+        actionElement={
+          <div className="flex items-center gap-3">
+            {lastSync && (
+              <span className="text-[9px] font-mono text-text-muted hidden sm:block">
+                Sync: {lastSync.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+              </span>
+            )}
+            <button
+              onClick={() => cargarDashboard(true)}
+              disabled={syncing}
+              className="p-2 rounded-xl bg-white/5 hover:bg-white/10 border border-white/5 transition-all"
+              title="Actualizar datos"
+            >
+              <RefreshCw size={14} className={cn("text-text-muted", syncing && "animate-spin text-primary")} />
+            </button>
+            <div className={cn(
+              "flex items-center gap-1.5 px-2 py-1 rounded-full border text-[9px] font-black uppercase tracking-widest",
+              error
+                ? "bg-danger/10 border-danger/20 text-danger"
+                : "bg-primary/10 border-primary/20 text-primary"
+            )}>
+              {error ? <WifiOff size={10} /> : <Wifi size={10} />}
+              {error ? 'ERROR' : syncing ? 'SYNC' : 'LIVE'}
+            </div>
+          </div>
+        }
+      />
+
+      <main className="px-4 lg:px-8 mt-[-1rem] pb-28 space-y-8">
+
+        {/* ── FILA 1: KPIs Principales ── */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          {[
+            {
+              label: 'Capacidad Total',
+              valor: kpis.capacidad_total ?? 0,
+              icon: MapPin,
+              highlight: false
+            },
+            {
+              label: 'Vehículos Activos',
+              valor: kpis.vehiculos_activos ?? 0,
+              icon: CarFront,
+              highlight: kpis.vehiculos_activos > 0 ? false : false
+            },
+            {
+              label: 'Vehículos Perdidos',
+              valor: kpis.total_perdidos ?? 0,
+              icon: AlertTriangle,
+              highlight: (kpis.total_perdidos ?? 0) > 0 ? 'alerta' : false
+            },
+            {
+              label: 'Parqueros Activos',
+              valor: kpis.total_parqueros ?? 0,
+              icon: UserCog,
+              highlight: false
+            },
+          ].map((stat, i) => {
+            const Icono = stat.icon;
+            return (
+              <Card
+                key={i}
+                elevation={2}
+                className="flex flex-col relative overflow-hidden group hover:bg-bg-high transition-all border-bg-high/10"
+              >
+                <div className="flex justify-between items-start mb-4">
+                  <Icono
+                    size={24}
+                    className={
+                      stat.highlight === 'alerta' ? 'text-warning' :
+                      stat.highlight === 'error' ? 'text-danger' :
+                      'text-primary/70'
+                    }
+                  />
+                  <div className="w-1.5 h-1.5 rounded-full bg-primary/20 group-hover:bg-primary/50 transition-colors" />
+                </div>
+                <div className={cn(
+                  "font-display font-black text-4xl tracking-tighter leading-none mb-1",
+                  stat.highlight === 'alerta' ? 'text-warning' :
+                  stat.highlight === 'error' ? 'text-danger' : 'text-text-main'
+                )}>
+                  {stat.valor}
+                </div>
+                <div className="text-[9px] uppercase font-black tracking-widest text-text-muted">
+                  {stat.label}
+                </div>
+              </Card>
+            );
+          })}
+        </div>
+
+        {/* ── FILA 2: Indicadores de Uso + Socios ── */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          {[
+            {
+              label: 'Puestos Libres',
+              valor: kpis.libres_total ?? 0,
+              color: 'text-primary',
+              bg: 'bg-primary/10',
+              icon: CheckCircle2
+            },
+            {
+              label: 'Uso Actual',
+              valor: `${kpis.uso_pct ?? 0}%`,
+              color: (kpis.uso_pct ?? 0) > 85 ? 'text-danger' : (kpis.uso_pct ?? 0) > 60 ? 'text-warning' : 'text-primary',
+              bg: 'bg-white/5',
+              icon: Gauge
+            },
+            {
+              label: 'Socios Registrados',
+              valor: kpis.total_socios ?? 0,
+              color: 'text-secondary',
+              bg: 'bg-secondary/10',
+              icon: Users
+            },
+            {
+              label: 'Zonas Asignadas',
+              valor: zonas.length,
+              color: 'text-text-main',
+              bg: 'bg-white/5',
+              icon: Navigation
+            },
+          ].map((p, i) => (
+            <Card key={i} className={cn("border-white/5 flex items-center gap-4 p-5 rounded-xl", p.bg)}>
+              <div className={cn("p-3 rounded-xl bg-black/20", p.color)}>
+                <p.icon size={20} />
+              </div>
+              <div>
+                <div className="text-[10px] font-black uppercase text-text-muted tracking-widest leading-none mb-1">{p.label}</div>
+                <div className={cn("text-2xl font-black font-display tracking-tighter", p.color)}>{p.valor}</div>
+              </div>
+            </Card>
+          ))}
+        </div>
+
+        {/* ── FILA 3: Historial de Flujo + Capacidad por Zona ── */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+
+          {/* Historial de Flujo Vehicular */}
+          <div className="lg:col-span-7 space-y-3">
+            <div className="flex items-center justify-between px-1">
+              <div className="flex items-center gap-2">
+                <Activity size={14} className="text-primary" />
+                <h3 className="text-xs font-black text-text-main uppercase tracking-[0.2em] opacity-60 italic">
+                  Historial de Flujo Vehicular
+                </h3>
+              </div>
+              <span className="text-[9px] font-bold text-primary animate-pulse tracking-widest uppercase font-mono">
+                Alcabala → Zona → Egreso
+              </span>
+            </div>
+
+            <div className="bg-bg-low/40 border border-white/5 backdrop-blur-md rounded-2xl overflow-hidden shadow-[0_4px_20px_rgba(0,0,0,0.3)]" style={{ height: '460px' }}>
+              <div className="h-full overflow-y-auto p-4 space-y-2 custom-scrollbar">
+                {historial.length === 0 ? (
+                  <div className="h-full flex items-center justify-center flex-col opacity-20">
+                    <Activity size={48} className="mb-4" />
+                    <span className="text-xs font-black uppercase tracking-widest">Sin actividad operativa</span>
+                  </div>
+                ) : historial.map((ev, i) => (
+                  <div
+                    key={ev.id || i}
+                    className="flex items-start gap-3 p-3 bg-white/[0.02] rounded-xl border border-white/5 hover:bg-white/5 transition-all group cursor-default"
+                  >
+                    {/* Indicador visual de flujo */}
+                    <div className={cn(
+                      "w-1 rounded-full mt-1 shrink-0",
+                      ev.tipo_evento === 'alcabala' && ev.tipo === 'entrada' ? 'bg-primary h-10' :
+                      ev.tipo_evento === 'alcabala' && ev.tipo === 'salida' ? 'bg-warning h-10' :
+                      ev.tipo_evento === 'ingreso_zona' ? 'bg-success h-10' :
+                      ev.tipo_evento === 'salida_zona' ? 'bg-secondary h-10' :
+                      'bg-text-muted/30 h-10'
+                    )} />
+
+                    <div className="w-6 h-6 rounded-lg bg-white/5 flex items-center justify-center shrink-0 mt-1">
+                      <IconoEvento tipo={ev.tipo} tipo_evento={ev.tipo_evento} />
+                    </div>
+
+                    <div className="flex-1 min-w-0">
+                      <div className="flex flex-wrap items-center gap-2 mb-1">
+                        <EtiquetaEvento tipo={ev.tipo} tipo_evento={ev.tipo_evento} />
+                        <span className="font-mono text-xs font-black text-text-main tracking-wider">
+                          {ev.placa}
+                        </span>
+                        {ev.marca && (
+                          <span className="text-[10px] text-text-muted truncate">
+                            {[ev.marca, ev.modelo].filter(Boolean).join(' ')}
+                          </span>
+                        )}
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-[10px] text-text-muted truncate max-w-[180px]">
+                          {ev.portador !== 'DESCONOCIDO' ? ev.portador : ev.punto_acceso}
+                        </span>
+                        <div className="flex items-center gap-1 text-[9px] font-mono text-text-muted shrink-0">
+                          <Clock size={9} />
+                          {ev.timestamp
+                            ? new Date(ev.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                            : '--:--'
+                          }
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* Capacidad en tiempo real por zona */}
+          <div className="lg:col-span-5 space-y-3">
+            <div className="flex items-center gap-2 px-1">
+              <MapPin size={14} className="text-secondary" />
+              <h3 className="text-xs font-black text-text-main uppercase tracking-[0.2em] opacity-60 italic">
+                Capacidad en Tiempo Real
+              </h3>
+            </div>
+
+            <div className="space-y-3" style={{ maxHeight: '460px', overflowY: 'auto' }}>
+              {zonas.length === 0 ? (
+                <div className="bg-bg-low/40 border border-white/5 rounded-2xl p-8 text-center">
+                  <MapPin size={32} className="mx-auto text-text-muted opacity-20 mb-3" />
+                  <p className="text-[10px] uppercase font-black tracking-widest text-text-muted opacity-40">
+                    No hay zonas asignadas
+                  </p>
+                </div>
+              ) : zonas.map((zona) => (
+                <div
+                  key={zona.zona_id}
+                  className="bg-bg-low/40 border border-white/5 rounded-2xl p-4 space-y-3 hover:bg-white/[0.02] transition-all"
+                >
+                  {/* Nombre de zona y uso */}
+                  <div className="flex items-center justify-between">
+                    <h4 className="text-xs font-black text-text-main uppercase tracking-tight truncate">
+                      {zona.zona_nombre}
+                    </h4>
+                    <span className={cn(
+                      "text-lg font-black font-display leading-none",
+                      zona.uso_pct > 85 ? 'text-danger' :
+                      zona.uso_pct > 60 ? 'text-warning' :
+                      'text-primary'
+                    )}>
+                      {zona.uso_pct}%
+                    </span>
+                  </div>
+
+                  {/* Barra de uso */}
+                  <BarraOcupacion pct={zona.uso_pct} />
+
+                  {/* KPIs de la zona */}
+                  <div className="grid grid-cols-3 gap-2">
+                    {[
+                      { label: 'Cupo', val: zona.cupo_asignado, color: 'text-text-muted' },
+                      { label: 'Ocupados', val: zona.ocupados, color: 'text-warning' },
+                      { label: 'Libres', val: zona.libres, color: 'text-primary' },
+                    ].map((k, i) => (
+                      <div key={i} className="text-center p-2 bg-black/20 rounded-lg">
+                        <div className={cn("text-lg font-black font-display leading-none", k.color)}>
+                          {k.val}
+                        </div>
+                        <div className="text-[8px] uppercase font-black tracking-widest text-text-muted mt-0.5">
+                          {k.label}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Parqueros en zona */}
+                  {zona.parqueros?.length > 0 && (
+                    <div className="flex flex-wrap gap-1 pt-1 border-t border-white/5">
+                      {zona.parqueros.map((pq, i) => (
+                        <span
+                          key={i}
+                          className="text-[8px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-secondary/10 text-secondary border border-secondary/20"
+                        >
+                          {pq.nombre.split(' ')[0]}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* ── FILA 4: Vehículos Perdidos ── */}
+        {perdidos.length > 0 && (
+          <div className="space-y-3">
+            <div className="flex items-center gap-2 px-1">
+              <AlertTriangle size={14} className="text-warning animate-pulse" />
+              <h3 className="text-xs font-black text-text-main uppercase tracking-[0.2em] opacity-80 italic">
+                Alerta: Vehículos en Tránsito Retrasados
+              </h3>
+              <span className="px-2 py-0.5 bg-warning/10 text-warning border border-warning/20 rounded-full text-[8px] font-black uppercase tracking-widest">
+                {perdidos.length}
+              </span>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+              {perdidos.map((p, i) => (
+                <div
+                  key={i}
+                  className="bg-warning/5 border border-warning/20 rounded-xl p-4 space-y-2 hover:bg-warning/10 transition-all"
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="font-mono text-sm font-black text-warning tracking-wider">{p.placa}</span>
+                    <span className="text-[8px] font-black uppercase text-warning/70 bg-warning/10 px-2 py-0.5 rounded-full">
+                      +{p.minutos_transcurridos}min
+                    </span>
+                  </div>
+                  <div className="text-[10px] text-text-muted truncate">
+                    {[p.marca, p.modelo].filter(Boolean).join(' ') || 'Sin datos del vehículo'}
+                  </div>
+                  <div className="text-[10px] font-black text-text-main uppercase truncate">
+                    {p.portador}
+                  </div>
+                  {p.telefono && (
+                    <a
+                      href={`tel:${p.telefono}`}
+                      className="flex items-center gap-1.5 text-[9px] text-primary font-bold hover:underline"
+                    >
+                      <Phone size={10} />
+                      {p.telefono}
+                    </a>
+                  )}
+                  <div className="text-[8px] text-text-muted font-mono">
+                    Entrada: {p.hora_alcabala
+                      ? new Date(p.hora_alcabala).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                      : '--:--'
+                    } · Límite: {p.tiempo_limite}min
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* ── FILA 5: Rendimiento de Parqueros ── */}
+        <div className="space-y-3 pb-6">
+          <div className="flex items-center gap-2 px-1">
+            <UserCog size={14} className="text-secondary" />
+            <h3 className="text-xs font-black text-text-main uppercase tracking-[0.2em] opacity-60 italic">
+              Rendimiento de Parqueros — Hoy
+            </h3>
+          </div>
+
+          <div className="bg-bg-low/40 border border-white/5 rounded-2xl overflow-hidden">
+            <div className="p-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+              {parqueros.length === 0 ? (
+                <div className="col-span-full py-12 text-center">
+                  <UserCog size={40} className="mx-auto text-text-muted opacity-20 mb-3" />
+                  <div className="text-[10px] uppercase font-black tracking-widest text-text-muted opacity-40">
+                    No hay parqueros asignados a zonas de esta entidad
+                  </div>
+                </div>
+              ) : parqueros.map((pq) => {
+                // Buscar zona del parquero
+                const zonaParquero = zonas.find(z => z.zona_id === pq.zona_id);
+                return (
+                  <div
+                    key={pq.id}
+                    className="flex items-center justify-between p-3 bg-white/[0.02] border border-white/5 rounded-xl hover:bg-white/5 transition-all group"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-lg bg-secondary/10 flex items-center justify-center text-secondary font-black border border-secondary/20 shrink-0">
+                        {pq.nombre[0]}
+                      </div>
+                      <div className="min-w-0">
+                        <div className="text-xs font-black text-text-main uppercase tracking-tight truncate group-hover:text-primary transition-colors">
+                          {pq.nombre}
+                        </div>
+                        <div className="text-[9px] text-text-muted font-bold tracking-widest uppercase truncate">
+                          {zonaParquero?.zona_nombre || 'SIN ZONA'}
+                        </div>
+                      </div>
+                    </div>
+                    <div className="text-right shrink-0">
+                      <div className={cn(
+                        "text-base font-black font-display leading-none",
+                        pq.ops_hoy > 0 ? 'text-primary' : 'text-text-muted/40'
+                      )}>
+                        {pq.ops_hoy}
+                      </div>
+                      <div className="text-[7px] text-text-muted uppercase font-black tracking-tighter mt-1">OPS HOY</div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+
+      </main>
     </div>
   );
 }
