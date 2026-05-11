@@ -428,12 +428,16 @@ async def dashboard_entidad(
             )
         )
         for pq in rs_parqueros.scalars().all():
-            # Contar registros manuales de HOY
-            hoy_inicio = datetime.now(timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0)
+            # Contar registros manuales de HOY (ajustado a UTC-4)
+            ahora_utc = datetime.now(timezone.utc)
+            ahora_local = ahora_utc - timedelta(hours=4)
+            hoy_inicio_local = ahora_local.replace(hour=0, minute=0, second=0, microsecond=0)
+            hoy_inicio_utc = hoy_inicio_local + timedelta(hours=4)
+
             rs_ops = await db.execute(
                 select(func.count(VehiculoPase.id)).where(
                     VehiculoPase.zona_asignada_id == pq.zona_asignada_id,
-                    VehiculoPase.hora_ingreso >= hoy_inicio
+                    VehiculoPase.hora_ingreso >= hoy_inicio_utc
                 )
             )
             ops_hoy = rs_ops.scalar() or 0
