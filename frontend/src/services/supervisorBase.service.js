@@ -41,6 +41,14 @@ export const supervisorBaseService = {
     },
 
     /**
+     * Registro global de todas las entidades (Personas y Vehículos).
+     */
+    async getRegistroGlobal(params = {}) {
+        const { data } = await api.get('/supervisor-base/registro-global', { params });
+        return data;
+    },
+
+    /**
      * Infracciones geolocalizadas para el mapa táctico.
      */
     async getInfraccionesMapa(params = {}) {

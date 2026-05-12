@@ -1,33 +1,19 @@
 # DIRECTIVA TÁCTICA: SENTINEL INTERFACE (SUPERVISOR DE BASE)
 
-## 1. PROPÓSITO Y ALCANCE
-El **Supervisor de Base** actúa como el "Escudo de Seguridad" de la BAGFM. Esta directiva define las herramientas, protocolos y lógica de datos que rigen la **Sentinel Interface**, permitiendo un monitoreo total, trazabilidad de patrones y control excepcional.
+## 2. ARQUITECTURA DE NAVEGACIÓN (AEGIS V4)
+Para maximizar la eficiencia operativa, las herramientas tácticas se han descentralizado del dashboard principal hacia el menú lateral:
+- **Sentinel Interface (Dashboard):** Vista de mando unificada con KPIs, Mapa de Incidentes y Registro Maestro.
+- **Censo Vehicular:** Monitoreo detallado de vehículos en base/estacionamiento.
+- **Censo Personas:** Trazabilidad profunda de identidades y patrones.
+- **Emisión de Pases:** Generación de autorizaciones excepcionales.
 
-## 2. ARQUITECTURA DE DATOS: CENSO DE PERSONAS (SENTINEL FUSION)
-A diferencia de otros roles, el Supervisor no ve "usuarios" aislados, sino "Identidades Consolidadas".
+## 3. REGISTRO MAESTRO GLOBAL (MASTER REGISTRY)
+El Dashboard integra un "Registro Maestro" que consolida:
+- **Estado Operativo:** Indica si una entidad (Persona o Vehículo) está ACTIVA, EN BASE, SALIDA RECIENTE o INACTIVA.
+- **Visibilidad Total:** Muestra todos los registros históricos, no solo los activos, para una supervisión reactiva y proactiva.
+- **Búsqueda Táctica:** Filtro instantáneo por placa, nombre o documento.
 
-### 2.1 Lógica de Fusión de Identidad
-El sistema realiza un cruce dinámico entre:
-- **Usuarios Fijos:** Personal militar, civil y socios permanentes.
-- **Pases Temporales:** Visitantes que ingresan mediante códigos QR únicos.
-
-El nexo de unión es el **Número de Cédula**. El sistema agrupa todos los pases y vehículos históricos vinculados a un mismo documento para detectar patrones de "Visitante Frecuente" o comportamientos anómalos.
-
-### 2.2 Graduación de Alertas (Motor IA Sentinel)
-Cada perfil consolidado recibe una puntuación de riesgo basada en:
-- **Volumen de Pases:** >3 pases temporales en 30 días (+2 pts).
-- **Multi-Vehículo:** >2 placas distintas vinculadas (+3 pts).
-- **Frecuencia Táctica:** >5 accesos semanales (+2 pts).
-- **Horario Nocturno:** Accesos entre 22:00 y 05:00 (+3 pts).
-- **Infracciones Críticas:** Mantener infracciones sin resolver (+5 pts).
-
-**Niveles de Alerta:**
-- **CRÍTICA (8+ pts):** Requiere intervención inmediata o bloqueo de acceso.
-- **ALTA (5-7 pts):** Sujeto a interrogación en campo.
-- **MEDIA (3-4 pts):** Vigilancia discreta.
-- **BAJA (1-2 pts):** Patrón normal con desviaciones leves.
-
-## 3. MONITOREO GEOGRÁFICO: MAPA DE INCIDENTES
+## 4. MONITOREO GEOGRÁFICO...
 La Sentinel Interface integra el **Mapa Base Real** con una capa dinámica de incidentes.
 - **Iconografía:** Se utilizan pines rojos pulsantes (`AlertTriangle`) para infracciones activas.
 - **Contexto:** Cada incidente muestra placa, descripción y reportero al ser seleccionado.

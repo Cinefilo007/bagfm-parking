@@ -34,6 +34,9 @@ export const Sidebar = () => {
   } else if (user?.rol === 'SUPERVISOR') {
     navItems.push(
       { to: '/supervisor-base/dashboard', label: 'Sentinel Interface', icon: ShieldCheck },
+      { to: '/supervisor-base/censo-vehicular', label: 'Censo Vehicular', icon: Car },
+      { to: '/supervisor-base/censo-personas', label: 'Censo Personas', icon: Users },
+      { to: '/supervisor-base/pases', label: 'Emisión de Pases', icon: QrCode },
       { to: '/comando/alcabalas', label: 'Control Alcabalas', icon: ClipboardList },
       { to: '/comando/infracciones', label: 'Gestión Infracciones', icon: AlertTriangle },
       { to: '/comando/personal', label: 'Fuerza de Tareas', icon: UserCog },

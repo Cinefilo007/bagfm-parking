@@ -31,6 +31,9 @@ import VistaNotificaciones from '../pages/parquero/VistaNotificaciones';
 import VistaVehiculosPerdidos from '../pages/parquero/VistaVehiculosPerdidos';
 import DashboardSupervisor from '../pages/supervisor/Dashboard';
 import DashboardSupervisorBase from '../pages/supervisor-base/Dashboard';
+import CensoVehicularSupervisor from '../pages/supervisor-base/CensoVehicular';
+import CensoPersonasSupervisor from '../pages/supervisor-base/CensoPersonas';
+import PaseTemporalSupervisor from '../pages/supervisor-base/PaseTemporal';
 import { useAuthStore } from '../store/auth.store';
 
 const TemporaryPlaceholder = ({ name }) => (
@@ -133,7 +136,10 @@ export const router = createBrowserRouter([
             path: 'supervisor-base',
             element: <RutaProtegida rolesPermitidos={['SUPERVISOR', 'ADMIN_BASE', 'COMANDANTE']} />,
             children: [
-              { path: 'dashboard', element: <DashboardSupervisorBase /> }
+              { path: 'dashboard', element: <DashboardSupervisorBase /> },
+              { path: 'censo-vehicular', element: <CensoVehicularSupervisor /> },
+              { path: 'censo-personas', element: <CensoPersonasSupervisor /> },
+              { path: 'pases', element: <PaseTemporalSupervisor /> }
             ]
           },
           // SOCIO

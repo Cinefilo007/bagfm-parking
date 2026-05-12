@@ -319,6 +319,93 @@ async def perfil_persona(
     return perfil
 
 
+# ─────────────────────────────────────────────────────────────
+# TAREA B-04: Registro Global (Dashboard Unificado)
+# ─────────────────────────────────────────────────────────────
+
+@router.get("/registro-global")
+async def registro_global(
+    busqueda: Optional[str] = None,
+    db: AsyncSession = Depends(obtener_db),
+    _: Usuario = GUARD,
+):
+    """
+    Retorna un listado unificado de todas las entidades (personas y vehículos)
+    registradas en el sistema, con su estado actual.
+    """
+    ahora = datetime.now(timezone.utc)
+    
+    # ── 1. PERSONAS (Identidades) ──────────────────────────────────
+    # Reutilizamos parte de la lógica de censo_personas pero simplificada para el dashboard
+    res_per = await censo_personas(busqueda=busqueda, db=db)
+    personas_raw = res_per["personas"]
+    
+    # ── 2. VEHÍCULOS (Placas registradas) ──────────────────────────
+    # Obtenemos todas las placas que han tenido actividad o están en QRs
+    q_placas = select(distinct(CodigoQR.vehiculo_placa)).where(CodigoQR.vehiculo_placa.isnot(None))
+    if busqueda:
+        q_placas = q_placas.where(CodigoQR.vehiculo_placa.ilike(f"%{busqueda}%"))
+    
+    res_placas = await db.execute(q_placas)
+    placas = [r[0] for r in res_placas.all()]
+    
+    vehiculos = []
+    for placa in placas:
+        # Buscar estado actual en VehiculoPase
+        res_vp = await db.execute(
+            select(VehiculoPase)
+            .where(VehiculoPase.placa == placa)
+            .order_by(VehiculoPase.created_at.desc())
+            .limit(1)
+        )
+        vp = res_vp.scalar_one_or_none()
+        
+        estado = "INACTIVO"
+        if vp:
+            if vp.ingresado:
+                estado = "EN_BASE"
+            elif vp.hora_salida and (ahora - vp.hora_salida.replace(tzinfo=timezone.utc) if vp.hora_salida.tzinfo is None else ahora - vp.hora_salida) < timedelta(hours=4):
+                estado = "SALIDA_RECIENTE"
+            else:
+                estado = "FUERA_DE_BASE"
+        
+        # Enriquecer con datos del último QR
+        res_qr = await db.execute(
+            select(CodigoQR)
+            .where(CodigoQR.vehiculo_placa == placa)
+            .order_by(CodigoQR.created_at.desc())
+            .limit(1)
+        )
+        qr = res_qr.scalar_one_or_none()
+        
+        vehiculos.append({
+            "id": placa,
+            "tipo": "VEHICULO",
+            "titulo": placa,
+            "subtitulo": f"{qr.vehiculo_marca or ''} {qr.vehiculo_modelo or ''}".strip() or "VEHÍCULO REGISTRADO",
+            "portador": qr.nombre_portador if qr else "DESCONOCIDO",
+            "estado": estado,
+            "alerta": "NINGUNA" # Podría cruzarse con infracciones
+        })
+
+    # Normalizar personas para el listado unificado
+    personas_norm = []
+    for p in personas_raw:
+        personas_norm.append({
+            "id": p["cedula"],
+            "tipo": "PERSONA",
+            "titulo": p["nombre_completo"],
+            "subtitulo": f"V-{p['cedula']}",
+            "estado": "ACTIVO" if p["total_accesos"] > 0 else "SIN ACTIVIDAD",
+            "alerta": p["alerta_nivel"]
+        })
+
+    return {
+        "total": len(personas_norm) + len(vehiculos),
+        "items": sorted(personas_norm + vehiculos, key=lambda x: x["titulo"])
+    }
+
+
 async def _construir_perfil_persona(
     db: AsyncSession,
     cedula: str,
