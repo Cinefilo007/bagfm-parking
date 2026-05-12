@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, BackgroundTasks
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import List, Optional
 from uuid import UUID
@@ -52,15 +52,66 @@ async def listar_entidades(
 @router.post("", response_model=EntidadCivilSalida, status_code=status.HTTP_201_CREATED)
 async def crear_entidad(
     datos: EntidadCivilCrear,
+    background_tasks: BackgroundTasks,
     db: AsyncSession = Depends(obtener_db),
     usuario_actual: Usuario = DEPENDENCY_ADMIN_BASE,
 ):
     """
-    Crea una nueva entidad civil.
+    Crea una nueva entidad civil y notifica al administrador si se proporciona email.
     Requiere rol COMANDANTE o ADMIN_BASE.
     """
     try:
-        return await entidad_service.crear(db, datos, usuario_actual)
+        nueva_entidad = await entidad_service.crear(db, datos, usuario_actual)
+        
+        if datos.admin_email:
+            from app.services.correo_service import correo_masivo_service
+            from app.core.config import obtener_config
+            
+            c_env = obtener_config()
+            html_content = f"""
+            <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; color: #f8fafc; background-color: #0c0f17; padding: 40px; border-radius: 16px; border: 1px solid #1e293b;">
+                <div style="text-align: center; margin-bottom: 24px;">
+                    <h2 style='color: #4ade80; margin: 0; font-size: 24px; letter-spacing: 1px;'>SISTEMA TÁCTICO BAGFM</h2>
+                    <p style="color: #94a3b8; font-size: 14px; margin-top: 8px;">Módulo de Concesiones y Accesos</p>
+                </div>
+                
+                <p>Saludos <strong>{datos.admin_nombre} {datos.admin_apellido}</strong>,</p>
+                <p>Se ha configurado exitosamente su perfil de administrador para la entidad <strong>{nueva_entidad.nombre}</strong>.</p>
+                
+                <div style="background-color: #1e293b; padding: 20px; border-radius: 8px; margin: 24px 0;">
+                    <h3 style="color: #cbd5e1; margin-top: 0; font-size: 14px; text-transform: uppercase; letter-spacing: 2px;">Credenciales de Acceso</h3>
+                    <ul style="list-style: none; padding: 0; margin: 0; color: #f8fafc;">
+                        <li style="margin-bottom: 12px;"><strong>Usuario / Cédula:</strong> {datos.admin_cedula}</li>
+                        <li><strong>Contraseña temporal:</strong> {datos.admin_password}</li>
+                    </ul>
+                </div>
+                
+                <div style="text-align: center; margin: 32px 0;">
+                    <a href='{c_env.frontend_url}' style='background-color: #4ade80; color: #022c22; padding: 14px 28px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block; text-transform: uppercase; letter-spacing: 1px;'>INGRESAR AL PORTAL</a>
+                </div>
+                
+                <h3 style="color: #4ade80; font-size: 16px; margin-bottom: 12px;">Primeros Pasos Recomendados:</h3>
+                <ul style="color: #cbd5e1; line-height: 1.6;">
+                    <li>Por seguridad, cambie su contraseña al iniciar sesión por primera vez en la sección de Ajustes.</li>
+                    <li>Configure sus zonas de estacionamiento táctico.</li>
+                    <li>Registre a sus socios o personal operativo y asigne sus vehículos.</li>
+                    <li>Utilice el sistema de Pases QR para gestionar a sus visitantes o autorizados.</li>
+                </ul>
+                
+                <p style="color: #64748b; font-size: 12px; text-align: center; margin-top: 40px; border-top: 1px solid #1e293b; padding-top: 20px;">
+                    Este es un mensaje automático del Sistema Táctico BAGFM. Por favor no responda a este correo.
+                </p>
+            </div>
+            """
+            
+            background_tasks.add_task(
+                correo_masivo_service.enviar_correo_generico,
+                datos.admin_email,
+                f"Acceso Administrativo - {nueva_entidad.nombre}",
+                html_content
+            )
+            
+        return nueva_entidad
     except EntidadDuplicada as e:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(e))
 

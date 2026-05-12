@@ -207,5 +207,34 @@ class CorreoMasivoService:
                 pase.email_ultimo_error = str(e)
                 await db.commit()
 
+    async def enviar_correo_generico(
+        self,
+        destinatario: str,
+        asunto: str,
+        cuerpo_html: str
+    ):
+        """Envía un correo genérico (ej. bienvenida o notificación) mediante Resend."""
+        if not destinatario: return
+        api_key_to_use = config_env.resend_api_key
+        if not api_key_to_use: 
+            print("Error: No hay Token de Resend configurado globalmente.")
+            return
+            
+        payload = {
+            "from": config_env.mail_from,
+            "to": [destinatario],
+            "subject": asunto,
+            "html": cuerpo_html
+        }
+        
+        async with httpx.AsyncClient() as client:
+            headers = {"Authorization": f"Bearer {api_key_to_use}", "Content-Type": "application/json"}
+            try:
+                response = await client.post("https://api.resend.com/emails", json=payload, headers=headers)
+                if response.status_code >= 400:
+                    print(f"Error Resend {response.status_code}: {response.text}")
+            except Exception as e:
+                print(f"Error al enviar correo genérico a {destinatario}: {str(e)}")
+
 correo_masivo_service = CorreoMasivoService()
 
