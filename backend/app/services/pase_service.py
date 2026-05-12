@@ -1013,11 +1013,24 @@ class PaseService:
         
         data = []
         for qr in qrs:
+            portal_url = f"{base_url}/portal/pase/{qr.token}"
+            nombre = qr.nombre_portador or "INVITADO PENDIENTE"
+            
+            # Limpiar teléfono para link de WA (solo dígitos)
+            tel_sucio = qr.telefono_portador or ""
+            tel_limpio = "".join(filter(str.isdigit, tel_sucio))
+            
+            # Construir mensaje de WA
+            msg = f"Estimado {nombre}, le enviamos su pase de acceso táctico para la Base Aérea Gral. Francisco de Miranda. Por favor complete sus datos aquí: {portal_url}"
+            import urllib.parse
+            wa_link = f"https://wa.me/{tel_limpio}?text={urllib.parse.quote(msg)}" if tel_limpio else ""
+
             data.append({
-                "NOMBRE": qr.nombre_portador or "INVITADO PENDIENTE",
+                "NOMBRE": nombre,
                 "CEDULA": qr.cedula_portador or "POR REGISTRAR",
-                "TELEFONO": qr.telefono_portador or "S/T",
-                "LINK PORTAL": f"{base_url}/portal/pase/{qr.token}"
+                "TELEFONO": tel_sucio or "S/T",
+                "LINK PORTAL": portal_url,
+                "COMPARTIR WHATSAPP": wa_link
             })
             
         df = pd.DataFrame(data)
@@ -1028,18 +1041,24 @@ class PaseService:
             workbook = writer.book
             worksheet = writer.sheets['PASES_PORTAL']
             
-            # Aplicar hipervínculos a la última columna (D)
-            link_col_idx = 4 
-            for row in range(2, len(data) + 2):
-                cell = worksheet.cell(row=row, column=link_col_idx)
-                link_url = cell.value
-                cell.hyperlink = link_url
-                cell.style = "Hyperlink"
-                cell.value = "ACCEDER AL PORTAL TÁCTICO"
-                from openpyxl.styles import Font
-                cell.font = Font(color="0000FF", underline="single")
+            # Columnas con hipervínculos (D=4, E=5)
+            col_links = [4, 5]
+            textos = {4: "ACCEDER AL PORTAL", 5: "ENVIAR POR WHATSAPP"}
+            
+            from openpyxl.styles import Font
+            link_font = Font(color="0000FF", underline="single")
 
-            # Auto-ajustar ancho de columnas para legibilidad
+            for row in range(2, len(data) + 2):
+                for col_idx in col_links:
+                    cell = worksheet.cell(row=row, column=col_idx)
+                    link_url = cell.value
+                    if link_url:
+                        cell.hyperlink = link_url
+                        cell.style = "Hyperlink"
+                        cell.value = textos[col_idx]
+                        cell.font = link_font
+
+            # Auto-ajustar ancho de columnas
             for i, col in enumerate(df.columns):
                 column_len = max(df[col].astype(str).str.len().max(), len(col)) + 5
                 worksheet.column_dimensions[get_column_letter(i+1)].width = min(column_len, 60)
