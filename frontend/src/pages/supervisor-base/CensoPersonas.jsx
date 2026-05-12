@@ -39,7 +39,7 @@ const CensoPersonas = () => {
         setLoading(true);
         try {
             const data = await supervisorBaseService.getCensoPersonas({ busqueda: val });
-            setPersonas(data);
+            setPersonas(data.personas || []);
         } catch (error) {
             toast.error("Error al buscar personas");
         } finally {
