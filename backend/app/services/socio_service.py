@@ -34,6 +34,13 @@ class SocioService:
         if res_usuario.scalar_one_or_none():
             raise EntidadDuplicada(f"Ya existe un usuario registrado con la cédula {datos.cedula}")
 
+        # 2.b Verificar si el email ya existe (Aegis v2.5)
+        if datos.email:
+            query_email = select(Usuario).where(Usuario.email == datos.email)
+            res_email = await db.execute(query_email)
+            if res_email.scalar_one_or_none():
+                raise EntidadDuplicada(f"El correo {datos.email} ya está registrado por otro usuario")
+
         # 3. Crear el Usuario (Socio)
         nuevo_socio = Usuario(
             cedula=datos.cedula,
@@ -81,7 +88,10 @@ class SocioService:
                         vehiculo_existente.activo = True
                         # No necesitamos db.add() porque ya existe en el estado de la sesión
                     else:
-                        raise EntidadDuplicada(f"La placa {placa} ya está vinculada a otro miembro activo")
+                        # LÓGICA TÁCTICA v2.5: No fallamos la creación del socio por un vehículo duplicado.
+                        # Simplemente ignoramos este vehículo y continuamos con los demás.
+                        logger.warning(f"Omitiendo placa {placa}: ya vinculada a otro socio activo.")
+                        continue
                 else:
                     # Crear nuevo vehículo
                     nuevo_v = Vehiculo(

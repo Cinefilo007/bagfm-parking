@@ -11,6 +11,7 @@ from app.services.socio_service import socio_service
 from app.core.security import hashear_password
 from app.core.excepciones import EntidadNoEncontrada
 import logging
+from app.core.notify_manager import manager
 
 logger = logging.getLogger(__name__)
 
@@ -87,8 +88,8 @@ class ImportService:
                         fecha_expiracion=fecha_expiracion
                     )
                     
-                    # Procesar hasta 4 vehículos
-                    # Los vehículos empiezan en el índice 5 (columna F)
+                    # Procesar hasta 4 vehículos (Deduplicación interna v2.5)
+                    placas_procesadas = set()
                     for i in range(4):
                         start_idx = 5 + (i * 4)
                         if len(row) > start_idx:
@@ -98,17 +99,31 @@ class ImportService:
                             v_color = row[start_idx + 3] if len(row) > start_idx + 3 else None
                             
                             if v_placa and str(v_placa).strip():
-                                datos_socio.vehiculos.append(VehiculoCrear(
-                                    placa=str(v_placa).strip().upper(),
-                                    marca=str(v_marca).strip().upper() if v_marca else "S/M",
-                                    modelo=str(v_modelo).strip().upper() if v_modelo else "S/M",
-                                    color=str(v_color).strip().upper() if v_color else "S/C"
-                                ))
+                                placa_clean = str(v_placa).strip().upper()
+                                if placa_clean not in placas_procesadas:
+                                    datos_socio.vehiculos.append(VehiculoCrear(
+                                        placa=placa_clean,
+                                        marca=str(v_marca).strip().upper() if v_marca else "S/M",
+                                        modelo=str(v_modelo).strip().upper() if v_modelo else "S/M",
+                                        color=str(v_color).strip().upper() if v_color else "S/C"
+                                    ))
+                                    placas_procesadas.add(placa_clean)
                     
                     await socio_service.crear_socio_con_membresia(db, datos_socio, creador_id, background_tasks)
                     resumen["exitosos"] += 1
                     
-                except Exception as e:
+                    # Emitir progreso táctico (Aegis v2.6)
+                    if (index - 1) % 5 == 0 or (index - 1) == len(rows):
+                        await manager.broadcast(
+                            {
+                                "tipo": "PROGRESO_IMPORTACION", 
+                                "actual": index - 1, 
+                                "total": len(rows), 
+                                "exitosos": resumen["exitosos"],
+                                "errores": len(resumen["errores"])
+                            },
+                            channels=[f"ENTIDAD_{entidad_id}"]
+                        )
                     # CRITICAL: Si una fila falla (ej: placa duplicada), debemos hacer rollback
                     # para que la sesión pueda procesar la siguiente fila.
                     await db.rollback()

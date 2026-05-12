@@ -15,6 +15,7 @@ import {
 import api from '../../services/api';
 import socioService from '../../services/socioService';
 import { toast } from 'react-hot-toast';
+import { useNotifications } from '../../hooks/useNotifications';
 
 // Estructura Táctica v2.3 (Flexibilidad de datos)
 const COLUMNAS_REQUERIDAS = ['CEDULA', 'NOMBRE', 'APELLIDO', 'EMAIL', 'TELEFONO', 'V1_PLACA', 'V1_MARCA', 'V1_MODELO', 'V1_COLOR', 'V2_PLACA...', 'V4_COLOR'];
@@ -54,6 +55,21 @@ export default function SociosEntidad() {
   const [isRenovarModalOpen, setIsRenovarModalOpen] = useState(false);
   const [socioSeleccionado, setSocioSeleccionado] = useState(null);
   const [mesesRenovacion, setMesesRenovacion] = useState(1);
+  
+  // Soporte de Progreso (Aegis v2.6)
+  const { lastNotification } = useNotifications();
+  const [importProgress, setImportProgress] = useState({ actual: 0, total: 0, exitosos: 0, errores: 0 });
+
+  useEffect(() => {
+    if (lastNotification?.tipo === 'PROGRESO_IMPORTACION') {
+      setImportProgress({
+        actual: lastNotification.actual,
+        total: lastNotification.total,
+        exitosos: lastNotification.exitosos,
+        errores: lastNotification.errores
+      });
+    }
+  }, [lastNotification]);
 
   const fetchSocios = async () => {
     if (!user?.entidad_id) return;
@@ -161,6 +177,7 @@ export default function SociosEntidad() {
     setImportFile(null);
     setImportValidation(null);
     setImportFechaExp('');
+    setImportProgress({ actual: 0, total: 0, exitosos: 0, errores: 0 });
   };
 
   const addVehiculo = () => {
@@ -703,18 +720,61 @@ export default function SociosEntidad() {
             />
           </div>
 
+          {/* Barra de Progreso Táctica (Aegis v2.6) */}
+          {importando && (
+            <div className="mt-4 p-4 bg-bg-app border border-primary/20 rounded-xl animate-in fade-in slide-in-from-top-4">
+              <div className="flex justify-between items-center mb-2">
+                <span className="text-[10px] font-black text-primary animate-pulse flex items-center tracking-widest uppercase">
+                  <RefreshCw size={12} className="mr-2 animate-spin" />
+                  Cifrando Datos... {Math.round((importProgress.actual / importProgress.total) * 100) || 0}%
+                </span>
+                <span className="text-[10px] text-text-muted font-mono font-bold">
+                  {importProgress.actual} / {importProgress.total}
+                </span>
+              </div>
+              
+              <div className="w-full h-2 bg-black/40 rounded-full overflow-hidden border border-white/5 shadow-inner">
+                <div 
+                  className="h-full bg-gradient-to-r from-primary/40 to-primary shadow-[0_0_10px_rgba(var(--color-primary),0.5)] transition-all duration-500 ease-out"
+                  style={{ width: `${(importProgress.actual / importProgress.total) * 100}%` }}
+                />
+              </div>
+
+              <div className="flex justify-between mt-3 text-[8px] font-black tracking-[0.2em] uppercase">
+                <div className="flex items-center gap-1.5 text-success">
+                  <CheckCircle2 size={10} />
+                  <span>Éxitos: {importProgress.exitosos}</span>
+                </div>
+                <div className="flex items-center gap-1.5 text-danger">
+                  <AlertTriangle size={10} />
+                  <span>Alertas: {importProgress.errores}</span>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Botón de ejecutar */}
-          <Boton 
-            onClick={ejecutarImportacion}
-            disabled={!importFile || !importValidation?.valid || !importFechaExp || importando}
-            className="w-full h-12 bg-primary text-bg-app font-black uppercase tracking-[0.2em] shadow-tactica disabled:opacity-30 disabled:cursor-not-allowed"
-          >
-            {importando ? (
-              <><RefreshCw size={16} className="mr-2 animate-spin" /> Procesando...</>
-            ) : (
-              <><FileUp size={16} className="mr-2" /> Ejecutar Importación</>
-            )}
-          </Boton>
+          <div className="pt-2 flex gap-3">
+            <Boton 
+              variant="ghost" 
+              className="flex-1" 
+              onClick={cerrarImportModal}
+              disabled={importando}
+            >
+              Cancelar
+            </Boton>
+            <Boton 
+              onClick={ejecutarImportacion}
+              disabled={!importFile || !importFechaExp || importando}
+              className="flex-[2] bg-primary text-bg-app font-black uppercase tracking-[0.2em] shadow-tactica"
+            >
+              {importando ? (
+                <><RefreshCw size={16} className="mr-2 animate-spin" /> Procesando...</>
+              ) : (
+                <><FileUp size={16} className="mr-2" /> Ejecutar Importación</>
+              )}
+            </Boton>
+          </div>
         </div>
       </Modal>
 
