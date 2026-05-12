@@ -26,6 +26,11 @@ class EntidadCivilActualizar(BaseModel):
     codigo_slug: Optional[str] = None
     descripcion: Optional[str] = None
     activo: Optional[bool] = None
+    admin_cedula: Optional[str] = None
+    admin_nombre: Optional[str] = None
+    admin_apellido: Optional[str] = None
+    admin_email: Optional[str] = None
+    admin_password: Optional[str] = None
 
 class EntidadCivilSalida(EntidadCivilBase):
     id: UUID
@@ -42,6 +47,12 @@ class EntidadCivilSalida(EntidadCivilBase):
     # Capacidad en tiempo real (calculada desde AsignacionZona + ZonaEstacionamiento)
     cupo_ocupacion: Optional[int] = 0
     cupo_capacidad: Optional[int] = 0
+
+    # Datos del Administrador
+    admin_cedula: Optional[str] = None
+    admin_nombre: Optional[str] = None
+    admin_apellido: Optional[str] = None
+    admin_email: Optional[str] = None
     
     model_config = ConfigDict(from_attributes=True)
 

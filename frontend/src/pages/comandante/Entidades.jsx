@@ -128,7 +128,11 @@ export default function Entidades() {
     setEditando(true);
     try {
       await api.put(`/entidades/${entidadAEditar.id}`, {
-        nombre: entidadAEditar.nombre
+        nombre: entidadAEditar.nombre,
+        admin_nombre: entidadAEditar.admin_nombre,
+        admin_apellido: entidadAEditar.admin_apellido,
+        admin_cedula: entidadAEditar.admin_cedula,
+        admin_email: entidadAEditar.admin_email
       });
       setEditModalOpen(false);
       setEntidadAEditar(null);
@@ -499,6 +503,44 @@ export default function Entidades() {
                 onChange={(e) => setEntidadAEditar({...entidadAEditar, nombre: e.target.value.toUpperCase()})}
               />
             </div>
+
+           <div className="space-y-3 pt-2">
+             <h3 className="text-[10px] uppercase font-bold text-primary tracking-[0.2em] mb-2 border-b border-primary/20 pb-1">
+               Datos del Administrador
+             </h3>
+             <div className="grid grid-cols-2 gap-3">
+               <Input 
+                 label="Nombre"
+                 required
+                 placeholder="Nombre"
+                 value={entidadAEditar?.admin_nombre || ''}
+                 onChange={(e) => setEntidadAEditar({...entidadAEditar, admin_nombre: e.target.value})}
+               />
+               <Input 
+                 label="Apellido"
+                 required
+                 placeholder="Apellido"
+                 value={entidadAEditar?.admin_apellido || ''}
+                 onChange={(e) => setEntidadAEditar({...entidadAEditar, admin_apellido: e.target.value})}
+               />
+             </div>
+             <Input 
+               label="Cédula"
+               required
+               placeholder="V-12345678"
+               value={entidadAEditar?.admin_cedula || ''}
+               onChange={(e) => setEntidadAEditar({...entidadAEditar, admin_cedula: e.target.value})}
+             />
+              <Input 
+                label="Email de Usuario"
+                type="email"
+                required
+                placeholder="admin@entidad.com"
+                value={entidadAEditar?.admin_email || ''}
+                onChange={(e) => setEntidadAEditar({...entidadAEditar, admin_email: e.target.value})}
+              />
+            </div>
+
            <div className="pt-4 sticky bottom-0 bg-bg-card pb-2">
              <Boton type="submit" className="w-full" disabled={editando}>
                 {editando ? 'GUARDANDO...' : 'GUARDAR CAMBIOS'}

@@ -18,7 +18,7 @@ Proveer al **Comandante** y **Admin Base** la capacidad de administrar el ciclo 
 
 ### 2.2 Edición de Datos
 - **Botón de Edición**: Ícono de lápiz en cada tarjeta de entidad.
-- **Modal de Edición**: Permite modificar el nombre de la entidad de forma segura.
+- **Modal de Edición**: Permite modificar el nombre de la entidad de forma segura, así como los datos personales de su respectivo Administrador (Nombre, Apellido, Cédula, Email).
 - **Endpoint**: `PUT /api/v1/entidades/{id}` (utiliza `EntidadCivilActualizar`)
 - **Mejora**: Se separó el schema de creación (`EntidadCivilCrear`) del de actualización (`EntidadCivilActualizar`) para evitar requerir los datos del administrador original en cada actualización de la entidad.
 

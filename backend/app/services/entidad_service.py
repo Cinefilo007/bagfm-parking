@@ -168,6 +168,27 @@ class EntidadCivilService:
                 ent.cupo_capacidad = 0
             entidades.append(ent)
             
+        # Obtener administradores
+        entidad_ids = [ent.id for ent in entidades]
+        if entidad_ids:
+            q_admins = select(Usuario).where(
+                Usuario.entidad_id.in_(entidad_ids),
+                Usuario.rol == RolTipo.ADMIN_ENTIDAD
+            )
+            res_admins = await db.execute(q_admins)
+            admins_por_entidad = {}
+            for admin in res_admins.scalars().all():
+                if admin.entidad_id not in admins_por_entidad:
+                    admins_por_entidad[admin.entidad_id] = admin
+            
+            for ent in entidades:
+                admin = admins_por_entidad.get(ent.id)
+                if admin:
+                    ent.admin_cedula = admin.cedula
+                    ent.admin_nombre = admin.nombre
+                    ent.admin_apellido = admin.apellido
+                    ent.admin_email = admin.email
+
         return entidades
 
 
@@ -201,6 +222,18 @@ class EntidadCivilService:
         )
         entidad.total_capacidad = (await db.execute(q_c)).scalar() or 0
         
+        # Obtener datos del admin
+        q_admin = select(Usuario).where(
+            Usuario.entidad_id == entidad_id,
+            Usuario.rol == RolTipo.ADMIN_ENTIDAD
+        )
+        admin = (await db.execute(q_admin)).scalars().first()
+        if admin:
+            entidad.admin_cedula = admin.cedula
+            entidad.admin_nombre = admin.nombre
+            entidad.admin_apellido = admin.apellido
+            entidad.admin_email = admin.email
+        
         return entidad
 
     async def actualizar(
@@ -209,16 +242,48 @@ class EntidadCivilService:
         """SOP: Actualiza entidad."""
         entidad = await self.obtener_por_id(db, entidad_id)
         
-        for key, value in datos.model_dump(exclude_unset=True).items():
+        admin_data = {
+            "cedula": datos.admin_cedula,
+            "nombre": datos.admin_nombre,
+            "apellido": datos.admin_apellido,
+            "email": datos.admin_email,
+        }
+        if datos.admin_password:
+            admin_data["password_hash"] = hashear_password(datos.admin_password)
+            
+        admin_data = {k: v for k, v in admin_data.items() if v is not None}
+        
+        entidad_dict = datos.model_dump(exclude={
+            "admin_cedula", "admin_nombre", "admin_apellido", 
+            "admin_email", "admin_password"
+        }, exclude_unset=True)
+        
+        for key, value in entidad_dict.items():
             setattr(entidad, key, value)
+            
+        admin = None
+        if admin_data:
+            q_admin = select(Usuario).where(
+                Usuario.entidad_id == entidad_id,
+                Usuario.rol == RolTipo.ADMIN_ENTIDAD
+            )
+            admin = (await db.execute(q_admin)).scalars().first()
+            if admin:
+                for key, value in admin_data.items():
+                    setattr(admin, key, value)
             
         try:
             await db.commit()
             await db.refresh(entidad)
+            if admin_data and admin:
+                entidad.admin_cedula = admin.cedula
+                entidad.admin_nombre = admin.nombre
+                entidad.admin_apellido = admin.apellido
+                entidad.admin_email = admin.email
             return entidad
         except IntegrityError:
             await db.rollback()
-            raise EntidadDuplicada("Los datos generan conflicto con otra entidad.")
+            raise EntidadDuplicada("Los datos generan conflicto con otra entidad o el email/cédula del admin ya existe.")
 
     async def obtener_stats_globales(self, db: AsyncSession) -> dict:
         """SOP: Obtiene estadísticas globales del inventario civil de la base."""
