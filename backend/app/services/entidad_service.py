@@ -100,6 +100,10 @@ class EntidadCivilService:
             Usuario.entidad_id,
             func.count(Vehiculo.id).label("total_vehiculos")
         ).join(Vehiculo, Vehiculo.socio_id == Usuario.id
+        ).where(
+            Vehiculo.activo == True,
+            Usuario.activo == True,
+            Usuario.is_deleted == False
         ).group_by(Usuario.entidad_id).subquery()
 
         # Subconsulta para sumar capacidad asignada por entidad
@@ -217,7 +221,12 @@ class EntidadCivilService:
         
         q_v = select(func.count(Vehiculo.id)).join(
             Usuario, Vehiculo.socio_id == Usuario.id
-        ).where(Usuario.entidad_id == entidad_id)
+        ).where(
+            Usuario.entidad_id == entidad_id,
+            Vehiculo.activo == True,
+            Usuario.activo == True,
+            Usuario.is_deleted == False
+        )
         entidad.total_vehiculos = (await db.execute(q_v)).scalar() or 0
         
         q_c = select(func.sum(AsignacionZona.cupo_asignado)).where(
@@ -297,7 +306,7 @@ class EntidadCivilService:
         # Ejecuciones optimizadas
         total_e = (await db.execute(select(func.count(EntidadCivil.id)))).scalar() or 0
         total_in = (await db.execute(select(func.count(EntidadCivil.id)).where(EntidadCivil.activo == False))).scalar() or 0
-        total_v = (await db.execute(select(func.count(Vehiculo.id)))).scalar() or 0
+        total_v = (await db.execute(select(func.count(Vehiculo.id)).where(Vehiculo.activo == True))).scalar() or 0
         total_u = (await db.execute(select(func.count(Usuario.id)).where(
             Usuario.rol == RolTipo.SOCIO,
             Usuario.activo == True,
