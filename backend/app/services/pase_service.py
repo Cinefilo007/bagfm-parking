@@ -154,10 +154,18 @@ class PaseService:
         if tipo_lote_val == PasseTipo.simple.value:
             await self._generar_pases_simples(db, nuevo_lote, creado_por_id, extras)
         elif tipo_lote_val == PasseTipo.portal.value:
-            await self._generar_pases_portal(db, nuevo_lote, creado_por_id, extras)
+            if datos.get('excel_data'):
+                # Caso Híbrido: Autoregistro con datos parciales de Excel
+                await self.procesar_json_identificado(db, nuevo_lote, datos['excel_data'], creado_por_id, extras)
+            else:
+                # Caso Estándar: Autoregistro vacío
+                await self._generar_pases_portal(db, nuevo_lote, creado_por_id, extras)
         elif tipo_lote_val == PasseTipo.identificado.value:
             if datos.get('excel_data'):
                 await self.procesar_json_identificado(db, nuevo_lote, datos['excel_data'], creado_por_id, extras)
+            else:
+                # Si es identificado pero no hay excel, generamos pases portal para que los llenen
+                await self._generar_pases_portal(db, nuevo_lote, creado_por_id, extras)
         
         if solicitud_id:
             solicitud = await db.get(SolicitudEvento, solicitud_id)
