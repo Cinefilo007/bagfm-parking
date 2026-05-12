@@ -751,6 +751,8 @@ class ParqueroService:
                 u = await db.get(Usuario, acceso.usuario_id)
                 if u:
                     if not portador: portador = f"{u.nombre} {u.apellido}".strip()
+                    if not cedula_portador: cedula_portador = u.cedula
+                    if not telefono_portador: telefono_portador = u.telefono
                     info_pase = {"nombre": "SOCIO PERMANENTE", "color": "#3b82f6"}
                 
                 if not placa and acceso.vehiculo_id:
@@ -828,8 +830,19 @@ class ParqueroService:
                     u = res_u.scalars().first()
                     if u:
                         portador = f"{u.nombre} {u.apellido}".strip()
-                        cedula_portador = u.cedula
-                        telefono_portador = u.telefono
+                        if not cedula_portador: cedula_portador = u.cedula
+                        if not telefono_portador: telefono_portador = u.telefono
+            else:
+                # Fallback Socio Permanente por placa
+                res_v = await db.execute(select(Vehiculo).where(Vehiculo.placa == vp.placa))
+                v_db = res_v.scalars().first()
+                if v_db and v_db.socio_id:
+                    res_u = await db.execute(select(Usuario).where(Usuario.id == v_db.socio_id))
+                    u_db = res_u.scalars().first()
+                    if u_db:
+                        portador = f"{u_db.nombre} {u_db.apellido}".strip()
+                        cedula_portador = u_db.cedula
+                        telefono_portador = u_db.telefono
 
             info_pase = self._get_tipo_acceso_info(vp.codigo_qr) if vp.codigo_qr else {"nombre": "GENERAL", "color": "#94a3b8"}
             
