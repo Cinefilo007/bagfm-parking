@@ -247,10 +247,44 @@ class ParqueroService:
         vehiculo_pase = res_vp2.scalars().first()
 
         if vehiculo_pase:
+            # ACTUALIZACIÓN DE DATOS EN LA FUENTE SI SE PROPORCIONAN
+            if vehiculo_pase.codigo_qr:
+                qr = vehiculo_pase.codigo_qr
+                if nombre: qr.nombre_portador = nombre.strip().upper()
+                if cedula: qr.cedula_portador = cedula.strip().upper()
+                if telefono: qr.telefono_portador = telefono.strip()
+                if marca: qr.vehiculo_marca = marca.strip().upper()
+                if modelo: qr.vehiculo_modelo = modelo.strip().upper()
+                if color: qr.vehiculo_color = color.strip().upper()
+                qr.datos_completos = True
+            else:
+                # Si no tiene QR, podría ser un Socio o manual. Buscamos por placa en vehiculos.
+                res_v = await db.execute(select(Vehiculo).where(Vehiculo.placa == placa_norm))
+                v_db = res_v.scalars().first()
+                if v_db:
+                    if marca: v_db.marca = marca.strip().upper()
+                    if modelo: v_db.modelo = modelo.strip().upper()
+                    if color: v_db.color = color.strip().upper()
+                    if v_db.socio_id:
+                        res_u = await db.execute(select(Usuario).where(Usuario.id == v_db.socio_id))
+                        u_db = res_u.scalars().first()
+                        if u_db:
+                            if nombre:
+                                parts = nombre.strip().upper().split(' ', 1)
+                                u_db.nombre = parts[0]
+                                if len(parts) > 1: u_db.apellido = parts[1]
+                            if cedula: u_db.cedula = cedula.strip().upper()
+                            if telefono: u_db.telefono = telefono.strip()
+
             if confirmar:
                 vehiculo_pase.ingresado = True
                 vehiculo_pase.hora_ingreso = datetime.now(timezone.utc)
-                vehiculo_pase.hora_salida = None  # Limpiar salida previa — evita evento fantasma en historial
+                vehiculo_pase.hora_salida = None
+                
+                # Actualizar también los datos locales del VehiculoPase para consistencia inmediata
+                if marca: vehiculo_pase.marca = marca.strip().upper()
+                if modelo: vehiculo_pase.modelo = modelo.strip().upper()
+                if color: vehiculo_pase.color = color.strip().upper()
                 
                 # Incrementar ocupación
                 await self._actualizar_ocupacion_zona(db, zona_id, 1)
@@ -261,27 +295,27 @@ class ParqueroService:
             info_pase = self._get_tipo_acceso_info(vehiculo_pase.codigo_qr) if vehiculo_pase.codigo_qr else {"nombre": "GENERAL", "color": "#94a3b8"}
             
             portador = "DESCONOCIDO"
-            telefono = None
+            cedula_portador = None
+            telefono_portador = None
             marca = vehiculo_pase.marca
             modelo = vehiculo_pase.modelo
             color = vehiculo_pase.color
             
             if vehiculo_pase.codigo_qr:
-                if not marca: marca = vehiculo_pase.codigo_qr.vehiculo_marca
-                if not modelo: modelo = vehiculo_pase.codigo_qr.vehiculo_modelo
-                if not color: color = vehiculo_pase.codigo_qr.vehiculo_color
-                
-                if hasattr(vehiculo_pase.codigo_qr, 'vehiculo') and vehiculo_pase.codigo_qr.vehiculo:
-                    if not marca: marca = vehiculo_pase.codigo_qr.vehiculo.marca
-                    if not modelo: modelo = vehiculo_pase.codigo_qr.vehiculo.modelo
-                    if not color: color = vehiculo_pase.codigo_qr.vehiculo.color
-
-                if vehiculo_pase.codigo_qr.nombre_portador:
-                    portador = vehiculo_pase.codigo_qr.nombre_portador
-                    telefono = vehiculo_pase.codigo_qr.telefono_portador
-                elif vehiculo_pase.codigo_qr.usuario:
-                    portador = f"{vehiculo_pase.codigo_qr.usuario.nombre} {vehiculo_pase.codigo_qr.usuario.apellido}".strip()
-                    telefono = vehiculo_pase.codigo_qr.usuario.telefono
+                portador = vehiculo_pase.codigo_qr.nombre_portador
+                cedula_portador = vehiculo_pase.codigo_qr.cedula_portador
+                telefono_portador = vehiculo_pase.codigo_qr.telefono_portador
+            else:
+                # Intentar recuperar de vehiculo/socio si no hay QR
+                res_v = await db.execute(select(Vehiculo).where(Vehiculo.placa == placa_norm))
+                v_db = res_v.scalars().first()
+                if v_db and v_db.socio_id:
+                    res_u = await db.execute(select(Usuario).where(Usuario.id == v_db.socio_id))
+                    u_db = res_u.scalars().first()
+                    if u_db:
+                        portador = f"{u_db.nombre} {u_db.apellido}".strip()
+                        cedula_portador = u_db.cedula
+                        telefono_portador = u_db.telefono
 
             return {
                 "sin_datos": False,
@@ -293,7 +327,8 @@ class ParqueroService:
                 "tipo_pase": info_pase["nombre"],
                 "tipo_pase_color": info_pase["color"],
                 "nombre_portador": portador,
-                "telefono_portador": telefono,
+                "cedula_portador": cedula_portador,
+                "telefono_portador": telefono_portador,
                 "puesto_asignado_id": str(vehiculo_pase.puesto_asignado_id) if vehiculo_pase.puesto_asignado_id else None,
             }
 
@@ -304,15 +339,21 @@ class ParqueroService:
         vehiculo_db = res_veh.scalars().first()
 
         if vehiculo_db:
-            # Intentar obtener teléfono de la tabla Usuario si el vehículo es de un socio
-            telefono_socio = None
-            nombre_socio = "SOCIO PERMANENTE"
+            # ACTUALIZACIÓN DE DATOS DEL SOCIO / VEHÍCULO SI SE PROPORCIONAN
             if vehiculo_db.socio_id:
                 res_u = await db.execute(select(Usuario).where(Usuario.id == vehiculo_db.socio_id))
                 usr = res_u.scalars().first()
-                if usr: 
-                    telefono_socio = usr.telefono
-                    nombre_socio = f"{usr.nombre} {usr.apellido}".strip()
+                if usr:
+                    if nombre:
+                        parts = nombre.strip().upper().split(' ', 1)
+                        usr.nombre = parts[0]
+                        if len(parts) > 1: usr.apellido = parts[1]
+                    if cedula: usr.cedula = cedula.strip().upper()
+                    if telefono: usr.telefono = telefono.strip()
+            
+            if marca: vehiculo_db.marca = marca.strip().upper()
+            if modelo: vehiculo_db.modelo = modelo.strip().upper()
+            if color: vehiculo_db.color = color.strip().upper()
 
             nuevo_vp = VehiculoPase(
                 placa=placa_norm,
@@ -331,6 +372,19 @@ class ParqueroService:
             
             await db.commit()
             await db.refresh(nuevo_vp)
+            
+            # Recuperar datos actualizados para la respuesta
+            portador_final = "SOCIO PERMANENTE"
+            cedula_final = None
+            telefono_final = None
+            if vehiculo_db.socio_id:
+                res_u = await db.execute(select(Usuario).where(Usuario.id == vehiculo_db.socio_id))
+                u_final = res_u.scalars().first()
+                if u_final:
+                    portador_final = f"{u_final.nombre} {u_final.apellido}".strip()
+                    cedula_final = u_final.cedula
+                    telefono_final = u_final.telefono
+
             return {
                 "sin_datos": False,
                 "vehiculo_pase_id": str(nuevo_vp.id),
@@ -339,9 +393,10 @@ class ParqueroService:
                 "modelo": nuevo_vp.modelo,
                 "color": nuevo_vp.color,
                 "tipo_pase": "SOCIO PERMANENTE",
-                "tipo_pase_color": "#3b82f6", # Azul para socios/base
-                "nombre_portador": nombre_socio,
-                "telefono_portador": telefono_socio,
+                "tipo_pase_color": "#3b82f6",
+                "nombre_portador": portador_final,
+                "cedula_portador": cedula_final,
+                "telefono_portador": telefono_final,
                 "puesto_asignado_id": None,
             }
 
@@ -376,15 +431,26 @@ class ParqueroService:
             # pero pasando los datos del vehículo ya conocidos para no repetirlos
             datos_persona_incompletos = not qr_encontrado.datos_completos or not qr_encontrado.nombre_portador
 
-            if datos_persona_incompletos:
+            if datos_persona_incompletos or nombre or cedula or telefono:
+                # ACTUALIZACIÓN DE DATOS DEL QR SI SE PROPORCIONAN
+                if nombre: qr_encontrado.nombre_portador = nombre.strip().upper()
+                if cedula: qr_encontrado.cedula_portador = cedula.strip().upper()
+                if telefono: qr_encontrado.telefono_portador = telefono.strip()
+                if marca: qr_encontrado.vehiculo_marca = marca.strip().upper()
+                if modelo: qr_encontrado.vehiculo_modelo = modelo.strip().upper()
+                if color: qr_encontrado.vehiculo_color = color.strip().upper()
+                
+                if qr_encontrado.nombre_portador and qr_encontrado.cedula_portador and qr_encontrado.vehiculo_placa:
+                    qr_encontrado.datos_completos = True
+
                 # Guardar el VP incompleto para poder referenciarlo
                 await db.commit()
                 await db.refresh(nuevo_vp)
                 
                 info_pase = self._get_tipo_acceso_info(qr_encontrado)
                 return {
-                    "sin_datos": True,
-                    "solo_persona": True,  # El vehículo ya tiene datos, solo falta persona
+                    "sin_datos": not qr_encontrado.datos_completos,
+                    "solo_persona": True,
                     "vehiculo_pase_id": str(nuevo_vp.id),
                     "qr_id": str(qr_encontrado.id),
                     "placa": placa_norm,
@@ -396,8 +462,8 @@ class ParqueroService:
                     "nombre_portador": qr_encontrado.nombre_portador,
                     "cedula_portador": qr_encontrado.cedula_portador,
                     "telefono_portador": qr_encontrado.telefono_portador,
-                    "zona_id": str(zona_id), # Importante para actualizar ocupación luego
-                    "mensaje": "Complete los datos del portador para finalizar el registro.",
+                    "zona_id": str(zona_id),
+                    "mensaje": "Complete los datos del portador para finalizar el registro." if not qr_encontrado.datos_completos else "Datos actualizados.",
                 }
 
             # QR tiene datos completos → registrar directamente
@@ -496,6 +562,7 @@ class ParqueroService:
         res_vp = await db.execute(select(VehiculoPase).where(VehiculoPase.id == vehiculo_pase_id))
         vp = res_vp.scalars().first()
 
+        # ── 1. Actualizar CodigoQR ──
         if nombre: qr.nombre_portador = nombre.strip().upper()
         if cedula: qr.cedula_portador = cedula.strip().upper()
         if telefono: qr.telefono_portador = telefono.strip()
@@ -507,6 +574,28 @@ class ParqueroService:
         
         qr.datos_completos = True
 
+        # ── 2. Si es SOCIO (tiene usuario_id), actualizar tabla usuarios y vehiculos ──
+        if qr.usuario_id:
+            res_u = await db.execute(select(Usuario).where(Usuario.id == qr.usuario_id))
+            usr = res_u.scalars().first()
+            if usr:
+                if nombre:
+                    parts = nombre.strip().upper().split(' ', 1)
+                    usr.nombre = parts[0]
+                    if len(parts) > 1: usr.apellido = parts[1]
+                if cedula: usr.cedula = cedula.strip().upper()
+                if telefono: usr.telefono = telefono.strip()
+            
+            # También actualizar el vehículo si está vinculado
+            if qr.vehiculo_id:
+                res_v = await db.execute(select(Vehiculo).where(Vehiculo.id == qr.vehiculo_id))
+                veh = res_v.scalars().first()
+                if veh:
+                    if marca: veh.marca = marca.strip().upper()
+                    if modelo: veh.modelo = modelo.strip().upper()
+                    if color: veh.color = color.strip().upper()
+
+        # ── 3. Actualizar VehiculoPase e ingresar ──
         if vp:
             vp.nombre_portador = qr.nombre_portador
             vp.cedula_portador = qr.cedula_portador
@@ -673,6 +762,9 @@ class ParqueroService:
                         color = v.color
 
             falta_datos = False
+            cedula_portador = acceso.cedula_manual
+            telefono_portador = acceso.telefono_manual
+
             if acceso.qr_id:
                 qr = await db.get(CodigoQR, acceso.qr_id)
                 if qr:
@@ -681,6 +773,8 @@ class ParqueroService:
                     if not modelo: modelo = qr.vehiculo_modelo
                     if not color: color = qr.vehiculo_color
                     if not portador: portador = qr.nombre_portador
+                    if not cedula_portador: cedula_portador = qr.cedula_portador
+                    if not telefono_portador: telefono_portador = qr.telefono_portador
                     info_pase = self._get_tipo_acceso_info(qr)
                     if not qr.datos_completos:
                         falta_datos = True
@@ -697,6 +791,8 @@ class ParqueroService:
                 "modelo": modelo,
                 "color": color,
                 "nombre_portador": portador,
+                "cedula_portador": cedula_portador,
+                "telefono_portador": telefono_portador,
                 "tipo_pase": info_pase["nombre"],
                 "tipo_pase_color": info_pase["color"],
                 "descripcion": f"Entrada por alcabala: {acceso.punto_acceso}",
@@ -718,15 +814,22 @@ class ParqueroService:
             .limit(fetch_limit)
         )
         for vp in res_vp_in.scalars().all():
-            # Intentar resolver nombre del portador
+            # Intentar resolver nombre del portador y contacto
             portador = "DESCONOCIDO"
+            cedula_portador = None
+            telefono_portador = None
+
             if vp.codigo_qr:
                 portador = vp.codigo_qr.nombre_portador
+                cedula_portador = vp.codigo_qr.cedula_portador
+                telefono_portador = vp.codigo_qr.telefono_portador
                 if not portador and vp.codigo_qr.usuario_id:
                     res_u = await db.execute(select(Usuario).where(Usuario.id == vp.codigo_qr.usuario_id))
                     u = res_u.scalars().first()
                     if u:
-                        portador = u.nombre
+                        portador = f"{u.nombre} {u.apellido}".strip()
+                        cedula_portador = u.cedula
+                        telefono_portador = u.telefono
 
             info_pase = self._get_tipo_acceso_info(vp.codigo_qr) if vp.codigo_qr else {"nombre": "GENERAL", "color": "#94a3b8"}
             
@@ -737,6 +840,8 @@ class ParqueroService:
                 "modelo": vp.modelo,
                 "color": vp.color,
                 "nombre_portador": portador,
+                "cedula_portador": cedula_portador,
+                "telefono_portador": telefono_portador,
                 "tipo_pase": info_pase["nombre"],
                 "tipo_pase_color": info_pase["color"],
                 "descripcion": "Ingresó a zona",

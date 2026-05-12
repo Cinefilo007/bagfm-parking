@@ -176,6 +176,20 @@ const TarjetaEvento = ({ evento, onEntrada, onCompletar }) => {
                         <span className="text-[10px] text-text-muted font-medium uppercase tracking-tight">
                             {[evento.color, evento.marca, evento.modelo].filter(Boolean).join(' · ') || 'Sin detalles adicionales'}
                         </span>
+                        {(evento.cedula_portador || evento.telefono_portador) && (
+                            <div className="flex gap-2 items-center">
+                                {evento.cedula_portador && (
+                                    <span className="text-[8px] font-bold text-text-muted/60 uppercase tracking-tighter">
+                                        CI: {evento.cedula_portador}
+                                    </span>
+                                )}
+                                {evento.telefono_portador && (
+                                    <span className="text-[8px] font-bold text-text-muted/60 uppercase tracking-tighter">
+                                        TLF: {evento.telefono_portador}
+                                    </span>
+                                )}
+                            </div>
+                        )}
                     </div>
 
                     {evento.descripcion && (
@@ -277,6 +291,8 @@ const VistaNotificaciones = () => {
     const [formData, setFormData] = useState({
         placa: '',
         nombre: '',
+        cedula: '',
+        telefono: '',
         marca: '',
         modelo: '',
         color: ''
@@ -359,6 +375,8 @@ const VistaNotificaciones = () => {
         setFormData({
             placa: evento.placa || '',
             nombre: (evento.nombre_portador && !evento.nombre_portador.includes('DESCONOCIDO')) ? evento.nombre_portador : '',
+            cedula: evento.cedula_portador || '',
+            telefono: evento.telefono_portador || '',
             marca: evento.marca || '',
             modelo: evento.modelo || '',
             color: evento.color || ''
@@ -374,11 +392,13 @@ const VistaNotificaciones = () => {
             // Usamos registrarLlegadaPlaca que crea el VehiculoPase y marca el ingreso
             await parqueroService.registrarLlegadaPlaca(formData.placa, zonaId, {
                 nombre: formData.nombre,
+                cedula: formData.cedula,
+                telefono: formData.telefono,
                 marca: formData.marca,
                 modelo: formData.modelo,
                 color: formData.color,
-                acceso_id: eventoACompletar?.id, // Pasamos el ID del acceso para trazabilidad (opcional)
-                qr_id: eventoACompletar?.qr_id // Si venía de un QR
+                acceso_id: eventoACompletar?.id, 
+                qr_id: eventoACompletar?.qr_id 
             });
             
             toast.success("Ingreso registrado con éxito");
@@ -584,6 +604,21 @@ const VistaNotificaciones = () => {
                             placeholder="NOMBRE COMPLETO"
                             icon={<Bell size={16} />}
                         />
+
+                        <div className="grid grid-cols-2 gap-4">
+                            <Input
+                                label="Cédula"
+                                value={formData.cedula}
+                                onChange={e => setFormData({...formData, cedula: e.target.value.toUpperCase()})}
+                                placeholder="V-00000000"
+                            />
+                            <Input
+                                label="Teléfono"
+                                value={formData.telefono}
+                                onChange={e => setFormData({...formData, telefono: e.target.value})}
+                                placeholder="0412-0000000"
+                            />
+                        </div>
 
                         <div className="grid grid-cols-2 gap-4">
                             <Input

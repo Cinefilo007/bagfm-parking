@@ -24,6 +24,10 @@ Establecer las reglas de visualización táctica para el mapa de puestos de esta
 ## 4. OPERACIONES RÁPIDAS (ACCESIBILIDAD)
 - **Salida desde Lista**: Se implementa un acceso directo de "Salida Rápida" en la lista de vehículos en zona.
 - **Entrada desde Notificaciones**: Los eventos de "Alcabala" permiten registrar el ingreso directo a zona mediante un botón de "Recibir".
+- **Completar Datos (Modal)**: Si el vehículo requiere datos adicionales (falta portador, cédula, teléfono o detalles del vehículo), se abrirá un modal táctico. 
+    - El sistema identifica automáticamente si el vehículo es un **SOCIO FIJO** o un **PASE TEMPORAL**.
+    - Los datos de portador (Nombre, Cédula, Teléfono) se sincronizan con la tabla `usuarios` para socios y con `codigos_qr` para temporales, garantizando la integridad del censo.
+    - Se incluyen campos específicos para **Cédula** y **Teléfono** con formato validado.
 
 ## 5. VEHÍCULOS PERDIDOS (ALERTAS CRÍTICAS)
 - **Definición**: Un vehículo se marca como perdido si excede el `tiempo_limite_llegada_min` configurado en la zona tras su paso por la alcabala.
