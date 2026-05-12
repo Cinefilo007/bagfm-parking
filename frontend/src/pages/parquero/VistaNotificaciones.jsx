@@ -76,6 +76,7 @@ const CONFIG_TIPO = {
 
 // ── Tarjeta de evento individual (Timeline) ───────────────────────────────
 const TarjetaEvento = ({ evento, onEntrada }) => {
+    const navigate = useNavigate();
     const [cargando, setCargando] = useState(false);
     const cfg = CONFIG_TIPO[evento.tipo] || CONFIG_TIPO.alcabala;
     const { Icon } = cfg;
@@ -118,15 +119,28 @@ const TarjetaEvento = ({ evento, onEntrada }) => {
                     </div>
                 </div>
 
-                {evento.tipo === 'alcabala' && evento.placa && (
-                    <button
-                        onClick={handleEntrada}
-                        disabled={cargando}
-                        className="flex items-center gap-1.5 px-3 h-8 rounded-xl bg-success text-white text-[9px] font-black uppercase tracking-widest hover:bg-success/90 transition-all active:scale-95 disabled:opacity-50"
-                    >
-                        {cargando ? <RefreshCw size={10} className="animate-spin" /> : <LogIn size={12} />}
-                        RECIBIR
-                    </button>
+                {evento.tipo === 'alcabala' && (
+                    evento.falta_datos ? (
+                        <button
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                navigate('/parquero/recibir', { state: { placaPrevia: evento.placa || '' } });
+                            }}
+                            className="flex items-center gap-1.5 px-3 h-8 rounded-xl bg-warning text-white text-[9px] font-black uppercase tracking-widest hover:bg-warning/90 transition-all active:scale-95"
+                        >
+                            <AlertCircle size={12} />
+                            COMPLETAR DATOS
+                        </button>
+                    ) : (evento.placa && (
+                        <button
+                            onClick={handleEntrada}
+                            disabled={cargando}
+                            className="flex items-center gap-1.5 px-3 h-8 rounded-xl bg-success text-white text-[9px] font-black uppercase tracking-widest hover:bg-success/90 transition-all active:scale-95 disabled:opacity-50"
+                        >
+                            {cargando ? <RefreshCw size={10} className="animate-spin" /> : <LogIn size={12} />}
+                            RECIBIR
+                        </button>
+                    ))
                 )}
             </div>
 

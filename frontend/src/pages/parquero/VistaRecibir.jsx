@@ -363,12 +363,22 @@ const VistaRecibir = () => {
 
     const scannerRef = useRef(null);
     const [tab,     setTab]     = useState('placa'); // 'qr' | 'placa'
-    const [placaInput, setPlacaInput] = useState('');
+    const [placaInput, setPlacaInput] = useState(location.state?.placaPrevia || '');
     const [buscando,   setBuscando]   = useState(false);
     const [escaneando, setEscaneando] = useState(false);
     const [resultado,  setResultado]  = useState(null);       // VehiculoPase con sin_datos=false
     const [sinDatos,   setSinDatos]   = useState(null);       // objeto sin_datos=true del backend
     const [confirmando, setConfirmando] = useState(false);
+
+    // Auto-buscar si llegamos con una placaPrevia
+    React.useEffect(() => {
+        if (location.state?.placaPrevia && zonaId) {
+            // Un pequeño timeout para asegurar que el componente está listo
+            setTimeout(() => {
+                buscarPlaca(location.state.placaPrevia);
+            }, 100);
+        }
+    }, [location.state?.placaPrevia, zonaId]);
 
     const resetear = () => {
         setResultado(null);
@@ -377,8 +387,8 @@ const VistaRecibir = () => {
     };
 
     // ── Buscar por placa ────────────────────────────────────────────────────
-    const handleBuscarPlaca = async () => {
-        const placa = placaInput.trim().toUpperCase();
+    const buscarPlaca = async (placaABuscar) => {
+        const placa = (placaABuscar || placaInput).trim().toUpperCase();
         if (!placa || !zonaId) { toast.error('Ingrese una placa válida'); return; }
         setBuscando(true);
         try {
@@ -396,6 +406,8 @@ const VistaRecibir = () => {
             setBuscando(false);
         }
     };
+
+    const handleBuscarPlaca = () => buscarPlaca();
 
     // ── QR scan ────────────────────────────────────────────────────────────
     const handleScanQR = useCallback(async (qrToken) => {

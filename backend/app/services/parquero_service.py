@@ -656,6 +656,15 @@ class ParqueroService:
             portador = acceso.nombre_manual
 
             info_pase = {"nombre": "GENERAL", "color": "#94a3b8"}
+
+            # ── Intenta resolver el portador si es un Socio Fijo ──
+            if not portador and acceso.usuario_id:
+                u = await db.get(Usuario, acceso.usuario_id)
+                if u:
+                    portador = f"{u.nombre} {u.apellido}".strip()
+                    info_pase = {"nombre": "SOCIO PERMANENTE", "color": "#3b82f6"}
+
+            falta_datos = False
             if acceso.qr_id:
                 qr = await db.get(CodigoQR, acceso.qr_id)
                 if qr:
@@ -665,6 +674,11 @@ class ParqueroService:
                     if not color: color = qr.vehiculo_color
                     if not portador: portador = qr.nombre_portador
                     info_pase = self._get_tipo_acceso_info(qr)
+                    if not qr.datos_completos:
+                        falta_datos = True
+                        
+            if not placa or not portador or portador == "DESCONOCIDO":
+                falta_datos = True
 
             eventos.append({
                 "tipo": "alcabala",
@@ -679,6 +693,7 @@ class ParqueroService:
                 "timestamp": acceso.timestamp.isoformat() if acceso.timestamp else None,
                 "punto": acceso.punto_acceso,
                 "es_manual": acceso.es_manual,
+                "falta_datos": falta_datos,
             })
 
         # --- VehiculoPase — ingreso a zona ---
