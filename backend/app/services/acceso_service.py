@@ -567,7 +567,6 @@ class AccesoService:
                 if entidad_db.zona_id:
                     zona_id_acceso = entidad_db.zona_id
                 else:
-                    from app.models.asignacion_zona import AsignacionZona
                     res_asig = await db.execute(select(AsignacionZona).where(
                         AsignacionZona.entidad_id == datos.entidad_id,
                         AsignacionZona.activa == True
