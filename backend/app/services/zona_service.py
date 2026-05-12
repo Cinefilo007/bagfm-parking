@@ -271,7 +271,36 @@ class ZonaEstacionamientoService:
     async def asignar_zona_a_entidad(
         self, db: AsyncSession, asignacion_in: dict, user_id: UUID
     ) -> AsignacionZona:
-        """Asigna a una entidad civil una porción de la capacidad de la zona."""
+        """
+        Asigna a una entidad civil una porción de la capacidad de la zona.
+        SOP: Aegis v3.1 - Implementa lógica de Upsert para evitar duplicidad de registros
+        en la vista de la entidad cuando se modifica la asignación.
+        """
+        zona_id = asignacion_in.get("zona_id")
+        entidad_id = asignacion_in.get("entidad_id")
+        
+        # Buscar asignación existente
+        query = select(AsignacionZona).where(
+            and_(
+                AsignacionZona.zona_id == zona_id,
+                AsignacionZona.entidad_id == entidad_id,
+                AsignacionZona.activa == True
+            )
+        )
+        res = await db.execute(query)
+        db_asig = res.scalar_one_or_none()
+        
+        if db_asig:
+            # Actualizar existente
+            for key, value in asignacion_in.items():
+                if key not in ["id", "zona_id", "entidad_id"]:
+                    setattr(db_asig, key, value)
+            db_asig.asignado_por = user_id
+            await db.commit()
+            await db.refresh(db_asig)
+            return db_asig
+        
+        # Crear nueva si no existe
         db_asignacion = AsignacionZona(**asignacion_in, asignado_por=user_id)
         db.add(db_asignacion)
         await db.commit()

@@ -16,6 +16,7 @@ Estandarizar la creación, configuración y georreferenciación de las zonas de 
 ## 3. ASIGNACIÓN DE CUPOS (COPO)
 - Las zonas pertenecen a la Base (Comando).
 - El Comando asigna "Asignaciones de Zona" a Entidades Civiles.
+- **Protocolo de Integridad (v3.1)**: La asignación de cupos sigue una lógica de *Upsert*. Si una entidad ya tiene una asignación activa en una zona, cualquier nueva asignación sobre la misma zona actualizará los valores existentes (cupo, notas, etc.) en lugar de duplicar el registro.
 - Cada asignación puede subdividirse en cupos para la entidad y "Cupos Reservados Base" (uso exclusivo del Comando dentro de esa zona).
 
 ## 4. PROTOCOLO DE ERROR (PAYLOAD)
