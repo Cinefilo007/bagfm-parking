@@ -5,7 +5,7 @@ import qrcode
 from datetime import datetime, date, timedelta, timezone
 from typing import List, Optional, Tuple
 from sqlalchemy.future import select
-from sqlalchemy import func, and_, or_
+from sqlalchemy import func, and_, or_, delete
 from sqlalchemy.ext.asyncio import AsyncSession
 from supabase import create_client, Client
 
@@ -723,9 +723,14 @@ class PaseService:
 
     async def procesar_json_identificado(self, db: AsyncSession, lote: LotePaseMasivo, filas: List[list], creado_por_id: uuid.UUID, extras: dict = None):
         """Parsea arreglo JSON (proveniente de Excel prevalidado) y crea pases identificados."""
-        from app.core.security import hashear_password
-        from app.models.vehiculo_pase import VehiculoPase
+        from app.models.codigo_qr import CodigoQR, VehiculoPase
+        from app.models.enums import QRTipo
         
+        # 0. LIMPIEZA TÁCTICA: Si el lote ya tenía pases (ej. era tipo portal), los borramos 
+        # para que la importación de Excel sea la fuente de verdad absoluta.
+        await db.execute(delete(CodigoQR).where(CodigoQR.lote_id == lote.id))
+        await db.flush()
+
         extras = extras or {}
         plan = extras.get('plan_distribucion')
         cursor_plan = 0
@@ -736,7 +741,7 @@ class PaseService:
         count = 0
         
         for row in filas:
-            if not len(row) > 0 or not row[0]: continue # Nombre mandatorio
+            if not row or not any(row): continue
             
             # Lógica de Distribución Inteligente
             zona_final_id = extras.get('zona_id') or lote.zona_estacionamiento_id
@@ -748,11 +753,7 @@ class PaseService:
                     puestos_en_zona_actual = 0
 
             # Nuevo Formato Excel (20 Col): [NOMBRE, CEDULA, EMAIL, TELEFONO, 
-            # V1_PLACA, V1_MARCA, V1_MODELO, V1_COLOR, 
-            # V2_PLACA, V2_MARCA, V2_MODELO, V2_COLOR,
-            # V3_PLACA, V3_MARCA, V3_MODELO, V3_COLOR,
-            # V4_PLACA, V4_MARCA, V4_MODELO, V4_COLOR]
-            
+            # V1_PLACA, V1_MARCA, V1_MODELO, V1_COLOR, ...]
             row_data = (list(row) + [None]*20)[:20]
             nombre, cedula, email, telefono = row_data[0:4]
             v1_data = row_data[4:8]
@@ -763,7 +764,7 @@ class PaseService:
             serial_qr = f"{lote.codigo_serial}{str(count + 1).zfill(4)}"
             token = crear_token_evento(serial_qr, expira_at)
             
-            # Verificar si faltan datos importantes (Cédula o cualquier dato del vehículo principal)
+            # Verificar integridad de datos
             datos_estan_completos = bool(nombre and cedula and v1_data[0] and v1_data[1] and v1_data[2] and v1_data[3])
             
             nuevo_qr = CodigoQR(
@@ -775,8 +776,8 @@ class PaseService:
                 fecha_expiracion=expira_at,
                 created_by=creado_por_id,
                 activo=True,
-                nombre_portador=str(nombre).upper(),
-                cedula_portador=str(cedula) if cedula else None,
+                nombre_portador=str(nombre).upper() if nombre else "INVITADO",
+                cedula_portador=str(cedula).upper() if cedula else None,
                 email_portador=str(email).lower() if email else None,
                 telefono_portador=str(telefono) if telefono else None,
                 # Vehículo 1

@@ -243,6 +243,7 @@ async def importar_excel_lote(
         
     contenido = await file.read()
     await pase_service.procesar_excel_identificado(db, lote, contenido, usuario_actual.id)
+    await db.commit()
     return {"status": "ok", "pases_generados": lote.cantidad_pases}
 
 @router.post("/lotes/{lote_id}/importar-json")
@@ -259,6 +260,7 @@ async def importar_json_lote(
         
     filas = payload.get("pases", [])
     await pase_service.procesar_json_identificado(db, lote, filas, usuario_actual.id)
+    await db.commit()
     return {"status": "ok", "pases_generados": lote.cantidad_pases}
 
 from fastapi import BackgroundTasks
