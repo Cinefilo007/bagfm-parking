@@ -28,16 +28,20 @@ Se permiten hasta 4 vehículos (V1 a V4). Cada vehículo requiere 4 campos:
 - **V3**: N (Placa), O (Marca), P (Modelo), Q (Color)
 - **V4**: R (Placa), S (Marca), T (Modelo), U (Color)
 
-## 3. LÓGICA DE PROCESAMIENTO (SOPs)
-1. **Validación de Identidad**: Si la CÉDULA ya existe en el sistema, la fila se saltará con un error de "Cédula duplicada".
-2. **Registro de Usuario**: Se crea un usuario con rol `SOCIO`. La contraseña inicial por defecto es su número de `CEDULA`.
-3. **Membresía**: Se genera una membresía activa vinculada a la entidad seleccionada.
-4. **Vinculación de Flota**:
-   - El sistema recorre los 4 bloques de vehículos.
-   - Si detecta una `PLACA`, intenta registrar el vehículo.
-   - Si la `PLACA` ya existe en el sistema pero pertenece a un "Invitado" (Socio Temporal), el vehículo se **transfiere automáticamente** al nuevo socio permanente.
-   - Si la `PLACA` pertenece a otro socio activo, se generará un error para esa fila.
-5. **Notificación**: Si se proporciona un `EMAIL`, se encola una tarea de fondo para enviar las credenciales y el link del portal.
+## 3. LÓGICA DE PROCESAMIENTO Y FLEXIBILIDAD (Protocolo Aegis v2.3)
+El sistema ha sido diseñado para ser resiliente a datos incompletos, permitiendo la carga masiva incluso si faltan campos tradicionalmente obligatorios.
+
+1.  **Manejo de Datos Faltantes**:
+    -   **CÉDULA Faltante**: Si la fila no contiene cédula, el sistema generará un identificador temporal automático con el formato `TEMP-XXXXXXXX`. Este ID servirá como usuario y contraseña inicial.
+    -   **NOMBRES Faltantes**: Si el nombre o apellido están vacíos, se usarán los placeholders `MIEMBRO` y `PENDIENTE` respectivamente.
+    -   **VEHÍCULOS Faltantes**: El sistema ignorará los bloques de vehículos donde la `PLACA` esté vacía, pero procesará el resto de la fila.
+2.  **Validación de Identidad**: Si la CÉDULA ya existe en el sistema, la fila se saltará para evitar colisiones de datos.
+3.  **Registro de Usuario**: Se crea el perfil con `debe_cambiar_password = True`, forzando al socio a actualizar sus credenciales al primer ingreso.
+4.  **Completitud en el Portal**: Una vez cargado el registro "incompleto", el socio podrá (y deberá) completar sus datos reales desde su portal personal.
+5.  **Vinculación de Flota**:
+    -   El sistema recorre los 4 bloques de vehículos.
+    -   Si la `PLACA` ya existe como "Invitado", se transfiere automáticamente.
+6.  **Notificación**: El envío de correos solo se ejecutará si el campo `EMAIL` es válido. Si está vacío, el administrador deberá proporcionar las credenciales temporales al socio manualmente.
 
 ## 4. CONSIDERACIONES TÁCTICAS
 - **Estética de Plantilla**: La plantilla generada utiliza el esquema de colores "Aegis Dark" (Azul Pizarra y Gris Táctico) para coherencia visual con el resto del sistema.

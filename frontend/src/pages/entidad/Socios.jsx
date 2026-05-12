@@ -16,9 +16,9 @@ import api from '../../services/api';
 import socioService from '../../services/socioService';
 import { toast } from 'react-hot-toast';
 
-// Columnas requeridas para la importación masiva (Estructura Táctica v2.2)
+// Estructura Táctica v2.3 (Flexibilidad de datos)
 const COLUMNAS_REQUERIDAS = ['CEDULA', 'NOMBRE', 'APELLIDO', 'EMAIL', 'TELEFONO', 'V1_PLACA', 'V1_MARCA', 'V1_MODELO', 'V1_COLOR', 'V2_PLACA...', 'V4_COLOR'];
-const COLUMNAS_OBLIGATORIAS = ['CEDULA', 'NOMBRE', 'APELLIDO'];
+const COLUMNAS_FLEXIBLES = true; // Permite omitir datos obligatorios en importación masiva
 
 export default function SociosEntidad() {
   const { user } = useAuthStore();
@@ -644,8 +644,8 @@ export default function SociosEntidad() {
                 <Download size={13} className="mr-1" /> Descargar .xlsx
               </Boton>
             </div>
-            <p className="text-[9px] text-text-muted/50 mt-2">
-              Columnas: {COLUMNAS_REQUERIDAS.join(', ')}. Obligatorias: {COLUMNAS_OBLIGATORIAS.join(', ')}.
+            <p className="text-[9px] text-text-muted/50 mt-2 italic font-bold">
+              Protocolo Aegis v2.3: Se permite la carga de datos incompletos. Los campos faltantes podrán ser completados por el socio en su portal táctico.
             </p>
           </div>
 

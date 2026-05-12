@@ -55,21 +55,26 @@ class ImportService:
                     
                     cedula, nombre, apellido, email, telefono = row[:5]
                     
-                    if not cedula or not nombre or not apellido:
-                        resumen["errores"].append({
-                            "fila": index,
-                            "error": "Cédula, nombre y apellido son obligatorios"
-                        })
-                        continue
+                    # LÓGICA DE FLEXIBILIDAD (Aegis Tactical v2.3)
+                    # Si faltan datos críticos, asignamos temporales para permitir que el socio complete su perfil luego.
+                    if not cedula:
+                        import uuid
+                        cedula = f"TEMP-{uuid.uuid4().hex[:8].upper()}"
+                    
+                    if not nombre:
+                        nombre = "MIEMBRO"
+                    
+                    if not apellido:
+                        apellido = "PENDIENTE"
                     
                     # Limpieza básica
-                    cedula = str(cedula).strip()
-                    nombre = str(nombre).strip()
-                    apellido = str(apellido).strip()
-                    email = str(email).strip() if email else None
+                    cedula = str(cedula).strip().upper()
+                    nombre = str(nombre).strip().upper()
+                    apellido = str(apellido).strip().upper()
+                    email = str(email).strip().lower() if email else None
                     telefono = str(telefono).strip() if telefono else None
                     
-                    # La contraseña por defecto será la cédula
+                    # La contraseña por defecto será la cédula (incluso si es la temporal)
                     datos_socio = SocioCrear(
                         cedula=cedula,
                         nombre=nombre,
