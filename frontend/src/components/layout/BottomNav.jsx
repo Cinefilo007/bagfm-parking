@@ -15,9 +15,16 @@ export const BottomNav = () => {
   if (user?.rol === 'COMANDANTE' || user?.rol === 'ADMIN_BASE') {
     navItems.push(
       { to: '/comando/dashboard', label: 'Centro', icon: ShieldCheck },
+      { to: '/supervisor-base/dashboard', label: 'Sentinel', icon: Radio },
       { to: '/comando/entidades', label: 'Entidades', icon: Users },
       { to: '/comando/zonas', label: 'Zonas', icon: ParkingSquare },
+      { label: 'Más', icon: Menu, isDrawerTrigger: true }
+    );
+  } else if (user?.rol === 'SUPERVISOR') {
+    navItems.push(
+      { to: '/supervisor-base/dashboard', label: 'Sentinel', icon: ShieldCheck },
       { to: '/comando/alcabalas', label: 'Alcabalas', icon: ClipboardList },
+      { to: '/comando/infracciones', label: 'Infrac.', icon: AlertTriangle },
       { label: 'Más', icon: Menu, isDrawerTrigger: true }
     );
   } else if (user?.rol === 'ADMIN_ENTIDAD') {

@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { Header } from '../../components/layout/Header';
 import { Card } from '../../components/ui/Card';
-import { Target, CarFront, ShieldAlert, AlertTriangle } from 'lucide-react';
+import { Target, CarFront, ShieldAlert, AlertTriangle, ArrowUpRight } from 'lucide-react';
 import MapaTactico from '../../components/MapaTactico';
 import EventMonitor from '../../components/dashboard/EventMonitor';
 import TrafficChart from '../../components/dashboard/TrafficChart';
@@ -47,8 +48,9 @@ export default function DashboardComando() {
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
           {stats.map((stat, i) => {
             const Icono = stat.icon;
-            return (
-              <Card key={i} elevation={2} className="flex flex-col relative overflow-hidden group hover:bg-bg-high transition-all border-bg-high/10">
+            const isSentinelLink = i === 0 || i === 1;
+            const CardContent = (
+              <>
                 <div className="flex justify-between items-start mb-4">
                   <Icono 
                     size={24} 
@@ -58,7 +60,11 @@ export default function DashboardComando() {
                       'text-primary/70'
                     } 
                   />
-                  <div className="w-1.5 h-1.5 rounded-full bg-primary/20 group-hover:bg-primary/50 transition-colors"></div>
+                  {isSentinelLink ? (
+                    <ArrowUpRight size={14} className="text-text-muted opacity-30 group-hover:text-primary group-hover:opacity-100 transition-all" />
+                  ) : (
+                    <div className="w-1.5 h-1.5 rounded-full bg-primary/20 group-hover:bg-primary/50 transition-colors"></div>
+                  )}
                 </div>
                 
                 <div 
@@ -73,6 +79,18 @@ export default function DashboardComando() {
                 <div className="text-[9px] uppercase font-black tracking-widest text-text-muted">
                   {stat.label}
                 </div>
+              </>
+            );
+
+            return isSentinelLink ? (
+              <Link key={i} to="/supervisor-base/dashboard">
+                <Card elevation={2} className="flex flex-col relative overflow-hidden group hover:bg-bg-high transition-all border-bg-high/10 cursor-pointer h-full">
+                  {CardContent}
+                </Card>
+              </Link>
+            ) : (
+              <Card key={i} elevation={2} className="flex flex-col relative overflow-hidden group hover:bg-bg-high transition-all border-bg-high/10">
+                {CardContent}
               </Card>
             );
           })}

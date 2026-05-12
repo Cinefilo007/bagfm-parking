@@ -30,11 +30,17 @@ export const MobileMenuDrawer = ({ isOpen, onClose }) => {
 
   // Definición de módulos operativos por rol (solo los que NO están en la BottomNav principal)
   const extendedNavItems = [];
-  if (user?.rol === 'COMANDANTE' || user?.rol === 'ADMIN_BASE' || user?.rol === 'SUPERVISOR') {
+  if (user?.rol === 'COMANDANTE' || user?.rol === 'ADMIN_BASE') {
     extendedNavItems.push(
       { to: '/comando/eventos', label: 'Eventos Masivos', icon: CalendarRange, color: 'text-orange-400' },
       { to: '/comando/infracciones', label: 'Infracciones', icon: AlertTriangle, color: 'text-danger' },
       { to: '/comando/personal', label: 'Gestión Personal', icon: UserCog, color: 'text-primary' },
+      { to: '/comando/carnets', label: 'Editor de Carnets', icon: Palette, color: 'text-indigo-400' },
+    );
+  } else if (user?.rol === 'SUPERVISOR') {
+    extendedNavItems.push(
+      { to: '/comando/personal', label: 'Fuerza de Tareas', icon: UserCog, color: 'text-primary' },
+      { to: '/comando/eventos', label: 'Eventos Masivos', icon: CalendarRange, color: 'text-orange-400' },
       { to: '/comando/carnets', label: 'Editor de Carnets', icon: Palette, color: 'text-indigo-400' },
     );
   } else if (user?.rol === 'ADMIN_ENTIDAD') {

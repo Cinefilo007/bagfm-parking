@@ -510,6 +510,75 @@ const MapaInfraccionesTab = () => {
     );
 };
 
+const AlcabalasTab = () => {
+    const [alcabalas, setAlcabalas] = useState([]);
+    const [loading, setLoading] = useState(true);
+
+    const loadData = async () => {
+        setLoading(true);
+        try {
+            const { data } = await supervisorBaseService.getCensoVehicular(); // Reuso temporal o endpoint específico
+            // Para propósitos de este demo, simulamos o usamos datos de situación
+            const res = await supervisorBaseService.getSituacion();
+            setAlcabalas(res.alcabalas || []);
+        } catch (error) {
+            toast.error("Error al cargar estado de alcabalas");
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    useEffect(() => { loadData(); }, []);
+
+    return (
+        <div className="space-y-4">
+            <div className="flex items-center justify-between">
+                <h2 className="text-lg font-black uppercase tracking-tight italic text-text-main">
+                    Bitácora de Puntos de Control
+                </h2>
+                <Boton variant="ghost" size="sm" onClick={loadData} className="h-8 w-8 p-0">
+                    <RefreshCw size={14} className={loading ? 'animate-spin' : ''} />
+                </Boton>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {loading ? (
+                    Array(2).fill(0).map((_, i) => (
+                        <div key={i} className="h-32 rounded-2xl bg-white/5 animate-pulse border border-white/5" />
+                    ))
+                ) : (
+                    alcabalas.map((a) => (
+                        <Card key={a.id} className="p-4 border-white/5 bg-bg-card/40">
+                            <div className="flex items-center gap-4">
+                                <div className="w-12 h-12 rounded-xl bg-sky-500/10 border border-sky-500/20 flex items-center justify-center text-sky-400">
+                                    <Radio size={24} />
+                                </div>
+                                <div className="flex-1">
+                                    <h3 className="text-sm font-black text-text-main uppercase tracking-tight">{a.nombre}</h3>
+                                    <div className="flex items-center gap-2 mt-1">
+                                        <span className="w-2 h-2 rounded-full bg-success animate-pulse" />
+                                        <span className="text-[9px] font-black text-text-muted uppercase tracking-widest">Enlace Activo</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div className="mt-4 pt-4 border-t border-white/5 grid grid-cols-2 gap-2">
+                                <div>
+                                    <p className="text-[8px] font-black text-text-muted uppercase">Accesos Hoy</p>
+                                    <p className="text-sm font-black text-text-main font-display">{a.total_accesos || 0}</p>
+                                </div>
+                                <div>
+                                    <p className="text-[8px] font-black text-text-muted uppercase">Último Ingreso</p>
+                                    <p className="text-[10px] font-bold text-primary uppercase">{a.ultima_actividad || 'Hace poco'}</p>
+                                </div>
+                            </div>
+                        </Card>
+                    ))
+                )}
+            </div>
+        </div>
+    );
+};
+
 // ──── Main Dashboard ─────────────────────────────────────────────────────────
 
 const DashboardSupervisorBase = () => {
@@ -520,6 +589,7 @@ const DashboardSupervisorBase = () => {
         { id: 'censo', label: 'Censo', icon: Car },
         { id: 'personas', label: 'Personas', icon: Users },
         { id: 'mapa', label: 'Mapa', icon: Map },
+        { id: 'alcabalas', label: 'Alcabalas', icon: Radio },
         { id: 'pases', label: 'Pases', icon: Shield },
     ];
 
@@ -602,6 +672,7 @@ const DashboardSupervisorBase = () => {
                 {activeTab === 'censo' && <CensoVehicularTab />}
                 {activeTab === 'personas' && <CensoPersonasTab />}
                 {activeTab === 'mapa' && <MapaInfraccionesTab />}
+                {activeTab === 'alcabalas' && <AlcabalasTab />}
                 {activeTab === 'pases' && <PaseTemporalTab />}
             </main>
         </div>

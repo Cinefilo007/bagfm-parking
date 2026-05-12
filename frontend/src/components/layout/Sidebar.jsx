@@ -19,9 +19,10 @@ export const Sidebar = () => {
   
   const navItems = [];
   
-  if (user?.rol === 'COMANDANTE' || user?.rol === 'ADMIN_BASE' || user?.rol === 'SUPERVISOR') {
+  if (user?.rol === 'COMANDANTE' || user?.rol === 'ADMIN_BASE') {
     navItems.push(
       { to: '/comando/dashboard', label: 'Dashboard', icon: LayoutDashboard },
+      { to: '/supervisor-base/dashboard', label: 'Sentinel Interface', icon: ShieldCheck },
       { to: '/comando/zonas', label: 'Zonas Estacionamiento', icon: ParkingCircle },
       { to: '/comando/entidades', label: 'Entidades Alojadas', icon: Building2 },
       { to: '/comando/alcabalas', label: 'Gestión Alcabalas', icon: ClipboardList },
@@ -29,6 +30,13 @@ export const Sidebar = () => {
       { to: '/comando/infracciones', label: 'Infracciones', icon: AlertTriangle },
       { to: '/comando/personal', label: 'Gestión Personal', icon: UserCog },
       { to: '/comando/carnets', label: 'Editor de carnets', icon: Palette },
+    );
+  } else if (user?.rol === 'SUPERVISOR') {
+    navItems.push(
+      { to: '/supervisor-base/dashboard', label: 'Sentinel Interface', icon: ShieldCheck },
+      { to: '/comando/alcabalas', label: 'Control Alcabalas', icon: ClipboardList },
+      { to: '/comando/infracciones', label: 'Gestión Infracciones', icon: AlertTriangle },
+      { to: '/comando/personal', label: 'Fuerza de Tareas', icon: UserCog },
     );
   } else if (user?.rol === 'ADMIN_ENTIDAD') {
     navItems.push(
