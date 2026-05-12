@@ -46,14 +46,14 @@ class ImportService:
                     continue
                 
                 try:
-                    # Columnas: A=cedula, B=nombre, C=apellido, D=email, E=telefono, F=placa, G=marca, H=modelo, I=color
-                    cedula, nombre, apellido, email, telefono = row[:5]
+                    # Columnas: A=cedula, B=nombre, C=apellido, D=email, E=telefono
+                    # Vehículos: 
+                    # V1: F=placa, G=marca, H=modelo, I=color
+                    # V2: J=placa, K=marca, L=modelo, M=color
+                    # V3: N=placa, O=marca, P=modelo, Q=color
+                    # V4: R=placa, S=marca, T=modelo, U=color
                     
-                    # Datos de vehículo (opcionales)
-                    placa = row[5] if len(row) > 5 else None
-                    marca = row[6] if len(row) > 6 else None
-                    modelo = row[7] if len(row) > 7 else None
-                    color = row[8] if len(row) > 8 else None
+                    cedula, nombre, apellido, email, telefono = row[:5]
                     
                     if not cedula or not nombre or not apellido:
                         resumen["errores"].append({
@@ -82,14 +82,23 @@ class ImportService:
                         fecha_expiracion=fecha_expiracion
                     )
                     
-                    # Si hay datos de vehículo, añadirlo
-                    if placa and marca:
-                        datos_socio.vehiculos.append(VehiculoCrear(
-                            placa=str(placa).strip().upper(),
-                            marca=str(marca).strip().upper(),
-                            modelo=str(modelo).strip().upper() if modelo else "S/M",
-                            color=str(color).strip().upper() if color else "S/C"
-                        ))
+                    # Procesar hasta 4 vehículos
+                    # Los vehículos empiezan en el índice 5 (columna F)
+                    for i in range(4):
+                        start_idx = 5 + (i * 4)
+                        if len(row) > start_idx:
+                            v_placa = row[start_idx]
+                            v_marca = row[start_idx + 1] if len(row) > start_idx + 1 else None
+                            v_modelo = row[start_idx + 2] if len(row) > start_idx + 2 else None
+                            v_color = row[start_idx + 3] if len(row) > start_idx + 3 else None
+                            
+                            if v_placa and str(v_placa).strip():
+                                datos_socio.vehiculos.append(VehiculoCrear(
+                                    placa=str(v_placa).strip().upper(),
+                                    marca=str(v_marca).strip().upper() if v_marca else "S/M",
+                                    modelo=str(v_modelo).strip().upper() if v_modelo else "S/M",
+                                    color=str(v_color).strip().upper() if v_color else "S/C"
+                                ))
                     
                     await socio_service.crear_socio_con_membresia(db, datos_socio, creador_id, background_tasks)
                     resumen["exitosos"] += 1

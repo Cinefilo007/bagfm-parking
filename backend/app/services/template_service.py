@@ -6,34 +6,46 @@ class TemplateService:
     def generar_excel_socios_template(self) -> bytes:
         """
         Genera un archivo Excel con los encabezados necesarios para importar socios.
+        Estructura táctica v2.2: Datos Personales (5) + 4 Vehículos (16 columnas).
         """
         wb = openpyxl.Workbook()
         ws = wb.active
         ws.title = "IMPORTAR_SOCIOS"
 
-        # Encabezados
+        # Encabezados tácticos (21 Columnas)
         headers = [
             "CEDULA", "NOMBRE", "APELLIDO", "EMAIL", "TELEFONO", 
-            "PLACA", "MARCA", "MODELO", "COLOR"
+            "V1_PLACA", "V1_MARCA", "V1_MODELO", "V1_COLOR",
+            "V2_PLACA", "V2_MARCA", "V2_MODELO", "V2_COLOR",
+            "V3_PLACA", "V3_MARCA", "V3_MODELO", "V3_COLOR",
+            "V4_PLACA", "V4_MARCA", "V4_MODELO", "V4_COLOR"
         ]
         
-        # Estilos para el encabezado
-        header_fill = PatternFill(start_color="4EDEA3", end_color="4EDEA3", fill_type="solid")
-        header_font = Font(bold=True, color="003824")
+        # Estilos tácticos premium
+        header_fill = PatternFill(start_color="1E293B", end_color="1E293B", fill_type="solid") # Dark
+        v_fill = PatternFill(start_color="334155", end_color="334155", fill_type="solid") # Slate
+        header_font = Font(bold=True, color="FFFFFF")
         center_align = Alignment(horizontal="center")
 
         for col_num, header in enumerate(headers, 1):
             cell = ws.cell(row=1, column=col_num, value=header)
-            cell.fill = header_fill
             cell.font = header_font
             cell.alignment = center_align
+            if col_num <= 5:
+                cell.fill = header_fill
+            else:
+                cell.fill = v_fill
+            
             # Ajustar ancho de columna
-            ws.column_dimensions[openpyxl.utils.get_column_letter(col_num)].width = 15
+            ws.column_dimensions[openpyxl.utils.get_column_letter(col_num)].width = 20
 
-        # Instrucciones de ejemplo en la fila 2 (opcional, pero ayuda)
+        # Ejemplo táctico
         ejemplo = [
             "V12345678", "JUAN", "PEREZ", "juan@ejemplo.com", "04121234567",
-            "ABC12D", "TOYOTA", "COROLLA", "BLANCO"
+            "ABC12D", "TOYOTA", "COROLLA", "BLANCO",
+            "XYZ789", "CHEVROLET", "AVEO", "AZUL",
+            "", "", "", "",
+            "", "", "", ""
         ]
         for col_num, value in enumerate(ejemplo, 1):
             ws.cell(row=2, column=col_num, value=value)

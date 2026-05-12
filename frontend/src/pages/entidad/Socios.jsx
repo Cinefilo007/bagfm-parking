@@ -16,8 +16,8 @@ import api from '../../services/api';
 import socioService from '../../services/socioService';
 import { toast } from 'react-hot-toast';
 
-// Columnas requeridas para la importación masiva
-const COLUMNAS_REQUERIDAS = ['CEDULA', 'NOMBRE', 'APELLIDO', 'EMAIL', 'TELEFONO', 'PLACA', 'MARCA', 'MODELO', 'COLOR'];
+// Columnas requeridas para la importación masiva (Estructura Táctica v2.2)
+const COLUMNAS_REQUERIDAS = ['CEDULA', 'NOMBRE', 'APELLIDO', 'EMAIL', 'TELEFONO', 'V1_PLACA', 'V1_MARCA', 'V1_MODELO', 'V1_COLOR', 'V2_PLACA...', 'V4_COLOR'];
 const COLUMNAS_OBLIGATORIAS = ['CEDULA', 'NOMBRE', 'APELLIDO'];
 
 export default function SociosEntidad() {
