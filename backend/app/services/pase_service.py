@@ -731,7 +731,8 @@ class PaseService:
 
     async def procesar_json_identificado(self, db: AsyncSession, lote: LotePaseMasivo, filas: List[list], creado_por_id: uuid.UUID, extras: dict = None):
         """Parsea arreglo JSON (proveniente de Excel prevalidado) y crea pases identificados."""
-        from app.models.codigo_qr import CodigoQR, VehiculoPase
+        from app.models.codigo_qr import CodigoQR
+        from app.models.vehiculo_pase import VehiculoPase
         from app.models.enums import QRTipo
         
         # 0. LIMPIEZA TÁCTICA: Si el lote ya tenía pases (ej. era tipo portal), los borramos 
@@ -1128,17 +1129,17 @@ class PaseService:
             # Por ahora, asumimos que el lote pre-generó todos sus QRs.
             raise ValueError("No hay cupos disponibles para este lote")
 
-        # 2. Actualizar datos del portador
-        pase.nombre_portador = datos.get('nombre', '').upper()
-        pase.cedula_portador = datos.get('cedula')
-        pase.email_portador = datos.get('email', '').lower()
-        pase.telefono_portador = datos.get('telefono')
+        # 2. Actualizar datos del portador con sanitización táctica
+        pase.nombre_portador = self._sanitizar(datos.get('nombre'), 100, upper=True)
+        pase.cedula_portador = self._sanitizar(datos.get('cedula'), 20, upper=True)
+        pase.email_portador = self._sanitizar(datos.get('email'), 100, lower=True)
+        pase.telefono_portador = self._sanitizar(datos.get('telefono'), 20)
         
-        # 3. Datos del Vehículo
-        pase.vehiculo_placa = datos.get('placa', '').upper()
-        pase.vehiculo_marca = datos.get('marca', '').upper()
-        pase.vehiculo_modelo = datos.get('modelo', '').upper()
-        pase.vehiculo_color = datos.get('color', '').upper()
+        # 3. Datos del Vehículo (Sanitizados)
+        pase.vehiculo_placa = self._sanitizar(datos.get('placa'), 15, upper=True)
+        pase.vehiculo_marca = self._sanitizar(datos.get('marca'), 30, upper=True)
+        pase.vehiculo_modelo = self._sanitizar(datos.get('modelo'), 30, upper=True)
+        pase.vehiculo_color = self._sanitizar(datos.get('color'), 20, upper=True)
         
         pase.tipo_acceso = lote.tipo_acceso
         pase.tipo_acceso_custom_id = lote.tipo_acceso_custom_id
@@ -1162,16 +1163,16 @@ class PaseService:
         if not pase:
             raise ValueError("Pase no encontrado")
             
-        # Solo actualizamos si campos están vacíos o si se permite sobrescribir
-        if datos.get('nombre'): pase.nombre_portador = datos['nombre'].upper()
-        if datos.get('cedula'): pase.cedula_portador = datos['cedula']
-        if datos.get('email'): pase.email_portador = datos['email'].lower()
-        if datos.get('telefono'): pase.telefono_portador = datos['telefono']
+        # Solo actualizamos si campos están vacíos o si se permite sobrescribir (Sanitización mandatoria)
+        if datos.get('nombre'): pase.nombre_portador = self._sanitizar(datos['nombre'], 100, upper=True)
+        if datos.get('cedula'): pase.cedula_portador = self._sanitizar(datos['cedula'], 20, upper=True)
+        if datos.get('email'): pase.email_portador = self._sanitizar(datos['email'], 100, lower=True)
+        if datos.get('telefono'): pase.telefono_portador = self._sanitizar(datos['telefono'], 20)
         
-        if datos.get('placa'): pase.vehiculo_placa = datos['placa'].upper()
-        if datos.get('marca'): pase.vehiculo_marca = datos['marca'].upper()
-        if datos.get('modelo'): pase.vehiculo_modelo = datos['modelo'].upper()
-        if datos.get('color'): pase.vehiculo_color = datos['color'].upper()
+        if datos.get('placa'): pase.vehiculo_placa = self._sanitizar(datos['placa'], 15, upper=True)
+        if datos.get('marca'): pase.vehiculo_marca = self._sanitizar(datos['marca'], 30, upper=True)
+        if datos.get('modelo'): pase.vehiculo_modelo = self._sanitizar(datos['modelo'], 30, upper=True)
+        if datos.get('color'): pase.vehiculo_color = self._sanitizar(datos['color'], 20, upper=True)
         
         pase.datos_completos = True
         await db.commit()
@@ -1179,19 +1180,20 @@ class PaseService:
         
         return {"status": "ok", "serial": pase.serial_legible}
 
-    def generar_qr_base64(self, data: str) -> str:
-        """Genera un QR en base64 para visualización directa."""
-        import qrcode
-        import base64
-        from io import BytesIO
+    def _sanitizar(self, texto: any, max_len: int, upper: bool = False, lower: bool = False) -> str:
+        """Limpia el texto de etiquetas HTML, scripts y limita longitud para evitar ataques XSS o desbordamientos."""
+        if texto is None: return None
+        s = str(texto).strip()
         
-        qr = qrcode.QRCode(version=1, box_size=10, border=5)
-        qr.add_data(data)
-        qr.make(fit=True)
-        img = qr.make_image(fill_color="black", back_color="white")
+        # Eliminar etiquetas HTML de forma agresiva
+        import re
+        s = re.sub(r'<[^>]*?>', '', s)
         
-        buffered = BytesIO()
-        img.save(buffered, format="PNG")
-        return f"data:image/png;base64,{base64.b64encode(buffered.getvalue()).decode()}"
+        # Limitar longitud
+        s = s[:max_len]
+        
+        if upper: s = s.upper()
+        if lower: s = s.lower()
+        return s
 
 pase_service = PaseService()
