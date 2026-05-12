@@ -21,6 +21,7 @@ from app.models.puesto_estacionamiento import PuestoEstacionamiento
 from app.models.enums import AccesoTipo, MembresiaEstado, InfraccionEstado, QRTipo, TipoAccesoPase, RolTipo
 from app.schemas.acceso import AccesoValidar, AccesoRegistrar, ResultadoValidacion, EventoTactico
 from app.services.membresia_service import membresia_service
+from app.services.zona_service import zona_service
 from app.services.notificacion_service import notificacion_service
 from app.core.security import decodificar_token
 
@@ -171,10 +172,19 @@ class AccesoService:
                     if qr_db.nombre_portador and vehiculos_socio:
                         necesita_datos = False
 
+                # --- CONTROL DE CAPACIDAD (Aegis v4.0) ---
+                alerta_cap_critica = False
+                info_cap = None
+                entidad_id_lote = lote.entidad_id if lote else None
+                
+                if z_id and entidad_id_lote and datos.tipo == AccesoTipo.entrada:
+                    info_cap = await zona_service.obtener_ocupacion_real_entidad(db, entidad_id_lote, z_id)
+                    alerta_cap_critica = info_cap["critico"]
+
                 return ResultadoValidacion(
                     permitido=True,
-                    mensaje="Pase Masivo Válido",
-                    tipo_alerta="warning" if qr_db.tipo == QRTipo.evento_simple else "info",
+                    mensaje="CAPACIDAD MÁXIMA ALCANZADA" if alerta_cap_critica else "Pase Masivo Válido",
+                    tipo_alerta="error" if alerta_cap_critica else ("warning" if qr_db.tipo == QRTipo.evento_simple else "info"),
                     es_pase_masivo=True,
                     serial_legible=qr_db.serial_legible,
                     nombre_evento=lote.nombre_evento if lote else "Evento BAGFM",
@@ -190,7 +200,9 @@ class AccesoService:
                     zona_nombre=z_nombre,
                     puesto_asignado_id=p_id,
                     puesto_nombre=p_nombre,
-                    tipo_acceso=qr_db.tipo_acceso
+                    tipo_acceso=qr_db.tipo_acceso,
+                    alerta_capacidad_critica=alerta_cap_critica,
+                    info_capacidad_zona=info_cap
                 )
 
             # 5. Pases de Base (tipo_acceso == base) — sin lote_id ni usuario_id
@@ -374,10 +386,17 @@ class AccesoService:
                 if z_db:
                     zona_nombre_socio = z_db.nombre
 
+            # --- CONTROL DE CAPACIDAD (Aegis v4.0) ---
+            alerta_cap_critica = False
+            info_cap = None
+            if zona_id_socio and socio.entidad_id and datos.tipo == AccesoTipo.entrada:
+                info_cap = await zona_service.obtener_ocupacion_real_entidad(db, socio.entidad_id, zona_id_socio)
+                alerta_cap_critica = info_cap["critico"]
+
             return ResultadoValidacion(
                 permitido = not bloqueado,
-                mensaje = msg_bloqueo if bloqueado else "Validación Exitosa",
-                tipo_alerta = "error" if bloqueado else ("warning" if infracciones else "info"),
+                mensaje = "CAPACIDAD MÁXIMA ALCANZADA" if alerta_cap_critica else (msg_bloqueo if bloqueado else "Validación Exitosa"),
+                tipo_alerta = "error" if (bloqueado or alerta_cap_critica) else ("warning" if infracciones else "info"),
                 socio = socio,
                 vehiculo = vehiculo,
                 vehiculos = vehiculos_socio,
@@ -399,7 +418,9 @@ class AccesoService:
                 cupo_info = estado_cupo,
                 zona_asignada_id = zona_id_socio,
                 zona_nombre = zona_nombre_socio,
-                mensaje_adicional = mensaje_zona
+                mensaje_adicional = mensaje_zona,
+                alerta_capacidad_critica = alerta_cap_critica,
+                info_capacidad_zona = info_cap
             )
 
         except Exception as e:

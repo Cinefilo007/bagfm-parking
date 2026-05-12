@@ -21,10 +21,12 @@ class CronService:
         ghosts = await self.procesar_vehiculos_fantasma(db)
         timeouts = await self.procesar_excesos_permanencia(db)
         mass_exits = await self.procesar_salidas_masivas(db)
+        saturacion = await self.monitorear_saturacion_estacionamientos(db)
         return {
             "vehiculos_fantasma_detectados": ghosts,
             "excesos_tiempo_detectados": timeouts,
             "salidas_masivas_procesadas": mass_exits,
+            "saturaciones_detectadas": saturacion,
             "timestamp": datetime.now(timezone.utc).isoformat()
         }
 
@@ -327,5 +329,59 @@ class CronService:
             }, roles=["COMANDANTE", "ADMIN_BASE"])
             
         return max(len(vehiculos_activos), contador_expulsiones)
+
+    async def monitorear_saturacion_estacionamientos(self, db: AsyncSession) -> int:
+        """
+        Monitorea la ocupación de todas las entidades y envía notificaciones
+        cuando se alcanza el 90% o 100% de la capacidad.
+        """
+        from app.models.asignacion_zona import AsignacionZona
+        from app.services.zona_service import zona_service
+        from app.services.notificacion_service import notificacion_service
+        
+        # 1. Obtener todas las asignaciones activas
+        stmt = select(AsignacionZona).where(AsignacionZona.activa == True)
+        res = await db.execute(stmt)
+        asignaciones = res.scalars().all()
+        
+        alertas_enviadas = 0
+        for asig in asignaciones:
+            # 2. Calcular ocupación real
+            info = await zona_service.obtener_ocupacion_real_entidad(db, asig.entidad_id, asig.zona_id)
+            porcentaje = info["porcentaje"]
+            
+            if porcentaje >= 90:
+                # 3. Notificar saturación
+                # Buscamos nombre de la entidad (asumiendo que está disponible vía relación o cargándolo)
+                from app.models.entidad_civil import EntidadCivil
+                entidad = await db.get(EntidadCivil, asig.entidad_id)
+                entidad_nombre = entidad.nombre if entidad else "Entidad"
+                
+                # Definir nivel de alerta
+                tipo = "CRÍTICO" if porcentaje >= 100 else "ADVERTENCIA"
+                mensaje = f"ZONA {asig.zona_nombre} AL {porcentaje}% ({info['ocupacion_actual']}/{info['cupo_total']}) para {entidad_nombre}."
+                
+                # Notificar a Admin Entidad y Parqueros de la zona
+                await notificacion_service.notificar_saturacion_zona(
+                    db,
+                    zona_id=asig.zona_id,
+                    entidad_id=asig.entidad_id,
+                    entidad_nombre=entidad_nombre,
+                    porcentaje=porcentaje,
+                    info_ocupacion=info
+                )
+                
+                # Notificar a Comandancia vía WebSocket
+                await notify_manager.broadcast({
+                    "evento": "ALERTA_CAPACIDAD",
+                    "tipo": tipo,
+                    "mensaje": mensaje,
+                    "entidad": entidad_nombre,
+                    "porcentaje": porcentaje
+                }, roles=["COMANDANTE", "ADMIN_BASE", "SUPERVISOR"])
+                
+                alertas_enviadas += 1
+                
+        return alertas_enviadas
 
 cron_service = CronService()

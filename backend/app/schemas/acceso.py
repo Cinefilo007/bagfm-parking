@@ -92,9 +92,13 @@ class ResultadoValidacion(BaseModel):
     requiere_datos_manuales: bool = False
     es_pase_adelantado: bool = False
     
-    # Control de cupos de estacionamiento
+    # Control de cupos de estacionamiento (Individual)
     alerta_cupo: bool = False
     cupo_info: Optional[dict] = None  # {cupo_total, cupo_usado, cupo_libre}
+
+    # Control de capacidad de zona (Entidad)
+    alerta_capacidad_critica: bool = False
+    info_capacidad_zona: Optional[dict] = None # {zona_id, cupo_total, ocupacion_actual, critico}
 
 
 class EventoTactico(BaseModel):

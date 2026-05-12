@@ -266,4 +266,62 @@ class NotificacionService:
                 else:
                     logging.error(f"Error enviando push de acceso a entidad: {error_msg}")
 
+    async def notificar_saturacion_zona(
+        self, 
+        db: AsyncSession, 
+        zona_id: UUID, 
+        entidad_id: UUID, 
+        entidad_nombre: str, 
+        porcentaje: int, 
+        info_ocupacion: dict
+    ):
+        """
+        Alerta Táctica: Notifica a los administradores de la entidad y a los parqueros
+        que la zona ha alcanzado un nivel crítico de ocupación.
+        SOP: Aegis v4.0 - Monitoreo de Capacidad.
+        """
+        # 1. Destinatarios: Admin Entidad + Parqueros de la zona + Supervisores
+        query_destinatarios = select(Usuario).where(
+            Usuario.activo == True,
+            (
+                (Usuario.entidad_id == entidad_id) & (Usuario.rol == RolTipo.ADMIN_ENTIDAD)
+            ) | (
+                (Usuario.rol == RolTipo.PARQUERO) & (Usuario.zona_asignada_id == zona_id)
+            ) | (
+                Usuario.rol == RolTipo.SUPERVISOR_PARQUEROS)
+        )
+        
+        result = await db.execute(query_destinatarios)
+        usuarios = result.scalars().all()
+        ids_usuarios = [u.id for u in usuarios]
+        
+        if not ids_usuarios: return
+
+        query_subs = select(PushSubscription).where(
+            PushSubscription.usuario_id.in_(ids_usuarios),
+            PushSubscription.activo == True
+        )
+        result_subs = await db.execute(query_subs)
+        suscripciones = result_subs.scalars().all()
+
+        emoji = "🔴" if porcentaje >= 100 else "🟠"
+        payload = {
+            "title": f"{emoji} Alerta de Capacidad: {porcentaje}%",
+            "body": f"La entidad {entidad_nombre} alcanzó {porcentaje}% de su cupo ({info_ocupacion['ocupacion_actual']}/{info_ocupacion['cupo_total']}). Verifique vehículos por salir.",
+            "data": {
+                "url": "/entidad/dashboard",
+                "tipo": "alerta_saturacion",
+                "zona_id": str(zona_id)
+            },
+            "icon": "/icons/shield-alert.png"
+        }
+
+        for sub in suscripciones:
+            try:
+                sub_info = {"endpoint": sub.endpoint, "keys": {"p256dh": sub.p256dh, "auth": sub.auth}}
+                webpush_service.send_notification(sub_info, payload)
+            except Exception as e:
+                if "410 Gone" in str(e) or "404 Not Found" in str(e):
+                    sub.activo = False
+
 notificacion_service = NotificacionService()

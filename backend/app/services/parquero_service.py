@@ -33,6 +33,24 @@ class ParqueroService:
             return zona
         return None
 
+    def _validar_proximidad_zona(self, lat_p: float, lon_p: float, zona: ZonaEstacionamiento) -> bool:
+        """
+        Valida que el parquero esté dentro del radio de la zona usando Haversine.
+        SOP: Aegis v4.0 - Anti-Fraude GPS.
+        """
+        from math import radians, cos, sin, asin, sqrt
+        
+        if lat_p is None or lon_p is None or not zona.latitud or not zona.longitud:
+            return True # Fallback por falta de datos
+            
+        R = 6371.0 # Radio Tierra km
+        lat1, lon1, lat2, lon2 = map(radians, [lat_p, lon_p, float(zona.latitud), float(zona.longitud)])
+        dlat, dlon = lat2 - lat1, lon2 - lon1
+        a = sin(dlat/2)**2 + cos(lat1) * cos(lat2) * sin(dlon/2)**2
+        distancia_m = R * 2 * asin(sqrt(a)) * 1000
+        
+        return distancia_m <= (zona.radio_cobertura or 100)
+
     # ──────────────────────────────────────────────────────────────────────────
     # DATOS DE ZONA
     # ──────────────────────────────────────────────────────────────────────────
@@ -565,12 +583,20 @@ class ParqueroService:
     # ──────────────────────────────────────────────────────────────────────────
 
     async def registrar_salida_placa(
-        self, db: AsyncSession, placa: str, zona_id: UUID, parquero_id: UUID
+        self, db: AsyncSession, placa: str, zona_id: UUID, parquero_id: UUID,
+        lat: float = None, lon: float = None
     ) -> Dict[str, Any]:
         """
         Registra la salida de un vehículo buscándolo por placa en la zona activa.
+        Incluye validación GPS anti-fraude.
         """
         placa_norm = placa.strip().upper()
+
+        # Validar GPS Anti-Fraude
+        zona = await db.get(ZonaEstacionamiento, zona_id)
+        if zona and lat is not None and lon is not None:
+            if not self._validar_proximidad_zona(lat, lon, zona):
+                raise ValueError("ERROR ANTI-FRAUDE: Debe estar en la zona asignada para marcar la salida.")
 
         res_vp = await db.execute(
             select(VehiculoPase).where(
@@ -1017,11 +1043,12 @@ class ParqueroService:
         return vehiculo_pase
 
     async def registrar_salida(
-        self, db: AsyncSession, qr_token: str, parquero_id: UUID
+        self, db: AsyncSession, qr_token: str, parquero_id: UUID,
+        lat: float = None, lon: float = None
     ) -> VehiculoPase:
         """
         Registrar la salida de la zona de estacionamiento por QR.
-        Utiliza el token directamente para garantizar compatibilidad con IDs no-UUID (Base pases).
+        Incluye validación GPS anti-fraude.
         """
         # Buscar el QR por su token JWT (es único e indexado)
         resultado = await db.execute(select(CodigoQR).filter(CodigoQR.token == qr_token))
@@ -1044,6 +1071,12 @@ class ParqueroService:
         vehiculo_pase = resultado_vp.scalars().first()
         if not vehiculo_pase:
             raise ValueError("Vehículo no encontrado activo en zona")
+
+        # Validar GPS Anti-Fraude
+        if vehiculo_pase.zona_asignada_id and lat is not None and lon is not None:
+            zona = await db.get(ZonaEstacionamiento, vehiculo_pase.zona_asignada_id)
+            if zona and not self._validar_proximidad_zona(lat, lon, zona):
+                raise ValueError("ERROR ANTI-FRAUDE: Debe estar en la zona asignada para marcar la salida.")
 
         vehiculo_pase.ingresado = False
         vehiculo_pase.hora_salida = datetime.now(timezone.utc)
