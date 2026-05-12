@@ -70,14 +70,14 @@ class EntidadCivilService:
             
         except IntegrityError as e:
             await db.rollback()
-            msg = str(e.orig)
-            if "entidades_civiles_codigo_slug_key" in msg or "codigo_slug" in msg:
+            msg = str(e.orig).lower()
+            if "entidades_civiles_codigo_slug_key" in msg or "codigo_slug" in msg or "ix_entidades_civiles_codigo_slug" in msg:
                 raise EntidadDuplicada(f"El código generado '{slug}' ya está en uso.")
-            if "usuarios_email_key" in msg:
-                raise EntidadDuplicada(f"El email '{datos.admin_email}' ya está registrado.")
-            if "usuarios_cedula_key" in msg:
-                raise EntidadDuplicada(f"La cédula '{datos.admin_cedula}' ya está registrada.")
-            raise EntidadDuplicada("Error de integridad al crear la entidad o el administrador.")
+            if "usuarios_email_key" in msg or "ix_usuarios_email" in msg or "email" in msg:
+                raise EntidadDuplicada(f"El email '{datos.admin_email}' ya está registrado en el sistema.")
+            if "usuarios_cedula_key" in msg or "ix_usuarios_cedula" in msg or "cedula" in msg:
+                raise EntidadDuplicada(f"La cédula '{datos.admin_cedula}' ya está registrada en el sistema.")
+            raise EntidadDuplicada(f"Error de integridad en base de datos: {msg}")
 
     async def obtener_todas(
         self, db: AsyncSession, activas_solo: bool = False, skip: int = 0, limit: int = 100
