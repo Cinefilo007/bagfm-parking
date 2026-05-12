@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status, File, UploadFile, Response, Query
+from fastapi import APIRouter, Depends, HTTPException, status, File, UploadFile, Response, Query, BackgroundTasks
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import List, Dict, Any, Optional
 from uuid import UUID
@@ -27,6 +27,7 @@ GESTORES_SOCIOS = [RolTipo.COMANDANTE, RolTipo.ADMIN_BASE, RolTipo.ADMIN_ENTIDAD
 @router.post("/", response_model=SocioSalida, status_code=status.HTTP_201_CREATED)
 async def crear_socio(
     datos: SocioCrear,
+    background_tasks: BackgroundTasks,
     db: AsyncSession = Depends(obtener_db),
     usuario_actual: Usuario = Depends(require_rol(GESTORES_SOCIOS))
 ):
@@ -41,7 +42,7 @@ async def crear_socio(
                 detail="No puedes registrar socios para una entidad ajena"
             )
     
-    return await socio_service.crear_socio_con_membresia(db, datos, usuario_actual.id)
+    return await socio_service.crear_socio_con_membresia(db, datos, usuario_actual.id, background_tasks)
 
 @router.get("/entidad/{entidad_id}", response_model=List[SocioSalida])
 async def listar_socios_por_entidad(
@@ -65,6 +66,7 @@ async def listar_socios_por_entidad(
 @router.post("/importar", status_code=status.HTTP_200_OK)
 async def importar_socios_excel(
     entidad_id: UUID,
+    background_tasks: BackgroundTasks,
     file: UploadFile = File(...),
     fecha_expiracion: Optional[date] = Query(None, description="Fecha de expiración para el lote"),
     db: AsyncSession = Depends(obtener_db),
@@ -84,7 +86,8 @@ async def importar_socios_excel(
         contenido = await file.read()
         resultado = await import_service.procesar_excel_socios(
             db, contenido, entidad_id, usuario_actual.id,
-            fecha_expiracion=fecha_expiracion
+            fecha_expiracion=fecha_expiracion,
+            background_tasks=background_tasks
         )
         return resultado
     except ValueError as e:

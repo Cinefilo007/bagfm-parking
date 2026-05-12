@@ -3,6 +3,7 @@ from sqlalchemy import select, delete
 from uuid import UUID
 from typing import List, Optional
 from datetime import date
+from fastapi import BackgroundTasks
 
 from app.models.usuario import Usuario
 from app.models.entidad_civil import EntidadCivil
@@ -18,7 +19,7 @@ from app.core.excepciones import EntidadNoEncontrada, EntidadDuplicada
 from app.services.membresia_service import membresia_service
 
 class SocioService:
-    async def crear_socio_con_membresia(self, db: AsyncSession, datos: SocioCrear, creador_id: UUID) -> Usuario:
+    async def crear_socio_con_membresia(self, db: AsyncSession, datos: SocioCrear, creador_id: UUID, background_tasks: Optional[BackgroundTasks] = None) -> Usuario:
         # 1. Verificar que la entidad existe
         query_entidad = select(EntidadCivil).where(EntidadCivil.id == datos.entidad_id)
         res_entidad = await db.execute(query_entidad)
@@ -72,6 +73,55 @@ class SocioService:
         
         await db.commit()
         await db.refresh(nuevo_socio)
+        
+        # 6. Enviar correo de bienvenida si se proporcionó email y BackgroundTasks
+        if datos.email and background_tasks:
+            from app.services.correo_service import correo_masivo_service
+            from app.core.config import obtener_config
+            c_env = obtener_config()
+            raw_password = datos.password if getattr(datos, 'password', None) else datos.cedula
+            html_content = f"""
+            <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; color: #f8fafc; background-color: #0c0f17; padding: 40px; border-radius: 16px; border: 1px solid #1e293b;">
+                <div style="text-align: center; margin-bottom: 24px;">
+                    <h2 style='color: #4ade80; margin: 0; font-size: 24px; letter-spacing: 1px;'>SISTEMA TÁCTICO BAGFM</h2>
+                    <p style="color: #94a3b8; font-size: 14px; margin-top: 8px;">Portal de Accesos y Concesiones</p>
+                </div>
+                
+                <p>Saludos <strong>{datos.nombre} {datos.apellido}</strong>,</p>
+                <p>Usted ha sido registrado exitosamente como socio en <strong>{entidad.nombre}</strong>.</p>
+                
+                <div style="background-color: #1e293b; padding: 20px; border-radius: 8px; margin: 24px 0;">
+                    <h3 style="color: #cbd5e1; margin-top: 0; font-size: 14px; text-transform: uppercase; letter-spacing: 2px;">Credenciales de Acceso</h3>
+                    <ul style="list-style: none; padding: 0; margin: 0; color: #f8fafc;">
+                        <li style="margin-bottom: 12px;"><strong>Cédula:</strong> {datos.cedula}</li>
+                        <li><strong>Contraseña temporal:</strong> {raw_password}</li>
+                    </ul>
+                </div>
+                
+                <div style="text-align: center; margin: 32px 0;">
+                    <a href='{c_env.frontend_url}' style='background-color: #4ade80; color: #022c22; padding: 14px 28px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block; text-transform: uppercase; letter-spacing: 1px;'>ACCEDER AL PORTAL</a>
+                </div>
+                
+                <h3 style="color: #4ade80; font-size: 16px; margin-bottom: 12px;">Instrucciones de Uso:</h3>
+                <ul style="color: #cbd5e1; line-height: 1.6;">
+                    <li>Ingrese al portal con su cédula y contraseña.</li>
+                    <li><strong>Se le solicitará cambiar su contraseña</strong> por una más segura en su primer inicio de sesión.</li>
+                    <li>Desde el portal podrá visualizar su código QR táctico de ingreso a la Base.</li>
+                    <li>También podrá gestionar los vehículos autorizados (si aplica).</li>
+                </ul>
+                
+                <p style="color: #64748b; font-size: 12px; text-align: center; margin-top: 40px; border-top: 1px solid #1e293b; padding-top: 20px;">
+                    Mensaje automático del Sistema Táctico BAGFM. Por favor no responda a este correo.
+                </p>
+            </div>
+            """
+            background_tasks.add_task(
+                correo_masivo_service.enviar_correo_generico,
+                datos.email,
+                f"Acceso Concedido - {entidad.nombre}",
+                html_content
+            )
+
         return nuevo_socio
 
     async def eliminar_socio_cascada(self, db: AsyncSession, socio_id: UUID) -> dict:

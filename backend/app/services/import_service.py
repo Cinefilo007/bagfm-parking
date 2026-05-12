@@ -4,6 +4,7 @@ from typing import List, Dict, Any, Optional
 from uuid import UUID
 from datetime import date
 from sqlalchemy.ext.asyncio import AsyncSession
+from fastapi import BackgroundTasks
 from app.schemas.socio import SocioCrear
 from app.schemas.vehiculo import VehiculoCrear
 from app.services.socio_service import socio_service
@@ -20,7 +21,8 @@ class ImportService:
         file_content: bytes, 
         entidad_id: UUID, 
         creador_id: UUID,
-        fecha_expiracion: Optional[date] = None
+        fecha_expiracion: Optional[date] = None,
+        background_tasks: Optional[BackgroundTasks] = None
     ) -> Dict[str, Any]:
         """
         Procesa un archivo Excel para importar socios masivamente.
@@ -89,7 +91,7 @@ class ImportService:
                             color=str(color).strip().upper() if color else "S/C"
                         ))
                     
-                    await socio_service.crear_socio_con_membresia(db, datos_socio, creador_id)
+                    await socio_service.crear_socio_con_membresia(db, datos_socio, creador_id, background_tasks)
                     resumen["exitosos"] += 1
                     
                 except Exception as e:
