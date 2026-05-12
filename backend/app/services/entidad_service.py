@@ -86,11 +86,14 @@ class EntidadCivilService:
         from sqlalchemy import func
         from app.models.vehiculo import Vehiculo
 
-        # Subconsulta para contar usuarios por entidad (Solo Socios)
         usuarios_sub = select(
             Usuario.entidad_id,
             func.count(Usuario.id).label("total_usuarios")
-        ).where(Usuario.rol == RolTipo.SOCIO).group_by(Usuario.entidad_id).subquery()
+        ).where(
+            Usuario.rol == RolTipo.SOCIO,
+            Usuario.activo == True,
+            Usuario.is_deleted == False
+        ).group_by(Usuario.entidad_id).subquery()
 
         # Subconsulta para contar vehículos por entidad
         vehiculos_sub = select(
@@ -204,10 +207,11 @@ class EntidadCivilService:
         if not entidad:
             raise EntidadNoEncontrada("La entidad solicitada no existe.")
             
-        # Obtener métricas rápidas (Solo Socios)
         q_u = select(func.count(Usuario.id)).where(
             Usuario.entidad_id == entidad_id,
-            Usuario.rol == RolTipo.SOCIO
+            Usuario.rol == RolTipo.SOCIO,
+            Usuario.activo == True,
+            Usuario.is_deleted == False
         )
         entidad.total_usuarios = (await db.execute(q_u)).scalar() or 0
         
@@ -294,7 +298,11 @@ class EntidadCivilService:
         total_e = (await db.execute(select(func.count(EntidadCivil.id)))).scalar() or 0
         total_in = (await db.execute(select(func.count(EntidadCivil.id)).where(EntidadCivil.activo == False))).scalar() or 0
         total_v = (await db.execute(select(func.count(Vehiculo.id)))).scalar() or 0
-        total_u = (await db.execute(select(func.count(Usuario.id)).where(Usuario.rol == RolTipo.SOCIO))).scalar() or 0
+        total_u = (await db.execute(select(func.count(Usuario.id)).where(
+            Usuario.rol == RolTipo.SOCIO,
+            Usuario.activo == True,
+            Usuario.is_deleted == False
+        ))).scalar() or 0
         
         return {
             "total_entidades": total_e,
