@@ -57,19 +57,43 @@ class SocioService:
             puestos_asignados=getattr(datos, 'puestos_asignados', 1)
         )
 
-        # 5. Crear Vehículos (Opcional)
+        # 5. Crear o Vincular Vehículos (Opcional - Aegis Tactical v2.4)
         if datos.vehiculos:
             for v_data in datos.vehiculos:
-                nuevo_v = Vehiculo(
-                    placa=v_data.placa.upper(),
-                    marca=v_data.marca.upper(),
-                    modelo=v_data.modelo.upper(),
-                    color=v_data.color.upper(),
-                    año=v_data.año,
-                    tipo=v_data.tipo,
-                    socio_id=nuevo_socio.id
-                )
-                db.add(nuevo_v)
+                placa = v_data.placa.upper()
+                # Verificar si la placa ya existe
+                q_v = select(Vehiculo).where(Vehiculo.placa == placa)
+                res_v = await db.execute(q_v)
+                vehiculo_existente = res_v.scalars().first()
+
+                if vehiculo_existente:
+                    # Lógica de transferencia: Si el dueño es un temporal (Invitado)
+                    q_owner = select(Usuario).where(Usuario.id == vehiculo_existente.socio_id)
+                    res_owner = await db.execute(q_owner)
+                    dueno_actual = res_owner.scalar_one_or_none()
+
+                    if dueno_actual and dueno_actual.cedula.startswith("BAGFM-"):
+                        # Transferir al socio permanente
+                        vehiculo_existente.socio_id = nuevo_socio.id
+                        vehiculo_existente.marca = v_data.marca.upper()
+                        vehiculo_existente.modelo = v_data.modelo.upper()
+                        vehiculo_existente.color = v_data.color.upper()
+                        vehiculo_existente.activo = True
+                        # No necesitamos db.add() porque ya existe en el estado de la sesión
+                    else:
+                        raise EntidadDuplicada(f"La placa {placa} ya está vinculada a otro miembro activo")
+                else:
+                    # Crear nuevo vehículo
+                    nuevo_v = Vehiculo(
+                        placa=placa,
+                        marca=v_data.marca.upper(),
+                        modelo=v_data.modelo.upper(),
+                        color=v_data.color.upper(),
+                        año=v_data.año,
+                        tipo=v_data.tipo,
+                        socio_id=nuevo_socio.id
+                    )
+                    db.add(nuevo_v)
         
         await db.commit()
         await db.refresh(nuevo_socio)

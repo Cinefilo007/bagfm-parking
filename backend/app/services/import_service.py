@@ -71,7 +71,7 @@ class ImportService:
                     cedula = str(cedula).strip().upper()
                     nombre = str(nombre).strip().upper()
                     apellido = str(apellido).strip().upper()
-                    email = str(email).strip().lower() if email else None
+                    email = str(email).replace(" ", "").lower() if email else None
                     telefono = str(telefono).strip() if telefono else None
                     
                     # La contraseña por defecto será la cédula (incluso si es la temporal)
@@ -109,6 +109,9 @@ class ImportService:
                     resumen["exitosos"] += 1
                     
                 except Exception as e:
+                    # CRITICAL: Si una fila falla (ej: placa duplicada), debemos hacer rollback
+                    # para que la sesión pueda procesar la siguiente fila.
+                    await db.rollback()
                     logger.error(f"Error procesando fila {index}: {str(e)}")
                     resumen["errores"].append({
                         "fila": index,
