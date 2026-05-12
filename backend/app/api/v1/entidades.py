@@ -15,7 +15,7 @@ from app.models.codigo_qr import CodigoQR
 from app.models.vehiculo_pase import VehiculoPase
 from app.models.asignacion_zona import AsignacionZona
 from app.models.zona_estacionamiento import ZonaEstacionamiento
-from app.schemas.entidad_civil import EntidadCivilCrear, EntidadCivilSalida
+from app.schemas.entidad_civil import EntidadCivilCrear, EntidadCivilSalida, EntidadCivilActualizar
 from app.services.entidad_service import entidad_service
 from sqlalchemy.orm import joinedload
 
@@ -84,7 +84,7 @@ async def obtener_entidad(
 @router.put("/{id}", response_model=EntidadCivilSalida)
 async def actualizar_entidad(
     id: UUID,
-    datos: EntidadCivilCrear,
+    datos: EntidadCivilActualizar,
     db: AsyncSession = Depends(obtener_db),
     usuario_actual: Usuario = DEPENDENCY_ADMIN_BASE,
 ):

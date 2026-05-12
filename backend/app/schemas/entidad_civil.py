@@ -21,6 +21,12 @@ class EntidadCivilCrear(EntidadCivilBase):
     admin_email: str
     admin_password: str
 
+class EntidadCivilActualizar(BaseModel):
+    nombre: Optional[str] = None
+    codigo_slug: Optional[str] = None
+    descripcion: Optional[str] = None
+    activo: Optional[bool] = None
+
 class EntidadCivilSalida(EntidadCivilBase):
     id: UUID
     codigo_slug: str # En la salida siempre vendrá el slug

@@ -14,7 +14,7 @@ from app.models.alcabala_evento import SolicitudEvento
 from app.models.acceso import Acceso
 from app.models.asignacion_zona import AsignacionZona
 from app.models.enums import RolTipo
-from app.schemas.entidad_civil import EntidadCivilCrear
+from app.schemas.entidad_civil import EntidadCivilCrear, EntidadCivilActualizar
 from app.core.excepciones import EntidadDuplicada, EntidadNoEncontrada
 from app.core.security import hashear_password
 from sqlalchemy import delete
@@ -204,7 +204,7 @@ class EntidadCivilService:
         return entidad
 
     async def actualizar(
-        self, db: AsyncSession, entidad_id: UUID, datos: EntidadCivilCrear
+        self, db: AsyncSession, entidad_id: UUID, datos: EntidadCivilActualizar
     ) -> EntidadCivil:
         """SOP: Actualiza entidad."""
         entidad = await self.obtener_por_id(db, entidad_id)

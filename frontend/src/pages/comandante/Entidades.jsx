@@ -5,7 +5,7 @@ import { Card } from '../../components/ui/Card';
 import { Badge } from '../../components/ui/Badge';
 import { Modal } from '../../components/ui/Modal';
 import { Input } from '../../components/ui/Input';
-import { Network, Plus, ShieldCheck, Store, Power, Activity, Users, Car, AlertTriangle, ChevronDown, Trash2 } from 'lucide-react';
+import { Network, Plus, ShieldCheck, Store, Power, Activity, Users, Car, AlertTriangle, ChevronDown, Trash2, Edit2 } from 'lucide-react';
 import api from '../../services/api';
 
 export default function Entidades() {
@@ -31,6 +31,10 @@ export default function Entidades() {
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [entidadADelete, setEntidadADelete] = useState(null);
   const [eliminando, setEliminando] = useState(false);
+
+  const [editModalOpen, setEditModalOpen] = useState(false);
+  const [entidadAEditar, setEntidadAEditar] = useState(null);
+  const [editando, setEditando] = useState(false);
 
   const fetchStats = async () => {
     try {
@@ -118,6 +122,25 @@ export default function Entidades() {
     }
   };
 
+  const handleGuardarEdicion = async (e) => {
+    e.preventDefault();
+    if (!entidadAEditar) return;
+    setEditando(true);
+    try {
+      await api.put(`/entidades/${entidadAEditar.id}`, {
+        nombre: entidadAEditar.nombre
+      });
+      setEditModalOpen(false);
+      setEntidadAEditar(null);
+      fetchEntidades();
+    } catch (err) {
+      console.error("Error editando entidad", err);
+      alert("Error al guardar los cambios");
+    } finally {
+      setEditando(false);
+    }
+  };
+
   const EntidadCard = ({ ent, handleToggleEstado }) => {
     const [isOpen, setIsOpen] = useState(false);
 
@@ -153,6 +176,19 @@ export default function Entidades() {
                  title={ent.activo ? "Suspender Entidad" : "Reactivar Entidad"}
                >
                   <Power size={18} />
+               </Boton>
+               
+               <Boton 
+                 variant="ghost" 
+                 className="p-2 min-h-0 w-auto rounded-full text-blue-400 hover:bg-blue-500/10 border border-bg-high/10"
+                 onClick={(e) => {
+                   e.stopPropagation();
+                   setEntidadAEditar(ent);
+                   setEditModalOpen(true);
+                 }}
+                 title="Editar Entidad"
+               >
+                  <Edit2 size={18} />
                </Boton>
                
                <Boton 
@@ -440,7 +476,35 @@ export default function Entidades() {
                 {eliminando ? 'PURGANDO...' : 'SÍ, ELIMINAR'}
               </Boton>
            </div>
-        </div>
+         </div>
+      </Modal>
+
+      {/* Modal de Edición */}
+      <Modal 
+        isOpen={editModalOpen} 
+        onClose={() => !editando && setEditModalOpen(false)} 
+        title="EDITAR ENTIDAD"
+      >
+        <form onSubmit={handleGuardarEdicion} className="space-y-4 max-h-[70vh] overflow-y-auto px-1 no-scrollbar">
+           <div className="space-y-3">
+             <h3 className="text-[10px] uppercase font-bold text-primary tracking-[0.2em] mb-2 border-b border-primary/20 pb-1">
+               Datos Generales
+             </h3>
+              <Input 
+                label="Nombre de la Entidad"
+                icon={<Store size={16} />}
+                required
+                placeholder="Ej: AEROCLUB"
+                value={entidadAEditar?.nombre || ''}
+                onChange={(e) => setEntidadAEditar({...entidadAEditar, nombre: e.target.value.toUpperCase()})}
+              />
+            </div>
+           <div className="pt-4 sticky bottom-0 bg-bg-card pb-2">
+             <Boton type="submit" className="w-full" disabled={editando}>
+                {editando ? 'GUARDANDO...' : 'GUARDAR CAMBIOS'}
+             </Boton>
+           </div>
+        </form>
       </Modal>
     </div>
   );
