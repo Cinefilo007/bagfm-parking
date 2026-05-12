@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { X, Download, Package, FileText, Settings } from 'lucide-react';
+import { X, Download, Package, FileText, Settings, FileSpreadsheet } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import { Boton } from '../ui/Boton';
 import { toast } from 'react-hot-toast';
@@ -97,6 +97,17 @@ export default function ModalExportarLote({ isOpen, onClose, lote }) {
     if (!isOpen) return null;
 
     const iniciarProceso = async () => {
+        if (tipoDescarga === 'excel') {
+            onClose();
+            try {
+                await pasesService.descargarExcelLote(lote.id);
+                toast.success('Listado Excel descargado correctamente');
+            } catch (e) {
+                toast.error('Error al generar el listado Excel');
+            }
+            return;
+        }
+
         if (tipoDescarga === 'qr') {
             onClose();
             if (lote.zip_url) {
@@ -334,6 +345,17 @@ export default function ModalExportarLote({ isOpen, onClose, lote }) {
                                     >
                                         <FileText size={24} />
                                         <span className="text-xs font-black uppercase">Carnets Diseñados</span>
+                                    </div>
+                                    <div 
+                                        onClick={() => setTipoDescarga('excel')}
+                                        className={cn("p-4 border rounded-xl cursor-pointer transition-all flex flex-col items-center justify-center text-center gap-2 col-span-2", 
+                                        tipoDescarga === 'excel' ? 'bg-primary/10 border-primary text-primary' : 'bg-black/20 border-white/5 text-text-muted hover:bg-white/5')}
+                                    >
+                                        <FileSpreadsheet size={24} />
+                                        <div className="flex flex-col">
+                                            <span className="text-xs font-black uppercase">Listado Excel</span>
+                                            <span className="text-[9px] opacity-60 uppercase font-bold">Incluye links de acceso rápido</span>
+                                        </div>
                                     </div>
                                 </div>
                             </div>

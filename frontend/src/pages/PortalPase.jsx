@@ -211,10 +211,8 @@ const PortalPase = () => {
     }
 
     // Lógica de visualización:
-    // Si el pase no tiene datos completos (cualquier tipo, incluye pases de base en modo portal)
-    // mostrar el formulario de autoregistro. De lo contrario mostrar el QR.
-    const esBaseSinDatos = !pase.nombre && !pase.cedula;
-    const mostrarForm = (lote?.tipo_pase === 'portal' || !lote?.tipo_pase || esBaseSinDatos) && esBaseSinDatos;
+    // Si el pase no tiene datos completos (marcado por el backend), mostramos el formulario
+    const mostrarForm = !pase.datos_completos;
 
     // Configuración de visualización dinámica (v2.4.1)
     const visual = pase?.visual || { layout: 'qr', color_preset: 'aegis' };
@@ -277,6 +275,14 @@ const PortalPase = () => {
                                         <h2 className="text-xl font-bold tracking-tight">Completar Registro</h2>
                                         <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest">Credencial para el evento</p>
                                     </div>
+                                </div>
+
+                                <div className="mb-6 p-4 bg-yellow-500/10 border border-yellow-500/20 rounded-xl flex gap-3 items-start">
+                                    <AlertTriangle className="w-5 h-5 text-yellow-500 shrink-0 mt-0.5" />
+                                    <p className="text-[11px] leading-relaxed text-yellow-200/80 font-medium">
+                                        <strong className="text-yellow-500">¡AVISO IMPORTANTE!</strong><br />
+                                        De no completar todos sus datos (personales y del vehículo) le tocará perder tiempo valioso registrándose manualmente con el personal de seguridad en la base. Evite demoras y complete su ficha ahora.
+                                    </p>
                                 </div>
 
                                 <form onSubmit={handleSave} className="space-y-4">

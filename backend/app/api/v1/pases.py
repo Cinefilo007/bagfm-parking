@@ -207,6 +207,28 @@ async def generar_pdf_lote(
         }
     )
 
+@router.get("/lotes/{lote_id}/excel")
+async def descargar_excel_lote(
+    lote_id: UUID,
+    db: AsyncSession = Depends(obtener_db),
+    usuario_actual: Usuario = Depends(require_rol(ADMIN_ROLES + [RolTipo.ALCABALA]))
+):
+    """Genera y sirve un Excel con los links de acceso al portal para cada pase."""
+    lote = await db.get(LotePaseMasivo, lote_id)
+    if not lote:
+        raise HTTPException(status_code=404, detail="Lote no encontrado")
+        
+    from fastapi.responses import StreamingResponse
+    excel_buffer = await pase_service.generar_excel_lote(db, lote_id)
+    
+    return StreamingResponse(
+        excel_buffer,
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={
+            "Content-Disposition": f"attachment; filename=LISTADO_PASES_{lote.codigo_serial}.xlsx"
+        }
+    )
+
 @router.post("/lotes/{lote_id}/importar-excel")
 async def importar_excel_lote(
     lote_id: UUID,
@@ -470,7 +492,8 @@ async def obtener_pase_publico(token: str, db: AsyncSession = Depends(obtener_db
                 "modelo": pase.vehiculo_modelo,
                 "color": pase.vehiculo_color
             },
-            "visual": visual
+            "visual": visual,
+            "datos_completos": pase.datos_completos
         },
         "lote": lote_data
     }
@@ -520,12 +543,12 @@ async def completar_pase_publico(
     if pase.datos_completos:
         raise HTTPException(status_code=403, detail="Este pase ya fue completado. No se permite modificación.")
 
-    # Caso A: Pase con lote — validar que sea tipo portal
+    # Caso A: Pase con lote — validar que sea tipo portal o identificado
     if pase.lote_id:
         lote = await db.get(LotePaseMasivo, pase.lote_id)
         from app.models.enums import PasseTipo
-        if not lote or lote.tipo_pase != PasseTipo.portal:
-            raise HTTPException(status_code=403, detail="Solo se pueden completar pases de tipo autorregistro")
+        if not lote or (lote.tipo_pase != PasseTipo.portal and lote.tipo_pase != PasseTipo.identificado):
+            raise HTTPException(status_code=403, detail="Solo se pueden completar pases de tipo autorregistro o identificados incompletos")
     # Caso B: Pase de base/comando sin lote — permitir completar
     else:
         from app.models.enums import TipoAccesoPase

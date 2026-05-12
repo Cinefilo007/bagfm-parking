@@ -717,6 +717,7 @@ class PaseService:
         import io
         
         df = pd.read_excel(io.BytesIO(contenido_excel))
+        df = df.where(pd.notnull(df), None)
         filas = df.values.tolist()
         await self.procesar_json_identificado(db, lote, filas, creado_por_id)
 
@@ -762,6 +763,9 @@ class PaseService:
             serial_qr = f"{lote.codigo_serial}{str(count + 1).zfill(4)}"
             token = crear_token_evento(serial_qr, expira_at)
             
+            # Verificar si faltan datos importantes (Cédula o cualquier dato del vehículo principal)
+            datos_estan_completos = bool(nombre and cedula and v1_data[0] and v1_data[1] and v1_data[2] and v1_data[3])
+            
             nuevo_qr = CodigoQR(
                 token=token,
                 tipo=QRTipo.evento_identificado,
@@ -784,7 +788,8 @@ class PaseService:
                 tipo_acceso_custom_id=lote.tipo_acceso_custom_id if hasattr(lote, 'tipo_acceso_custom_id') else None,
                 zona_asignada_id=zona_final_id,
                 multi_vehiculo=bool(v2_data[0] or v3_data[0] or v4_data[0]),
-                max_vehiculos=lote.max_vehiculos
+                max_vehiculos=lote.max_vehiculos,
+                datos_completos=datos_estan_completos
             )
             db.add(nuevo_qr)
             await db.flush()
@@ -981,6 +986,42 @@ class PaseService:
             return public_url
             
         return "storage_not_configured"
+
+    async def generar_excel_lote(self, db: AsyncSession, lote_id: uuid.UUID, base_url: str = "https://bagfm.app") -> io.BytesIO:
+        """
+        Genera un archivo Excel con el listado de pases y sus links de acceso rápido al portal.
+        """
+        import pandas as pd
+        lote = await db.get(LotePaseMasivo, lote_id)
+        if not lote: return None
+        
+        query = select(CodigoQR).where(CodigoQR.lote_id == lote.id).order_by(CodigoQR.serial_legible.asc())
+        res = await db.execute(query)
+        qrs = res.scalars().all()
+        
+        data = []
+        for qr in qrs:
+            data.append({
+                "SERIAL": qr.serial_legible,
+                "NOMBRE": qr.nombre_portador or "INVITADO",
+                "CEDULA": qr.cedula_portador or "PÓRTAL",
+                "EMAIL": qr.email_portador or "",
+                "TELEFONO": qr.telefono_portador or "",
+                "PLACA": qr.vehiculo_placa or "",
+                "MARCA": qr.vehiculo_marca or "",
+                "MODELO": qr.vehiculo_modelo or "",
+                "COLOR": qr.vehiculo_color or "",
+                "LINK ACCESO RÁPIDO": f"{base_url}/portal/pase/{qr.token}",
+                "DATOS COMPLETOS": "SI" if qr.datos_completos else "NO"
+            })
+            
+        df = pd.DataFrame(data)
+        excel_buffer = io.BytesIO()
+        with pd.ExcelWriter(excel_buffer, engine='openpyxl') as writer:
+            df.to_excel(writer, index=False, sheet_name='PASES_GENERADOS')
+            
+        excel_buffer.seek(0)
+        return excel_buffer
 
     async def actualizar_pase(self, db: AsyncSession, pase_id: uuid.UUID, datos: dict) -> CodigoQR:
         """Actualiza datos de un pase individual (portador, vehículo, etc)."""

@@ -129,6 +129,17 @@ export const pasesService = {
     if (tipo_acceso_custom_id) params.tipo_acceso_custom_id = tipo_acceso_custom_id;
     const res = await api.get('/pases/lotes/validar-capacidad', { params });
     return res.data;
+  },
+
+  async descargarExcelLote(loteId) {
+    const res = await api.get(`/pases/lotes/${loteId}/excel`, { responseType: 'blob' });
+    const url = window.URL.createObjectURL(new Blob([res.data]));
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', `LISTADO_PASES.xlsx`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   }
 };
 
