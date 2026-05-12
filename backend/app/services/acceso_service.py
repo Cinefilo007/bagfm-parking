@@ -618,6 +618,20 @@ class AccesoService:
                         zona_id_acceso = asig_list[0].zona_id
 
         # 4. Persistir Acceso
+        # Auto-poblar datos de vehículo si tenemos vehiculo_id pero no datos manuales (v2.5)
+        v_placa = datos.vehiculo_placa
+        v_marca = datos.vehiculo_marca
+        v_modelo = datos.vehiculo_modelo
+        v_color = datos.vehiculo_color
+        
+        if not v_placa and final_vehiculo_id:
+            v_db_notif = await db.get(Vehiculo, final_vehiculo_id)
+            if v_db_notif:
+                v_placa = v_db_notif.placa
+                v_marca = v_db_notif.marca
+                v_modelo = v_db_notif.modelo
+                v_color = v_db_notif.color
+
         nuevo_acceso = Acceso(
             qr_id = datos.qr_id,
             usuario_id = final_usuario_id,
@@ -631,10 +645,10 @@ class AccesoService:
             nombre_manual = datos.nombre_manual,
             cedula_manual = datos.cedula_manual,
             telefono_manual = datos.telefono_manual,
-            vehiculo_placa = datos.vehiculo_placa,
-            vehiculo_marca = datos.vehiculo_marca,
-            vehiculo_modelo = datos.vehiculo_modelo,
-            vehiculo_color = datos.vehiculo_color,
+            vehiculo_placa = v_placa,
+            vehiculo_marca = v_marca,
+            vehiculo_modelo = v_modelo,
+            vehiculo_color = v_color,
             observaciones = datos.observaciones,
             es_excepcion = datos.es_excepcion,
             # Zona de destino persistida en el momento del acceso
@@ -673,39 +687,52 @@ class AccesoService:
             except Exception as e:
                 print(f"[TACTICAL] Error notificar a entidad: {e}")
 
-        # 5.2 Notificaciones de flujo normal
-        if datos.qr_id and datos.tipo == AccesoTipo.entrada:
+        # 5.2 Notificaciones de flujo normal (Parqueros)
+        if (datos.qr_id or final_usuario_id) and datos.tipo == AccesoTipo.entrada:
             try:
-                # Recargar QR para asegurar que tenemos los datos frescos post-commit
-                qr_db = await db.get(CodigoQR, datos.qr_id)
-                if qr_db:
-                    # Resolver Zona: Usar la zona persistida en el registro de acceso (Aegis v2.4)
-                    zona_id = nuevo_acceso.zona_id
+                # Resolver Zona: Usar la zona persistida en el registro de acceso (Aegis v2.4)
+                zona_id = nuevo_acceso.zona_id
+                
+                if zona_id:
+                    # 1. Determinar Nombre del Conductor
+                    nombre_socio = "Socio Desconocido"
+                    if final_usuario_id:
+                        u_notif = await db.get(Usuario, final_usuario_id)
+                        if u_notif:
+                            nombre_socio = f"{u_notif.nombre} {u_notif.apellido}"
+                    elif nuevo_acceso.nombre_manual:
+                        nombre_socio = nuevo_acceso.nombre_manual
+                    else:
+                        qr_n = await db.get(CodigoQR, datos.qr_id) if datos.qr_id else None
+                        if qr_n and qr_n.nombre_portador:
+                            nombre_socio = f"{qr_n.nombre_portador} (PASE)"
                     
-                    if zona_id:
-                        # Datos para la notificación - Priorizar datos manuales de la captura actual
-                        tiene_placa = nuevo_acceso.vehiculo_placa or (qr_db.vehiculo_placa if qr_db else None)
-                        tiene_nombre = nuevo_acceso.nombre_manual or (qr_db.nombre_portador if qr_db else None)
-                        
-                        if not tiene_placa and not tiene_nombre:
-                            placa = "PASE SIN REGISTROS"
-                            detalles = "ESTÉ PENDIENTE PARA RECIBIR Y REGISTRAR VEHÍCULO"
-                            nombre_visitante = "NUEVO VISITANTE"
-                        else:
-                            placa = tiene_placa or "SIN PLACA REGISTRADA"
-                            mca = nuevo_acceso.vehiculo_marca or (qr_db.vehiculo_marca if qr_db else "")
-                            mod = nuevo_acceso.vehiculo_modelo or (qr_db.vehiculo_modelo if qr_db else "")
-                            col = nuevo_acceso.vehiculo_color or (qr_db.vehiculo_color if qr_db else "")
-                            detalles = " ".join(filter(None, [mca, mod, col])) or "Pase Masivo"
-                            nombre_visitante = tiene_nombre or "Visitante"
-                        
-                        await notificacion_service.notificar_entrada_vehiculo(
-                            db,
-                            zona_id=zona_id,
-                            placa=placa,
-                            detalles_vehiculo=detalles,
-                            nombre_socio=nombre_visitante
-                        )
+                    # 2. Determinar Vehículo
+                    placa = "S/P"
+                    detalles = "Detalles no registrados"
+                    
+                    if final_vehiculo_id:
+                        v_notif = await db.get(Vehiculo, final_vehiculo_id)
+                        if v_notif:
+                            placa = v_notif.placa
+                            detalles = f"{v_notif.marca} {v_notif.modelo} ({v_notif.color})"
+                    elif nuevo_acceso.vehiculo_placa:
+                        placa = nuevo_acceso.vehiculo_placa
+                        detalles = " ".join(filter(None, [nuevo_acceso.vehiculo_marca, nuevo_acceso.vehiculo_modelo, nuevo_acceso.vehiculo_color])) or "Registro Manual"
+                    else:
+                        qr_v = await db.get(CodigoQR, datos.qr_id) if datos.qr_id else None
+                        if qr_v and qr_v.vehiculo_placa:
+                            placa = qr_v.vehiculo_placa
+                            detalles = " ".join(filter(None, [qr_v.vehiculo_marca, qr_v.vehiculo_modelo, qr_v.vehiculo_color])) or "Pase Temporal"
+
+                    # 3. Enviar Notificación
+                    await notificacion_service.notificar_entrada_vehiculo(
+                        db,
+                        zona_id=zona_id,
+                        placa=placa,
+                        detalles_vehiculo=detalles,
+                        nombre_socio=nombre_socio
+                    )
             except Exception as e:
                 # Loguear error pero no propagar para no romper la respuesta al guardia
                 print(f"⚠️ ERROR no crítico enviando notificación: {str(e)}")
@@ -738,41 +765,49 @@ class AccesoService:
             vehiculo_str = "SIN VEHÍCULO"
             es_pase_temporal = False
             
-            # 1. Resolver Nombre y Tipo
+            # 1. Resolver Nombre y Tipo (Mejorado v2.5)
             if u:
                 usuario_nombre = f"{u.nombre} {u.apellido}"
+            elif acc.nombre_manual:
+                usuario_nombre = f"{acc.nombre_manual} (MANUAL)"
             elif acc.qr_id:
                 es_pase_temporal = True
                 qr_db = await db.get(CodigoQR, acc.qr_id)
                 if qr_db and qr_db.nombre_portador:
                     usuario_nombre = f"{qr_db.nombre_portador} (PASE)"
             
-            # 2. Resolver Vehículo
+            # 2. Resolver Vehículo (Mejorado v2.5)
             if acc.vehiculo_id:
                 v = await db.get(Vehiculo, acc.vehiculo_id)
                 if v:
                     vehiculo_str = f"{v.marca} {v.modelo} [{v.placa}]"
+            elif acc.vehiculo_placa:
+                # Priorizar datos de trazabilidad del Acceso
+                mca = acc.vehiculo_marca or ""
+                mod = acc.vehiculo_modelo or ""
+                detalles = " ".join(filter(None, [mca, mod]))
+                if detalles:
+                    vehiculo_str = f"{detalles} [{acc.vehiculo_placa}]"
+                else:
+                    vehiculo_str = f"REGISTRO [{acc.vehiculo_placa}]"
             elif acc.vehiculo_pase_id:
                 # El usuario entró con un vehículo secundario del pase masivo
                 vp = await db.get(VehiculoPase, acc.vehiculo_pase_id)
                 if vp:
                     mca = vp.marca or ""
                     mod = vp.modelo or ""
-                    col = vp.color or ""
-                    detalles = " ".join(filter(None, [mca, mod, col]))
+                    detalles = " ".join(filter(None, [mca, mod]))
                     if detalles:
                         vehiculo_str = f"{detalles} [{vp.placa}]"
                     else:
                         vehiculo_str = f"PASE [{vp.placa}]"
             elif acc.qr_id:
-                # Reutilizar qr_db si ya se cargó, sino cargarlo
-                if 'qr_db' not in locals() or not qr_db:
-                    qr_db = await db.get(CodigoQR, acc.qr_id)
+                # Fallback al QR
+                qr_db = await db.get(CodigoQR, acc.qr_id)
                 if qr_db and qr_db.vehiculo_placa:
                     mca = qr_db.vehiculo_marca or ""
                     mod = qr_db.vehiculo_modelo or ""
-                    col = qr_db.vehiculo_color or ""
-                    detalles = " ".join(filter(None, [mca, mod, col]))
+                    detalles = " ".join(filter(None, [mca, mod]))
                     if detalles:
                         vehiculo_str = f"{detalles} [{qr_db.vehiculo_placa}]"
                     else:

@@ -657,12 +657,20 @@ class ParqueroService:
 
             info_pase = {"nombre": "GENERAL", "color": "#94a3b8"}
 
-            # ── Intenta resolver el portador si es un Socio Fijo ──
-            if not portador and acceso.usuario_id:
+            # ── Intenta resolver el portador y vehículo si es un Socio Fijo ──
+            if acceso.usuario_id:
                 u = await db.get(Usuario, acceso.usuario_id)
                 if u:
-                    portador = f"{u.nombre} {u.apellido}".strip()
+                    if not portador: portador = f"{u.nombre} {u.apellido}".strip()
                     info_pase = {"nombre": "SOCIO PERMANENTE", "color": "#3b82f6"}
+                
+                if not placa and acceso.vehiculo_id:
+                    v = await db.get(Vehiculo, acceso.vehiculo_id)
+                    if v:
+                        placa = v.placa
+                        marca = v.marca
+                        modelo = v.modelo
+                        color = v.color
 
             falta_datos = False
             if acceso.qr_id:
