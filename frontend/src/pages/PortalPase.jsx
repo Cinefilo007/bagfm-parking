@@ -14,6 +14,7 @@ import {
   Download,
   Info,
   QrCode as QrIcon,
+  Plus,
   Share2
 } from 'lucide-react';
 import { QRCode } from 'react-qr-code';
@@ -37,7 +38,8 @@ const PortalPase = () => {
         placa: '',
         marca: '',
         modelo: '',
-        color: ''
+        color: '',
+        vehiculos_adicionales: []
     });
 
     useEffect(() => {
@@ -60,7 +62,8 @@ const PortalPase = () => {
                     placa: data.pase.vehiculo?.placa || '',
                     marca: data.pase.vehiculo?.marca || '',
                     modelo: data.pase.vehiculo?.modelo || '',
-                    color: data.pase.vehiculo?.color || ''
+                    color: data.pase.vehiculo?.color || '',
+                    vehiculos_adicionales: data.pase.vehiculos_adicionales || []
                 });
             }
         } catch (err) {
@@ -68,6 +71,12 @@ const PortalPase = () => {
         } finally {
             setLoading(false);
         }
+    };
+
+    const updateVehiculoExtra = (index, field, value) => {
+        const updated = [...form.vehiculos_adicionales];
+        updated[index] = { ...updated[index], [field]: value.toUpperCase() };
+        setForm({ ...form, vehiculos_adicionales: updated });
     };
 
     const handleSave = async (e) => {
@@ -337,7 +346,7 @@ const PortalPase = () => {
                                     <div className="pt-6 pb-2 border-t border-white/5 mt-6">
                                         <div className="flex items-center gap-2 mb-4">
                                             <Car className="w-4 h-4" style={style.dynamicAccent} />
-                                            <span className="text-[10px] font-black uppercase tracking-[0.2em]">Registro de Vehículo</span>
+                                            <span className="text-[10px] font-black uppercase tracking-[0.2em]">Registro de Vehículo Principal</span>
                                         </div>
                                         
                                         <div className="grid grid-cols-2 gap-4">
@@ -381,6 +390,62 @@ const PortalPase = () => {
                                                 />
                                             </div>
                                         </div>
+
+                                        {/* Vehículos Adicionales */}
+                                        {form.vehiculos_adicionales.length > 0 && (
+                                            <div className="space-y-6 mt-6 pt-6 border-t border-white/5">
+                                                {form.vehiculos_adicionales.map((v, idx) => (
+                                                    <div key={v.id || idx} className="space-y-4 animate-in slide-in-from-bottom-2">
+                                                        <div className="flex items-center gap-2">
+                                                            <Plus size={14} style={style.dynamicAccent} />
+                                                            <span className="text-[10px] font-black uppercase tracking-[0.2em]">Vehículo Adicional {idx + 2}</span>
+                                                        </div>
+                                                        
+                                                        <div className="grid grid-cols-2 gap-4">
+                                                            <div className="space-y-2">
+                                                                <label className="text-[10px] font-black text-gray-500 uppercase ml-1 tracking-[0.15em]">Placa</label>
+                                                                <input 
+                                                                    value={v.placa}
+                                                                    onChange={(e) => updateVehiculoExtra(idx, 'placa', e.target.value)}
+                                                                    className="w-full bg-[#121214] border border-white/5 rounded-xl px-4 py-3 text-sm font-bold focus:border-white/20 outline-none transition-all uppercase"
+                                                                    placeholder="PLACA"
+                                                                />
+                                                            </div>
+                                                            <div className="space-y-2">
+                                                                <label className="text-[10px] font-black text-gray-500 uppercase ml-1 tracking-[0.15em]">Color</label>
+                                                                <input 
+                                                                    value={v.color}
+                                                                    onChange={(e) => updateVehiculoExtra(idx, 'color', e.target.value)}
+                                                                    className="w-full bg-[#121214] border border-white/5 rounded-xl px-4 py-3 text-sm font-bold focus:border-white/20 outline-none transition-all uppercase"
+                                                                    placeholder="COLOR"
+                                                                />
+                                                            </div>
+                                                        </div>
+
+                                                        <div className="grid grid-cols-2 gap-4">
+                                                            <div className="space-y-2">
+                                                                <label className="text-[10px] font-black text-gray-500 uppercase ml-1 tracking-[0.15em]">Marca</label>
+                                                                <input 
+                                                                    value={v.marca}
+                                                                    onChange={(e) => updateVehiculoExtra(idx, 'marca', e.target.value)}
+                                                                    className="w-full bg-[#121214] border border-white/5 rounded-xl px-4 py-3 text-sm font-bold focus:border-white/20 outline-none transition-all uppercase"
+                                                                    placeholder="MARCA"
+                                                                />
+                                                            </div>
+                                                            <div className="space-y-2">
+                                                                <label className="text-[10px] font-black text-gray-500 uppercase ml-1 tracking-[0.15em]">Modelo</label>
+                                                                <input 
+                                                                    value={v.modelo}
+                                                                    onChange={(e) => updateVehiculoExtra(idx, 'modelo', e.target.value)}
+                                                                    className="w-full bg-[#121214] border border-white/5 rounded-xl px-4 py-3 text-sm font-bold focus:border-white/20 outline-none transition-all uppercase"
+                                                                    placeholder="MODELO"
+                                                                />
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        )}
                                     </div>
 
                                     <button 

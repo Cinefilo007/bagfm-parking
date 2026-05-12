@@ -391,7 +391,8 @@ async def obtener_pase_publico(token: str, db: AsyncSession = Depends(obtener_db
     from sqlalchemy.orm import joinedload
     query = select(CodigoQR).where(CodigoQR.token == token).options(
         joinedload(CodigoQR.tipo_acceso_custom),
-        joinedload(CodigoQR.zona_asignada)
+        joinedload(CodigoQR.zona_asignada),
+        joinedload(CodigoQR.vehiculos_adicionales)
     )
     res = await db.execute(query)
     pase = res.unique().scalar_one_or_none()
@@ -494,6 +495,15 @@ async def obtener_pase_publico(token: str, db: AsyncSession = Depends(obtener_db
                 "modelo": pase.vehiculo_modelo,
                 "color": pase.vehiculo_color
             },
+            "vehiculos_adicionales": [
+                {
+                    "id": v.id,
+                    "placa": v.placa,
+                    "marca": v.marca,
+                    "modelo": v.modelo,
+                    "color": v.color
+                } for v in pase.vehiculos_adicionales
+            ],
             "visual": visual,
             "datos_completos": pase.datos_completos
         },

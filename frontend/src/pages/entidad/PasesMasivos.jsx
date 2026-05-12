@@ -469,7 +469,8 @@ const PaseRow = ({ pase, zonas, onCompartir, onEmail, onEditar, onVerQR }) => {
 const ModalEditarPase = ({ pase, isOpen, onClose, onRefresh }) => {
     const [form, setForm] = useState({
         nombre_portador: '', cedula_portador: '', email_portador: '', telefono_portador: '',
-        vehiculo_placa: '', vehiculo_marca: '', vehiculo_modelo: '', vehiculo_color: ''
+        vehiculo_placa: '', vehiculo_marca: '', vehiculo_modelo: '', vehiculo_color: '',
+        vehiculos_adicionales: []
     });
     const [loading, setLoading] = useState(false);
 
@@ -483,7 +484,8 @@ const ModalEditarPase = ({ pase, isOpen, onClose, onRefresh }) => {
                 vehiculo_placa: pase.vehiculo_placa || '',
                 vehiculo_marca: pase.vehiculo_marca || '',
                 vehiculo_modelo: pase.vehiculo_modelo || '',
-                vehiculo_color: pase.vehiculo_color || ''
+                vehiculo_color: pase.vehiculo_color || '',
+                vehiculos_adicionales: pase.vehiculos_adicionales || []
             });
         }
     }, [pase]);
@@ -502,6 +504,25 @@ const ModalEditarPase = ({ pase, isOpen, onClose, onRefresh }) => {
         }
     };
 
+    const addVehiculo = () => {
+        setForm({
+            ...form,
+            vehiculos_adicionales: [...form.vehiculos_adicionales, { placa: '', marca: '', modelo: '', color: '' }]
+        });
+    };
+
+    const removeVehiculo = (index) => {
+        const updated = [...form.vehiculos_adicionales];
+        updated.splice(index, 1);
+        setForm({ ...form, vehiculos_adicionales: updated });
+    };
+
+    const updateVehiculo = (index, field, value) => {
+        const updated = [...form.vehiculos_adicionales];
+        updated[index] = { ...updated[index], [field]: value.toUpperCase() };
+        setForm({ ...form, vehiculos_adicionales: updated });
+    };
+
     return (
         <Modal isOpen={isOpen} onClose={onClose} title="EDITAR DATOS DEL PASE" size="lg">
             <div className="space-y-6">
@@ -510,18 +531,18 @@ const ModalEditarPase = ({ pase, isOpen, onClose, onRefresh }) => {
                         <Users size={12} /> Información del Portador
                     </h4>
                     <div className="grid grid-cols-2 gap-4">
-                        <Input label="NOMBRE COMPLETO" value={form.nombre_portador} onChange={e => setForm({...form, nombre_portador: e.target.value})} placeholder="EJ: JUAN PÉREZ" />
-                        <Input label="CÉDULA / ID" value={form.cedula_portador} onChange={e => setForm({...form, cedula_portador: e.target.value})} placeholder="EJ: V-12345678" />
-                        <Input label="EMAIL" type="email" value={form.email_portador} onChange={e => setForm({...form, email_portador: e.target.value})} placeholder="ejemplo@email.com" />
+                        <Input label="NOMBRE COMPLETO" value={form.nombre_portador} onChange={e => setForm({...form, nombre_portador: e.target.value.toUpperCase()})} placeholder="EJ: JUAN PÉREZ" />
+                        <Input label="CÉDULA / ID" value={form.cedula_portador} onChange={e => setForm({...form, cedula_portador: e.target.value.toUpperCase()})} placeholder="EJ: V-12345678" />
+                        <Input label="EMAIL" type="email" value={form.email_portador} onChange={e => setForm({...form, email_portador: e.target.value.toLowerCase()})} placeholder="ejemplo@email.com" />
                         <Input label="TELÉFONO" value={form.telefono_portador} onChange={e => setForm({...form, telefono_portador: e.target.value})} placeholder="+58 412..." />
                     </div>
                 </section>
 
                 <section>
                     <h4 className="text-[10px] font-black text-warning uppercase tracking-widest mb-3 flex items-center gap-2">
-                        <Car size={12} /> Detalles del Vehículo
+                        <Car size={12} /> Detalles del Vehículo Principal
                     </h4>
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                         <Input label="PLACA" value={form.vehiculo_placa} onChange={e => setForm({...form, vehiculo_placa: e.target.value.toUpperCase()})} placeholder="ALFA-01" />
                         <Input label="MARCA" value={form.vehiculo_marca} onChange={e => setForm({...form, vehiculo_marca: e.target.value.toUpperCase()})} placeholder="TOYOTA" />
                         <Input label="MODELO" value={form.vehiculo_modelo} onChange={e => setForm({...form, vehiculo_modelo: e.target.value.toUpperCase()})} placeholder="FORTUNER" />
@@ -529,9 +550,44 @@ const ModalEditarPase = ({ pase, isOpen, onClose, onRefresh }) => {
                     </div>
                 </section>
 
+                {/* Vehículos Adicionales */}
+                {(pase?.multi_vehiculo || form.vehiculos_adicionales.length > 0) && (
+                    <section className="pt-4 border-t border-text-main/10">
+                        <div className="flex items-center justify-between mb-4">
+                            <h4 className="text-[10px] font-black text-amber-400 uppercase tracking-widest flex items-center gap-2">
+                                <Plus size={14} /> Vehículos Adicionales
+                            </h4>
+                            <Boton variant="ghost" className="h-7 px-3 text-[8px] font-black uppercase border-amber-500/20 text-amber-400 hover:bg-amber-500/10" onClick={addVehiculo}>
+                                + Añadir Vehículo
+                            </Boton>
+                        </div>
+                        
+                        <div className="space-y-4">
+                            {form.vehiculos_adicionales.map((v, idx) => (
+                                <div key={idx} className="p-4 bg-bg-app/30 border border-text-main/5 rounded-xl relative group">
+                                    <button 
+                                        onClick={() => removeVehiculo(idx)}
+                                        className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center shadow-lg opacity-0 group-hover:opacity-100 transition-opacity z-10"
+                                    >
+                                        <X size={12} />
+                                    </button>
+                                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                                        <Input label={`PLACA V${idx+2}`} value={v.placa} onChange={e => updateVehiculo(idx, 'placa', e.target.value)} />
+                                        <Input label="MARCA" value={v.marca} onChange={e => updateVehiculo(idx, 'marca', e.target.value)} />
+                                        <Input label="MODELO" value={v.modelo} onChange={e => updateVehiculo(idx, 'modelo', e.target.value)} />
+                                        <Input label="COLOR" value={v.color} onChange={e => updateVehiculo(idx, 'color', e.target.value)} />
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </section>
+                )}
+
                 <div className="flex justify-end gap-3 pt-4 border-t border-text-main/5">
                     <Boton variant="ghost" onClick={onClose}>Cancelar</Boton>
-                    <Boton onClick={handleSave} isLoading={loading}>Guardar Cambios</Boton>
+                    <Boton onClick={handleSave} disabled={loading}>
+                        {loading ? <RefreshCw size={14} className="animate-spin" /> : 'Guardar Cambios'}
+                    </Boton>
                 </div>
             </div>
         </Modal>

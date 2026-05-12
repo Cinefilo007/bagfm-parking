@@ -1068,13 +1068,33 @@ class PaseService:
 
     async def actualizar_pase(self, db: AsyncSession, pase_id: uuid.UUID, datos: dict) -> CodigoQR:
         """Actualiza datos de un pase individual (portador, vehículo, etc)."""
+        from app.models.vehiculo_pase import VehiculoPase
         pase = await db.get(CodigoQR, pase_id)
         if not pase:
             return None
         
+        # Extraer vehículos adicionales si vienen para reemplazo total (Admin mode)
+        vehiculos_extra = datos.pop('vehiculos_adicionales', None)
+        
         for key, value in datos.items():
             if hasattr(pase, key) and value is not None:
                 setattr(pase, key, value)
+        
+        if vehiculos_extra is not None:
+            # 1. Eliminar actuales
+            await db.execute(delete(VehiculoPase).where(VehiculoPase.qr_id == pase.id))
+            # 2. Insertar nuevos sanitizados
+            for v in vehiculos_extra:
+                if v.get('placa'):
+                    nuevo_v = VehiculoPase(
+                        qr_id=pase.id,
+                        placa=self._sanitizar(v.get('placa'), 20, upper=True),
+                        marca=self._sanitizar(v.get('marca'), 50, upper=True),
+                        modelo=self._sanitizar(v.get('modelo'), 50, upper=True),
+                        color=self._sanitizar(v.get('color'), 50, upper=True),
+                        zona_asignada_id=pase.zona_asignada_id
+                    )
+                    db.add(nuevo_v)
         
         await db.commit()
         await db.refresh(pase)
@@ -1192,21 +1212,39 @@ class PaseService:
 
     async def actualizar_pase_publico(self, db: AsyncSession, pase_id: uuid.UUID, datos: dict) -> dict:
         """Permite completar datos de un pase pre-identificado (Excel parcial)."""
+        from app.models.vehiculo_pase import VehiculoPase
         pase = await db.get(CodigoQR, pase_id)
         if not pase:
             raise ValueError("Pase no encontrado")
             
-        # Solo actualizamos si campos están vacíos o si se permite sobrescribir (Sanitización mandatoria)
+        # Actualización portador
         if datos.get('nombre'): pase.nombre_portador = self._sanitizar(datos['nombre'], 100, upper=True)
         if datos.get('cedula'): pase.cedula_portador = self._sanitizar(datos['cedula'], 20, upper=True)
         if datos.get('email'): pase.email_portador = self._sanitizar(datos['email'], 100, lower=True)
         if datos.get('telefono'): pase.telefono_portador = self._sanitizar(datos['telefono'], 20)
         
+        # Vehículo 1 (QR principal)
         if datos.get('placa'): pase.vehiculo_placa = self._sanitizar(datos['placa'], 15, upper=True)
         if datos.get('marca'): pase.vehiculo_marca = self._sanitizar(datos['marca'], 30, upper=True)
         if datos.get('modelo'): pase.vehiculo_modelo = self._sanitizar(datos['modelo'], 30, upper=True)
         if datos.get('color'): pase.vehiculo_color = self._sanitizar(datos['color'], 20, upper=True)
         
+        # Vehículos Adicionales (Portal solo permite EDITAR los existentes del Excel)
+        vehiculos_extra_data = datos.get('vehiculos_adicionales', [])
+        if vehiculos_extra_data:
+            query = select(VehiculoPase).where(VehiculoPase.qr_id == pase.id).order_by(VehiculoPase.created_at.asc())
+            res = await db.execute(query)
+            actuales = res.scalars().all()
+            
+            # Sincronizamos solo hasta el número de vehículos que ya existían
+            for i, v_data in enumerate(vehiculos_extra_data):
+                if i < len(actuales):
+                    v_db = actuales[i]
+                    if v_data.get('placa'): v_db.placa = self._sanitizar(v_data['placa'], 20, upper=True)
+                    if v_data.get('marca'): v_db.marca = self._sanitizar(v_data['marca'], 50, upper=True)
+                    if v_data.get('modelo'): v_db.modelo = self._sanitizar(v_data['modelo'], 50, upper=True)
+                    if v_data.get('color'): v_db.color = self._sanitizar(v_data['color'], 50, upper=True)
+
         pase.datos_completos = True
         await db.commit()
         await db.refresh(pase)

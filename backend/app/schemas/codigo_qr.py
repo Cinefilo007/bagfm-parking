@@ -66,5 +66,6 @@ class CodigoQRUpdate(BaseModel):
     vehiculo_modelo: Optional[str] = None
     vehiculo_color: Optional[str] = None
     activo: Optional[bool] = None
+    vehiculos_adicionales: Optional[List[dict]] = None
 
     model_config = ConfigDict(from_attributes=True)
