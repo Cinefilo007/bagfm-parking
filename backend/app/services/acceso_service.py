@@ -923,7 +923,10 @@ class AccesoService:
                     membresia_info = {
                         "id": membresia.id,
                         "estado": membresia.estado,
-                        "progreso": membresia_service.calcular_progreso(membresia)
+                        "fecha_inicio": membresia.fecha_inicio,
+                        "fecha_fin": membresia.fecha_fin,
+                        "progreso": membresia_service.calcular_progreso(membresia),
+                        "puestos_asignados": membresia.puestos_asignados
                     } if membresia else None
                 )
 
