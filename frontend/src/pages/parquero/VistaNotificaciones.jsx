@@ -8,6 +8,9 @@ import {
 import { toast } from 'react-hot-toast';
 import { cn } from '../../lib/utils';
 import { parqueroService } from '../../services/parquero.service';
+import { Modal } from '../../components/ui/Modal';
+import { Input } from '../../components/ui/Input';
+import { Boton } from '../../components/ui/Boton';
 
 // ── Helpers de formato ────────────────────────────────────────────────────
 const formatearHora = (isoString) => {
@@ -75,7 +78,7 @@ const CONFIG_TIPO = {
 };
 
 // ── Tarjeta de evento individual (Timeline) ───────────────────────────────
-const TarjetaEvento = ({ evento, onEntrada }) => {
+const TarjetaEvento = ({ evento, onEntrada, onCompletar }) => {
     const navigate = useNavigate();
     const [cargando, setCargando] = useState(false);
     const cfg = CONFIG_TIPO[evento.tipo] || CONFIG_TIPO.alcabala;
@@ -124,7 +127,8 @@ const TarjetaEvento = ({ evento, onEntrada }) => {
                         <button
                             onClick={(e) => {
                                 e.stopPropagation();
-                                navigate('/parquero/recibir', { state: { placaPrevia: evento.placa || '' } });
+                                if (onCompletar) onCompletar(evento);
+                                else navigate('/parquero/recibir', { state: { placaPrevia: evento.placa || '' } });
                             }}
                             className="flex items-center gap-1.5 px-3 h-8 rounded-xl bg-warning text-white text-[9px] font-black uppercase tracking-widest hover:bg-warning/90 transition-all active:scale-95"
                         >
@@ -202,7 +206,7 @@ const TarjetaEvento = ({ evento, onEntrada }) => {
 };
 
 // ── Grupo de vehículo con trazabilidad expandible ─────────────────────────
-const GrupoVehiculo = ({ placa, eventos, onEntrada }) => {
+const GrupoVehiculo = ({ placa, eventos, onEntrada, onCompletar }) => {
     const [expandido, setExpandido] = useState(false);
     const ultimoEvento = eventos[0];
     const cfg = CONFIG_TIPO[ultimoEvento?.tipo] || CONFIG_TIPO.alcabala;
@@ -243,7 +247,7 @@ const GrupoVehiculo = ({ placa, eventos, onEntrada }) => {
             {expandido && (
                 <div className="px-4 pb-4 space-y-3 border-t border-white/5 pt-4 bg-black/10">
                     {eventos.map((evento, i) => (
-                        <TarjetaEvento key={i} evento={evento} onEntrada={onEntrada} />
+                        <TarjetaEvento key={i} evento={evento} onEntrada={onEntrada} onCompletar={onCompletar} />
                     ))}
                 </div>
             )}
@@ -265,6 +269,18 @@ const VistaNotificaciones = () => {
     const [cargando, setCargando] = useState(true);
     const [cargandoMas, setCargandoMas] = useState(false);
     const [vistaMode, setVistaMode] = useState('timeline'); // 'vehiculos' | 'timeline'
+
+    // Estado Modal Completar Datos
+    const [modalAbierto, setModalAbierto] = useState(false);
+    const [eventoACompletar, setEventoACompletar] = useState(null);
+    const [guardandoDatos, setGuardandoDatos] = useState(false);
+    const [formData, setFormData] = useState({
+        placa: '',
+        nombre: '',
+        marca: '',
+        modelo: '',
+        color: ''
+    });
     
     // Paginación Backend
     const [skip, setSkip] = useState(0);
@@ -335,6 +351,43 @@ const VistaNotificaciones = () => {
         } catch (err) {
             toast.error(err.response?.data?.detail || "No se pudo registrar la entrada");
             throw err;
+        }
+    };
+
+    const abrirModalCompleter = (evento) => {
+        setEventoACompletar(evento);
+        setFormData({
+            placa: evento.placa || '',
+            nombre: (evento.nombre_portador && !evento.nombre_portador.includes('DESCONOCIDO')) ? evento.nombre_portador : '',
+            marca: evento.marca || '',
+            modelo: evento.modelo || '',
+            color: evento.color || ''
+        });
+        setModalAbierto(true);
+    };
+
+    const handleConfirmarConDatos = async () => {
+        if (!formData.placa) return toast.error("La placa es obligatoria");
+        
+        setGuardandoDatos(true);
+        try {
+            // Usamos registrarLlegadaPlaca que crea el VehiculoPase y marca el ingreso
+            await parqueroService.registrarLlegadaPlaca(formData.placa, zonaId, {
+                nombre: formData.nombre,
+                marca: formData.marca,
+                modelo: formData.modelo,
+                color: formData.color,
+                acceso_id: eventoACompletar?.id, // Pasamos el ID del acceso para trazabilidad (opcional)
+                qr_id: eventoACompletar?.qr_id // Si venía de un QR
+            });
+            
+            toast.success("Ingreso registrado con éxito");
+            setModalAbierto(false);
+            cargarHistorial(false);
+        } catch (err) {
+            toast.error(err.response?.data?.detail || "Error al registrar ingreso");
+        } finally {
+            setGuardandoDatos(false);
         }
     };
 
@@ -453,7 +506,7 @@ const VistaNotificaciones = () => {
                                 </div>
                                 <div className="space-y-3 pl-2">
                                     {evs.map((evento, i) => (
-                                        <TarjetaEvento key={i} evento={evento} onEntrada={handleEntradaRapida} />
+                                        <TarjetaEvento key={i} evento={evento} onEntrada={handleEntradaRapida} onCompletar={abrirModalCompleter} />
                                     ))}
                                 </div>
                             </div>
@@ -465,7 +518,7 @@ const VistaNotificaciones = () => {
                 {(!cargando || cargandoMas) && vistaMode === 'vehiculos' && (
                     <div className="space-y-3">
                         {Object.entries(eventosPorPlaca).map(([placa, evts]) => (
-                            <GrupoVehiculo key={placa} placa={placa} eventos={evts} onEntrada={handleEntradaRapida} />
+                            <GrupoVehiculo key={placa} placa={placa} eventos={evts} onEntrada={handleEntradaRapida} onCompletar={abrirModalCompleter} />
                         ))}
                     </div>
                 )}
@@ -501,6 +554,79 @@ const VistaNotificaciones = () => {
                     </div>
                 )}
             </div>
+
+            {/* Modal de Completar Datos (Táctico) */}
+            <Modal
+                isOpen={modalAbierto}
+                onClose={() => setModalAbierto(false)}
+                title="Completar Registro"
+                className="max-w-md"
+            >
+                <div className="space-y-4">
+                    <p className="text-[10px] text-text-muted font-bold uppercase tracking-wider mb-4 border-l-2 border-warning pl-3">
+                        El vehículo ha pasado por Alcabala pero requiere datos adicionales para el censo de la zona.
+                    </p>
+
+                    <div className="grid grid-cols-1 gap-4">
+                        <Input
+                            label="N° Placa / Identificación"
+                            value={formData.placa}
+                            onChange={e => setFormData({...formData, placa: e.target.value.toUpperCase()})}
+                            placeholder="EJ: AH317CD"
+                            className="font-black tracking-widest"
+                            icon={<Shield size={16} />}
+                        />
+
+                        <Input
+                            label="Nombre del Portador / Socio"
+                            value={formData.nombre}
+                            onChange={e => setFormData({...formData, nombre: e.target.value.toUpperCase()})}
+                            placeholder="NOMBRE COMPLETO"
+                            icon={<Bell size={16} />}
+                        />
+
+                        <div className="grid grid-cols-2 gap-4">
+                            <Input
+                                label="Marca"
+                                value={formData.marca}
+                                onChange={e => setFormData({...formData, marca: e.target.value.toUpperCase()})}
+                                placeholder="TOYOTA"
+                            />
+                            <Input
+                                label="Modelo"
+                                value={formData.modelo}
+                                onChange={e => setFormData({...formData, modelo: e.target.value.toUpperCase()})}
+                                placeholder="COROLLA"
+                            />
+                        </div>
+
+                        <Input
+                            label="Color"
+                            value={formData.color}
+                            onChange={e => setFormData({...formData, color: e.target.value.toUpperCase()})}
+                            placeholder="BLANCO / GRIS / NEGRO"
+                        />
+                    </div>
+
+                    <div className="pt-4 flex gap-3">
+                        <Boton
+                            variant="outline"
+                            className="flex-1"
+                            onClick={() => setModalAbierto(false)}
+                        >
+                            Cancelar
+                        </Boton>
+                        <Boton
+                            variant="primario"
+                            className="flex-[2] bg-success hover:bg-success/90"
+                            onClick={handleConfirmarConDatos}
+                            isLoading={guardandoDatos}
+                        >
+                            Confirmar Ingreso
+                        </Boton>
+                    </div>
+                </div>
+            </Modal>
         </div>
     );
 };

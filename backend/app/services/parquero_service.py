@@ -689,6 +689,8 @@ class ParqueroService:
                 falta_datos = True
 
             eventos.append({
+                "id": acceso.id,
+                "qr_id": acceso.qr_id,
                 "tipo": "alcabala",
                 "placa": placa,
                 "marca": marca,
