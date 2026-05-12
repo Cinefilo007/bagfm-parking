@@ -13,11 +13,18 @@ import {
   ShieldAlert,
   Calendar,
   Trash2,
-  Edit2
+  Edit2,
+  Share2
 } from 'lucide-react';
+import { QRCode } from 'react-qr-code';
+import { toPng } from 'html-to-image';
+import { useRef } from 'react';
 
 export const SocioCard = ({ socio, onAction }) => {
   const [isOpen, setIsOpen] = useState(false);
+  const [compartiendo, setCompartiendo] = useState(false);
+  const qrRef = useRef(null);
+
   const tieneVehiculos = socio.vehiculos && socio.vehiculos.length > 0;
   const m = socio.membresia;
   const progreso = m?.progreso;
@@ -54,8 +61,70 @@ export const SocioCard = ({ socio, onAction }) => {
     badgeVariant = 'pendiente';
   }
 
+  const handleShare = async (e) => {
+    e.stopPropagation();
+    if (!qrRef.current) return;
+
+    try {
+      setCompartiendo(true);
+      // Generar QR en imagen (apunta al portal de acceso)
+      const dataUrl = await toPng(qrRef.current, {
+        backgroundColor: '#ffffff',
+        cacheBust: true,
+        pixelRatio: 4,
+        style: { borderRadius: '0px' }
+      });
+      const blob = await (await fetch(dataUrl)).blob();
+      const file = new File([blob], `ACCESO_BAGFM_${socio.cedula}.png`, { type: 'image/png' });
+
+      const portalUrl = `${window.location.origin}/acceso`;
+      const shareText = `🏛️ SISTEMA TÁCTICO BAGFM\n\n` +
+                        `👤 MIEMBRO: ${socio.nombre_completo}\n` +
+                        `🆔 CÉDULA: ${socio.cedula}\n\n` +
+                        `🔗 ENLACE AL PORTAL DE ACCESO:\n${portalUrl}\n\n` +
+                        `📍 UBICACIÓN: Base Aérea Generalísimo Francisco de Miranda (La Carlota)\n\n` +
+                        `Inicie sesión en el portal con su cédula para visualizar y descargar su Pase QR Oficial. La imagen adjunta le llevará directamente al portal.`;
+
+      if (navigator.share) {
+        if (navigator.canShare && navigator.canShare({ files: [file] })) {
+          await navigator.share({
+            title: `Acceso BAGFM - ${socio.nombre_completo}`,
+            text: shareText,
+            files: [file]
+          });
+        } else {
+          await navigator.share({
+            title: `Acceso BAGFM - ${socio.nombre_completo}`,
+            text: shareText
+          });
+        }
+      } else {
+        // Fallback al portapapeles si Web Share no está disponible
+        navigator.clipboard.writeText(shareText);
+        alert("Enlace e instrucciones copiados al portapapeles. Tu navegador no soporta envío nativo de archivos.");
+      }
+    } catch (err) {
+      if (err.name !== 'AbortError') {
+        console.error("Error al compartir", err);
+      }
+    } finally {
+      setCompartiendo(false);
+    }
+  };
+
   return (
     <Card elevation={1} className={`group relative overflow-hidden border-white/5 transition-all duration-300 hover:border-white/10 ${isOpen ? 'ring-1 ring-primary/20 bg-bg-high/5' : ''}`}>
+      {/* Contenedor Oculto para Generar QR de Compartir */}
+      <div className="absolute -left-[9999px] -top-[9999px]">
+        <div ref={qrRef} className="p-4 bg-white" style={{ width: 256, height: 256 }}>
+            <QRCode 
+                value={`${window.location.origin}/acceso`} 
+                size={224} 
+                bgColor="#ffffff" 
+                fgColor="#000000" 
+            />
+        </div>
+      </div>
       {/* Indicador de estado lateral */}
       <div className={`absolute top-0 left-0 w-1 h-full ${statusColor.replace('text-', 'bg-')}`} />
       
@@ -140,6 +209,15 @@ export const SocioCard = ({ socio, onAction }) => {
               title="Eliminar socio"
             >
               <Trash2 size={13} />
+            </button>
+
+            <button
+              onClick={handleShare}
+              disabled={compartiendo}
+              className="h-8 w-8 rounded-lg bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 hover:bg-indigo-500/20 hover:text-indigo-300 flex items-center justify-center transition-all hover:scale-105 shrink-0"
+              title="Compartir accesos"
+            >
+              {compartiendo ? <RefreshCw size={13} className="animate-spin" /> : <Share2 size={13} />}
             </button>
           </div>
 
