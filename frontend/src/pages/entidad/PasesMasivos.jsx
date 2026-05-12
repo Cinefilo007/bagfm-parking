@@ -540,7 +540,25 @@ const ModalEditarPase = ({ pase, isOpen, onClose, onRefresh }) => {
 
 const ModalEnvioCorreosMasivos = ({ isOpen, onClose, lote, pase = null }) => {
     const [asunto, setAsunto] = useState('');
-    const [cuerpo, setCuerpo] = useState('Estimado {{nombre}},\n\nNos complace informarle que su pase de acceso para el evento ya ha sido generado exitosamente.\n\nUsted puede visualizar y gestionar su pase táctico haciendo clic en el siguiente enlace:\n{{qr_url}}\n\nLe sugerimos tener su código QR a la mano al momento de llegar a la alcabala para agilizar su ingreso.\n\nSaludos cordiales,\nComando de Base');
+    const [cuerpo, setCuerpo] = useState(`Estimado {{nombre}},
+
+Nos complace informarle que su pase de acceso para el evento ya ha sido generado exitosamente.
+
+IMPORTANTE: Para garantizar un ingreso fluido y evitar retrasos en la alcabala, es OBLIGATORIO completar sus datos (vehículo y personales) en el portal táctico antes de su llegada.
+
+{{qr_url}}
+
+NORMAS DE SEGURIDAD Y CONVIVENCIA EN LA BASE:
+• Velocidad Máxima: 40 km/h en todas las vías internas.
+• Ruta Táctica: Diríjase directamente a su estacionamiento asignado sin desviarse.
+• Control de Salida: Notifique obligatoriamente al parquero al retirarse para registrar su salida.
+• Seguridad Militar: Prohibido fotografiar instalaciones sensibles o realizar conductas inapropiadas.
+• Disciplina: Siga en todo momento las instrucciones del personal militar y de seguridad.
+
+Le sugerimos tener su código QR a la mano al momento de llegar.
+
+Saludos cordiales,
+Comando de Base`);
     const [tipoEnvio, setTipoEnvio] = useState('solo_qr'); // 'solo_qr' o 'carnet_pdf'
     const [presetId, setPresetId] = useState('aegis');
     const [formato, setFormato] = useState('colgante');

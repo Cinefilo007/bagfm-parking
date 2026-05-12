@@ -76,12 +76,36 @@ class CorreoMasivoService:
                 if not destinatario:
                     continue
 
-                # Compilar plantilla
+                # Compilar plantilla con diseño táctico premium
                 qr_link = f"{config_env.frontend_url}/portal/pase/{pase.token}"
                 
+                # Botón de acción premium
+                btn_style = "display: inline-block; padding: 16px 32px; background-color: #4ade80; color: #09090b; text-decoration: none; border-radius: 14px; font-weight: 800; font-size: 13px; text-transform: uppercase; letter-spacing: 1.5px; border: 1px solid rgba(0,0,0,0.1); box-shadow: 0 4px 12px rgba(74, 222, 128, 0.2);"
+                
                 cuerpo_html = cuerpo_plantilla.replace("\n", "<br>")
-                cuerpo_html = cuerpo_html.replace("{{nombre}}", f"<strong>{nombre_dest}</strong>")
-                cuerpo_html = cuerpo_html.replace("{{qr_url}}", f"<a href='{qr_link}' style='color: #4ade80; font-weight: bold;'>VER MI PASE AQUÍ</a>")
+                cuerpo_html = cuerpo_html.replace("{{nombre}}", f"<span style='color: #4ade80; font-weight: 900;'>{nombre_dest.upper()}</span>")
+                cuerpo_html = cuerpo_html.replace("{{qr_url}}", f"<div style='text-align: center; margin: 35px 0;'><a href='{qr_link}' style='{btn_style}'>ACCEDER A MI PORTAL TÁCTICO</a></div>")
+
+                # Contenedor profesional
+                html_full = f"""
+                <div style="font-family: 'Inter', system-ui, -apple-system, sans-serif; background-color: #0c0f17; color: #f8fafc; padding: 40px; border-radius: 24px; max-width: 600px; margin: 20px auto; border: 1px solid rgba(255,255,255,0.05); box-shadow: 0 20px 50px rgba(0,0,0,0.3);">
+                    <div style="text-align: center; margin-bottom: 40px; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 20px;">
+                        <div style="display: inline-block; padding: 8px 16px; background: rgba(74, 222, 128, 0.1); border-radius: 8px; margin-bottom: 15px;">
+                            <span style="font-size: 11px; font-weight: 900; color: #4ade80; letter-spacing: 3px; text-transform: uppercase;">BAGFM ACCESS</span>
+                        </div>
+                        <h2 style="font-size: 16px; font-weight: 700; margin: 0; color: #e4e4e7; letter-spacing: 1px;">BASE AÉREA GRAL. FRANCISCO DE MIRANDA</h2>
+                    </div>
+                    
+                    <div style="line-height: 1.8; font-size: 15px; color: #d1d5db;">
+                        {cuerpo_html}
+                    </div>
+                    
+                    <div style="margin-top: 50px; padding-top: 30px; border-top: 1px solid rgba(255,255,255,0.05); text-align: center;">
+                        <p style="font-size: 10px; color: #71717a; text-transform: uppercase; letter-spacing: 2px; margin: 0;">© 2026 Comando de Base · Sistema de Gestión de Acceso Táctico</p>
+                        <p style="font-size: 9px; color: #3f3f46; margin-top: 10px;">Este es un correo automático, por favor no responda a esta dirección.</p>
+                    </div>
+                </div>
+                """
 
                 # Generar imagen del QR para adjuntar
                 from app.services.pase_service import pase_service
@@ -92,7 +116,7 @@ class CorreoMasivoService:
                     "from": remitente,
                     "to": [destinatario],
                     "subject": asunto,
-                    "html": f"<div style='font-family: sans-serif; color: #f8fafc; background-color: #0c0f17; padding: 40px; border-radius: 16px;'>{cuerpo_html}</div>",
+                    "html": html_full,
                     "attachments": [
                         {
                             "filename": f"QR_ACCESO_{pase.serial_legible}.png",
@@ -167,8 +191,36 @@ class CorreoMasivoService:
         nombre_dest = pase.nombre_portador or "Usuario Invitado"
         if not destinatario: return
 
+        # Compilar plantilla con diseño táctico premium
         qr_link = f"{config_env.frontend_url}/portal/pase/{pase.token}"
-        cuerpo_html = cuerpo_plantilla.replace("\n", "<br>").replace("{{nombre}}", f"<strong>{nombre_dest}</strong>").replace("{{qr_url}}", f"<a href='{qr_link}'>VER MI PASE</a>")
+        
+        # Botón de acción premium
+        btn_style = "display: inline-block; padding: 16px 32px; background-color: #4ade80; color: #09090b; text-decoration: none; border-radius: 14px; font-weight: 800; font-size: 13px; text-transform: uppercase; letter-spacing: 1.5px; border: 1px solid rgba(0,0,0,0.1); box-shadow: 0 4px 12px rgba(74, 222, 128, 0.2);"
+        
+        cuerpo_html = cuerpo_plantilla.replace("\n", "<br>")
+        cuerpo_html = cuerpo_html.replace("{{nombre}}", f"<span style='color: #4ade80; font-weight: 900;'>{nombre_dest.upper()}</span>")
+        cuerpo_html = cuerpo_html.replace("{{qr_url}}", f"<div style='text-align: center; margin: 35px 0;'><a href='{qr_link}' style='{btn_style}'>ACCEDER A MI PORTAL TÁCTICO</a></div>")
+
+        # Contenedor profesional
+        html_full = f"""
+        <div style="font-family: 'Inter', system-ui, -apple-system, sans-serif; background-color: #0c0f17; color: #f8fafc; padding: 40px; border-radius: 24px; max-width: 600px; margin: 20px auto; border: 1px solid rgba(255,255,255,0.05); box-shadow: 0 20px 50px rgba(0,0,0,0.3);">
+            <div style="text-align: center; margin-bottom: 40px; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 20px;">
+                <div style="display: inline-block; padding: 8px 16px; background: rgba(74, 222, 128, 0.1); border-radius: 8px; margin-bottom: 15px;">
+                    <span style="font-size: 11px; font-weight: 900; color: #4ade80; letter-spacing: 3px; text-transform: uppercase;">BAGFM ACCESS</span>
+                </div>
+                <h2 style="font-size: 16px; font-weight: 700; margin: 0; color: #e4e4e7; letter-spacing: 1px;">BASE AÉREA GRAL. FRANCISCO DE MIRANDA</h2>
+            </div>
+            
+            <div style="line-height: 1.8; font-size: 15px; color: #d1d5db;">
+                {cuerpo_html}
+            </div>
+            
+            <div style="margin-top: 50px; padding-top: 30px; border-top: 1px solid rgba(255,255,255,0.05); text-align: center;">
+                <p style="font-size: 10px; color: #71717a; text-transform: uppercase; letter-spacing: 2px; margin: 0;">© 2026 Comando de Base · Sistema de Gestión de Acceso Táctico</p>
+                <p style="font-size: 9px; color: #3f3f46; margin-top: 10px;">Este es un correo automático, por favor no responda a esta dirección.</p>
+            </div>
+        </div>
+        """
 
         # Generar imagen del QR para adjuntar
         from app.services.pase_service import pase_service
@@ -179,7 +231,7 @@ class CorreoMasivoService:
             "from": remitente,
             "to": [destinatario],
             "subject": asunto,
-            "html": f"<div style='font-family: sans-serif; color: #f8fafc; background-color: #0c0f17; padding: 40px;'>{cuerpo_html}</div>",
+            "html": html_full,
             "attachments": [
                 {
                     "filename": f"QR_ACCESO_{pase.serial_legible}.png",
