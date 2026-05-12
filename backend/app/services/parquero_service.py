@@ -307,8 +307,8 @@ class ParqueroService:
             # Intentar obtener teléfono de la tabla Usuario si el vehículo es de un socio
             telefono_socio = None
             nombre_socio = "SOCIO PERMANENTE"
-            if vehiculo_db.usuario_id:
-                res_u = await db.execute(select(Usuario).where(Usuario.id == vehiculo_db.usuario_id))
+            if vehiculo_db.socio_id:
+                res_u = await db.execute(select(Usuario).where(Usuario.id == vehiculo_db.socio_id))
                 usr = res_u.scalars().first()
                 if usr: 
                     telefono_socio = usr.telefono

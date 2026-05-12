@@ -1,4 +1,7 @@
+import logging
 from sqlalchemy.ext.asyncio import AsyncSession
+
+logger = logging.getLogger(__name__)
 from sqlalchemy import select, delete
 from uuid import UUID
 from typing import List, Optional
@@ -28,33 +31,48 @@ class SocioService:
         if not entidad:
             raise EntidadNoEncontrada(f"La entidad con ID {datos.entidad_id} no existe")
 
-        # 2. Verificar si el usuario ya existe por cédula
+        # 2. Verificar existencia para UPSERT TÁCTICO (Aegis v2.7)
         query_usuario = select(Usuario).where(Usuario.cedula == datos.cedula)
         res_usuario = await db.execute(query_usuario)
-        if res_usuario.scalar_one_or_none():
-            raise EntidadDuplicada(f"Ya existe un usuario registrado con la cédula {datos.cedula}")
+        usuario_existente = res_usuario.scalar_one_or_none()
 
-        # 2.b Verificar si el email ya existe (Aegis v2.5)
-        if datos.email:
-            query_email = select(Usuario).where(Usuario.email == datos.email)
-            res_email = await db.execute(query_email)
-            if res_email.scalar_one_or_none():
-                raise EntidadDuplicada(f"El correo {datos.email} ya está registrado por otro usuario")
+        if usuario_existente:
+            logger.info(f"Actualizando socio existente: {datos.cedula}")
+            usuario_existente.nombre = datos.nombre
+            usuario_existente.apellido = datos.apellido
+            if datos.email:
+                usuario_existente.email = datos.email
+            if datos.telefono:
+                usuario_existente.telefono = datos.telefono
+            usuario_existente.entidad_id = datos.entidad_id
+            usuario_existente.activo = True
+            nuevo_socio = usuario_existente
+        else:
+            # 2.b Verificar si el email ya existe en OTRO usuario (Solo para nuevos)
+            if datos.email:
+                from sqlalchemy import func
+                email_busqueda = datos.email.strip().lower()
+                query_email = select(Usuario).where(func.lower(Usuario.email) == email_busqueda)
+                res_email = await db.execute(query_email)
+                if res_email.scalar_one_or_none():
+                    raise EntidadDuplicada(f"El correo {datos.email} ya está registrado por otro usuario")
 
-        # 3. Crear el Usuario (Socio)
-        nuevo_socio = Usuario(
-            cedula=datos.cedula,
-            nombre=datos.nombre,
-            apellido=datos.apellido,
-            email=datos.email,
-            telefono=datos.telefono,
-            rol=RolTipo.SOCIO,
-            entidad_id=datos.entidad_id,
-            password_hash=hashear_password(datos.password if datos.password else datos.cedula),
-            debe_cambiar_password=True
-        )
-        db.add(nuevo_socio)
-        await db.flush() # Para obtener el ID del nuevo_socio
+            # 3. Crear el Usuario (Socio)
+            nuevo_socio = Usuario(
+                cedula=datos.cedula,
+                nombre=datos.nombre,
+                apellido=datos.apellido,
+                email=datos.email,
+                telefono=datos.telefono,
+                rol=RolTipo.SOCIO,
+                entidad_id=datos.entidad_id,
+                password_hash=hashear_password(datos.cedula),
+                debe_cambiar_password=True
+            )
+            db.add(nuevo_socio)
+            await db.flush() # Obtener ID si es nuevo
+        
+        # 4. Vincular Membresía y Vehículos... (El flujo sigue normal) # Para obtener el ID del nuevo_socio
 
         # 4. Crear la Membresia con fecha_expiracion si se proporcionó
         nueva_membresia = await membresia_service.crear_membresia_inicial(
