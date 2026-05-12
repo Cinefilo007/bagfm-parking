@@ -83,6 +83,24 @@ async def get_situacion_actual(db: AsyncSession):
         from app.services.alcabala_mgmt_service import alcabala_service
         guardia = await alcabala_service.obtener_guardia_actual(db, a.id)
         
+        # Obtener última actividad
+        q_ultima = select(Acceso.timestamp).filter(
+            func.trim(Acceso.punto_acceso) == nombre_normalizado,
+            func.cast(Acceso.timestamp, Date) == hoy
+        ).order_by(Acceso.timestamp.desc()).limit(1)
+        ultima_ts = (await db.execute(q_ultima)).scalar()
+        ultima_actividad = "SIN ACTIVIDAD"
+        if ultima_ts:
+            import datetime
+            ahora = datetime.datetime.now()
+            delta = ahora - ultima_ts.replace(tzinfo=None)
+            if delta.total_seconds() < 60:
+                ultima_actividad = "AHORA MISMO"
+            elif delta.total_seconds() < 3600:
+                ultima_actividad = f"HACE {int(delta.total_seconds() / 60)} MIN"
+            else:
+                ultima_actividad = f"HACE {int(delta.total_seconds() / 3600)}H"
+
         alcabalas_data.append({
             "id": str(a.id),
             "nombre": a.nombre,
@@ -90,6 +108,8 @@ async def get_situacion_actual(db: AsyncSession):
             "longitud": a.longitud,
             "entradas_hoy": entradas,
             "salidas_hoy": salidas,
+            "total_accesos": entradas + salidas,
+            "ultima_actividad": ultima_actividad,
             "personal_activo": f"{guardia.grado} {guardia.nombre}" if guardia else "SIN COMANDO"
         })
 

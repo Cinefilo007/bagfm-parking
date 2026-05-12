@@ -2,7 +2,7 @@ import React, { useMemo } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, useMapEvents, Polyline, Polygon, Circle } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
-import { Shield, Building, SquareParking, Crosshair, Target, Edit3 } from 'lucide-react';
+import { Shield, Building, SquareParking, Crosshair, Target, Edit3, AlertTriangle } from 'lucide-react';
 import { renderToString } from 'react-dom/server';
 import { useThemeStore } from '../store/theme.store';
 
@@ -86,6 +86,7 @@ const MapaBaseReal = ({
   onPointDeleted = null,
   accessPoints = [],
   aiSuggestions = null, 
+  incidentes = [],
   showPolygons = true, 
   onMapClick = null, 
   selectedForMove = null, 
@@ -94,6 +95,12 @@ const MapaBaseReal = ({
 }) => {
   const { isDarkMode } = useThemeStore();
   const [mapType, setMapType] = React.useState('satellite'); 
+  
+  const IncidentIcon = (props) => (
+    <div className="animate-pulse">
+       <AlertTriangle {...props} />
+    </div>
+  );
 
   // Perímetro EXACTO de la Base Aérea (Según captura del Comandante)
   const boundsBase = [
@@ -301,6 +308,33 @@ const MapaBaseReal = ({
                 ))}
               </>
             )}
+
+            {/* INCIDENTES / INFRACCIONES */}
+            {incidentes?.filter(i => i.lat && i.lon).map(inc => (
+                <Marker 
+                    key={`incidente-${inc.id}`}
+                    position={[inc.lat, inc.lon]}
+                    icon={createTacticalPin(
+                        '#EF4444', 
+                        inc.tipo, 
+                        false, 
+                        isDarkMode, 
+                        AlertTriangle
+                    )}
+                >
+                    <Popup className="tactical-popup">
+                        <div className="p-1">
+                            <div className="text-[8px] font-black uppercase tracking-widest text-danger mb-0.5">Incidente Reportado</div>
+                            <div className="text-[11px] font-bold uppercase text-text-main mb-1">{inc.tipo}</div>
+                            <div className="text-[9px] font-bold text-text-muted mb-2 italic">"{inc.descripcion}"</div>
+                            <div className="flex justify-between items-center text-[9px] font-mono border-t border-bg-high/20 pt-2">
+                                <span className="text-text-sec uppercase font-bold">Placa:</span>
+                                <span className="text-danger font-black">{inc.placa}</span>
+                            </div>
+                        </div>
+                    </Popup>
+                </Marker>
+            ))}
 
             {/* TRAZADO ACTIVO (Lo que el usuario está dibujando) */}
             {tempPoints && tempPoints.length > 0 && (

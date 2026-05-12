@@ -413,13 +413,27 @@ async def _construir_perfil_persona(
     if qr_ids and accesos_30d:
         accesos_nocturnos = sum(1 for a in accesos_30d if a.timestamp.hour >= 22 or a.timestamp.hour < 5)
 
-    alerta = (
-        pases_temp_ultimo_mes > 3
-        or len(placas) > 2
-        or frecuencia_semanal > 5
-        or accesos_nocturnos > 0
-        or infracciones_activas > 0
-    )
+    # ── Graduación de Alerta ──────────────────────────────────────────
+    puntos_alerta = 0
+    if pases_temp_ultimo_mes > 3: puntos_alerta += 2
+    if len(placas) > 2: puntos_alerta += 3
+    if frecuencia_semanal > 5: puntos_alerta += 2
+    if accesos_nocturnos > 0: puntos_alerta += 3
+    if infracciones_activas > 0: puntos_alerta += 5
+    
+    alerta_nivel = "NINGUNA"
+    if puntos_alerta >= 8: alerta_nivel = "CRITICA"
+    elif puntos_alerta >= 5: alerta_nivel = "ALTA"
+    elif puntos_alerta >= 3: alerta_nivel = "MEDIA"
+    elif puntos_alerta >= 1: alerta_nivel = "BAJA"
+
+    # Hallazgos IA
+    hallazgos = []
+    if pases_temp_ultimo_mes > 3: hallazgos.append(f"Emisión inusual de pases temporales ({pases_temp_ultimo_mes} en 30d)")
+    if len(placas) > 2: hallazgos.append(f"Múltiples vehículos vinculados ({len(placas)})")
+    if frecuencia_semanal > 5: hallazgos.append("Frecuencia de acceso superior al patrón normal")
+    if accesos_nocturnos > 0: hallazgos.append("Detección de accesos en horario táctico nocturno")
+    if infracciones_activas > 0: hallazgos.append(f"Mantiene {infracciones_activas} infracciones críticas sin resolver")
 
     tipo_calculado = tipo_base
     if tipo_base == "VISITANTE":
@@ -431,19 +445,28 @@ async def _construir_perfil_persona(
     perfil = {
         "cedula": cedula,
         "nombre": nombre,
+        "nombre_completo": nombre,
         "telefono": telefono,
         "tipo": tipo_calculado,
         "total_pases": total_pases,
+        "total_vehiculos": len(placas),
         "pases_temporales": pases_temporales,
         "pases_permanentes": pases_permanentes,
-        "vehiculos": placas,
+        "vehiculos": [
+            {"placa": p, "marca": "S/D", "modelo": "S/D", "usos": sum(1 for q in qrs if q.vehiculo_placa == p)}
+            for p in placas
+        ],
         "total_accesos": total_accesos,
         "ultimo_acceso": ultimo_acceso.isoformat() if ultimo_acceso else None,
         "primer_acceso": primer_acceso.isoformat() if primer_acceso else None,
         "hora_pico": hora_pico,
+        "punto_frecuente": max(set([a.punto_acceso for a in accesos_todos]), key=[a.punto_acceso for a in accesos_todos].count) if qr_ids and accesos_todos else "N/A",
         "frecuencia_semanal": frecuencia_semanal,
         "infracciones_activas": infracciones_activas,
-        "alerta": alerta,
+        "alerta": puntos_alerta > 0,
+        "alerta_nivel": alerta_nivel,
+        "puntos_alerta": puntos_alerta,
+        "hallazgos": hallazgos,
         "alertas_detalle": {
             "pases_temp_ultimo_mes": pases_temp_ultimo_mes,
             "multiples_vehiculos": len(placas) > 2,

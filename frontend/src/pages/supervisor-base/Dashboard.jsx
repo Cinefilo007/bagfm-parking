@@ -13,6 +13,7 @@ import {
     ChevronRight, Calendar, User, CheckCircle2
 } from 'lucide-react';
 import supervisorBaseService from '../../services/supervisorBase.service';
+import MapaBaseReal from '../../components/MapaBaseReal';
 import { toast } from 'react-hot-toast';
 
 // ──── Componentes de Apoyo ───────────────────────────────────────────────────
@@ -328,8 +329,8 @@ const PaseTemporalTab = () => {
     useEffect(() => {
         const fetchZonas = async () => {
             try {
-                const data = await supervisorBaseService.getCensoVehicular(); // Reuso para obtener zonas si el servicio lo da
-                // Nota: mejor usar un endpoint de zonas genérico si existe
+                const data = await supervisorBaseService.getSituacion();
+                setZonas(data.zonas_estacionamiento || []);
             } catch (error) {}
         };
         fetchZonas();
@@ -421,6 +422,20 @@ const PaseTemporalTab = () => {
                         onChange={(e) => setFormData({...formData, motivo: e.target.value.toUpperCase()})}
                     />
                 </div>
+                <div className="space-y-1.5 sm:col-span-2">
+                    <label className="text-[10px] font-black text-text-muted uppercase tracking-widest px-1">Zona Asignada</label>
+                    <select
+                        className="w-full h-12 bg-bg-card/40 border border-white/10 rounded-xl px-4 text-sm font-bold text-text-main outline-none focus:ring-1 focus:ring-primary uppercase transition-all appearance-none"
+                        required
+                        value={formData.zona_id}
+                        onChange={(e) => setFormData({...formData, zona_id: e.target.value})}
+                    >
+                        <option value="">SELECCIONAR ZONA...</option>
+                        {zonas.map(z => (
+                            <option key={z.id} value={z.id}>{z.nombre} (Libres: {z.capacidad_total - (z.ocupacion_actual || 0)})</option>
+                        ))}
+                    </select>
+                </div>
             </div>
 
             <Boton 
@@ -442,9 +457,12 @@ const MapaInfraccionesTab = () => {
         setLoading(true);
         try {
             const data = await supervisorBaseService.getInfraccionesMapa();
-            // Consolidamos ambas listas para el renderizado del listado táctico
+            const sit = await supervisorBaseService.getSituacion();
+            setInfracciones(data.con_coordenadas || []);
+            setSituacion(sit);
+            // Consolidamos para el listado táctico inferior
             const todas = [...(data.con_coordenadas || []), ...(data.sin_coordenadas || [])];
-            setInfracciones(todas);
+            setListadoInfracciones(todas);
         } catch (error) {
             toast.error("Error al cargar mapa de infracciones");
         } finally {
@@ -452,10 +470,13 @@ const MapaInfraccionesTab = () => {
         }
     };
 
+    const [situacion, setSituacion] = useState(null);
+    const [listadoInfracciones, setListadoInfracciones] = useState([]);
+
     useEffect(() => { loadData(); }, []);
 
     return (
-        <div className="space-y-4">
+        <div className="space-y-6">
              <div className="flex items-center justify-between">
                 <h2 className="text-lg font-black uppercase tracking-tight italic text-text-main">
                     Mapa de Incidentes Tácticos
@@ -465,55 +486,78 @@ const MapaInfraccionesTab = () => {
                 </Boton>
             </div>
 
-            {loading ? (
-                <div className="h-64 bg-bg-card/20 rounded-3xl border border-white/5 flex items-center justify-center animate-pulse">
-                    <span className="text-[10px] font-black text-primary uppercase tracking-[0.3em]">Cargando Coordenadas...</span>
-                </div>
-            ) : (
-                <div className="space-y-3">
-                    {infracciones.length === 0 ? (
-                        <div className="p-12 text-center bg-bg-card/20 rounded-2xl border border-dashed border-white/10">
-                            <CheckCircle2 size={40} className="mx-auto text-success/20 mb-4" />
-                            <p className="text-[10px] font-black text-text-muted uppercase tracking-widest opacity-40">
-                                No hay infracciones geolocalizadas reportadas
-                            </p>
+            {/* Vista Geográfica */}
+            <div className="h-[500px] rounded-3xl overflow-hidden border border-white/5 shadow-2xl relative group">
+                {loading ? (
+                    <div className="absolute inset-0 bg-bg-card/20 backdrop-blur-sm flex items-center justify-center z-10">
+                        <div className="flex flex-col items-center gap-3">
+                            <Activity size={32} className="text-primary animate-pulse" />
+                            <span className="text-[10px] font-black text-primary uppercase tracking-[0.3em]">Sincronizando Radar...</span>
                         </div>
-                    ) : (
-                        infracciones.map((inf) => (
-                            <Card key={inf.id} className="p-4 border-danger/10 bg-danger/5 hover:bg-danger/10 transition-all flex items-center gap-4">
-                                <div className="w-10 h-10 rounded-xl bg-danger/20 border border-danger/30 flex items-center justify-center text-danger shrink-0">
-                                    <AlertTriangle size={20} />
-                                </div>
-                                <div className="flex-1 min-w-0">
-                                    <div className="flex items-center gap-2 mb-1">
-                                        <span className="text-[8px] font-black px-1.5 py-0.5 rounded bg-danger text-white uppercase tracking-widest">
-                                            {inf.gravedad}
-                                        </span>
-                                        <span className="text-[10px] font-black text-text-main uppercase tracking-tighter">
-                                            {inf.tipo}
-                                        </span>
-                                    </div>
-                                    <p className="text-[11px] font-bold text-text-muted uppercase truncate italic">
-                                        "{inf.descripcion}"
-                                    </p>
-                                    <p className="text-[9px] text-text-muted/60 font-black uppercase mt-1">
-                                        {inf.lat && inf.lon ? (
-                                            `📍 ${inf.lat.toFixed(6)}, ${inf.lon.toFixed(6)}`
-                                        ) : (
-                                            '⚠️ Sin Geolocalización'
-                                        )} • {new Date(inf.created_at).toLocaleTimeString()}
-                                    </p>
-                                </div>
-                                {inf.lat && inf.lon && (
-                                    <Boton size="sm" variant="ghost" className="shrink-0 h-10 w-10 p-0 text-danger hover:bg-danger/10">
-                                        <MapPin size={18} />
-                                    </Boton>
-                                )}
-                            </Card>
-                        ))
-                    )}
+                    </div>
+                ) : null}
+                <MapaBaseReal 
+                    situacion={situacion}
+                    incidentes={infracciones}
+                    onSelectEntity={() => {}}
+                />
+                
+                {/* Overlay de Leyenda */}
+                <div className="absolute top-4 left-4 z-[500] p-3 bg-bg-modal/80 backdrop-blur-md rounded-2xl border border-white/5 pointer-events-none">
+                    <div className="flex items-center gap-2 mb-2">
+                        <div className="w-2 h-2 rounded-full bg-danger animate-pulse" />
+                        <span className="text-[9px] font-black text-text-main uppercase tracking-widest">Incidentes Críticos</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                        <div className="w-2 h-2 rounded-full bg-primary" />
+                        <span className="text-[9px] font-black text-text-main uppercase tracking-widest">Activos Propios</span>
+                    </div>
                 </div>
-            )}
+            </div>
+
+            {/* Listado de Incidentes */}
+            <div className="space-y-3">
+                <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-text-muted px-2">Bitácora de Eventos Recientes</h3>
+                {listadoInfracciones.length === 0 && !loading ? (
+                    <div className="p-12 text-center bg-bg-card/20 rounded-2xl border border-dashed border-white/10">
+                        <CheckCircle2 size={40} className="mx-auto text-success/20 mb-4" />
+                        <p className="text-[10px] font-black text-text-muted uppercase tracking-widest opacity-40">
+                            No hay infracciones reportadas en el sector
+                        </p>
+                    </div>
+                ) : (
+                    listadoInfracciones.map((inf) => (
+                        <Card key={inf.id} className="p-4 border-danger/10 bg-danger/5 hover:bg-danger/10 transition-all flex items-center gap-4">
+                            <div className="w-10 h-10 rounded-xl bg-danger/20 border border-danger/30 flex items-center justify-center text-danger shrink-0">
+                                <AlertTriangle size={20} />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-2 mb-1">
+                                    <span className={cn(
+                                        "text-[8px] font-black px-1.5 py-0.5 rounded uppercase tracking-widest",
+                                        inf.gravedad === 'critica' ? 'bg-danger text-white' : 'bg-orange-500 text-white'
+                                    )}>
+                                        {inf.gravedad}
+                                    </span>
+                                    <span className="text-[10px] font-black text-text-main uppercase tracking-tighter">
+                                        {inf.tipo}
+                                    </span>
+                                </div>
+                                <p className="text-[11px] font-bold text-text-muted uppercase truncate italic">
+                                    "{inf.descripcion}"
+                                </p>
+                                <p className="text-[9px] text-text-muted/60 font-black uppercase mt-1">
+                                    {inf.lat && inf.lon ? (
+                                        `📍 ${inf.lat.toFixed(6)}, ${inf.lon.toFixed(6)}`
+                                    ) : (
+                                        '⚠️ Sin Geolocalización'
+                                    )} • {new Date(inf.created_at).toLocaleTimeString()}
+                                </p>
+                            </div>
+                        </Card>
+                    ))
+                )}
+            </div>
         </div>
     );
 };
@@ -565,7 +609,7 @@ const AlcabalasTab = () => {
                                     <h3 className="text-sm font-black text-text-main uppercase tracking-tight">{a.nombre}</h3>
                                     <div className="flex items-center gap-2 mt-1">
                                         <span className="w-2 h-2 rounded-full bg-success animate-pulse" />
-                                        <span className="text-[9px] font-black text-text-muted uppercase tracking-widest">Enlace Activo</span>
+                                        <span className="text-[9px] font-black text-text-muted uppercase tracking-widest">{a.personal_activo}</span>
                                     </div>
                                 </div>
                             </div>
@@ -576,7 +620,7 @@ const AlcabalasTab = () => {
                                 </div>
                                 <div>
                                     <p className="text-[8px] font-black text-text-muted uppercase">Último Ingreso</p>
-                                    <p className="text-[10px] font-bold text-primary uppercase">{a.ultima_actividad || 'Hace poco'}</p>
+                                    <p className="text-[10px] font-bold text-primary uppercase">{a.ultima_actividad || 'Sin actividad'}</p>
                                 </div>
                             </div>
                         </Card>

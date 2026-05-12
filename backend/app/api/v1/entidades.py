@@ -22,7 +22,7 @@ from sqlalchemy.orm import joinedload
 router = APIRouter()
 
 # Solo COMANDANTE y ADMIN_BASE pueden administrar entidades
-DEPENDENCY_ADMIN_BASE = Depends(require_rol([RolTipo.COMANDANTE, RolTipo.ADMIN_BASE]))
+DEPENDENCY_ADMIN_BASE = Depends(require_rol([RolTipo.COMANDANTE, RolTipo.ADMIN_BASE, RolTipo.SUPERVISOR]))
 
 
 @router.get("/stats")

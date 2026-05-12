@@ -22,7 +22,7 @@ from sqlalchemy import select, func
 router = APIRouter()
 
 # Roles que pueden gestionar socios
-GESTORES_SOCIOS = [RolTipo.COMANDANTE, RolTipo.ADMIN_BASE, RolTipo.ADMIN_ENTIDAD]
+GESTORES_SOCIOS = [RolTipo.COMANDANTE, RolTipo.ADMIN_BASE, RolTipo.ADMIN_ENTIDAD, RolTipo.SUPERVISOR]
 
 @router.post("/", response_model=SocioSalida, status_code=status.HTTP_201_CREATED)
 async def crear_socio(

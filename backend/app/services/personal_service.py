@@ -51,7 +51,7 @@ class PersonalService:
                 Usuario.cedula.ilike(search_pattern)
             ))
 
-        if usuario_actual.rol in [RolTipo.COMANDANTE, RolTipo.ADMIN_BASE]:
+        if usuario_actual.rol in [RolTipo.COMANDANTE, RolTipo.ADMIN_BASE, RolTipo.SUPERVISOR]:
             query = query.where(Usuario.rol.in_([
                 RolTipo.ADMIN_BASE,
                 RolTipo.SUPERVISOR,

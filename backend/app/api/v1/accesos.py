@@ -12,7 +12,7 @@ from app.services.acceso_service import acceso_service
 router = APIRouter()
 
 # La mayoría de estos endpoints son para personal de ALCABALA o superior
-DEPENDENCY_ALCABALA = Depends(require_rol([RolTipo.ALCABALA, RolTipo.ADMIN_BASE, RolTipo.COMANDANTE]))
+DEPENDENCY_ALCABALA = Depends(require_rol([RolTipo.ALCABALA, RolTipo.ADMIN_BASE, RolTipo.COMANDANTE, RolTipo.SUPERVISOR]))
 
 @router.post("/validar", response_model=ResultadoValidacion)
 async def validar_acceso(

@@ -27,10 +27,10 @@ from app.schemas.configuracion import ConfiguracionSalidasUpdate
 router = APIRouter()
 
 def verificar_comandante(usuario: Usuario = Depends(obtener_usuario_actual)):
-    if usuario.rol not in [RolTipo.COMANDANTE, RolTipo.ADMIN_BASE]:
+    if usuario.rol not in [RolTipo.COMANDANTE, RolTipo.ADMIN_BASE, RolTipo.SUPERVISOR]:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Solo el Comandante o Administrador de Base pueden realizar esta acción"
+            detail="Solo el Comandante, Administrador de Base o Supervisor pueden realizar esta acción"
         )
     return usuario
 
