@@ -442,7 +442,9 @@ const MapaInfraccionesTab = () => {
         setLoading(true);
         try {
             const data = await supervisorBaseService.getInfraccionesMapa();
-            setInfracciones(data);
+            // Consolidamos ambas listas para el renderizado del listado táctico
+            const todas = [...(data.con_coordenadas || []), ...(data.sin_coordenadas || [])];
+            setInfracciones(todas);
         } catch (error) {
             toast.error("Error al cargar mapa de infracciones");
         } finally {
@@ -488,19 +490,25 @@ const MapaInfraccionesTab = () => {
                                             {inf.gravedad}
                                         </span>
                                         <span className="text-[10px] font-black text-text-main uppercase tracking-tighter">
-                                            {inf.tipo_infraccion}
+                                            {inf.tipo}
                                         </span>
                                     </div>
                                     <p className="text-[11px] font-bold text-text-muted uppercase truncate italic">
                                         "{inf.descripcion}"
                                     </p>
                                     <p className="text-[9px] text-text-muted/60 font-black uppercase mt-1">
-                                        📍 {inf.latitud.toFixed(6)}, {inf.longitud.toFixed(6)} • {new Date(inf.created_at).toLocaleTimeString()}
+                                        {inf.lat && inf.lon ? (
+                                            `📍 ${inf.lat.toFixed(6)}, ${inf.lon.toFixed(6)}`
+                                        ) : (
+                                            '⚠️ Sin Geolocalización'
+                                        )} • {new Date(inf.created_at).toLocaleTimeString()}
                                     </p>
                                 </div>
-                                <Boton size="sm" variant="ghost" className="shrink-0 h-10 w-10 p-0 text-danger hover:bg-danger/10">
-                                    <MapPin size={18} />
-                                </Boton>
+                                {inf.lat && inf.lon && (
+                                    <Boton size="sm" variant="ghost" className="shrink-0 h-10 w-10 p-0 text-danger hover:bg-danger/10">
+                                        <MapPin size={18} />
+                                    </Boton>
+                                )}
                             </Card>
                         ))
                     )}
