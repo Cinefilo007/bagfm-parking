@@ -999,9 +999,11 @@ class PaseService:
 
     async def generar_excel_lote(self, db: AsyncSession, lote_id: uuid.UUID, base_url: str = "https://bagfm.app") -> io.BytesIO:
         """
-        Genera un archivo Excel con el listado de pases y sus links de acceso rápido al portal.
+        Genera un archivo Excel simplificado con hipervínculos tácticos directos al portal.
         """
         import pandas as pd
+        from openpyxl.utils import get_column_letter
+        
         lote = await db.get(LotePaseMasivo, lote_id)
         if not lote: return None
         
@@ -1012,23 +1014,35 @@ class PaseService:
         data = []
         for qr in qrs:
             data.append({
-                "SERIAL": qr.serial_legible,
-                "NOMBRE": qr.nombre_portador or "INVITADO",
-                "CEDULA": qr.cedula_portador or "PÓRTAL",
-                "EMAIL": qr.email_portador or "",
-                "TELEFONO": qr.telefono_portador or "",
-                "PLACA": qr.vehiculo_placa or "",
-                "MARCA": qr.vehiculo_marca or "",
-                "MODELO": qr.vehiculo_modelo or "",
-                "COLOR": qr.vehiculo_color or "",
-                "LINK ACCESO RÁPIDO": f"{base_url}/portal/pase/{qr.token}",
-                "DATOS COMPLETOS": "SI" if qr.datos_completos else "NO"
+                "NOMBRE": qr.nombre_portador or "INVITADO PENDIENTE",
+                "CEDULA": qr.cedula_portador or "POR REGISTRAR",
+                "TELEFONO": qr.telefono_portador or "S/T",
+                "LINK PORTAL": f"{base_url}/portal/pase/{qr.token}"
             })
             
         df = pd.DataFrame(data)
         excel_buffer = io.BytesIO()
+        
         with pd.ExcelWriter(excel_buffer, engine='openpyxl') as writer:
-            df.to_excel(writer, index=False, sheet_name='PASES_GENERADOS')
+            df.to_excel(writer, index=False, sheet_name='PASES_PORTAL')
+            workbook = writer.book
+            worksheet = writer.sheets['PASES_PORTAL']
+            
+            # Aplicar hipervínculos a la última columna (D)
+            link_col_idx = 4 
+            for row in range(2, len(data) + 2):
+                cell = worksheet.cell(row=row, column=link_col_idx)
+                link_url = cell.value
+                cell.hyperlink = link_url
+                cell.style = "Hyperlink"
+                cell.value = "ACCEDER AL PORTAL TÁCTICO"
+                from openpyxl.styles import Font
+                cell.font = Font(color="0000FF", underline="single")
+
+            # Auto-ajustar ancho de columnas para legibilidad
+            for i, col in enumerate(df.columns):
+                column_len = max(df[col].astype(str).str.len().max(), len(col)) + 5
+                worksheet.column_dimensions[get_column_letter(i+1)].width = min(column_len, 60)
             
         excel_buffer.seek(0)
         return excel_buffer
