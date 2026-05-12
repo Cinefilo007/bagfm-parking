@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Card } from '../../components/ui/Card';
 import { Boton } from '../../components/ui/Boton';
-import { RefreshCw, Car, User, MapPin } from 'lucide-react';
+import { RefreshCw, Car as CarIcon, User as UserIcon, MapPin } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import supervisorBaseService from '../../services/supervisorBase.service';
 import { toast } from 'react-hot-toast';
@@ -48,7 +48,7 @@ const CensoVehicular = () => {
                     ))
                 ) : vehiculos.length === 0 ? (
                     <div className="col-span-full p-20 text-center bg-bg-card/20 rounded-3xl border border-dashed border-white/10">
-                        <Car size={48} className="mx-auto text-text-muted/30 mb-4" />
+                        <CarIcon size={48} className="mx-auto text-text-muted/30 mb-4" />
                         <p className="text-xs font-bold text-text-muted uppercase tracking-widest">No hay vehículos reportados en base</p>
                     </div>
                 ) : (
@@ -73,7 +73,7 @@ const CensoVehicular = () => {
                                     <div className="mt-3 space-y-1.5">
                                         <p className="text-[9px] text-text-muted font-bold uppercase flex items-center gap-2">
                                             <div className="w-4 h-4 rounded-full bg-white/5 flex items-center justify-center">
-                                                <User size={10} />
+                                                <UserIcon size={10} />
                                             </div>
                                             <span className="truncate">{v.nombre_conductor}</span>
                                         </p>

@@ -4,8 +4,8 @@ import { Boton } from '../../components/ui/Boton';
 import { Modal } from '../../components/ui/Modal';
 import { cn } from '../../lib/utils';
 import { 
-    Search, Users, User, ChevronRight, Shield, 
-    Activity, AlertTriangle, CheckCircle2, Car
+    Search, Users, User as UserIcon, ChevronRight, Shield, 
+    Activity, AlertTriangle, CheckCircle2, Car as CarIcon
 } from 'lucide-react';
 import supervisorBaseService from '../../services/supervisorBase.service';
 import { toast } from 'react-hot-toast';
@@ -110,7 +110,7 @@ const CensoPersonas = () => {
                             className="flex items-center gap-4 p-5 bg-bg-card/40 border border-white/5 rounded-2xl hover:bg-bg-high/40 transition-all text-left group"
                         >
                             <div className="w-14 h-14 rounded-xl bg-bg-app border border-white/10 flex items-center justify-center text-text-muted group-hover:text-primary group-hover:border-primary/30 transition-all">
-                                <User size={28} />
+                                <UserIcon size={28} />
                             </div>
                             <div className="flex-1 min-w-0">
                                 <div className="flex items-center gap-2 mb-1">
@@ -200,7 +200,7 @@ const CensoPersonas = () => {
 
                         <div className="space-y-3">
                             <h3 className="text-xs font-black uppercase tracking-widest text-text-muted flex items-center gap-2">
-                                <Car size={14} /> Vehículos Vinculados
+                                <CarIcon size={14} /> Vehículos Vinculados
                             </h3>
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                                 {selectedPersona.vehiculos.map((v, i) => (

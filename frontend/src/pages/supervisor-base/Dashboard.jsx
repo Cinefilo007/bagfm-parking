@@ -4,10 +4,22 @@ import { Boton } from '../../components/ui/Boton';
 import { Modal } from '../../components/ui/Modal';
 import { cn } from '../../lib/utils';
 import { 
-    Shield, Car, Users, AlertTriangle, Map, 
-    Radio, Search, RefreshCw, Activity, 
-    ShieldAlert, ChevronRight, User, CheckCircle2,
-    Filter, Database, ArrowUpRight
+    Shield, 
+    Car as CarIcon, 
+    Users, 
+    AlertTriangle, 
+    Map as MapIcon, 
+    Radio, 
+    Search, 
+    RefreshCw, 
+    Activity, 
+    ShieldAlert, 
+    ChevronRight, 
+    User as UserIcon, 
+    CheckCircle2,
+    Filter, 
+    Database, 
+    ArrowUpRight
 } from 'lucide-react';
 import supervisorBaseService from '../../services/supervisorBase.service';
 import MapaBaseReal from '../../components/MapaBaseReal';
@@ -84,7 +96,7 @@ const DashboardSupervisorBase = () => {
                         <div className="space-y-3 mt-8">
                             <div className="flex items-center justify-between p-4 bg-bg-app/40 rounded-2xl border border-white/5">
                                 <div className="flex items-center gap-3">
-                                    <Car size={18} className="text-primary" />
+                                    <CarIcon size={18} className="text-primary" />
                                     <span className="text-xs font-black text-text-muted uppercase">Censo Activo</span>
                                 </div>
                                 <span className="text-xl font-black text-text-main font-display">{situacion?.vehiculos_en_base || 0}</span>
@@ -175,7 +187,7 @@ const DashboardSupervisorBase = () => {
                                             ? "bg-sky-500/10 border-sky-500/20 text-sky-400 group-hover:bg-sky-500 group-hover:text-white" 
                                             : "bg-primary/10 border-primary/20 text-primary group-hover:bg-primary group-hover:text-bg-app"
                                     )}>
-                                        {item.tipo === 'VEHICULO' ? <Car size={24} /> : <User size={24} />}
+                                        {item.tipo === 'VEHICULO' ? <CarIcon size={24} /> : <UserIcon size={24} />}
                                     </div>
                                     <div className="min-w-0">
                                         <div className="flex items-center gap-2 mb-1">
