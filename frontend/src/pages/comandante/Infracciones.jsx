@@ -9,9 +9,9 @@ import { useAuthStore } from '../../store/auth.store';
 import {
     AlertTriangle, Shield, RefreshCw, MapPin,
     CheckCircle2, XCircle, Filter, Search,
-    Car, ChevronUp, Clock, Users, Hash, User, Phone,
+    Car as CarIcon, ChevronUp, Clock, Users, Hash, User as UserIcon, Phone,
     Ban, Scale, ChevronRight, Flame, Eye,
-    TrendingUp, Map, Plus, Upload, Trash2, Camera, Info
+    TrendingUp, Map as MapIcon, Plus, Upload, Trash2, Camera, Info
 } from 'lucide-react';
 import api from '../../services/api';
 import { useNotifications } from '../../hooks/useNotifications';
@@ -77,7 +77,7 @@ const InfraccionCard = ({ infraccion, userRol, onResolver, onEscalar, onDetalle 
                     <div className="flex items-center gap-3 mt-1.5 flex-wrap">
                         {(infraccion.vehiculo?.placa || infraccion.vehiculo_placa) && (
                             <span className="text-[9px] text-text-muted flex items-center gap-1">
-                                <Car size={9} /> {infraccion.vehiculo?.placa || infraccion.vehiculo_placa}
+                                <CarIcon size={9} /> {infraccion.vehiculo?.placa || infraccion.vehiculo_placa}
                                 {infraccion.vehiculo?.marca && infraccion.vehiculo.marca !== 'DESCONOCIDA' && ` · ${infraccion.vehiculo.marca} ${infraccion.vehiculo.modelo}`}
                             </span>
                         )}
@@ -100,7 +100,7 @@ const InfraccionCard = ({ infraccion, userRol, onResolver, onEscalar, onDetalle 
                     )}
                     {infraccion.infractor && (
                         <div className="flex items-center gap-2 mt-2 pt-2 border-t border-white/5">
-                            <User size={10} className="text-primary" />
+                            <UserIcon size={10} className="text-primary" />
                             <span className="text-[9px] font-bold text-text-main uppercase">
                                 {infraccion.infractor.nombre} {infraccion.infractor.apellido}
                             </span>
@@ -154,7 +154,7 @@ const InfraccionCard = ({ infraccion, userRol, onResolver, onEscalar, onDetalle 
                             window.open(`https://maps.google.com/?q=${lat},${lon}`, '_blank');
                         }}
                             className="h-7 px-3 rounded-lg bg-green-500/15 text-green-400 border border-green-500/20 text-[9px] font-black uppercase flex items-center gap-1.5 hover:bg-green-500/25 transition-all">
-                            <Map size={11} /> Ver en Mapa
+                            <MapIcon size={11} /> Ver en Mapa
                         </button>
                     )}
                 </div>
@@ -689,7 +689,7 @@ export default function DashboardInfracciones() {
                             </div>
                             <div className="space-y-3">
                                 <div className="relative">
-                                    <Car className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted" size={16} />
+                                    <CarIcon className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted" size={16} />
                                     <input 
                                         type="text" 
                                         placeholder="PLACA DEL VEHÍCULO"
@@ -710,7 +710,7 @@ export default function DashboardInfracciones() {
                                                 </div>
                                                 <div className="flex items-start gap-3">
                                                     <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center shrink-0">
-                                                        <User size={20} className="text-primary" />
+                                                        <UserIcon size={20} className="text-primary" />
                                                     </div>
                                                     <div>
                                                         <p className="text-xs font-black text-text-main uppercase tracking-wider">

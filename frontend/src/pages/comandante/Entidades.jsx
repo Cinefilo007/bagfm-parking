@@ -5,7 +5,7 @@ import { Card } from '../../components/ui/Card';
 import { Badge } from '../../components/ui/Badge';
 import { Modal } from '../../components/ui/Modal';
 import { Input } from '../../components/ui/Input';
-import { Network, Plus, ShieldCheck, Store, Power, Activity, Users, Car, AlertTriangle, ChevronDown, Trash2, Edit2 } from 'lucide-react';
+import { Network, Plus, ShieldCheck, Store, Power, Activity, Users, Car as CarIcon, AlertTriangle, ChevronDown, Trash2, Edit2 } from 'lucide-react';
 import api from '../../services/api';
 
 export default function Entidades() {
@@ -302,7 +302,7 @@ export default function Entidades() {
            </Card>
            <Card className="bg-bg-card border-bg-high/10 p-3 lg:p-4 flex items-center gap-3">
               <div className="w-9 h-9 lg:w-10 lg:h-10 rounded-xl bg-emerald-500/10 flex items-center justify-center text-emerald-400 border border-emerald-500/20">
-                 <Car size={18} />
+                 <CarIcon size={18} />
               </div>
               <div>
                  <p className="text-[9px] lg:text-[10px] text-text-muted font-bold uppercase tracking-widest leading-none mb-1">Parque</p>

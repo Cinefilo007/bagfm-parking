@@ -36,7 +36,13 @@ El Supervisor monitorea el estado de todas las alcabalas activas:
 - **Componentes:** Card-based layout con micro-animaciones de pulso para alertas activas.
 - **Responsividad:** 100% Mobile First (Uso en tabletas de patrulla).
 
+## 7. PROTOCOLO DE ESTABILIDAD (ICON NAMESPACE)
+Para evitar errores de referencia (`ReferenceError`) en la producción y asegurar la compatibilidad con objetos globales de JavaScript (como `Map`), se establece el siguiente estándar de importación para `lucide-react`:
+- **Aliasing Obligatorio:** Todos los componentes con nombres genéricos deben importarse con el sufijo `Icon`.
+- **Ejemplos:** `Car as CarIcon`, `User as UserIcon`, `Map as MapIcon`, `Search as SearchIcon`.
+- **Alcance:** Este protocolo aplica a todas las páginas de la Sentinel Interface y el Mando de Base.
+
 ---
-**ESTADO DE DOCUMENTO:** OPERATIVO
-**ÚLTIMA ACTUALIZACIÓN:** 2026-05-12
+**ESTADO DE DOCUMENTO:** OPERATIVO (ESTABILIZADO)
+**ÚLTIMA ACTUALIZACIÓN:** 2026-05-12 17:15
 **APROBADO POR:** ANTIGRAVITY AEGIS COMMAND

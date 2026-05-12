@@ -11,7 +11,7 @@ import {
     MapPin, Clock, Users, Shield, ChevronRight,
     ChevronDown, Settings, LayoutGrid, Building2, Layers,
     AlertTriangle, CheckCircle2, Timer, Hash,
-    Lock, Unlock, Zap, Activity, MessageCircle, UserCheck, QrCode, Download, Loader2, Scissors, Target, Sparkles, Check, Car,
+    Lock, Unlock, Zap, Activity, MessageCircle, UserCheck, QrCode, Download, Loader2, Scissors, Target, Sparkles, Check, Car as CarIcon,
     Send, Mail, Smartphone, Copy, Share2
 } from 'lucide-react';
 import { toPng } from 'html-to-image';
