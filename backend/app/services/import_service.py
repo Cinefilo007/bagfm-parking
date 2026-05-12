@@ -124,6 +124,8 @@ class ImportService:
                             },
                             channels=[f"ENTIDAD_{entidad_id}"]
                         )
+                    
+                except Exception as e:
                     # CRITICAL: Si una fila falla (ej: placa duplicada), debemos hacer rollback
                     # para que la sesión pueda procesar la siguiente fila.
                     await db.rollback()
