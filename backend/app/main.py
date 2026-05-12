@@ -81,13 +81,15 @@ async def health_check():
 from app.api.v1 import (
     auth, entidades, socios, accesos, 
     infracciones, websocket, comando, eventos, mapa,
-    personal, pases, ia, zonas, parqueros, fantasmas, cron, tipos_acceso, biometrico, notificaciones, configuracion_correo
+    personal, pases, ia, zonas, parqueros, fantasmas, cron, tipos_acceso, biometrico, notificaciones, configuracion_correo,
+    supervisor_base
 )
 
 app.include_router(auth.router, prefix="/api/v1/auth", tags=["Autenticación"])
 app.include_router(entidades.router, prefix="/api/v1/entidades", tags=["Entidades Civiles"])
 app.include_router(socios.router, prefix="/api/v1/socios", tags=["Gestión de Socios"])
 app.include_router(comando.router, prefix="/api/v1/comando", tags=["Comando y Alcabalas"])
+app.include_router(supervisor_base.router, prefix="/api/v1/supervisor-base", tags=["Supervisor de Base"])
 app.include_router(personal.router, prefix="/api/v1/personal", tags=["Gestión de Personal"])
 app.include_router(eventos.router, prefix="/api/v1/eventos", tags=["Eventos y Pases Masivos"])
 app.include_router(pases.router, prefix="/api/v1/pases", tags=["Lotes de Pases Masivos"])

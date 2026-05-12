@@ -30,6 +30,7 @@ import VistaDespachar from '../pages/parquero/VistaDespachar';
 import VistaNotificaciones from '../pages/parquero/VistaNotificaciones';
 import VistaVehiculosPerdidos from '../pages/parquero/VistaVehiculosPerdidos';
 import DashboardSupervisor from '../pages/supervisor/Dashboard';
+import DashboardSupervisorBase from '../pages/supervisor-base/Dashboard';
 import { useAuthStore } from '../store/auth.store';
 
 const TemporaryPlaceholder = ({ name }) => (
@@ -42,7 +43,7 @@ const HomeRedirect = () => {
   const { user } = useAuthStore();
   if (!user) return <Navigate to="/login" replace />;
   if (user.rol === 'COMANDANTE' || user.rol === 'ADMIN_BASE') return <Navigate to="/comando/dashboard" replace />;
-  if (user.rol === 'SUPERVISOR') return <Navigate to="/comando/dashboard" replace />;
+  if (user.rol === 'SUPERVISOR') return <Navigate to="/supervisor-base/dashboard" replace />;
   if (user.rol === 'ADMIN_ENTIDAD') return <Navigate to="/entidad/dashboard" replace />;
   if (user.rol === 'ALCABALA') return <Navigate to="/alcabala/dashboard" replace />;
   if (user.rol === 'SUPERVISOR_PARQUEROS') return <Navigate to="/supervisor/dashboard" replace />;
@@ -125,6 +126,14 @@ export const router = createBrowserRouter([
             element: <RutaProtegida rolesPermitidos={['SUPERVISOR_PARQUEROS', 'ADMIN_BASE', 'COMANDANTE']} />,
             children: [
               { path: 'dashboard', element: <DashboardSupervisor /> }
+            ]
+          },
+          // SUPERVISOR DE BASE (SENTINEL)
+          {
+            path: 'supervisor-base',
+            element: <RutaProtegida rolesPermitidos={['SUPERVISOR', 'ADMIN_BASE', 'COMANDANTE']} />,
+            children: [
+              { path: 'dashboard', element: <DashboardSupervisorBase /> }
             ]
           },
           // SOCIO

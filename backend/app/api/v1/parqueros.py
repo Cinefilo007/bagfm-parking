@@ -69,8 +69,6 @@ async def registrar_llegada_qr(
 @router.post("/salida-qr/{qr_token}", response_model=VehiculoPaseSalida)
 async def registrar_salida_zona(
     qr_token: str,
-    lat: Optional[float] = Body(None, embed=True),
-    lon: Optional[float] = Body(None, embed=True),
     db: AsyncSession = Depends(obtener_db),
     current_user: Usuario = Depends(require_rol(["SUPERVISOR_PARQUEROS", "PARQUERO", "ADMIN_BASE", "COMANDANTE"]))
 ):
@@ -78,7 +76,7 @@ async def registrar_salida_zona(
     Registra la salida física del vehículo de la zona de estacionamiento mediante escaneo de QR (Token JWT).
     """
     try:
-        vp = await parquero_service.registrar_salida(db, qr_token, current_user.id, lat=lat, lon=lon)
+        vp = await parquero_service.registrar_salida(db, qr_token, current_user.id)
         return vp
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
@@ -137,8 +135,6 @@ async def confirmar_ingreso_zona(
 async def registrar_salida_por_placa(
     placa: str = Body(..., embed=True),
     zona_id: UUID = Body(..., embed=True),
-    lat: Optional[float] = Body(None, embed=True),
-    lon: Optional[float] = Body(None, embed=True),
     db: AsyncSession = Depends(obtener_db),
     current_user: Usuario = Depends(require_rol(["SUPERVISOR_PARQUEROS", "PARQUERO", "ADMIN_BASE", "COMANDANTE"]))
 ):
@@ -146,7 +142,7 @@ async def registrar_salida_por_placa(
     Registra la salida de un vehículo buscándolo por placa en la zona activa.
     """
     try:
-        return await parquero_service.registrar_salida_placa(db, placa, zona_id, current_user.id, lat=lat, lon=lon)
+        return await parquero_service.registrar_salida_placa(db, placa, zona_id, current_user.id)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
 
