@@ -5,7 +5,7 @@ import { cn } from '../../lib/utils';
 import { toast } from 'react-hot-toast';
 import { useAuthStore } from '../../store/auth.store';
 import {
-    ParkingSquare, Car, Users, AlertTriangle, RefreshCw,
+    ParkingSquare, Car as CarIcon, Users as UsersIcon, AlertTriangle, RefreshCw,
     Shield, Zap, Activity, Bell, Send, CheckCircle2,
     PhoneCall, Search, Clock, ChevronRight, LogOut,
     Radio, LayoutGrid, UserCog, XCircle
@@ -238,7 +238,7 @@ export default function DashboardSupervisorParqueros() {
         { id: TABS.MONITOR, label: 'Monitor', icon: Activity, badge: null },
         { id: TABS.FANTASMAS, label: 'Fantasmas', icon: Search, badge: fantasmas.length || null },
         { id: TABS.INFRACCIONES, label: 'Infracciones', icon: AlertTriangle, badge: infraccionesLeves.length || null },
-        { id: TABS.PERSONAL, label: 'Personal', icon: Users, badge: null },
+        { id: TABS.PERSONAL, label: 'Personal', icon: UsersIcon, badge: null },
     ];
 
     return (
@@ -269,7 +269,7 @@ export default function DashboardSupervisorParqueros() {
 
                 {/* KPIs */}
                 <div className="grid grid-cols-4 gap-2">
-                    <KpiCard label="Vehículos" valor={stats.vehiculos} icon={Car} color="text-primary" />
+                    <KpiCard label="Vehículos" valor={stats.vehiculos} icon={CarIcon} color="text-primary" />
                     <KpiCard label="Libres" valor={stats.libres} icon={ParkingSquare} color="text-success" />
                     <KpiCard label="Zonas" valor={stats.zonas} icon={LayoutGrid} color="text-sky-400" />
                     <KpiCard label="Urgentes" valor={stats.fantasmasNivel} icon={AlertTriangle} color={stats.fantasmasNivel > 0 ? 'text-danger' : 'text-text-muted'} />
@@ -438,7 +438,7 @@ export default function DashboardSupervisorParqueros() {
                 {tab === TABS.PERSONAL && (
                     <div className="space-y-3">
                         <p className="text-[9px] font-black text-text-muted uppercase tracking-widest flex items-center gap-2">
-                            <Users size={11} className="text-primary" />
+                            <UsersIcon size={11} className="text-primary" />
                             Parqueros en Turno ({parqueros.length})
                         </p>
                         <div className="grid grid-cols-1 gap-2">
@@ -464,7 +464,7 @@ export default function DashboardSupervisorParqueros() {
                             ))}
                             {parqueros.length === 0 && (
                                 <div className="text-center py-10 text-text-muted/40">
-                                    <Users size={36} className="mx-auto mb-2 opacity-30" />
+                                    <UsersIcon size={36} className="mx-auto mb-2 opacity-30" />
                                     <p className="text-[9px] font-black uppercase tracking-widest">Sin parqueros en turno activo</p>
                                 </div>
                             )}

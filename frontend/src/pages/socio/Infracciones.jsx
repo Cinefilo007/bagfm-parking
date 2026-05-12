@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuthStore } from '../../store/auth.store';
 import api from '../../services/api';
-import { RefreshCw, AlertTriangle, ShieldAlert, CheckCircle, Clock, Car, FileText } from 'lucide-react';
+import { RefreshCw, AlertTriangle, ShieldAlert, CheckCircle, Clock, Car as CarIcon, FileText } from 'lucide-react';
 
 // ─── Componentes tácticos locales ─────────────────────────────────────────────
 
@@ -51,7 +51,7 @@ const InfraccionCard = ({ infraccion }) => {
       <div className="grid grid-cols-2 gap-3 pt-3 border-t border-white/5">
         {infraccion.placa && (
           <div className="flex items-center gap-2 text-text-muted">
-            <Car size={12} className="shrink-0 opacity-40" />
+            <CarIcon size={12} className="shrink-0 opacity-40" />
             <span className="text-[10px] font-mono font-black tracking-widest text-white/60">{infraccion.placa}</span>
           </div>
         )}

@@ -2,8 +2,8 @@ import React, { useState } from 'react';
 import { Card } from '../ui/Card';
 import { Badge } from '../ui/Badge';
 import { 
-  User, 
-  Car, 
+  User as UserIcon, 
+  Car as CarIcon, 
   RefreshCw, 
   Pause, 
   Play, 
@@ -137,7 +137,7 @@ export const SocioCard = ({ socio, onAction }) => {
         <div className="flex items-center justify-between sm:justify-start gap-3 min-w-0">
           <div className="flex items-center gap-3 min-w-0">
             <div className={`h-10 w-10 rounded-xl bg-white/5 flex items-center justify-center border border-white/10 shrink-0 transition-colors group-hover:border-primary/30 ${statusColor}`}>
-              <User size={20} />
+              <UserIcon size={20} />
             </div>
             <div className="min-w-0">
               <h4 className="text-sm font-bold text-text-main leading-none mb-1 flex items-center gap-2 truncate">
@@ -270,7 +270,7 @@ export const SocioCard = ({ socio, onAction }) => {
 
           {/* Vehículos vinculados */}
           <div className="flex items-center gap-1.5 mb-2">
-            <Car size={12} className="text-primary/60" />
+            <CarIcon size={12} className="text-primary/60" />
             <span className="text-[9px] uppercase font-black text-text-muted/50 tracking-widest">Vehículos</span>
             {tieneVehiculos && (
               <span className="text-[8px] font-black text-primary/40 bg-primary/5 px-1.5 py-0.5 rounded">{socio.vehiculos.length}</span>

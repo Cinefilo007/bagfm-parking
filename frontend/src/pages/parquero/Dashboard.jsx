@@ -1,10 +1,10 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
-    Car, ParkingSquare, CheckCircle2, XCircle,
+    Car as CarIcon, ParkingSquare, CheckCircle2, XCircle,
     RefreshCw, Shield, Zap, Activity, Radio, AlertTriangle, LayoutGrid, 
     Bell, Share2, Search, ArrowRight, ArrowUpRight, 
-    X, User, Phone, Fingerprint, ShieldAlert, Clock, Tag, Lock, LogOut, LogIn
+    X, User as UserIcon, Phone, Fingerprint, ShieldAlert, Clock, Tag, Lock, LogOut, LogIn
 } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import { toast } from 'react-hot-toast';
@@ -129,7 +129,7 @@ const TarjetaVehiculo = ({ vehiculo, onSalida }) => {
     return (
         <div className="flex items-center gap-3 p-3 bg-bg-card/30 rounded-xl border border-white/5 group hover:bg-bg-card/50 transition-all">
             <div className="w-10 h-10 bg-primary/10 rounded-xl flex items-center justify-center shrink-0 border border-primary/20">
-                <Car size={18} className="text-primary" />
+                <CarIcon size={18} className="text-primary" />
             </div>
             <div className="flex-1 min-w-0">
                 <p className="text-xs font-black text-text-main uppercase tracking-tight">{vehiculo.placa}</p>
@@ -397,7 +397,7 @@ const DashboardParquero = () => {
                     {/* ── KPIs ── */}
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
                         <KpiCard label="Libres"    valor={kpis.libres}    icon={CheckCircle2} color="text-success" />
-                        <KpiCard label="Ocupados"  valor={kpis.ocupados}  icon={Car}          color="text-danger"  />
+                        <KpiCard label="Ocupados"  valor={kpis.ocupados}  icon={CarIcon}      color="text-danger"  />
 
                         {/* Reservados: card expandida con desglose */}
                         <Card className="flex flex-col p-4 relative overflow-hidden group hover:bg-bg-high transition-all border-white/5 rounded-2xl">
@@ -538,7 +538,7 @@ const DashboardParquero = () => {
                             ))}
                             {vehiculosEnZona.length === 0 && (
                                 <div className="text-center py-6 text-text-muted/40">
-                                    <Car size={32} className="mx-auto mb-2 opacity-40" />
+                                    <CarIcon size={32} className="mx-auto mb-2 opacity-40" />
                                     <p className="text-[9px] font-black uppercase tracking-widest">Sin vehículos activos en zona</p>
                                 </div>
                             )}

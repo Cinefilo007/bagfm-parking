@@ -9,11 +9,12 @@ import { Modal } from '../../components/ui/Modal';
 import { Input } from '../../components/ui/Input';
 import { SocioCard } from '../../components/entidades/SocioCard';
 import { 
-  Users, 
+  Users as UsersIcon, 
   ArrowLeft, 
   UserPlus, 
   Hash, 
-  User, 
+  User as UserIcon, 
+  Car as CarIcon,
   Mail, 
   Phone,
   BarChart3
@@ -116,7 +117,7 @@ export default function EntidadDetalle() {
         <div className="grid grid-cols-2 gap-4 mb-8">
            <Card className="flex flex-col p-4">
               <div className="flex justify-between mb-4">
-                <Users size={20} className="text-primary/60" />
+                <UsersIcon size={20} className="text-primary/60" />
                 <Badge variant="comando">ACTIVOS</Badge>
               </div>
               <div className="text-2xl font-display font-bold text-text-main">{socios.length}</div>
@@ -159,7 +160,7 @@ export default function EntidadDetalle() {
 
           {socios.length === 0 && (
             <div className="text-center p-12 border border-dashed border-bg-high/20 rounded-2xl">
-               <Users size={32} className="mx-auto text-text-muted/30 mb-4" />
+               <UsersIcon size={32} className="mx-auto text-text-muted/30 mb-4" />
                <p className="text-text-muted text-xs uppercase tracking-widest font-medium">
                  No hay socios vinculados a esta entidad
                </p>
@@ -197,7 +198,7 @@ export default function EntidadDetalle() {
            
            <Input 
              label="Nombre"
-             icon={<User size={16} />}
+             icon={<UserIcon size={16} />}
              required
              placeholder="Ej: JUAN"
              value={nuevoSocio.nombre}
@@ -206,7 +207,7 @@ export default function EntidadDetalle() {
            
            <Input 
              label="Apellido"
-             icon={<User size={16} />}
+             icon={<UserIcon size={16} />}
              required
              placeholder="Ej: PÉREZ"
              value={nuevoSocio.apellido}

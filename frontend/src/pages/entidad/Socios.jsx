@@ -5,8 +5,8 @@ import { Input } from '../../components/ui/Input';
 import { SocioCard } from '../../components/entidades/SocioCard';
 import { useAuthStore } from '../../store/auth.store';
 import { 
-  Users, UserPlus, Hash, User, Mail, 
-  Phone, Search, FileUp, Car, Plus, 
+  Users, UserPlus, Hash, User as UserIcon, Mail, 
+  Phone, Search, FileUp, Car as CarIcon, Plus, 
   Trash2, Download, RefreshCw, Filter,
   FileSpreadsheet, ShieldCheck, Clock, Pause,
   AlertTriangle, CheckCircle2, Upload, Calendar,
@@ -436,7 +436,7 @@ export default function SociosEntidad() {
         <form onSubmit={handleCrearSocio} className="space-y-5">
           <div className="space-y-4">
              <div className="flex items-center gap-2 border-b border-white/5 pb-2">
-                <User size={14} className="text-primary" />
+                <UserIcon size={14} className="text-primary" />
                 <span className="text-[10px] font-black text-text-muted uppercase tracking-widest">Identidad</span>
              </div>
              <div className="grid grid-cols-2 gap-3">
@@ -508,7 +508,7 @@ export default function SociosEntidad() {
              <div className="space-y-3 pt-2">
                 <div className="flex items-center justify-between border-b border-white/5 pb-2">
                    <div className="flex items-center gap-2">
-                      <Car size={14} className="text-secondary" />
+                      <CarIcon size={14} className="text-secondary" />
                       <span className="text-[10px] font-black text-text-muted uppercase tracking-widest">Unidades</span>
                    </div>
                    <Boton type="button" variant="ghost" className="h-7 px-3 text-[9px] border-secondary/20 text-secondary font-black" onClick={addVehiculo}>

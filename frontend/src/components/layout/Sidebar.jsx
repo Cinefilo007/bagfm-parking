@@ -5,7 +5,7 @@ import {
   LayoutDashboard, UserCircle, Map as MapIcon,
   Camera, Sun, Moon, UserCog, ParkingCircle, Activity, Radio, AlertTriangle, Palette,
   ClipboardList, CalendarRange, Building2, Users, ParkingSquare, ShieldAlert,
-  QrCode, ArrowRightLeft
+  QrCode, ArrowRightLeft, Car as CarIcon
 } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import { useAuthStore } from '../../store/auth.store';
@@ -34,7 +34,7 @@ export const Sidebar = () => {
   } else if (user?.rol === 'SUPERVISOR') {
     navItems.push(
       { to: '/supervisor-base/dashboard', label: 'Sentinel Interface', icon: ShieldCheck },
-      { to: '/supervisor-base/censo-vehicular', label: 'Censo Vehicular', icon: Car },
+      { to: '/supervisor-base/censo-vehicular', label: 'Censo Vehicular', icon: CarIcon },
       { to: '/supervisor-base/censo-personas', label: 'Censo Personas', icon: Users },
       { to: '/supervisor-base/pases', label: 'Emisión de Pases', icon: QrCode },
       { to: '/comando/alcabalas', label: 'Control Alcabalas', icon: ClipboardList },
