@@ -401,7 +401,27 @@ const VistaRecibir = () => {
                 setResultado(res);
             }
         } catch (e) {
-            toast.error(e.response?.data?.detail || 'Error al buscar vehículo');
+            const mensaje = e.response?.data?.detail || 'Error al buscar vehículo';
+            // Alerta diferenciada para pase de zona incorrecta
+            const esZonaIncorrecta = mensaje.toLowerCase().includes('pase inválido') || 
+                                     mensaje.toLowerCase().includes('zona');
+            if (esZonaIncorrecta) {
+                toast.error(mensaje, {
+                    duration: 6000,
+                    icon: '⛔',
+                    style: {
+                        background: '#1e0a0a',
+                        border: '1px solid #ef4444',
+                        color: '#fca5a5',
+                        fontWeight: '800',
+                        fontSize: '12px',
+                        textTransform: 'uppercase',
+                        letterSpacing: '0.05em',
+                    }
+                });
+            } else {
+                toast.error(mensaje);
+            }
         } finally {
             setBuscando(false);
         }

@@ -412,6 +412,18 @@ class ParqueroService:
         qr_encontrado = res_qr.scalars().first()
 
         if qr_encontrado:
+            # ── Validar zona asignada del QR (SOP: Control estricto de destino) ──
+            if qr_encontrado.zona_asignada_id and qr_encontrado.zona_asignada_id != zona_id:
+                res_zona_qr = await db.execute(
+                    select(ZonaEstacionamiento).where(ZonaEstacionamiento.id == qr_encontrado.zona_asignada_id)
+                )
+                zona_qr = res_zona_qr.scalars().first()
+                nombre_zona_correcta = zona_qr.nombre if zona_qr else "otra zona"
+                raise ValueError(
+                    f"Pase Inválido. Este vehículo ({placa_norm}) tiene un pase asignado a la zona "
+                    f"'{nombre_zona_correcta}'. Indique al conductor que debe dirigirse a esa zona."
+                )
+
             # Tiene un QR con datos del vehículo. Crear VehiculoPase vinculado al QR.
             nuevo_vp = VehiculoPase(
                 qr_id=qr_encontrado.id,

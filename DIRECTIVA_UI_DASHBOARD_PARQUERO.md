@@ -57,5 +57,12 @@ Establecer las reglas de visualización táctica para el mapa de puestos de esta
     - Se implementa un botón de "Cargar más" para expandir el historial cronológicamente.
 - **Agrupamiento Cronológico**: La línea de tiempo agrupa los eventos por fecha (HOY, AYER, FECHA) para facilitar la auditoría visual rápida de sucesos.
 
+## 9. VALIDACIONES DE ACCESO (SOP CONTROL DE DESTINO)
+- **Zona Incorrecta (QR y Placa)**: Si un vehículo tiene pase asignado a una zona diferente a la del parquero:
+    - **Por QR**: `registrar_llegada_qr` ya valida `qr.zona_asignada_id != zona_id` y lanza `ValueError` con el nombre de la zona correcta.
+    - **Por Placa**: `registrar_llegada_placa` (paso 4, búsqueda en `codigos_qr`) aplica la **misma validación** antes de crear el `VehiculoPase`.
+    - **Frontend (`VistaRecibir.jsx`)**: El `catch` de `buscarPlaca` detecta mensajes con "pase inválido" o "zona" y muestra un `toast.error` diferenciado (fondo rojo oscuro, duración 6s, icono ⛔) en lugar del toast estándar.
+- **Criterio de detección en frontend**: `mensaje.toLowerCase().includes('pase inválido') || mensaje.toLowerCase().includes('zona')`.
+
 ---
-*Ultima actualización: 2026-04-29 (Implementación Scroll, KPIs 2x2 y Paginación Backend)*
+*Ultima actualización: 2026-05-12 (Validación zona incorrecta en búsqueda por placa — paridad con flujo QR)*

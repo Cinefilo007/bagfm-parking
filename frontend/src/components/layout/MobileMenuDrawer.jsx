@@ -71,12 +71,12 @@ export const MobileMenuDrawer = ({ isOpen, onClose }) => {
         )}
       >
         {/* Handle de arrastre (Visual) */}
-        <div className="w-12 h-1.5 bg-white/10 rounded-full mx-auto mt-3 mb-1" />
+        <div className="w-12 h-1.5 bg-text-muted/20 rounded-full mx-auto mt-3 mb-1" />
 
         {/* Header */}
         <div className="flex items-center justify-between px-8 py-4 border-b border-white/5">
           <div>
-            <h3 className="text-lg font-black text-white uppercase italic tracking-tight">Centro de Control</h3>
+            <h3 className="text-lg font-black text-text-main uppercase italic tracking-tight">Centro de Control</h3>
             <p className="text-[10px] text-text-muted font-bold uppercase tracking-widest">Panel Operativo Extendido</p>
           </div>
           <button 
@@ -106,7 +106,7 @@ export const MobileMenuDrawer = ({ isOpen, onClose }) => {
                       <div className={cn("mb-3 p-3 rounded-xl bg-white/[0.03] group-hover:bg-white/[0.08] transition-colors", item.color)}>
                         <Icon size={24} strokeWidth={2.5} />
                       </div>
-                      <span className="text-[10px] font-black text-white uppercase tracking-tight text-center leading-tight">
+                      <span className="text-[10px] font-black text-text-main uppercase tracking-tight text-center leading-tight">
                         {item.label}
                       </span>
                     </NavLink>
@@ -129,7 +129,7 @@ export const MobileMenuDrawer = ({ isOpen, onClose }) => {
                   <User size={24} />
                 </div>
                 <div className="flex-1 text-left">
-                  <p className="text-xs font-black text-white uppercase tracking-tight italic">Mi Expediente</p>
+                  <p className="text-xs font-black text-text-main uppercase tracking-tight italic">Mi Expediente</p>
                   <p className="text-[9px] text-text-muted font-bold uppercase tracking-widest">Perfil, Clave y Biometría</p>
                 </div>
                 <ChevronRight size={16} className="text-text-muted opacity-20" />
@@ -155,7 +155,7 @@ export const MobileMenuDrawer = ({ isOpen, onClose }) => {
 
           {/* Footer Informativo */}
           <div className="pt-4 text-center">
-             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/5 border border-white/5">
+             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-text-muted/10 border border-text-muted/10">
                 <div className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse shadow-[0_0_8px_#4EDEA3]" />
                 <span className="text-[8px] font-black text-text-muted uppercase tracking-[0.2em]">BAGFM ACCESS v2.0 · MODO TÁCTICO</span>
              </div>
